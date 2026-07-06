@@ -1,66 +1,118 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Historico Motorista x Placa{% endblock %}
+{% block title %}Histórico Motorista x Placa{% endblock %}
+{% block page_title %}Histórico Motorista x Placa{% endblock %}
+
+{% block extra_css %}
+<style>
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.danger:hover { color: #dc2626; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <h1 class="mb-0"><i class="bi bi-card-list"></i> Historico Motorista x Placa</h1>
-    </div>
-    <div class="col-md-4 text-end">
-      <button type="button" class="btn btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#ajudaModal">
+<div class="container-fluid py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:frota_dashboard' %}">Frota</a></li>
+      <li class="breadcrumb-item active">Vínculos</li>
+    </ol>
+  </nav>
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-card-list me-2"></i>Histórico Motorista x Placa</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#ajudaModal">
         <i class="bi bi-question-circle"></i> Ajuda
       </button>
-      <a href="{% url 'frota:motorista_vinculo_consulta' %}" class="btn btn-info me-2">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if search or status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if search or status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'frota:motorista_vinculo_consulta' %}" class="btn btn-outline-secondary">
         <i class="bi bi-search"></i> Consulta Histórico
       </a>
       <a href="{% url 'frota:motorista_vinculo_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Novo Vinculo
+        <i class="bi bi-plus-circle"></i> Novo Vínculo
       </a>
     </div>
   </div>
 
-  <div class="card mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <div class="col-md-5">
-          <label class="form-label">Buscar (Motorista ou Placa)</label>
-          <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Nome do motorista ou placa">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Status</label>
-          <select name="status" class="form-select">
-            <option value="">-- Todos --</option>
-            <option value="ATIVO" {% if status == 'ATIVO' %}selected{% endif %}>Ativo</option>
-            <option value="ENCERRADO" {% if status == 'ENCERRADO' %}selected{% endif %}>Encerrado</option>
-          </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-          <button type="submit" class="btn btn-outline-primary w-100">
-            <i class="bi bi-search"></i> Filtrar
-          </button>
-          <a href="{% url 'frota:motorista_vinculo_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-x"></i>
-          </a>
-        </div>
-      </form>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if search or status %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-12 col-md-6">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Buscar</label>
+              <input type="text" name="search" class="form-control form-control-sm" value="{{ search }}" placeholder="Nome do motorista ou placa">
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Status</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                <option value="ATIVO" {% if status == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                <option value="ENCERRADO" {% if status == 'ENCERRADO' %}selected{% endif %}>Encerrado</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'frota:motorista_vinculo_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
-  {% if vinculos %}
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> vínculo{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
   <div class="card">
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
+      <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th>Motorista</th>
             <th>Placa Principal</th>
             <th>Reboques</th>
-            <th>Periodo</th>
-            <th>Status</th>
-            <th class="text-center">Acoes</th>
+            <th>Período</th>
+            <th style="width:110px;">Status</th>
+            <th class="text-center" style="width:90px;">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -75,7 +127,7 @@
                 <span class="text-muted">-</span>
               {% endfor %}
             </td>
-            <td>
+            <td class="small">
               {{ vinculo.data_inicio|date:"d/m/Y" }}
               {% if vinculo.data_fim %} - {{ vinculo.data_fim|date:"d/m/Y" }}{% else %} - Atual{% endif %}
             </td>
@@ -87,27 +139,83 @@
               {% endif %}
             </td>
             <td class="text-center">
-              <div class="btn-group btn-group-sm" role="group">
-                <a href="{% url 'frota:motorista_vinculo_detail' vinculo.id %}" class="btn btn-outline-primary" title="Ver">
+              <div class="d-flex gap-3 justify-content-center">
+                <a class="action-icon" href="{% url 'frota:motorista_vinculo_detail' vinculo.id %}" title="Ver detalhes">
                   <i class="bi bi-eye"></i>
                 </a>
-                <a href="{% url 'frota:motorista_vinculo_update' vinculo.id %}" class="btn btn-outline-warning" title="Editar">
+                <a class="action-icon edit" href="{% url 'frota:motorista_vinculo_update' vinculo.id %}" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </a>
               </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              <i class="bi bi-card-list fs-3 d-block mb-2"></i>
+              Nenhum vínculo encontrado.
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    <!-- Paginação -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
+
   </div>
-  {% else %}
-  <div class="alert alert-info">
-    Nenhum vinculo encontrado.
-  </div>
-  {% endif %}
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
+  });
+});
+</script>
 
 <!-- Modal de Ajuda -->
 <div class="modal fade" id="ajudaModal" tabindex="-1" aria-labelledby="ajudaModalLabel" aria-hidden="true">

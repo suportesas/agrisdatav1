@@ -1,14 +1,44 @@
 {% extends 'base.html' %}
 {% block title %}{{ title }} | ERP Agrícola{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-card {
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4"><div class="row justify-content-center"><div class="col-lg-7">
-  <div class="card border-0 shadow-sm rounded-4">
-    <div class="card-header bg-white border-0 pt-3 pb-0">
-      <h6 class="fw-bold text-secondary"><i class="bi bi-signpost text-warning"></i> {{ title }}</h6>
-    </div>
-    <div class="card-body">
-      <form method="post" novalidate>{% csrf_token %}
+<div class="container py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:frota_dashboard' %}">Frota</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:pedagio_list' %}">Pedágios</a></li>
+      <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-signpost text-warning"></i> {{ title }}</h2>
+    <a href="{% url 'frota:pedagio_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-signpost"></i> Dados do Pedágio</h5>
+      </div>
+      <div class="card-body p-4">
         <div class="row g-3">
           <div class="col-md-6"><label class="form-label fw-semibold">Veículo <span class="text-danger">*</span></label>{{ form.vehicle }}</div>
           <div class="col-md-6"><label class="form-label fw-semibold">Viagem</label>{{ form.viagem }}</div>
@@ -18,12 +48,17 @@
           <div class="col-12"><label class="form-label fw-semibold">Praça / Local</label>{{ form.praca }}</div>
           <div class="col-12"><label class="form-label fw-semibold">Observações</label>{{ form.observacoes }}</div>
         </div>
-        <div class="d-flex gap-2 mt-4">
-          <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg"></i> Salvar</button>
-          <a href="{% url 'frota:pedagio_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
-</div></div></div>
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="{% url 'frota:pedagio_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> Salvar
+      </button>
+    </div>
+  </form>
+</div>
 {% endblock %}

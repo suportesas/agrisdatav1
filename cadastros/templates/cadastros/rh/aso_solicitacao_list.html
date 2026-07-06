@@ -1,87 +1,149 @@
 {% extends 'base.html' %}
 
 {% block title %}Solicitações de ASO | ERP Agrícola{% endblock %}
+{% block page_title %}Solicitações de ASO{% endblock %}
+
+{% block extra_css %}
+<style>
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h1 class="h3 mb-1"><i class="fas fa-file-medical me-2 text-primary"></i>Solicitações de ASO</h1>
-      <p class="text-muted mb-0">Controle de solicitações admissionais, periódicas, recontratação e demissionais</p>
-    </div>
-    <div class="d-flex gap-2">
-      <a href="{% url 'rh:tipo_exame_aso_list' %}" class="btn btn-outline-info">
-        <i class="fas fa-vial me-2"></i>Tipos de Exame
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+      <li class="breadcrumb-item active">Solicitações de ASO</li>
+    </ol>
+  </nav>
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-file-medical me-2"></i>Solicitações de ASO</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if busca or status_filter or tipo_filter or funcionario_filter %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if busca or status_filter or tipo_filter or funcionario_filter %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'rh:tipo_exame_aso_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-eyedropper"></i> Tipos de Exame
       </a>
       <a href="{% url 'rh:aso_solicitacao_create' %}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>Nova Solicitação
+        <i class="bi bi-plus-circle"></i> Nova Solicitação
       </a>
     </div>
   </div>
 
-  <div class="card mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-2">
-        <div class="col-md-3">
-          <input type="text" class="form-control" name="q" value="{{ busca|default:'' }}" placeholder="Buscar por funcionário/laboratório">
-        </div>
-        <div class="col-md-2">
-          <select class="form-select" name="status">
-            <option value="">Todos os status</option>
-            <option value="RASCUNHO" {% if status_filter == 'RASCUNHO' %}selected{% endif %}>Rascunho</option>
-            <option value="ASSINADO" {% if status_filter == 'ASSINADO' %}selected{% endif %}>Assinado</option>
-            <option value="ENVIADO" {% if status_filter == 'ENVIADO' %}selected{% endif %}>Enviado</option>
-            <option value="CONCLUIDO" {% if status_filter == 'CONCLUIDO' %}selected{% endif %}>Concluído</option>
-            <option value="CANCELADO" {% if status_filter == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select class="form-select" name="tipo">
-            <option value="">Todos os tipos</option>
-            <option value="ADMISSIONAL" {% if tipo_filter == 'ADMISSIONAL' %}selected{% endif %}>Admissional</option>
-            <option value="RECONTRATACAO" {% if tipo_filter == 'RECONTRATACAO' %}selected{% endif %}>Recontratação</option>
-            <option value="PERIODICO" {% if tipo_filter == 'PERIODICO' %}selected{% endif %}>Periódico</option>
-            <option value="DEMISSIONAL" {% if tipo_filter == 'DEMISSIONAL' %}selected{% endif %}>Demissional</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select class="form-select" name="funcionario">
-            <option value="">Todos os funcionários</option>
-            {% for funcionario in funcionarios %}
-            <option value="{{ funcionario.id }}" {% if funcionario_filter == funcionario.id|stringformat:'s' %}selected{% endif %}>{{ funcionario.nome_completo }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2 d-grid">
-          <button type="submit" class="btn btn-outline-primary">Filtrar</button>
-        </div>
-      </form>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if busca or status_filter or tipo_filter or funcionario_filter %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-12 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Buscar</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ busca|default:'' }}" placeholder="Funcionário/laboratório">
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Status</label>
+              <select class="form-select form-select-sm" name="status">
+                <option value="">— Todos —</option>
+                <option value="RASCUNHO" {% if status_filter == 'RASCUNHO' %}selected{% endif %}>Rascunho</option>
+                <option value="ASSINADO" {% if status_filter == 'ASSINADO' %}selected{% endif %}>Assinado</option>
+                <option value="ENVIADO" {% if status_filter == 'ENVIADO' %}selected{% endif %}>Enviado</option>
+                <option value="CONCLUIDO" {% if status_filter == 'CONCLUIDO' %}selected{% endif %}>Concluído</option>
+                <option value="CANCELADO" {% if status_filter == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+              </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Tipo</label>
+              <select class="form-select form-select-sm" name="tipo">
+                <option value="">— Todos —</option>
+                <option value="ADMISSIONAL" {% if tipo_filter == 'ADMISSIONAL' %}selected{% endif %}>Admissional</option>
+                <option value="RECONTRATACAO" {% if tipo_filter == 'RECONTRATACAO' %}selected{% endif %}>Recontratação</option>
+                <option value="PERIODICO" {% if tipo_filter == 'PERIODICO' %}selected{% endif %}>Periódico</option>
+                <option value="DEMISSIONAL" {% if tipo_filter == 'DEMISSIONAL' %}selected{% endif %}>Demissional</option>
+              </select>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Funcionário</label>
+              <select class="form-select form-select-sm" name="funcionario">
+                <option value="">— Todos —</option>
+                {% for funcionario in funcionarios %}
+                <option value="{{ funcionario.id }}" {% if funcionario_filter == funcionario.id|stringformat:'s' %}selected{% endif %}>{{ funcionario.nome_completo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'rh:aso_solicitacao_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> solicitação{{ page_obj.paginator.count|pluralize:",ões" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
   <div class="card">
     <div class="table-responsive">
-      <table class="table table-striped align-middle mb-0">
-        <thead>
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
           <tr>
             <th>Funcionário</th>
             <th>Tipo</th>
-            <th>Data Solicitação</th>
+            <th>Solicitação</th>
             <th>Previsto</th>
             <th>Vencimento</th>
-            <th>Status</th>
+            <th style="width:110px;">Status</th>
             <th>Exames</th>
-            <th class="text-end">Ações</th>
+            <th class="text-center" style="width:70px;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for item in page_obj %}
           <tr>
-            <td>{{ item.funcionario.nome_completo }}</td>
+            <td><strong>{{ item.funcionario.nome_completo }}</strong></td>
             <td>{{ item.get_tipo_aso_display }}</td>
-            <td>{{ item.data_solicitacao|date:'d/m/Y' }}</td>
-            <td>{{ item.data_prevista_exame|date:'d/m/Y' }}</td>
-            <td>{{ item.data_vencimento|date:'d/m/Y'|default:'-' }}</td>
+            <td class="small">{{ item.data_solicitacao|date:'d/m/Y' }}</td>
+            <td class="small">{{ item.data_prevista_exame|date:'d/m/Y' }}</td>
+            <td class="small text-muted">{{ item.data_vencimento|date:'d/m/Y'|default:'-' }}</td>
             <td>
               {% if item.status == 'RASCUNHO' %}
               <span class="badge bg-secondary">{{ item.get_status_display }}</span>
@@ -96,19 +158,82 @@
               {% endif %}
             </td>
             <td>{{ item.exames.count }}</td>
-            <td class="text-end">
-              <a href="{% url 'rh:aso_solicitacao_detail' item.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
-              <a href="{% url 'rh:aso_solicitacao_update' item.pk %}" class="btn btn-sm btn-outline-warning">Editar</a>
+            <td class="text-center">
+              <div class="d-flex gap-3 justify-content-center">
+                <a class="action-icon" href="{% url 'rh:aso_solicitacao_detail' item.pk %}" title="Ver detalhes">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a class="action-icon edit" href="{% url 'rh:aso_solicitacao_update' item.pk %}" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+              </div>
             </td>
           </tr>
           {% empty %}
           <tr>
-            <td colspan="8" class="text-center text-muted py-4">Nenhuma solicitação de ASO encontrada.</td>
+            <td colspan="8" class="text-center text-muted py-5">
+              <i class="bi bi-file-medical fs-3 d-block mb-2"></i>
+              Nenhuma solicitação de ASO encontrada.
+            </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+
+    <!-- Paginação -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
+
   </div>
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
+  });
+});
+</script>
 {% endblock %}

@@ -8,21 +8,32 @@
 <div class="container-fluid py-4">
   <div class="row justify-content-center">
     <div class="col-lg-10">
+
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'rh:afastamento_list' %}">Afastamentos</a></li>
+          <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+      </nav>
+
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h3 mb-1">
-            <i class="fas fa-medkit text-danger me-2"></i>
+            <i class="bi bi-bandaid text-danger me-2"></i>
             {{ title }}
           </h1>
         </div>
         <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
+          <i class="bi bi-arrow-left me-2"></i>Voltar
         </a>
       </div>
 
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        
+
         {% if form.non_field_errors %}
         <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
@@ -30,7 +41,7 @@
         <!-- Funcionário e Tipo -->
         <div class="card mb-3">
           <div class="card-header bg-danger text-white">
-            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Dados Principais</h5>
+            <h5 class="mb-0"><i class="bi bi-person me-2"></i>Dados Principais</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -51,7 +62,7 @@
         <!-- Datas -->
         <div class="card mb-3">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-calendar me-2"></i>Período</h5>
+            <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Período</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -77,7 +88,7 @@
         <!-- Informações Médicas -->
         <div class="card mb-3">
           <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-notes-medical me-2"></i>Informações Médicas</h5>
+            <h5 class="mb-0"><i class="bi bi-clipboard2-pulse me-2"></i>Informações Médicas</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -120,7 +131,7 @@
         <!-- Acidente de Trabalho -->
         <div class="card mb-3">
           <div class="card-header bg-warning">
-            <h5 class="mb-0"><i class="fas fa-hard-hat me-2"></i>Acidente de Trabalho (CAT)</h5>
+            <h5 class="mb-0"><i class="bi bi-cone-striped me-2"></i>Acidente de Trabalho (CAT)</h5>
           </div>
           <div class="card-body">
             <div class="form-check mb-3">
@@ -150,7 +161,7 @@
         <!-- INSS -->
         <div class="card mb-3">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>INSS / Benefícios</h5>
+            <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>INSS / Benefícios</h5>
           </div>
           <div class="card-body">
             <div class="form-check mb-3">
@@ -171,21 +182,21 @@
         <!-- Documentos -->
         <div class="card mb-3">
           <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-file-upload me-2"></i>Documentação de Suporte</h5>
+            <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Documentação de Suporte</h5>
           </div>
           <div class="card-body">
             <div class="alert alert-info mb-3">
-              <i class="fas fa-info-circle me-2"></i>
+              <i class="bi bi-info-circle me-2"></i>
               <strong>Dica:</strong> Anexe documentos como atestados médicos, CAT e outros arquivos comprobatórios (PDF, imagem, etc)
             </div>
-            
+
             <!-- Arquivo do Atestado -->
             <div class="mb-3">
-              <label class="form-label"><i class="fas fa-file-medical me-2"></i>{{ form.arquivo_atestado.label }}</label>
+              <label class="form-label"><i class="bi bi-file-earmark-medical me-2"></i>{{ form.arquivo_atestado.label }}</label>
               <div class="input-group">
                 {{ form.arquivo_atestado|add_class:"form-control" }}
                 <span class="input-group-text">
-                  <i class="fas fa-upload"></i>
+                  <i class="bi bi-upload"></i>
                 </span>
               </div>
               <small class="text-muted d-block mt-1">Formatos aceitos: PDF, JPG, PNG (máx 5MB)</small>
@@ -193,7 +204,7 @@
               {% if form.instance.arquivo_atestado %}
               <div class="mt-2">
                 <a href="{{ form.instance.arquivo_atestado.url }}" target="_blank" class="badge bg-success">
-                  <i class="fas fa-file me-1"></i>Arquivo anexado
+                  <i class="bi bi-file-earmark me-1"></i>Arquivo anexado
                 </a>
               </div>
               {% endif %}
@@ -201,11 +212,11 @@
 
             <!-- Arquivo da CAT -->
             <div class="mb-3">
-              <label class="form-label"><i class="fas fa-exclamation-triangle me-2"></i>{{ form.arquivo_cat.label }}</label>
+              <label class="form-label"><i class="bi bi-exclamation-triangle me-2"></i>{{ form.arquivo_cat.label }}</label>
               <div class="input-group">
                 {{ form.arquivo_cat|add_class:"form-control" }}
                 <span class="input-group-text">
-                  <i class="fas fa-upload"></i>
+                  <i class="bi bi-upload"></i>
                 </span>
               </div>
               <small class="text-muted d-block mt-1">Formulário de Comunicação de Acidente de Trabalho</small>
@@ -213,7 +224,7 @@
               {% if form.instance.arquivo_cat %}
               <div class="mt-2">
                 <a href="{{ form.instance.arquivo_cat.url }}" target="_blank" class="badge bg-success">
-                  <i class="fas fa-file me-1"></i>Arquivo anexado
+                  <i class="bi bi-file-earmark me-1"></i>Arquivo anexado
                 </a>
               </div>
               {% endif %}
@@ -221,7 +232,7 @@
 
             <!-- Observações -->
             <div class="mb-3">
-              <label class="form-label"><i class="fas fa-comment me-2"></i>{{ form.observacoes.label }}</label>
+              <label class="form-label"><i class="bi bi-chat-text me-2"></i>{{ form.observacoes.label }}</label>
               {{ form.observacoes|add_class:"form-control" }}
               <small class="text-muted d-block mt-1">Notas adicionais sobre este afastamento</small>
               {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
@@ -232,7 +243,7 @@
         <!-- Status -->
         <div class="card mb-4">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-flag me-2"></i>Status</h5>
+            <h5 class="mb-0"><i class="bi bi-flag me-2"></i>Status</h5>
           </div>
           <div class="card-body">
             <div class="mb-3">
@@ -242,12 +253,12 @@
           </div>
         </div>
 
-        <div class="d-flex gap-2 justify-content-end">
-          <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-times me-2"></i>Cancelar
+        <div class="d-flex justify-content-between gap-3">
+          <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+            <i class="bi bi-x-circle me-2"></i>Cancelar
           </a>
-          <button type="submit" class="btn btn-danger">
-            <i class="fas fa-save me-2"></i>Salvar Afastamento
+          <button type="submit" class="btn btn-success btn-lg px-5">
+            <i class="bi bi-check-circle me-2"></i>Salvar Afastamento
           </button>
         </div>
       </form>

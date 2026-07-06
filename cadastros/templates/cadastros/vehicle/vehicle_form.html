@@ -1,95 +1,181 @@
 {% extends 'base.html' %}
 {% block title %}{{ action }} Veículo | ERP Agrícola{% endblock %}
 
+{% block extra_css %}
+<style>
+  .section-card {
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:vehicle_list' %}">Veículos</a></li>
+      <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+  </nav>
+
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">{{ action }} Veículo</h2>
-      <p class="text-muted mb-0">Preencha os dados do veículo</p>
-    </div>
-    <div>
-      <button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#ajudaVeiculoModal">
+    <h2 class="fw-bold mb-0"><i class="bi bi-truck text-primary"></i> {{ action }} Veículo</h2>
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#ajudaVeiculoModal">
         <i class="bi bi-question-circle"></i> Ajuda
       </button>
-      <a href="{% url 'frota:vehicle_list' %}" class="btn btn-outline-secondary">Voltar</a>
+      <a href="{% url 'frota:vehicle_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
     </div>
   </div>
 
-  <div class="card p-4">
-    <div class="alert alert-info mb-4" role="alert">
-      <strong><i class="bi bi-info-circle"></i> Ajuda no preenchimento:</strong>
-      <ul class="mb-0 mt-2">
-        <li><strong>Origem:</strong> Se for <strong>Terceiro</strong>, informe a transportadora. Se for <strong>Próprio</strong>, a transportadora não é necessária.</li>
-        <li><strong>Placas:</strong> São opcionais. Para veículos com placa (carros, caminhões), cadastre a placa <strong>após criar o veículo</strong> na tela de detalhes.</li>
-        <li><strong>Implementos/Tratores sem placa:</strong> Use apenas o campo <strong>"Nome/Descrição"</strong> e/ou <strong>"Código de Patrimônio"</strong> para identificá-los.</li>
-      </ul>
-    </div>
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      {{ form.non_field_errors }}
-      <div class="row g-3">
-        <div class="col-md-4">
-          {{ form.foto.label_tag }}{{ form.foto }}
-          <div class="form-text small">Opcional. Use uma imagem JPG ou PNG.</div>
-          {% if form.instance and form.instance.foto %}
-          <div class="mt-2">
-            <img src="{{ form.instance.foto.url }}" alt="Foto do veiculo" class="img-thumbnail" style="max-height: 160px;">
+  <div class="alert alert-info mb-4" role="alert">
+    <strong><i class="bi bi-info-circle"></i> Ajuda no preenchimento:</strong>
+    <ul class="mb-0 mt-2">
+      <li><strong>Origem:</strong> Se for <strong>Terceiro</strong>, informe a transportadora. Se for <strong>Próprio</strong>, a transportadora não é necessária.</li>
+      <li><strong>Placas:</strong> São opcionais. Para veículos com placa (carros, caminhões), cadastre a placa <strong>após criar o veículo</strong> na tela de detalhes.</li>
+      <li><strong>Implementos/Tratores sem placa:</strong> Use apenas o campo <strong>"Nome/Descrição"</strong> e/ou <strong>"Código de Patrimônio"</strong> para identificá-los.</li>
+    </ul>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <!-- Seção 1: Identificação -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-truck"></i> Identificação</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            {{ form.foto.label_tag }}{{ form.foto }}
+            <div class="form-text small">Opcional. Use uma imagem JPG ou PNG.</div>
+            {% if form.instance and form.instance.foto %}
+            <div class="mt-2">
+              <img src="{{ form.instance.foto.url }}" alt="Foto do veiculo" class="img-thumbnail" style="max-height: 160px;">
+            </div>
+            {% endif %}
           </div>
-          {% endif %}
-        </div>
-        <div class="col-md-3">
-          {{ form.origem.label_tag }}{{ form.origem }}
-          <div class="form-text small">Proprio (frota da empresa) ou Terceiro (vinculado a transportadora)</div>
-        </div>
-        <div class="col-md-3">{{ form.tipo.label_tag }}{{ form.tipo }}</div>
-        <div class="col-md-3">{{ form.marca.label_tag }}{{ form.marca }}</div>
-        <div class="col-md-3">{{ form.modelo.label_tag }}{{ form.modelo }}</div>
-        <div class="col-md-3">{{ form.cor.label_tag }}{{ form.cor }}</div>
-
-        <div class="col-12">{{ form.descricao.label_tag }}{{ form.descricao }}<div class="form-text small">Dê um nome/identificação para o veiculo ou implemento (ex: Trator Amarelo, Implemento XX)</div></div>
-        <div class="col-md-3">{{ form.renavam.label_tag }}{{ form.renavam }}</div>
-        <div class="col-md-3">{{ form.chassis.label_tag }}{{ form.chassis }}</div>
-        <div class="col-md-3">{{ form.numero_motor.label_tag }}{{ form.numero_motor }}</div>
-        <div class="col-md-3">{{ form.tipo_combustivel.label_tag }}{{ form.tipo_combustivel }}</div>
-
-        <div class="col-md-6">{{ form.codigo_patrimonio.label_tag }}{{ form.codigo_patrimonio }}<div class="form-text small">Usado em veículos sem placa (ex.: tratores, implementos)</div></div>
-        <div class="col-md-3">{{ form.consumo_medio.label_tag }}{{ form.consumo_medio }}</div>
-        <div class="col-md-3">{{ form.consumo_unidade.label_tag }}{{ form.consumo_unidade }}</div>
-        <div class="col-md-3">{{ form.tank_capacity.label_tag }}{{ form.tank_capacity }}</div>
-
-        <!-- Extra fields: transportadora and ativo -->
-        <div class="col-md-6" id="transportadoraField">
-          {{ form.transportadora.label_tag }}{{ form.transportadora }}
-          <div class="form-text small">Obrigatorio apenas para veiculo de terceiro</div>
-        </div>
-        <div class="col-md-6 d-flex align-items-center">
-          <div class="form-check">
-            {{ form.ativo }} <label for="id_ativo" class="form-check-label">Ativo</label>
+          <div class="col-md-3">
+            {{ form.origem.label_tag }}{{ form.origem }}
+            <div class="form-text small">Proprio (frota da empresa) ou Terceiro (vinculado a transportadora)</div>
           </div>
-        </div>
-
-        <!-- Valorização / Desvalorização -->
-        <div class="col-md-4">{{ form.valor_atual.label_tag }}{{ form.valor_atual }}</div>
-        <div class="col-md-4">{{ form.percentual_variacao.label_tag }}{{ form.percentual_variacao }}</div>
-        <div class="col-md-4">{{ form.tipo_variacao.label_tag }}{{ form.tipo_variacao }}</div>
-        <div class="col-12 d-flex align-items-center">
-          {{ form.aplicar_variacao_agora }} <label for="id_aplicar_variacao_agora" class="form-check-label ms-2">Aplicar variação agora</label>
-        </div>
-
-        <div class="col-md-2">{{ form.ano_fabricacao.label_tag }}{{ form.ano_fabricacao }}</div>
-        <div class="col-md-2">{{ form.ano_modelo.label_tag }}{{ form.ano_modelo }}</div>
-        <div class="col-md-2">{{ form.eixos.label_tag }}{{ form.eixos }}</div>
-        <div class="col-md-2">{{ form.tara_kg.label_tag }}{{ form.tara_kg }}</div>
-        <div class="col-md-2">{{ form.capacidade_ton.label_tag }}{{ form.capacidade_ton }}</div>
-
-        <div class="col-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
-        <div class="col-12 d-flex justify-content-end">
-          <button id="vehicleSaveBtn" class="btn btn-success">{{ action }}</button>
+          <div class="col-md-3">{{ form.tipo.label_tag }}{{ form.tipo }}</div>
+          <div class="col-md-3">{{ form.marca.label_tag }}{{ form.marca }}</div>
+          <div class="col-md-3">{{ form.modelo.label_tag }}{{ form.modelo }}</div>
+          <div class="col-md-3">{{ form.cor.label_tag }}{{ form.cor }}</div>
+          <div class="col-12">
+            {{ form.descricao.label_tag }}{{ form.descricao }}
+            <div class="form-text small">Dê um nome/identificação para o veiculo ou implemento (ex: Trator Amarelo, Implemento XX)</div>
+          </div>
         </div>
       </div>
-    </form>
-  </div>
+    </div>
+
+    <!-- Seção 2: Documentação Técnica -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentação Técnica</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-3">{{ form.renavam.label_tag }}{{ form.renavam }}</div>
+          <div class="col-md-3">{{ form.chassis.label_tag }}{{ form.chassis }}</div>
+          <div class="col-md-3">{{ form.numero_motor.label_tag }}{{ form.numero_motor }}</div>
+          <div class="col-md-3">{{ form.tipo_combustivel.label_tag }}{{ form.tipo_combustivel }}</div>
+
+          <div class="col-md-6">
+            {{ form.codigo_patrimonio.label_tag }}{{ form.codigo_patrimonio }}
+            <div class="form-text small">Usado em veículos sem placa (ex.: tratores, implementos)</div>
+          </div>
+          <div class="col-md-3">{{ form.consumo_medio.label_tag }}{{ form.consumo_medio }}</div>
+          <div class="col-md-3">{{ form.consumo_unidade.label_tag }}{{ form.consumo_unidade }}</div>
+          <div class="col-md-3">{{ form.tank_capacity.label_tag }}{{ form.tank_capacity }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 3: Vínculo e Status -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Vínculo e Status</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-6" id="transportadoraField">
+            {{ form.transportadora.label_tag }}{{ form.transportadora }}
+            <div class="form-text small">Obrigatorio apenas para veiculo de terceiro</div>
+          </div>
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="form-check">
+              {{ form.ativo }} <label for="id_ativo" class="form-check-label">Ativo</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 4: Valorização / Desvalorização -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> Valorização / Desvalorização</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-4">{{ form.valor_atual.label_tag }}{{ form.valor_atual }}</div>
+          <div class="col-md-4">{{ form.percentual_variacao.label_tag }}{{ form.percentual_variacao }}</div>
+          <div class="col-md-4">{{ form.tipo_variacao.label_tag }}{{ form.tipo_variacao }}</div>
+          <div class="col-12 d-flex align-items-center">
+            {{ form.aplicar_variacao_agora }} <label for="id_aplicar_variacao_agora" class="form-check-label ms-2">Aplicar variação agora</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 5: Especificações Físicas -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header" style="background: #10b981; color: white;">
+        <h5 class="mb-0"><i class="bi bi-rulers"></i> Especificações Físicas</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-2">{{ form.ano_fabricacao.label_tag }}{{ form.ano_fabricacao }}</div>
+          <div class="col-md-2">{{ form.ano_modelo.label_tag }}{{ form.ano_modelo }}</div>
+          <div class="col-md-2">{{ form.eixos.label_tag }}{{ form.eixos }}</div>
+          <div class="col-md-3">{{ form.tara_kg.label_tag }}{{ form.tara_kg }}</div>
+          <div class="col-md-3">{{ form.capacidade_ton.label_tag }}{{ form.capacidade_ton }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 6: Observações -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header" style="background: #6366f1; color: white;">
+        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="{% url 'frota:vehicle_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button id="vehicleSaveBtn" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> {{ action }}
+      </button>
+    </div>
+  </form>
 </div>
 
 <script>
@@ -128,7 +214,7 @@
       </div>
       <div class="modal-body">
         <h6 class="mb-3"><strong>O que é cada campo?</strong></h6>
-        
+
         <div class="mb-3">
           <h6 class="text-primary"><i class="bi bi-card-image"></i> Foto</h6>
           <p>Opcional. Tire uma foto do veiculo ou implemento (JPG ou PNG) para facilitar identificação visual. Util para:
@@ -209,7 +295,7 @@
             </p>
             <hr class="my-2">
             <p class="mb-0">
-              <strong>Tratores e Implementos:</strong> Não possuem placa. Use apenas o campo <strong>"Nome/Descrição"</strong> 
+              <strong>Tratores e Implementos:</strong> Não possuem placa. Use apenas o campo <strong>"Nome/Descrição"</strong>
               e/ou <strong>"Código de Patrimônio"</strong> para identificá-los.
             </p>
           </div>

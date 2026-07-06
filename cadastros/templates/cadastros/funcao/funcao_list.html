@@ -2,127 +2,123 @@
 {% load static %}
 
 {% block title %}Funções de Funcionários | ERP Agrícola{% endblock %}
+{% block page_title %}Funções{% endblock %}
+
+{% block extra_css %}
+<style>
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.danger:hover { color: #dc2626; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
+<div class="container-fluid py-4">
+
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Início</a></li>
-      <li class="breadcrumb-item"><a href="#">Cadastros</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
       <li class="breadcrumb-item active">Funções</li>
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-person-badge text-primary"></i> Funções de Funcionários
-      </h2>
-      {% if request.user.empresa %}
-      <p class="text-muted mb-0">
-        <i class="bi bi-building"></i> <strong>{{ request.user.empresa.nome }}</strong> - 
-        Cadastre cargos e funções para seus colaboradores
-      </p>
-      {% endif %}
-    </div>
-    <div class="d-flex gap-2">
-      <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary btn-lg">
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-person-badge me-2"></i>Funções de Funcionários</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if request.GET.q %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary">
         <i class="bi bi-shield-exclamation"></i> Catálogo de Riscos
       </a>
-      <a href="{% url 'rh:funcao_create' %}" class="btn btn-primary btn-lg">
+      <a href="{% url 'rh:funcao_create' %}" class="btn btn-primary">
         <i class="bi bi-plus-circle"></i> Nova Função
       </a>
     </div>
   </div>
 
-  <!-- Alert Multi-tenant -->
-  {% if request.user.empresa %}
-  <div class="alert alert-info border-0 d-flex align-items-start mb-4">
-    <i class="bi bi-info-circle fs-5 me-2"></i>
-    <div>
-      <strong>Funções exclusivas da sua empresa</strong>
-      <p class="mb-0 small">Estas funções são usadas no cadastro de funcionários. Ex: Motorista, Tratorista, Colhedor, Supervisor, etc.</p>
-    </div>
-  </div>
-  {% endif %}
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-6">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Pesquisar</label>
+              <input type="text" name="q" class="form-control form-control-sm" placeholder="Digite o nome da função..." value="{{ request.GET.q }}">
+            </div>
+          </div>
 
-  <!-- Filtros -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <div class="col-md-8">
-          <label class="form-label fw-semibold">
-            <i class="bi bi-search"></i> Pesquisar Função
-          </label>
-          <input type="text" name="q" class="form-control" placeholder="Digite o nome da função..." value="{{ request.GET.q }}">
-        </div>
-        <div class="col-md-4 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary me-2">
-            <i class="bi bi-search"></i> Buscar
-          </button>
-          <a href="{% url 'rh:funcao_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-clockwise"></i> Limpar
-          </a>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Lista de Funções -->
-  <div class="card shadow-sm">
-    <div class="card-header bg-light">
-      <div class="d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-          <i class="bi bi-list-ul"></i> Funções Cadastradas
-          <span class="badge bg-primary ms-2">{{ funcoes|length }}</span>
-        </h5>
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'rh:funcao_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
+          </div>
+        </form>
       </div>
     </div>
-    <div class="card-body p-0">
-      {% if funcoes %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th style="width: 40%">
-                <i class="bi bi-tag"></i> Nome da Função
-              </th>
-              <th style="width: 30%">
-                <i class="bi bi-file-text"></i> Descrição
-              </th>
-              <th style="width: 12%" class="text-end">
-                <i class="bi bi-cash"></i> Salário Base
-              </th>
-              <th style="width: 10%" class="text-center">
-                <i class="bi bi-toggle-on"></i> Status
-              </th>
-              <th style="width: 8%" class="text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for funcao in funcoes %}
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> função{{ page_obj.paginator.count|pluralize:"ão,ões" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nome da Função</th>
+            <th>Descrição</th>
+            <th class="text-end">Salário Base</th>
+            <th style="width:100px;">Status</th>
+            <th class="text-center" style="width:90px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for funcao in funcoes %}
             <tr>
               <td>
                 <div class="d-flex align-items-center">
-                  <div class="avatar-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
-                    <i class="bi bi-person-badge fs-5"></i>
+                  <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 36px; height: 36px;">
+                    <i class="bi bi-person-badge"></i>
                   </div>
                   <div>
                     <div class="fw-semibold">{{ funcao.nome }}</div>
-                    <small class="text-muted">
-                      <i class="bi bi-people"></i> 
-                      {{ funcao.get_total_funcionarios }} funcionário{{ funcao.get_total_funcionarios|pluralize }}
-                    </small>
+                    <small class="text-muted">{{ funcao.get_total_funcionarios }} funcionário{{ funcao.get_total_funcionarios|pluralize }}</small>
                   </div>
                 </div>
               </td>
               <td>
                 {% if funcao.descricao %}
-                  <small class="text-muted">{{ funcao.descricao|truncatewords:10 }}</small>
+                  <span class="text-muted small">{{ funcao.descricao|truncatewords:10 }}</span>
                 {% else %}
-                  <span class="text-muted fst-italic">Sem descrição</span>
+                  <span class="text-muted fst-italic small">Sem descrição</span>
                 {% endif %}
               </td>
               <td class="text-end">
@@ -132,103 +128,122 @@
                   <span class="text-muted">-</span>
                 {% endif %}
               </td>
-              <td class="text-center">
+              <td>
                 {% if funcao.ativa %}
-                  <span class="badge bg-success">
-                    <i class="bi bi-check-circle"></i> Ativa
-                  </span>
+                  <span class="badge bg-success">Ativa</span>
                 {% else %}
-                  <span class="badge bg-secondary">
-                    <i class="bi bi-x-circle"></i> Inativa
-                  </span>
+                  <span class="badge bg-secondary">Inativa</span>
                 {% endif %}
               </td>
               <td class="text-center">
-                <div class="dropdown">
-                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-three-dots-vertical"></i>
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'rh:funcao_update' funcao.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
-                    <li><a class="dropdown-item" href="{% url 'rh:laudo_list' %}?funcao={{ funcao.pk }}"><i class="bi bi-file-earmark-medical text-danger"></i> Ver laudos</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="{% url 'rh:funcao_delete' funcao.pk %}" onclick="return confirm('Tem certeza que deseja excluir esta função?')"><i class="bi bi-trash"></i> Excluir</a></li>
-                  </ul>
+                <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon" href="{% url 'rh:laudo_list' %}?funcao={{ funcao.pk }}" title="Ver laudos">
+                    <i class="bi bi-file-earmark-medical"></i>
+                  </a>
+                  <a class="action-icon edit" href="{% url 'rh:funcao_update' funcao.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="action-icon danger"
+                     href="#"
+                     data-bs-toggle="modal"
+                     data-bs-target="#deleteModal"
+                     data-delete-url="{% url 'rh:funcao_delete' funcao.pk %}"
+                     data-nome="{{ funcao.nome }}"
+                     title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </a>
                 </div>
               </td>
             </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <!-- Estado Vazio -->
-      <div class="text-center py-5">
-        <div class="mb-3">
-          <i class="bi bi-person-badge" style="font-size: 4rem; color: #ddd;"></i>
-        </div>
-        <h5 class="text-muted mb-3">Nenhuma função cadastrada</h5>
-        <p class="text-muted mb-4">
-          Comece criando funções como: Motorista, Tratorista, Colhedor, Supervisor, etc.
-        </p>
-        <a href="{% url 'rh:funcao_create' %}" class="btn btn-primary">
-          <i class="bi bi-plus-circle"></i> Cadastrar Primeira Função
-        </a>
-      </div>
-      {% endif %}
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-5">
+                <i class="bi bi-person-badge fs-3 d-block mb-2"></i>
+                Nenhuma função cadastrada.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+
+    <!-- Paginação -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
+
   </div>
 
-  <!-- Exemplos de Funções -->
-  <div class="card border-0 bg-light mt-4">
-    <div class="card-body">
-      <h6 class="fw-semibold mb-3">
-        <i class="bi bi-lightbulb text-warning me-1"></i>
-        Exemplos de Funções Comuns:
-      </h6>
-      <div class="row g-2">
-        <div class="col-md-3">
-          <div class="p-2 bg-white rounded border">
-            <strong class="text-primary">Motorista</strong>
-            <p class="small text-muted mb-0">Condução de veículos</p>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="p-2 bg-white rounded border">
-            <strong class="text-primary">Tratorista</strong>
-            <p class="small text-muted mb-0">Operação de tratores</p>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="p-2 bg-white rounded border">
-            <strong class="text-primary">Colhedor</strong>
-            <p class="small text-muted mb-0">Colheita manual</p>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="p-2 bg-white rounded border">
-            <strong class="text-primary">Supervisor</strong>
-            <p class="small text-muted mb-0">Supervisão de equipes</p>
-          </div>
-        </div>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja excluir a função <strong id="deleteModalNome"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="deleteModalForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button>
+        </form>
       </div>
     </div>
   </div>
 </div>
 
-<style>
-  .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    transition: all 0.2s;
-  }
-  
-  .table tbody tr {
-    transition: background-color 0.2s;
-  }
-  
-  .table tbody tr:hover {
-    background-color: rgba(13, 110, 253, 0.05);
-  }
-</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    document.getElementById('deleteModalForm').action = button.getAttribute('data-delete-url');
+    document.getElementById('deleteModalNome').textContent = button.getAttribute('data-nome');
+  });
+});
+</script>
 {% endblock %}

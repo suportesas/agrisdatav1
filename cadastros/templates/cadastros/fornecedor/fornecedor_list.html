@@ -29,7 +29,7 @@ tbody tr:hover td { background: #faf5ff; }
               data-bs-target="#filterCollapse"
               aria-expanded="{% if q or status_atual or categoria_atual or tipo_atual %}true{% else %}false{% endif %}"
               title="Pesquisar / Filtrar">
-        <i class="bi bi-search"></i>
+        <i class="bi bi-funnel"></i>
         {% if q or status_atual or categoria_atual or tipo_atual %}
           <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
             ●<span class="visually-hidden">filtro ativo</span>
@@ -95,15 +95,15 @@ tbody tr:hover td { background: #faf5ff; }
               </select>
             </div>
 
-            <div class="col-3 col-md-1 d-flex gap-1 align-items-end">
-              <button type="submit" class="btn btn-primary btn-sm flex-fill" title="Filtrar">
-                <i class="bi bi-funnel"></i>
-              </button>
-              <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary btn-sm" title="Limpar filtros">
-                <i class="bi bi-x-lg"></i>
-              </a>
-            </div>
+          </div>
 
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
           </div>
         </form>
       </div>
@@ -202,7 +202,11 @@ tbody tr:hover td { background: #faf5ff; }
                     <i class="bi bi-pencil"></i>
                   </a>
                   <a class="action-icon danger"
-                     href="{% url 'cadastros:fornecedor_delete' fornecedor.pk %}"
+                     href="#"
+                     data-bs-toggle="modal"
+                     data-bs-target="#deleteModal"
+                     data-delete-url="{% url 'cadastros:fornecedor_delete' fornecedor.pk %}"
+                     data-nome="{{ fornecedor.get_nome_exibicao }}"
                      title="Excluir">
                     <i class="bi bi-trash"></i>
                   </a>
@@ -222,7 +226,6 @@ tbody tr:hover td { background: #faf5ff; }
     </div>
 
     <!-- Paginação -->
-    {% if page_obj.paginator.num_pages > 1 %}
     <div class="card-footer d-flex align-items-center justify-content-between">
       <small class="text-muted">
         Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
@@ -264,10 +267,31 @@ tbody tr:hover td { background: #faf5ff; }
 
       </ul>
     </div>
-    {% endif %}
 
   </div>
 
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja excluir o fornecedor <strong id="deleteModalNome"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="deleteModalForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -280,6 +304,13 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.getElementById('perPageSelect')?.addEventListener('change', function () {
     form.submit();
+  });
+
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    document.getElementById('deleteModalForm').action = button.getAttribute('data-delete-url');
+    document.getElementById('deleteModalNome').textContent = button.getAttribute('data-nome');
   });
 });
 </script>

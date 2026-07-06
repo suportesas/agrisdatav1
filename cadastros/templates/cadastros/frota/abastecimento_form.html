@@ -2,126 +2,156 @@
 {% block title %}{{ title }} | ERP Agrícola{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+  .section-card {
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+<div class="container py-4">
 
-      {# Painel dinâmico de informações do veículo #}
-      <div id="painel-veiculo" class="alert alert-info border-0 shadow-sm rounded-4 d-none mb-3">
-        <div class="d-flex align-items-center mb-2">
-          <i class="bi bi-car-front-fill text-info me-2"></i>
-          <strong class="text-info">Informações do Veículo</strong>
-        </div>
-        <div class="row g-2 text-center">
-          <div class="col-6 col-md-3">
-            <div class="small text-muted">Placa</div>
-            <div class="fw-bold" id="info-placa">—</div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="small text-muted">Último km registrado</div>
-            <div class="fw-bold" id="info-ultimo-km">—</div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="small text-muted">Último horímetro</div>
-            <div class="fw-bold" id="info-ultimo-h">—</div>
-          </div>
-          <div class="col-6 col-md-3">
-            <div class="small text-muted">Consumo médio</div>
-            <div class="fw-bold" id="info-consumo">—</div>
-          </div>
-        </div>
-        <div class="mt-2 small text-muted text-center">Último abastecimento: <span id="info-data">—</span></div>
-      </div>
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:frota_dashboard' %}">Frota</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:abastecimento_list' %}">Combustível</a></li>
+      <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+  </nav>
 
-      {# Alerta de capacidade do tanque #}
-      <div id="alerta-tanque" class="alert alert-warning border-0 shadow-sm rounded-4 d-none mb-3">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <strong>Atenção:</strong> A quantidade de litros informada excede a capacidade do tanque (<span id="capacidade-display">—</span> L).
-      </div>
-
-      <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-fuel-pump text-info"></i> {{ title }}</h6>
-        </div>
-        <div class="card-body">
-          <form method="post" novalidate>
-            {% csrf_token %}
-            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Veículo <span class="text-danger">*</span></label>
-                {{ form.vehicle }}
-                {% if form.vehicle.errors %}<div class="text-danger small">{{ form.vehicle.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Motorista</label>
-                {{ form.motorista }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
-                {{ form.data }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Tipo de Combustível <span class="text-danger">*</span></label>
-                {{ form.tipo_combustivel }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Tanque Cheio?</label>
-                <div class="form-check mt-2">{{ form.tanque_cheio }} <span class="small text-muted">Marque se encheu o tanque</span></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Litros <span class="text-danger">*</span></label>
-                {{ form.litros }}
-                {% if form.litros.errors %}<div class="text-danger small">{{ form.litros.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Preço/Litro (R$) <span class="text-danger">*</span></label>
-                {{ form.preco_por_litro }}
-              </div>
-              <div class="col-md-4">
-                <div id="total-display" class="d-flex align-items-end pb-1">
-                  <div>
-                    <div class="small text-muted">Total calculado</div>
-                    <div class="fw-bold text-info fs-5" id="total-preview">R$ 0,00</div>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Hodômetro (km)</label>
-                {{ form.km_odometro }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Horímetro (h)</label>
-                {{ form.horimetro }}
-              </div>
-              <div class="col-md-8 offset-md-0">
-                <label class="form-label fw-semibold">Local / Posto</label>
-                {{ form.local_abastecimento }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Fornecedor</label>
-                {{ form.fornecedor }}
-                <div class="form-text">Necessário para gerar Conta a Pagar</div>
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold">Observações</label>
-                {{ form.observacoes }}
-              </div>
-            </div>
-
-            <div class="d-flex gap-2 mt-4">
-              <button type="submit" class="btn btn-info text-white"><i class="bi bi-check-lg"></i> Salvar</button>
-              <a href="{% url 'frota:abastecimento_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
-              <a href="{% url 'frota:abastecimento_importar' %}" class="btn btn-outline-primary ms-auto"><i class="bi bi-upload"></i> Importar CSV</a>
-            </div>
-          </form>
-        </div>
-      </div>
-
-    </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-fuel-pump text-info"></i> {{ title }}</h2>
+    <a href="{% url 'frota:abastecimento_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
   </div>
+
+  {# Painel dinâmico de informações do veículo #}
+  <div id="painel-veiculo" class="alert alert-info border-0 shadow-sm rounded-4 d-none mb-3">
+    <div class="d-flex align-items-center mb-2">
+      <i class="bi bi-car-front-fill text-info me-2"></i>
+      <strong class="text-info">Informações do Veículo</strong>
+    </div>
+    <div class="row g-2 text-center">
+      <div class="col-6 col-md-3">
+        <div class="small text-muted">Placa</div>
+        <div class="fw-bold" id="info-placa">—</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="small text-muted">Último km registrado</div>
+        <div class="fw-bold" id="info-ultimo-km">—</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="small text-muted">Último horímetro</div>
+        <div class="fw-bold" id="info-ultimo-h">—</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="small text-muted">Consumo médio</div>
+        <div class="fw-bold" id="info-consumo">—</div>
+      </div>
+    </div>
+    <div class="mt-2 small text-muted text-center">Último abastecimento: <span id="info-data">—</span></div>
+  </div>
+
+  {# Alerta de capacidade do tanque #}
+  <div id="alerta-tanque" class="alert alert-warning border-0 shadow-sm rounded-4 d-none mb-3">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <strong>Atenção:</strong> A quantidade de litros informada excede a capacidade do tanque (<span id="capacidade-display">—</span> L).
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    <!-- Seção: Dados do Abastecimento -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-fuel-pump"></i> Dados do Abastecimento</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Veículo <span class="text-danger">*</span></label>
+            {{ form.vehicle }}
+            {% if form.vehicle.errors %}<div class="text-danger small">{{ form.vehicle.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Motorista</label>
+            {{ form.motorista }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
+            {{ form.data }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tipo de Combustível <span class="text-danger">*</span></label>
+            {{ form.tipo_combustivel }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Tanque Cheio?</label>
+            <div class="form-check mt-2">{{ form.tanque_cheio }} <span class="small text-muted">Marque se encheu o tanque</span></div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Litros <span class="text-danger">*</span></label>
+            {{ form.litros }}
+            {% if form.litros.errors %}<div class="text-danger small">{{ form.litros.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Preço/Litro (R$) <span class="text-danger">*</span></label>
+            {{ form.preco_por_litro }}
+          </div>
+          <div class="col-md-4">
+            <div id="total-display" class="d-flex align-items-end pb-1">
+              <div>
+                <div class="small text-muted">Total calculado</div>
+                <div class="fw-bold text-info fs-5" id="total-preview">R$ 0,00</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Hodômetro (km)</label>
+            {{ form.km_odometro }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Horímetro (h)</label>
+            {{ form.horimetro }}
+          </div>
+          <div class="col-md-8 offset-md-0">
+            <label class="form-label fw-semibold">Local / Posto</label>
+            {{ form.local_abastecimento }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fornecedor</label>
+            {{ form.fornecedor }}
+            <div class="form-text">Necessário para gerar Conta a Pagar</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center gap-3 mt-4">
+      <div class="d-flex gap-2">
+        <a href="{% url 'frota:abastecimento_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+        <a href="{% url 'frota:abastecimento_importar' %}" class="btn btn-outline-primary">
+          <i class="bi bi-upload"></i> Importar CSV
+        </a>
+      </div>
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> Salvar
+      </button>
+    </div>
+  </form>
 </div>
 
 <script>

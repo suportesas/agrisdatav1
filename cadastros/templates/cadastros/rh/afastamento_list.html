@@ -2,164 +2,227 @@
 {% load static %}
 
 {% block title %}Afastamentos | ERP Agrícola{% endblock %}
+{% block page_title %}Afastamentos{% endblock %}
+
+{% block extra_css %}
+<style>
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h1 class="h3 mb-1">
-        <i class="fas fa-medkit text-danger me-2"></i>
-        Afastamentos de Funcionários
-      </h1>
-      <p class="text-muted mb-0">Gerenciamento de afastamentos e atestados</p>
-    </div>
-    <div class="d-flex gap-2">
-      <a href="{% url 'rh:rh_dashboard' %}" class="btn btn-outline-primary">
-        <i class="fas fa-arrow-left me-2"></i>Dashboard RH
-      </a>
-      <a href="{% url 'rh:afastamento_create' %}" class="btn btn-danger">
-        <i class="fas fa-plus me-2"></i>Registrar Afastamento
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+      <li class="breadcrumb-item active">Afastamentos</li>
+    </ol>
+  </nav>
+
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-bandaid me-2"></i>Afastamentos de Funcionários</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if busca or status_filter or tipo_filter or data_inicio or data_fim %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if busca or status_filter or tipo_filter or data_inicio or data_fim %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'rh:afastamento_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Registrar Afastamento
       </a>
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <div class="col-md-2">
-          <label class="form-label">Buscar</label>
-          <input type="text" name="q" class="form-control" 
-                 placeholder="Nome ou motivo..." value="{{ busca }}">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Data Início (De)</label>
-          <input type="date" name="data_inicio" class="form-control" value="{{ data_inicio }}">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Data Início (Até)</label>
-          <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Status</label>
-          <select name="status" class="form-select">
-            <option value="">Todos</option>
-            <option value="ATIVO" {% if status_filter == 'ATIVO' %}selected{% endif %}>Ativo</option>
-            <option value="ENCERRADO" {% if status_filter == 'ENCERRADO' %}selected{% endif %}>Encerrado</option>
-            <option value="CANCELADO" {% if status_filter == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Tipo</label>
-          <select name="tipo" class="form-select">
-            <option value="">Todos</option>
-            <option value="ATESTADO" {% if tipo_filter == 'ATESTADO' %}selected{% endif %}>Atestado Médico</option>
-            <option value="ACIDENTE" {% if tipo_filter == 'ACIDENTE' %}selected{% endif %}>Acidente de Trabalho</option>
-            <option value="MATERNIDADE" {% if tipo_filter == 'MATERNIDADE' %}selected{% endif %}>Licença Maternidade</option>
-            <option value="PATERNIDADE" {% if tipo_filter == 'PATERNIDADE' %}selected{% endif %}>Licença Paternidade</option>
-            <option value="AUXILIO_DOENCA" {% if tipo_filter == 'AUXILIO_DOENCA' %}selected{% endif %}>Auxílio Doença</option>
-          </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-          <button type="submit" class="btn btn-primary flex-fill">
-            <i class="fas fa-search me-1"></i>Filtrar
-          </button>
-          <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-times"></i>
-          </a>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if busca or status_filter or tipo_filter or data_inicio or data_fim %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
 
-  <!-- Lista -->
-  {% if page_obj %}
-  <div class="row g-3">
-    {% for afastamento in page_obj %}
-    <div class="col-md-6 col-lg-4">
-      <div class="card {% if afastamento.status == 'ATIVO' %}border-danger{% endif %}">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <h5 class="mb-1">{{ afastamento.funcionario.nome_completo }}</h5>
-              <span class="badge bg-warning">{{ afastamento.get_tipo_afastamento_display }}</span>
+            <div class="col-12 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Buscar</label>
+              <input type="text" name="q" class="form-control form-control-sm" placeholder="Nome ou motivo..." value="{{ busca }}">
             </div>
-            {% if afastamento.status == 'ATIVO' %}
-            <span class="badge bg-danger">Ativo</span>
-            {% else %}
-            <span class="badge bg-secondary">{{ afastamento.get_status_display }}</span>
-            {% endif %}
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Data Início (De)</label>
+              <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ data_inicio }}">
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Data Início (Até)</label>
+              <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ data_fim }}">
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Status</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                <option value="ATIVO" {% if status_filter == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                <option value="ENCERRADO" {% if status_filter == 'ENCERRADO' %}selected{% endif %}>Encerrado</option>
+                <option value="CANCELADO" {% if status_filter == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+              </select>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Tipo</label>
+              <select name="tipo" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                <option value="ATESTADO" {% if tipo_filter == 'ATESTADO' %}selected{% endif %}>Atestado Médico</option>
+                <option value="ACIDENTE" {% if tipo_filter == 'ACIDENTE' %}selected{% endif %}>Acidente de Trabalho</option>
+                <option value="MATERNIDADE" {% if tipo_filter == 'MATERNIDADE' %}selected{% endif %}>Licença Maternidade</option>
+                <option value="PATERNIDADE" {% if tipo_filter == 'PATERNIDADE' %}selected{% endif %}>Licença Paternidade</option>
+                <option value="AUXILIO_DOENCA" {% if tipo_filter == 'AUXILIO_DOENCA' %}selected{% endif %}>Auxílio Doença</option>
+              </select>
+            </div>
+
           </div>
 
-          <div class="mb-2">
-            <small class="text-muted"><i class="fas fa-calendar me-1"></i>Início</small>
-            <p class="mb-1"><strong>{{ afastamento.data_inicio|date:"d/m/Y" }}</strong></p>
-          </div>
-
-          {% if afastamento.data_prevista_retorno %}
-          <div class="mb-2">
-            <small class="text-muted"><i class="fas fa-calendar-check me-1"></i>Retorno Previsto</small>
-            <p class="mb-1"><strong>{{ afastamento.data_prevista_retorno|date:"d/m/Y" }}</strong></p>
-          </div>
-          {% endif %}
-
-          {% if afastamento.code_cid %}
-          <div class="mb-2">
-            <small class="text-muted"><i class="fas fa-notes-medical me-1"></i>CID</small>
-            <p class="mb-0"><code>{{ afastamento.code_cid }}</code></p>
-          </div>
-          {% endif %}
-
-          {% if afastamento.motivo %}
-          <div class="alert alert-light py-2 mb-3">
-            <small>{{ afastamento.motivo|truncatewords:15 }}</small>
-          </div>
-          {% endif %}
-
-          <div class="d-flex gap-2">
-            <a href="{% url 'rh:afastamento_detail' afastamento.pk %}" 
-               class="btn btn-sm btn-outline-primary flex-fill">
-              <i class="fas fa-eye me-1"></i>Detalhes
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
             </a>
-            <a href="{% url 'rh:afastamento_update' afastamento.pk %}" 
-               class="btn btn-sm btn-outline-secondary">
-              <i class="fas fa-edit"></i>
-            </a>
           </div>
-        </div>
+        </form>
       </div>
     </div>
-    {% endfor %}
   </div>
 
-  <!-- Paginação -->
-  {% if page_obj.has_other_pages %}
-  <nav class="mt-4">
-    <ul class="pagination justify-content-center">
-      {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if busca %}&q={{ busca }}{% endif %}">Anterior</a>
-      </li>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> registro{{ page_obj.paginator.count|pluralize }}
       {% endif %}
-      <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
-      {% if page_obj.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if busca %}&q={{ busca }}{% endif %}">Próxima</a>
-      </li>
-      {% endif %}
-    </ul>
-  </nav>
-  {% endif %}
-  {% else %}
-  <div class="card">
-    <div class="card-body text-center py-5">
-      <i class="fas fa-medkit fa-4x text-muted mb-3"></i>
-      <h4 class="text-muted">Nenhum afastamento registrado</h4>
-      <a href="{% url 'rh:afastamento_create' %}" class="btn btn-danger mt-3">
-        <i class="fas fa-plus me-2"></i>Registrar Primeiro Afastamento
-      </a>
-    </div>
+    </span>
   </div>
-  {% endif %}
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Funcionário</th>
+            <th>Tipo</th>
+            <th>Início</th>
+            <th>Retorno Previsto</th>
+            <th>CID</th>
+            <th style="width:100px;">Status</th>
+            <th class="text-center" style="width:70px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for afastamento in page_obj %}
+            <tr class="{% if afastamento.status == 'ATIVO' %}table-danger bg-opacity-10{% endif %}">
+              <td><strong>{{ afastamento.funcionario.nome_completo }}</strong></td>
+              <td><span class="badge bg-warning text-dark">{{ afastamento.get_tipo_afastamento_display }}</span></td>
+              <td class="small">{{ afastamento.data_inicio|date:"d/m/Y" }}</td>
+              <td class="small text-muted">{{ afastamento.data_prevista_retorno|date:"d/m/Y"|default:'—' }}</td>
+              <td class="small text-muted">{% if afastamento.code_cid %}<code>{{ afastamento.code_cid }}</code>{% else %}—{% endif %}</td>
+              <td>
+                {% if afastamento.status == 'ATIVO' %}
+                <span class="badge bg-danger">Ativo</span>
+                {% else %}
+                <span class="badge bg-secondary">{{ afastamento.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon" href="{% url 'rh:afastamento_detail' afastamento.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="action-icon edit" href="{% url 'rh:afastamento_update' afastamento.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-5">
+                <i class="bi bi-bandaid fs-3 d-block mb-2"></i>
+                Nenhum afastamento registrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
+
+  </div>
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
+  });
+});
+</script>
 {% endblock %}

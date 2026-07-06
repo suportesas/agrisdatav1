@@ -43,7 +43,7 @@ def vehicle_list(request):
     if sort in allowed_sort:
         veiculos = veiculos.order_by(sort)
 
-    paginator = Paginator(veiculos, 10)
+    paginator = Paginator(veiculos, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     from cadastros.models import Transportadora

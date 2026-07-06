@@ -6,14 +6,14 @@
 {% block extra_css %}
 <style>
     .form-section {
-        margin-bottom: 2rem;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        border: none;
+        border-radius: 10px;
         overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
 
     .section-header {
-        background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
         color: white;
         padding: 1rem;
     }
@@ -21,41 +21,30 @@
     .form-section-body {
         padding: 1.5rem;
     }
-
-    .nav-tabs .nav-link {
-        color: #495057 !important;
-        font-weight: 600;
-    }
-
-    .nav-tabs .nav-link.active {
-        color: #f8f9fa !important;
-        background-color: #0d6efd !important;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-1">
-                <i class="bi bi-person-badge"></i> {{ title }}
-            </h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-        </div>
-    </div>
+<div class="container-fluid py-4">
 
     <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-4">
+    <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'frota:frota_dashboard' %}">Frota</a></li>
             <li class="breadcrumb-item"><a href="{% url 'frota:motorista_list' %}">Motoristas</a></li>
             <li class="breadcrumb-item active">{{ title }}</li>
         </ol>
     </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">
+            <i class="bi bi-person-badge text-primary"></i> {{ title }}
+        </h2>
+        <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+    </div>
 
     <form method="post" enctype="multipart/form-data" class="row">
         {% csrf_token %}
@@ -63,8 +52,8 @@
         <!-- Dados Pessoais -->
         <div class="col-md-12">
             <div class="form-section">
-                <div class="section-header">
-                    <h5 class="mb-0">Dados Pessoais</h5>
+                <div class="section-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> Dados Pessoais</h5>
                 </div>
                 <div class="form-section-body">
                     <div class="row g-3">
@@ -99,8 +88,8 @@
         <!-- Tipo e Transportadora -->
         <div class="col-md-12">
             <div class="form-section">
-                <div class="section-header">
-                    <h5 class="mb-0">Categoria</h5>
+                <div class="section-header" style="background: linear-gradient(135deg, #198754 0%, #157347 100%);">
+                    <h5 class="mb-0"><i class="bi bi-briefcase"></i> Categoria</h5>
                 </div>
                 <div class="form-section-body">
                     <div class="row g-3">
@@ -139,8 +128,8 @@
         <!-- CNH -->
         <div class="col-md-12">
             <div class="form-section">
-                <div class="section-header">
-                    <h5 class="mb-0">Documento de Habilitação (CNH)</h5>
+                <div class="section-header" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa8cc 100%);">
+                    <h5 class="mb-0"><i class="bi bi-card-heading"></i> Documento de Habilitação (CNH)</h5>
                 </div>
                 <div class="form-section-body">
                     <div class="row g-3">
@@ -177,8 +166,8 @@
         <!-- Contatos -->
         <div class="col-md-12">
             <div class="form-section">
-                <div class="section-header">
-                    <h5 class="mb-0">Contatos</h5>
+                <div class="section-header" style="background: linear-gradient(135deg, #ffc107 0%, #d39e00 100%); color: #212529;">
+                    <h5 class="mb-0"><i class="bi bi-telephone"></i> Contatos</h5>
                 </div>
                 <div class="form-section-body">
                     <div class="row g-3">
@@ -205,8 +194,8 @@
         <!-- Endereço -->
         <div class="col-md-12">
             <div class="form-section">
-                <div class="section-header">
-                    <h5 class="mb-0">Endereço</h5>
+                <div class="section-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
                 </div>
                 <div class="form-section-body">
                     <div class="row g-3">
@@ -263,8 +252,8 @@
         <!-- Status -->
         <div class="col-md-12">
             <div class="form-section">
-                <div class="section-header">
-                    <h5 class="mb-0">Status</h5>
+                <div class="section-header" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                    <h5 class="mb-0"><i class="bi bi-toggle-on"></i> Status</h5>
                 </div>
                 <div class="form-section-body">
                     <div class="row g-3">
@@ -287,14 +276,14 @@
         </div>
 
         <!-- Botões -->
-        <div class="col-md-12 mt-4">
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success">
-                    <i class="bi bi-check-circle"></i> Salvar
-                </button>
-                <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
+        <div class="col-md-12 mt-2">
+            <div class="d-flex justify-content-between gap-3">
+                <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary btn-lg px-5">
                     <i class="bi bi-x-circle"></i> Cancelar
                 </a>
+                <button type="submit" class="btn btn-success btn-lg px-5">
+                    <i class="bi bi-check-circle"></i> Salvar
+                </button>
             </div>
         </div>
     </form>

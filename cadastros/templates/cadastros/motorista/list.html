@@ -2,185 +2,272 @@
 {% load static %}
 
 {% block title %}Motoristas{% endblock %}
+{% block page_title %}Motoristas{% endblock %}
+
+{% block extra_css %}
+<style>
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.danger:hover { color: #dc2626; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-person-badge"></i> Motoristas
-            </h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'frota:motorista_create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Novo Motorista
-            </a>
-        </div>
-    </div>
+<div class="container-fluid py-4">
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar (Nome, CPF ou CNH)</label>
-                    <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Digite para buscar...">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Tipo</label>
-                    <select name="tipo" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="PROPRIO" {% if tipo == 'PROPRIO' %}selected{% endif %}>Próprio</option>
-                        <option value="TERCEIRO" {% if tipo == 'TERCEIRO' %}selected{% endif %}>Terceirizado</option>
-                        <option value="AGREGADO" {% if tipo == 'AGREGADO' %}selected{% endif %}>Agregado</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="ativo" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Ativos</option>
-                        <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>Inativos</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-outline-primary w-100">
-                        <i class="bi bi-search"></i> Filtrar
-                    </button>
-                    <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x"></i>
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:frota_dashboard' %}">Frota</a></li>
+      <li class="breadcrumb-item active">Motoristas</li>
+    </ol>
+  </nav>
 
-    <!-- Tabela -->
-    {% if motoristas %}
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-person-badge me-2"></i>Motoristas</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if search or tipo or request.GET.ativo %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if search or tipo or request.GET.ativo %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'frota:motorista_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Motorista
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if search or tipo or request.GET.ativo %}show{% endif %} mb-3" id="filterCollapse">
     <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Nome</th>
-                        <th>CPF</th>
-                        <th>CNH</th>
-                        <th>Tipo</th>
-                        <th>Transportadora</th>
-                        <th>Contato</th>
-                        <th>Status</th>
-                        <th class="text-center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for motorista in motoristas %}
-                    <tr>
-                        <td>
-                            <strong>{{ motorista.nome }}</strong>
-                        </td>
-                        <td>{{ motorista.cpf }}</td>
-                        <td>
-                            <span class="badge bg-info">{{ motorista.cnh }}</span>
-                        </td>
-                        <td>
-                            {% if motorista.tipo == 'PROPRIO' %}
-                            <span class="badge bg-success">Próprio</span>
-                            {% elif motorista.tipo == 'TERCEIRO' %}
-                            <span class="badge bg-warning">Terceirizado</span>
-                            {% elif motorista.tipo == 'AGREGADO' %}
-                            <span class="badge bg-info">Agregado</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if motorista.transportadora %}
-                            <small>{{ motorista.transportadora.razao_social }}</small>
-                            {% else %}
-                            <small class="text-muted">-</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if motorista.celular %}
-                            <i class="bi bi-telephone"></i> {{ motorista.celular }}<br>
-                            {% endif %}
-                            {% if motorista.email %}
-                            <small class="text-muted">{{ motorista.email }}</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if motorista.ativo %}
-                            <span class="badge bg-success">Ativo</span>
-                            {% else %}
-                            <span class="badge bg-danger">Inativo</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{% url 'frota:motorista_detail' motorista.id %}" class="btn btn-outline-primary" title="Ver">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{% url 'frota:motorista_update' motorista.id %}" class="btn btn-outline-warning" title="Editar">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <a href="{% url 'frota:motorista_delete' motorista.id %}" class="btn btn-outline-danger" title="Deletar">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-12 col-md-5">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Buscar</label>
+              <input type="text" name="search" class="form-control form-control-sm" value="{{ search }}" placeholder="Nome, CPF ou CNH">
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Tipo</label>
+              <select name="tipo" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                <option value="PROPRIO" {% if tipo == 'PROPRIO' %}selected{% endif %}>Próprio</option>
+                <option value="TERCEIRO" {% if tipo == 'TERCEIRO' %}selected{% endif %}>Terceirizado</option>
+                <option value="AGREGADO" {% if tipo == 'AGREGADO' %}selected{% endif %}>Agregado</option>
+              </select>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Status</label>
+              <select name="ativo" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Ativos</option>
+                <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>Inativos</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'frota:motorista_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> motorista{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nome</th>
+            <th>CPF</th>
+            <th>CNH</th>
+            <th>Tipo</th>
+            <th>Transportadora</th>
+            <th>Contato</th>
+            <th style="width:100px;">Status</th>
+            <th class="text-center" style="width:90px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for motorista in motoristas %}
+          <tr>
+            <td><strong>{{ motorista.nome }}</strong></td>
+            <td class="text-muted small">{{ motorista.cpf }}</td>
+            <td><span class="badge bg-info">{{ motorista.cnh }}</span></td>
+            <td>
+              {% if motorista.tipo == 'PROPRIO' %}
+              <span class="badge bg-success">Próprio</span>
+              {% elif motorista.tipo == 'TERCEIRO' %}
+              <span class="badge bg-warning">Terceirizado</span>
+              {% elif motorista.tipo == 'AGREGADO' %}
+              <span class="badge bg-info">Agregado</span>
+              {% endif %}
+            </td>
+            <td class="small">
+              {% if motorista.transportadora %}
+                {{ motorista.transportadora.razao_social }}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">
+              {% if motorista.celular %}<i class="bi bi-telephone"></i> {{ motorista.celular }}<br>{% endif %}
+              {% if motorista.email %}{{ motorista.email }}{% endif %}
+            </td>
+            <td>
+              {% if motorista.ativo %}
+              <span class="badge bg-success">Ativo</span>
+              {% else %}
+              <span class="badge bg-danger">Inativo</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="d-flex gap-3 justify-content-center">
+                <a class="action-icon" href="{% url 'frota:motorista_detail' motorista.id %}" title="Ver detalhes">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a class="action-icon edit" href="{% url 'frota:motorista_update' motorista.id %}" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a class="action-icon danger"
+                   href="#"
+                   data-bs-toggle="modal"
+                   data-bs-target="#deleteModal"
+                   data-delete-url="{% url 'frota:motorista_delete' motorista.id %}"
+                   data-nome="{{ motorista.nome }}"
+                   title="Excluir">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              <i class="bi bi-person-badge fs-3 d-block mb-2"></i>
+              Nenhum motorista encontrado.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
     <!-- Paginação -->
-    {% if is_paginated %}
-    <nav aria-label="Paginação" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}">Primeira</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}">Anterior</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <span class="page-link">Primeira</span>
-            </li>
-            <li class="page-item disabled">
-                <span class="page-link">Anterior</span>
-            </li>
-            {% endif %}
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
 
-            <li class="page-item active">
-                <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-            </li>
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
 
-            {% if page_obj.has_next %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
             <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}">Próxima</a>
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
             </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}">Última</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled">
-                <span class="page-link">Próxima</span>
-            </li>
-            <li class="page-item disabled">
-                <span class="page-link">Última</span>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
 
-    {% else %}
-    <div class="alert alert-info" role="alert">
-        <i class="bi bi-info-circle"></i> Nenhum motorista encontrado.
-        <a href="{% url 'frota:motorista_create' %}" class="alert-link">Criar novo motorista</a>
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
     </div>
-    {% endif %}
+
+  </div>
+
 </div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja excluir o motorista <strong id="deleteModalNome"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="deleteModalForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
+  });
+
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    document.getElementById('deleteModalForm').action = button.getAttribute('data-delete-url');
+    document.getElementById('deleteModalNome').textContent = button.getAttribute('data-nome');
+  });
+});
+</script>
 {% endblock %}

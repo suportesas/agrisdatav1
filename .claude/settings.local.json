@@ -141,7 +141,18 @@
       "Bash(grep -E \"custo|R\\\\$|total|mao.obra|maquinario|283|224|59\" /tmp/os_concluida_detail.html)",
       "Bash(curl -s -c /tmp/portal_cookies.txt http://127.0.0.1:8000/portal/campo/login/)",
       "Bash(where python *)",
-      "Bash(python3 -c \"print\\(1\\)\")"
+      "Bash(python3 -c \"print\\(1\\)\")",
+      "PowerShell(python manage.py check 2>&1)",
+      "PowerShell(tail -10)",
+      "PowerShell(python manage.py shell)",
+      "Bash(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\check_perpage.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\check_perpage.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\check_produto_form.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\check_icons.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\check_all_sidebar_icons.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\find_alternatives.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\render_check.py\")",
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\render_check2.py\")"
     ],
     "additionalDirectories": [
       "\\tmp"

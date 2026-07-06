@@ -2,80 +2,130 @@
 {% load static %}
 
 {% block title %}Catálogo de Riscos Ambientais | ERP Agrícola{% endblock %}
+{% block page_title %}Riscos Ambientais{% endblock %}
+
+{% block extra_css %}
+<style>
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.danger:hover { color: #dc2626; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
+<div class="container-fluid py-4">
+
+  <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Início</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
       <li class="breadcrumb-item active">Riscos Ambientais</li>
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-shield-exclamation text-primary"></i> Catálogo de Riscos Ambientais</h2>
-      <p class="text-muted mb-0">Cadastre riscos padrão para reutilizar nas funções/cargos.</p>
-    </div>
-    <a href="{% url 'rh:risco_ambiental_catalogo_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Novo Item
-    </a>
-  </div>
-
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <div class="col-md-5">
-          <label class="form-label">Buscar</label>
-          <input type="text" name="q" class="form-control" value="{{ request.GET.q }}" placeholder="Nome, EPI ou observação">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Categoria</label>
-          <select name="categoria" class="form-select">
-            <option value="">Todas</option>
-            {% for categoria in categorias %}
-              <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:'s' %}selected{% endif %}>{{ categoria.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Status</label>
-          <select name="status" class="form-select">
-            <option value="">Todos</option>
-            <option value="ativos" {% if request.GET.status == 'ativos' %}selected{% endif %}>Ativos</option>
-            <option value="inativos" {% if request.GET.status == 'inativos' %}selected{% endif %}>Inativos</option>
-          </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-          <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i></button>
-          <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i></a>
-        </div>
-      </form>
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-shield-exclamation me-2"></i>Catálogo de Riscos Ambientais</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q or request.GET.categoria or request.GET.status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if request.GET.q or request.GET.categoria or request.GET.status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'rh:risco_ambiental_catalogo_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Item
+      </a>
     </div>
   </div>
 
-  <div class="card shadow-sm">
-    <div class="card-body p-0">
-      {% if itens %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Categoria</th>
-              <th>Agente/Item</th>
-              <th>Intensidade</th>
-              <th>EPI Padrão</th>
-              <th>Status</th>
-              <th class="text-end">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in itens %}
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.categoria or request.GET.status %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-12 col-md-5">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Buscar</label>
+              <input type="text" name="q" class="form-control form-control-sm" value="{{ request.GET.q }}" placeholder="Nome, EPI ou observação">
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Categoria</label>
+              <select name="categoria" class="form-select form-select-sm">
+                <option value="">— Todas —</option>
+                {% for categoria in categorias %}
+                  <option value="{{ categoria.id }}" {% if request.GET.categoria == categoria.id|stringformat:'s' %}selected{% endif %}>{{ categoria.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Status</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                <option value="ativos" {% if request.GET.status == 'ativos' %}selected{% endif %}>Ativos</option>
+                <option value="inativos" {% if request.GET.status == 'inativos' %}selected{% endif %}>Inativos</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> item{{ page_obj.paginator.count|pluralize:",ns" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Categoria</th>
+            <th>Agente/Item</th>
+            <th>Intensidade</th>
+            <th>EPI Padrão</th>
+            <th style="width:100px;">Status</th>
+            <th class="text-center" style="width:90px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in itens %}
             <tr>
               <td><span class="badge bg-light text-dark border">{{ item.categoria.nome }}</span></td>
               <td>
-                <div class="fw-semibold">{{ item.nome }}</div>
-                {% if item.observacoes %}<small class="text-muted">{{ item.observacoes|truncatewords:12 }}</small>{% endif %}
+                <strong>{{ item.nome }}</strong>
+                {% if item.observacoes %}<br><span class="text-muted small">{{ item.observacoes|truncatewords:12 }}</span>{% endif %}
               </td>
               <td>{{ item.get_intensidade_padrao_display }}</td>
               <td>{{ item.epi_padrao|default:'-' }}</td>
@@ -86,23 +136,117 @@
                 <span class="badge bg-secondary">Inativo</span>
                 {% endif %}
               </td>
-              <td class="text-end">
-                <a href="{% url 'rh:risco_ambiental_catalogo_update' item.pk %}" class="btn btn-sm btn-outline-primary">Editar</a>
-                <a href="{% url 'rh:risco_ambiental_catalogo_delete' item.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon edit" href="{% url 'rh:risco_ambiental_catalogo_update' item.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="action-icon danger"
+                     href="#"
+                     data-bs-toggle="modal"
+                     data-bs-target="#deleteModal"
+                     data-delete-url="{% url 'rh:risco_ambiental_catalogo_delete' item.pk %}"
+                     data-nome="{{ item.nome }}"
+                     title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
               </td>
             </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-shield-exclamation fs-3 d-block mb-2"></i>
+                Nenhum item no catálogo.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
-      {% else %}
-      <div class="text-center py-5">
-        <h5 class="text-muted">Nenhum item no catálogo</h5>
-        <p class="text-muted">Cadastre riscos padrão para agilizar o preenchimento por função.</p>
-        <a href="{% url 'rh:risco_ambiental_catalogo_create' %}" class="btn btn-primary">Cadastrar primeiro item</a>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja remover o item <strong id="deleteModalNome"></strong> do catálogo?</p>
       </div>
-      {% endif %}
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="deleteModalForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
+  });
+
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    document.getElementById('deleteModalForm').action = button.getAttribute('data-delete-url');
+    document.getElementById('deleteModalNome').textContent = button.getAttribute('data-nome');
+  });
+});
+</script>
 {% endblock %}

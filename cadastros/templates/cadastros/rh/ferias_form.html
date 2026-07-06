@@ -8,28 +8,39 @@
 <div class="container-fluid py-4">
   <div class="row justify-content-center">
     <div class="col-lg-8">
+
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'rh:ferias_list' %}">Férias</a></li>
+          <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+      </nav>
+
       <!-- Header -->
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h3 mb-1">
-            <i class="fas fa-umbrella-beach text-primary me-2"></i>
+            <i class="bi bi-umbrella text-primary me-2"></i>
             {{ title }}
           </h1>
           <p class="text-muted mb-0">Preencha os dados das férias</p>
         </div>
         <a href="{% url 'rh:ferias_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
+          <i class="bi bi-arrow-left me-2"></i>Voltar
         </a>
       </div>
 
       <!-- Formulário -->
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        
+
         <!-- Erros Gerais -->
         {% if form.non_field_errors %}
         <div class="alert alert-danger alert-dismissible fade show">
-          <i class="fas fa-exclamation-triangle me-2"></i>
+          <i class="bi bi-exclamation-triangle me-2"></i>
           {{ form.non_field_errors }}
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -38,7 +49,7 @@
         <!-- Dados do Funcionário -->
         <div class="card mb-3">
           <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Funcionário</h5>
+            <h5 class="mb-0"><i class="bi bi-person me-2"></i>Funcionário</h5>
           </div>
           <div class="card-body">
             <div class="mb-3">
@@ -54,7 +65,7 @@
         <!-- Período Aquisitivo -->
         <div class="card mb-3">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Período Aquisitivo</h5>
+            <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Período Aquisitivo</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -81,7 +92,7 @@
         <!-- Período de Gozo -->
         <div class="card mb-3">
           <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Período de Gozo (Férias)</h5>
+            <h5 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Período de Gozo (Férias)</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -110,7 +121,7 @@
             </div>
 
             <div class="alert alert-info">
-              <i class="fas fa-info-circle me-2"></i>
+              <i class="bi bi-info-circle me-2"></i>
               <strong>Atenção:</strong> As férias devem ser tiradas dentro do período concessivo (12 meses após o fim do período aquisitivo).
             </div>
           </div>
@@ -119,7 +130,7 @@
         <!-- Abono Pecuniário -->
         <div class="card mb-3">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-coins me-2"></i>Abono Pecuniário (Venda de Férias)</h5>
+            <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Abono Pecuniário (Venda de Férias)</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -145,7 +156,7 @@
         <!-- Valores Financeiros -->
         <div class="card mb-3">
           <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Valores</h5>
+            <h5 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Valores</h5>
           </div>
           <div class="card-body">
             <div class="row">
@@ -179,7 +190,7 @@
         <!-- Documentação -->
         <div class="card mb-3">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-file-pdf me-2"></i>Documentação</h5>
+            <h5 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>Documentação</h5>
           </div>
           <div class="card-body">
             <div class="mb-3">
@@ -204,7 +215,7 @@
         <!-- Status -->
         <div class="card mb-4">
           <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-flag me-2"></i>Status</h5>
+            <h5 class="mb-0"><i class="bi bi-flag me-2"></i>Status</h5>
           </div>
           <div class="card-body">
             <div class="mb-3">
@@ -218,12 +229,12 @@
         </div>
 
         <!-- Botões -->
-        <div class="d-flex gap-2 justify-content-end">
-          <a href="{% url 'rh:ferias_list' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-times me-2"></i>Cancelar
+        <div class="d-flex justify-content-between gap-3">
+          <a href="{% url 'rh:ferias_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+            <i class="bi bi-x-circle me-2"></i>Cancelar
           </a>
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-save me-2"></i>Salvar Férias
+          <button type="submit" class="btn btn-success btn-lg px-5">
+            <i class="bi bi-check-circle me-2"></i>Salvar Férias
           </button>
         </div>
       </form>

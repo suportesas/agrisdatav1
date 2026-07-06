@@ -2,291 +2,39 @@
 {% load static %}
 
 {% block title %}Funcionários | ERP Agrícola{% endblock %}
+{% block page_title %}Funcionários{% endblock %}
 
 {% block extra_css %}
 <style>
-  .funcionario-card {
-    transition: all 0.3s ease;
-    border-left: 4px solid #3b82f6;
-  }
-  .funcionario-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  }
-  .funcionario-card.inativo {
-    border-left-color: #dc3545;
-    opacity: 0.7;
-  }
-  .foto-funcionario {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 3px solid #fff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .stat-badge {
-    font-size: 0.85rem;
-    padding: 6px 12px;
-  }
-
-  /* Visualização em Lista */
-  .funcionarios-container.lista-view .row {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .funcionarios-container.lista-view .col-md-6,
-  .funcionarios-container.lista-view .col-lg-4 {
-    width: 100%;
-    margin-bottom: 0;
-    padding: 0 !important;
-  }
-
-  /* Header da tabela */
-  .lista-table-header {
-    display: grid;
-    grid-template-columns: 40px 1.5fr 1fr 1.2fr 1fr 0.8fr 0.8fr;
-    gap: 12px;
-    padding: 12px 15px;
-    background: linear-gradient(to right, #f8f9fa 0%, #f0f2f5 100%);
-    border-bottom: 2px solid #dee2e6;
-    border-radius: 8px 8px 0 0;
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    color: #495057;
-    margin-bottom: 0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-
-  .lista-table-header > * {
-    display: flex;
-    align-items: center;
-  }
-
-  /* Cards em forma de linha */
-  .funcionarios-container.lista-view .funcionario-card {
-    margin-bottom: 0;
-    border: 1px solid #dee2e6;
-    border-left: 4px solid #3b82f6;
-    border-radius: 0;
-    box-shadow: none;
-    transition: all 0.2s ease;
-  }
-
-  .funcionarios-container.lista-view .funcionario-card:hover {
-    background-color: #f8f9fa;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    border-left-color: #0d6efd;
-  }
-
-  .funcionarios-container.lista-view .funcionario-card.inativo {
-    border-left-color: #dc3545;
-    opacity: 0.85;
-    background-color: #fff5f5;
-  }
-
-  .funcionarios-container.lista-view .funcionario-card .card-body {
-    display: grid;
-    grid-template-columns: 40px 1.5fr 1fr 1.2fr 1fr 0.8fr 0.8fr;
-    gap: 12px;
-    align-items: center;
-    padding: 12px 15px !important;
-    border-radius: 0;
-    height: 70px;
-  }
-
-  /* Coluna Foto */
-  .funcionarios-container.lista-view .col-foto {
-    grid-column: 1;
-    justify-self: center;
-  }
-
-  .funcionarios-container.lista-view .col-foto .foto-funcionario {
-    width: 40px;
-    height: 40px;
-  }
-
-  /* Coluna Nome */
-  .funcionarios-container.lista-view .col-nome {
-    grid-column: 2;
-    overflow: hidden;
-  }
-
-  .funcionarios-container.lista-view .col-nome h5 {
-    font-size: 0.95rem;
-    margin-bottom: 2px !important;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .funcionarios-container.lista-view .col-nome p {
-    font-size: 0.8rem;
-    color: #6c757d;
-    margin-bottom: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Coluna Função */
-  .funcionarios-container.lista-view .col-funcao {
-    grid-column: 3;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Coluna Fazenda */
-  .funcionarios-container.lista-view .col-fazenda {
-    grid-column: 4;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Coluna Salário */
-  .funcionarios-container.lista-view .col-salario {
-    grid-column: 5;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #28a745;
-  }
-
-  /* Coluna Status */
-  .funcionarios-container.lista-view .col-status {
-    grid-column: 6;
-    justify-self: center;
-  }
-
-  .funcionarios-container.lista-view .col-status .badge {
-    font-size: 0.75rem;
-    padding: 4px 8px;
-  }
-
-  /* Coluna Ações */
-  .funcionarios-container.lista-view .col-acoes {
-    grid-column: 7;
-    display: flex;
-    gap: 2px;
-    justify-self: end;
-  }
-
-  .funcionarios-container.lista-view .col-acoes .btn {
-    padding: 4px 6px;
-    font-size: 0.75rem;
-  }
-
-  /* Grid View Styling */
-  .funcionarios-container.grid-view .row {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 1.5rem;
-  }
-
-  .funcionarios-container.grid-view .col-md-6,
-  .funcionarios-container.grid-view .col-lg-4 {
-    width: 100%;
-  }
-
-  .funcionarios-container.grid-view .funcionario-card {
-    border-radius: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  }
-
-  .funcionarios-container.grid-view .d-flex.align-items-center.mb-3 {
-    display: flex;
-  }
-
-  .funcionarios-container.grid-view .mb-3 {
-    display: block;
-  }
-
-  .funcionarios-container.grid-view .d-flex.gap-2 {
-    display: flex;
-  }
-
-  /* Lista view */
-  .funcionarios-container.lista-view .grid-view-only {
-    display: none !important;
-  }
-
-  .funcionarios-container.grid-view .lista-table-header {
-    display: none;
-  }
-
-  .funcionarios-container.grid-view .col-foto,
-  .funcionarios-container.grid-view .col-nome,
-  .funcionarios-container.grid-view .col-funcao,
-  .funcionarios-container.grid-view .col-fazenda,
-  .funcionarios-container.grid-view .col-salario,
-  .funcionarios-container.grid-view .col-status,
-  .funcionarios-container.grid-view .col-acoes {
-    display: none !important;
-  }
-
-  .funcionarios-container.grid-view .grid-view-only {
-    display: block !important;
-  }
-    display: flex;
-    gap: 5px;
-    align-items: center;
-  }
-
-  .view-toggle .btn {
-    padding: 8px 12px;
-    font-size: 0.9rem;
-  }
-
-  .view-toggle .btn.active {
-    background-color: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-  }
-
-  .view-toggle .btn:not(.active) {
-    background-color: #fff;
-    border-color: #dee2e6;
-    color: #6c757d;
-  }
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.danger:hover { color: #dc2626; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+.foto-funcionario-sm { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  
-  <!-- Header -->
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <h2 class="fw-bold text-dark mb-1">
-        <i class="bi bi-people-fill text-primary"></i> Gerenciamento de Funcionários
-      </h2>
-      <p class="text-muted mb-0">Cadastro e controle da equipe de trabalho</p>
-    </div>
-    <div class="col-md-4 text-end">
-      <a href="{% url 'rh:funcionario_create' %}" class="btn btn-success btn-lg shadow-sm">
-        <i class="bi bi-plus-circle"></i> Novo Funcionário
-      </a>
-    </div>
-  </div>
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+      <li class="breadcrumb-item active">Funcionários</li>
+    </ol>
+  </nav>
 
   <!-- Stats Cards -->
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-3">
     <div class="col-md-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
-                <i class="bi bi-people fs-4"></i>
-              </div>
+            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-3">
+              <i class="bi bi-people fs-4"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <h6 class="text-muted mb-1">Total</h6>
@@ -296,15 +44,12 @@
         </div>
       </div>
     </div>
-
     <div class="col-md-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
-                <i class="bi bi-check-circle fs-4"></i>
-              </div>
+            <div class="bg-success bg-opacity-10 text-success rounded-circle p-3">
+              <i class="bi bi-check-circle fs-4"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <h6 class="text-muted mb-1">Ativos</h6>
@@ -314,15 +59,12 @@
         </div>
       </div>
     </div>
-
     <div class="col-md-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
-                <i class="bi bi-geo-alt fs-4"></i>
-              </div>
+            <div class="bg-warning bg-opacity-10 text-warning rounded-circle p-3">
+              <i class="bi bi-geo-alt fs-4"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <h6 class="text-muted mb-1">Fazendas</h6>
@@ -332,15 +74,12 @@
         </div>
       </div>
     </div>
-
     <div class="col-md-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
-                <i class="bi bi-briefcase fs-4"></i>
-              </div>
+            <div class="bg-info bg-opacity-10 text-info rounded-circle p-3">
+              <i class="bi bi-briefcase fs-4"></i>
             </div>
             <div class="flex-grow-1 ms-3">
               <h6 class="text-muted mb-1">Funções</h6>
@@ -352,358 +91,256 @@
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <div class="col-md-4">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-0">
-              <i class="bi bi-search"></i>
-            </span>
-            <input 
-              type="text" 
-              name="q" 
-              class="form-control border-0 bg-light" 
-              placeholder="Buscar por nome, CPF, função..."
-              value="{{ request.GET.q }}"
-            >
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-people-fill me-2"></i>Funcionários</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q or request.GET.status or request.GET.fazenda or request.GET.funcao %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if request.GET.q or request.GET.status or request.GET.fazenda or request.GET.funcao %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'rh:funcionario_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Funcionário
+      </a>
+    </div>
+  </div>
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.status or request.GET.fazenda or request.GET.funcao %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-12 col-md-4">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Pesquisar</label>
+              <input type="text" name="q" class="form-control form-control-sm" placeholder="Nome, CPF, função..." value="{{ request.GET.q }}">
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Status</label>
+              <select name="status" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                <option value="ativos" {% if request.GET.status == 'ativos' %}selected{% endif %}>Ativos</option>
+                <option value="inativos" {% if request.GET.status == 'inativos' %}selected{% endif %}>Inativos</option>
+              </select>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Fazenda</label>
+              <select name="fazenda" class="form-select form-select-sm">
+                <option value="">— Todas —</option>
+                {% for fazenda in fazendas %}
+                  <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>{{ fazenda.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Função</label>
+              <select name="funcao" class="form-select form-select-sm">
+                <option value="">— Todas —</option>
+                {% for funcao in funcoes %}
+                  <option value="{{ funcao.id }}" {% if request.GET.funcao == funcao.id|stringformat:"s" %}selected{% endif %}>{{ funcao.nome }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
           </div>
-        </div>
-        <div class="col-md-2">
-          <select name="status" class="form-select border-0 bg-light">
-            <option value="">Todos Status</option>
-            <option value="ativos" {% if request.GET.status == 'ativos' %}selected{% endif %}>Ativos</option>
-            <option value="inativos" {% if request.GET.status == 'inativos' %}selected{% endif %}>Inativos</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <select name="fazenda" class="form-select border-0 bg-light">
-            <option value="">Todas Fazendas</option>
-            {% for fazenda in fazendas %}
-              <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>
-                {{ fazenda.nome }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select name="funcao" class="form-select border-0 bg-light">
-            <option value="">Todas Funções</option>
-            {% for funcao in funcoes %}
-              <option value="{{ funcao.id }}" {% if request.GET.funcao == funcao.id|stringformat:"s" %}selected{% endif %}>
-                {{ funcao.nome }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-funnel"></i>
-          </button>
-        </div>
-      </form>
-      <div class="row mt-3">
-        <div class="col-12">
-          <div class="view-toggle">
-            <span class="text-muted small me-2">Visualizar:</span>
-            <button type="button" class="btn btn-sm view-btn" id="btn-grid-view" data-view="grid" title="Visualização em Cards">
-              <i class="bi bi-grid-3x2-gap"></i> Cards
+
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
             </button>
-            <button type="button" class="btn btn-sm view-btn" id="btn-list-view" data-view="list" title="Visualização em Lista">
-              <i class="bi bi-list-ul"></i> Lista
-            </button>
+            <a href="{% url 'rh:funcionario_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   </div>
 
-  <!-- Lista de Funcionários -->
-  {% if page_obj %}
-    <div class="funcionarios-container grid-view" id="funcionarios-container">
-      <!-- Header da Tabela (apenas lista) -->
-      <div class="lista-table-header">
-        <div></div>
-        <div>Nome / CPF</div>
-        <div>Função</div>
-        <div>Fazenda</div>
-        <div>Salário</div>
-        <div>Status</div>
-        <div>Ações</div>
-      </div>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> funcionário{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
 
-      <div class="row g-4">
-      {% for funcionario in page_obj %}
-        <div class="col-md-6 col-lg-4">
-          <div class="card funcionario-card border-0 shadow-sm h-100 {% if not funcionario.ativo %}inativo{% endif %}">
-            <div class="card-body p-4">
-              
-              <!-- Coluna Foto -->
-              <div class="col-foto">
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:50px;"></th>
+            <th>Nome / CPF</th>
+            <th>Função</th>
+            <th>Fazenda</th>
+            <th class="text-end">Salário</th>
+            <th style="width:100px;">Status</th>
+            <th class="text-center" style="width:90px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for funcionario in page_obj %}
+            <tr class="{% if not funcionario.ativo %}table-danger bg-opacity-10{% endif %}">
+              <td>
                 {% if funcionario.foto %}
-                  <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}" class="foto-funcionario">
+                  <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}" class="foto-funcionario-sm">
                 {% else %}
-                  <div class="foto-funcionario bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
-                    <i class="bi bi-person-fill fs-1 text-primary"></i>
+                  <div class="foto-funcionario-sm bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
+                    <i class="bi bi-person-fill text-primary"></i>
                   </div>
                 {% endif %}
-              </div>
-
-              <!-- Coluna Nome -->
-              <div class="col-nome">
-                <h5 class="mb-1 fw-bold">
-                  <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" class="text-decoration-none text-dark">
-                    {{ funcionario.nome_completo }}
-                  </a>
-                </h5>
-                <p class="text-muted">{{ funcionario.get_cpf_formatado }}</p>
-                {% if funcionario.matricula %}
-                <p class="small mb-0"><span class="badge bg-light text-dark border">Matrícula: {{ funcionario.matricula }}</span></p>
-                {% endif %}
-              </div>
-
-              <!-- Coluna Função -->
-              <div class="col-funcao">
-                <i class="bi bi-briefcase text-primary me-2"></i>{{ funcionario.funcao.nome }}
-              </div>
-
-              <!-- Coluna Fazenda -->
-              <div class="col-fazenda">
-                {% if funcionario.fazenda %}
-                  <i class="bi bi-geo-alt text-success me-2"></i>{{ funcionario.fazenda.nome }}
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
-              </div>
-
-              <!-- Coluna Salário -->
-              <div class="col-salario">
-                <i class="bi bi-currency-dollar text-success me-1"></i>R$ {{ funcionario.salario|floatformat:2 }}
-              </div>
-
-              <!-- Coluna Status -->
-              <div class="col-status">
+              </td>
+              <td>
+                <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" class="text-decoration-none text-dark fw-semibold">
+                  {{ funcionario.nome_completo }}
+                </a>
+                <br>
+                <span class="text-muted small">
+                  {{ funcionario.get_cpf_formatado }}
+                  {% if funcionario.matricula %} · Mat. {{ funcionario.matricula }}{% endif %}
+                </span>
+              </td>
+              <td>{{ funcionario.funcao.nome }}</td>
+              <td>{{ funcionario.fazenda.nome|default:'—' }}</td>
+              <td class="text-end">R$ {{ funcionario.salario|floatformat:2 }}</td>
+              <td>
                 {% if funcionario.ativo %}
                   <span class="badge bg-success">Ativo</span>
                 {% else %}
                   <span class="badge bg-danger">Inativo</span>
                 {% endif %}
-              </div>
-
-              <!-- Coluna Ações -->
-              <div class="col-acoes">
-                <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" 
-                   class="btn btn-sm btn-outline-primary" title="Ver">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a href="{% url 'rh:funcionario_update' funcionario.pk %}" 
-                   class="btn btn-sm btn-outline-secondary" title="Editar">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <a href="{% url 'rh:funcionario_delete' funcionario.pk %}" 
-                   class="btn btn-sm btn-outline-danger" title="Deletar">
-                  <i class="bi bi-trash"></i>
-                </a>
-              </div>
-
-              <!-- Informações Card (apenas grid) -->
-              <div class="d-flex align-items-center mb-3 grid-view-only">
-                <div class="flex-shrink-0">
-                  {% if funcionario.foto %}
-                    <img src="{{ funcionario.foto.url }}" alt="{{ funcionario.nome_completo }}" class="foto-funcionario">
-                  {% else %}
-                    <div class="foto-funcionario bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
-                      <i class="bi bi-person-fill fs-1 text-primary"></i>
-                    </div>
-                  {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon" href="{% url 'rh:funcionario_detail' funcionario.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="action-icon edit" href="{% url 'rh:funcionario_update' funcionario.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="action-icon danger"
+                     href="#"
+                     data-bs-toggle="modal"
+                     data-bs-target="#deleteModal"
+                     data-delete-url="{% url 'rh:funcionario_delete' funcionario.pk %}"
+                     data-nome="{{ funcionario.nome_completo }}"
+                     title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </a>
                 </div>
-                <div class="flex-grow-1 ms-3">
-                  <h5 class="mb-1 fw-bold">
-                    <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" class="text-decoration-none text-dark">
-                      {{ funcionario.nome_completo|truncatewords:3 }}
-                    </a>
-                  </h5>
-                  <p class="text-muted mb-0 small">
-                    <i class="bi bi-briefcase"></i> {{ funcionario.funcao.nome }}
-                  </p>
-                </div>
-                <div>
-                  {% if funcionario.ativo %}
-                    <span class="badge bg-success">Ativo</span>
-                  {% else %}
-                    <span class="badge bg-danger">Inativo</span>
-                  {% endif %}
-                </div>
-              </div>
-
-              <!-- Coluna Fazenda (apenas card) -->
-              <div class="info-coluna grid-view-only">
-                <label>Fazenda</label>
-                {% if funcionario.fazenda %}
-                  <p>{{ funcionario.fazenda.nome }}</p>
-                {% else %}
-                  <p class="text-muted">Sem fazenda</p>
-                {% endif %}
-              </div>
-
-              <!-- Informações Card -->
-              <div class="mb-3 grid-view-only">
-                <p class="mb-2 small">
-                  <i class="bi bi-file-text text-primary"></i>
-                  <strong>CPF:</strong> {{ funcionario.get_cpf_formatado }}
-                </p>
-                
-                {% if funcionario.fazenda %}
-                  <p class="mb-2 small">
-                    <i class="bi bi-geo-alt text-success"></i>
-                    <strong>Fazenda:</strong> {{ funcionario.fazenda.nome|truncatewords:3 }}
-                  </p>
-
-                  <p class="mb-2 small">
-                    <i class="bi bi-geo-alt text-success"></i>
-                    <strong>Cnpj:</strong> {{ funcionario.fazenda.cnpj_cpf}}
-                  </p>
-                {% endif %}
-
-                <p class="mb-2 small">
-                  <i class="bi bi-calendar text-info"></i>
-                  <strong>Admissão:</strong> {{ funcionario.data_admissao|date:"d/m/Y" }}
-                </p>
-
-                <p class="mb-2 small">
-                  <i class="bi bi-cash text-warning"></i>
-                  <strong>Salário:</strong> R$ {{ funcionario.salario|floatformat:2 }}
-                </p>
-
-                {% if funcionario.celular %}
-                  <p class="mb-2 small">
-                    <i class="bi bi-phone text-secondary"></i>
-                    <strong>Celular:</strong> {{ funcionario.celular }}
-                  </p>
-                {% endif %}
-              </div>
-
-              <!-- Badges de Info -->
-              <div class="d-flex gap-2 flex-wrap mb-3 grid-view-only">
-                <span class="badge bg-light text-dark stat-badge">
-                  {{ funcionario.get_tipo_contrato_display }}
-                </span>
-                {% if funcionario.get_idade %}
-                  <span class="badge bg-light text-dark stat-badge">
-                    {{ funcionario.get_idade }} anos
-                  </span>
-                {% endif %}
-              </div>
-
-              <!-- Ações Grid (apenas cards) -->
-              <div class="d-flex gap-2 grid-view-only">
-                <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" 
-                   class="btn btn-sm btn-outline-primary flex-fill">
-                  <i class="bi bi-eye"></i> Ver
-                </a>
-                <a href="{% url 'rh:funcionario_update' funcionario.pk %}" 
-                   class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <a href="{% url 'rh:funcionario_delete' funcionario.pk %}" 
-                   class="btn btn-sm btn-outline-danger">
-                  <i class="bi bi-trash"></i>
-                </a>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-      </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-5">
+                <i class="bi bi-people fs-3 d-block mb-2"></i>
+                Nenhum funcionário encontrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
 
     <!-- Paginação -->
-    {% if page_obj.has_other_pages %}
-      <nav aria-label="Paginação" class="mt-4">
-        <ul class="pagination justify-content-center">
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
           {% if page_obj.has_previous %}
-            <li class="page-item">
-              <a class="page-link" href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Primeira</a>
-            </li>
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Anterior</a>
-            </li>
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
           {% endif %}
+        </li>
 
-          <li class="page-item active">
-            <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-          </li>
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
 
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
           {% if page_obj.has_next %}
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Próxima</a>
-            </li>
-            <li class="page-item">
-              <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">Última</a>
-            </li>
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
           {% endif %}
-        </ul>
-      </nav>
-    {% endif %}
+        </li>
 
-  {% else %}
-    <!-- Empty State -->
-    <div class="card border-0 shadow-sm">
-      <div class="card-body text-center py-5">
-        <i class="bi bi-people text-muted" style="font-size: 5rem;"></i>
-        <h4 class="mt-3 mb-2">Nenhum funcionário cadastrado</h4>
-        <p class="text-muted mb-4">Comece adicionando seu primeiro funcionário</p>
-        <a href="{% url 'rh:funcionario_create' %}" class="btn btn-success btn-lg">
-          <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Funcionário
-        </a>
-      </div>
+      </ul>
     </div>
-  {% endif %}
+
+  </div>
 
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja excluir o funcionário <strong id="deleteModalNome"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="deleteModalForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('funcionarios-container');
-    const btnGridView = document.getElementById('btn-grid-view');
-    const btnListView = document.getElementById('btn-list-view');
-    const viewBtns = document.querySelectorAll('.view-btn');
-
-    // Recuperar visualização salva ou usar padrão (grid)
-    const savedView = localStorage.getItem('funcionarios-view') || 'grid';
-    
-    // Aplicar visualização salva
-    applyView(savedView);
-
-    // Listeners dos botões
-    btnGridView.addEventListener('click', function() {
-      applyView('grid');
-    });
-
-    btnListView.addEventListener('click', function() {
-      applyView('list');
-    });
-
-    function applyView(viewType) {
-      if (viewType === 'grid') {
-        container.classList.remove('lista-view');
-        container.classList.add('grid-view');
-        btnGridView.classList.add('active');
-        btnListView.classList.remove('active');
-      } else if (viewType === 'list') {
-        container.classList.remove('grid-view');
-        container.classList.add('lista-view');
-        btnListView.classList.add('active');
-        btnGridView.classList.remove('active');
-      }
-      
-      // Salvar preferência
-      localStorage.setItem('funcionarios-view', viewType);
-    }
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
   });
+
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    document.getElementById('deleteModalForm').action = button.getAttribute('data-delete-url');
+    document.getElementById('deleteModalNome').textContent = button.getAttribute('data-nome');
+  });
+});
 </script>
 {% endblock %}

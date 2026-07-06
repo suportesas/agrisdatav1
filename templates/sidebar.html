@@ -99,7 +99,7 @@
 
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
-          <i class="bi bi-chart-line"></i>
+          <i class="bi bi-graph-up"></i>
           <span>Dashboard Executivo</span>
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
@@ -330,8 +330,8 @@
             </ul>
           </li>
           
-          <li><a href="{% url 'rh:ferias_list' %}"><i class="bi bi-umbrella-beach"></i> Férias</a></li>
-          <li><a href="{% url 'rh:afastamento_list' %}"><i class="bi bi-medkit"></i> Afastamentos</a></li>
+          <li><a href="{% url 'rh:ferias_list' %}"><i class="bi bi-umbrella"></i> Férias</a></li>
+          <li><a href="{% url 'rh:afastamento_list' %}"><i class="bi bi-bandaid"></i> Afastamentos</a></li>
           <li><a href="{% url 'rh:risco_ambiental_catalogo_list' %}"><i class="bi bi-shield-exclamation"></i> Riscos Ambientais</a></li>
           <li><a href="{% url 'rh:vinculo_list' %}"><i class="bi bi-link-45deg"></i> Vínculos Contratuais</a></li>
           <li><a href="{% url 'rh:laudo_list' %}"><i class="bi bi-file-earmark-check"></i> Laudos de Risco</a></li>
@@ -456,7 +456,7 @@
           <li><a href="{% url 'estoque:movimentacao_list' %}"><i class="bi bi-arrow-left-right"></i> Movimentações</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Relatório de Alertas</a></li>
-          <li><a href="{% url 'estoque:inventario_ciclico_list' %}"><i class="bi bi-cube text-info"></i> Inventário</a></li>
+          <li><a href="{% url 'estoque:inventario_ciclico_list' %}"><i class="bi bi-boxes text-info"></i> Inventário</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'estoque:entrada_create' %}"><i class="bi bi-box-arrow-in-down text-success"></i> Entrada</a></li>
           <li><a href="{% url 'estoque:saida_create' %}"><i class="bi bi-box-arrow-up text-warning"></i> Saída</a></li>
@@ -489,7 +489,7 @@
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:recebimento_list' %}"><i class="bi bi-box-arrow-in-down text-success"></i> Recebimentos</a></li>
           <li><a href="{% url 'compras:entrada_direta_nf' %}"><i class="bi bi-box-arrow-in-down"></i> Entrada Direta NF-e</a></li>
-          <li><a href="{% url 'compras:mde_list' %}"><i class="bi bi-chat-square-check text-secondary"></i> Manifestação MD-e</a></li>
+          <li><a href="{% url 'compras:mde_list' %}"><i class="bi bi-check2-square text-secondary"></i> Manifestação MD-e</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:planejamento_embalagem_list' %}"><i class="bi bi-calendar2-check text-warning"></i> Planejamento Embalagens</a></li>
         </ul>
@@ -621,8 +621,8 @@
             <a href="#"><i class="bi bi-shop-window"></i> Logística Marítima <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
               <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
-              <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-ship"></i> Armadores</a></li>
-              <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-sailboat"></i> Navios</a></li>
+              <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-building"></i> Armadores</a></li>
+              <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-compass"></i> Navios</a></li>
             </ul>
           </li>
           <li><a href="{% url 'exportacao:solicitacao_booking_list' %}"><i class="bi bi-file-earmark-plus"></i> Solicitações Booking</a></li>
@@ -809,7 +809,7 @@
               <li><a href="{% url 'estoque:relatorio_abc' %}"><i class="bi bi-pie-chart"></i> Análise ABC</a></li>
               <li><a href="{% url 'estoque:relatorio_comparativo' %}"><i class="bi bi-graph-up"></i> Comparativo</a></li>
               <li><a href="{% url 'estoque:relatorio_auditoria' %}"><i class="bi bi-clock-history"></i> Auditoria</a></li>
-              <li><a href="{% url 'estoque:relatorio_rastreamento' %}"><i class="bi bi-barcode"></i> Rastreamento</a></li>
+              <li><a href="{% url 'estoque:relatorio_rastreamento' %}"><i class="bi bi-upc-scan"></i> Rastreamento</a></li>
               <li><a href="{% url 'estoque:relatorio_validacao_disponibilidade' %}"><i class="bi bi-check2-square"></i> Validação de Disponibilidade</a></li>
               <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
             </ul>

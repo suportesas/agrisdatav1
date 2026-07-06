@@ -13,7 +13,7 @@
     gap: .75rem;
     align-items: center;
     text-decoration: none;
-    flex: 1 1 160px; /* allow wrapping and responsive sizing */
+    flex: 1 1 160px;
     min-width: 150px;
     max-width: 260px;
   }
@@ -27,82 +27,17 @@
   .bg-REBOQUE { background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); }
   .bg-IMPLEMENTO { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
 
-  /* Fornecedor-like cards and filter styling (aligned to fornecedor_list) */
-  .filter-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    margin-bottom: 1.5rem;
-  }
-  .fornecedor-card {
-    background-color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    margin-bottom: 1rem;
-    border-left: 4px solid #0ea5a4;
-  }
-  /* Ensure the inner row spreads columns across the full width */
-  .fornecedor-card .row {
-    align-items: center;
-    justify-content: space-between;
-  }
-  .fornecedor-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  }
-
-  .badge-status {
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-  }
-  .badge-ativo { background: #d4edda; color: #155724; }
-  .badge-inativo { background: #f8d7da; color: #721c24; }
-  .badge-bloqueado { background: #dc3545; color: white; }
-  .badge-em-analise { background: #fff3cd; color: #856404; }
-  .badge-pendente-doc { background: #ffc107; color: #000; }
-
-  .score-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-weight: 600;
-  }
-  .score-high { background: #d4edda; color: #155724; }
-  .score-medium { background: #fff3cd; color: #856404; }
-  .score-low { background: #f8d7da; color: #721c24; }
-
-  .categoria-tag {
-    display: inline-block;
-    padding: 0.25rem 0.6rem;
-    margin: 0.2rem;
-    background: #e3f2fd;
-    color: #1976d2;
-    border-radius: 12px;
-    font-size: 0.8rem;
-  }
-
-  .empty-state {
-    text-align:center;
-    padding: 3rem;
-    color: #6c757d;
-  }
-  .empty-state i {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-    opacity: 0.3;
-  }
+  .action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+  .action-icon:hover { color: #7c3aed; }
+  .action-icon.danger:hover { color: #dc2626; }
+  .action-icon.edit:hover { color: #0d6efd; }
+  tbody tr:hover td { background: #faf5ff; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
+
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
@@ -111,218 +46,272 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-truck text-success"></i> Veículos</h2>
-      <p class="text-muted mb-0">Gerencie sua frota</p>
+  <!-- Cabeçalho -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0"><i class="bi bi-truck me-2"></i>Veículos</h2>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q or request.GET.tipo or request.GET.tipo_combustivel or request.GET.transportadora_id %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if request.GET.q or request.GET.tipo or request.GET.tipo_combustivel or request.GET.transportadora_id %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'frota:vehicle_export_csv' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
+      </a>
+      <a id="addVehicleBtn" href="{% url 'frota:vehicle_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Veículo
+      </a>
+    </div>
+  </div>
+
+  <!-- Cards por tipo -->
+  <div class="d-flex flex-wrap gap-3 mb-3 justify-content-center">
+    {% for t in tipo_counts %}
+      <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}tipo={{ t.key }}" class="stat-card-vehicle bg-{{ t.key }}" title="Filtrar por {{ t.label }}">
+        <div class="stat-icon"><i class="bi bi-truck"></i></div>
+        <div>
+          <div class="stat-meta">{{ t.label }}</div>
+          <div class="stat-count">{{ t.count }}</div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.tipo or request.GET.tipo_combustivel or request.GET.transportadora_id %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-12 col-md-4">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Pesquisar</label>
+              <input type="text" name="q" class="form-control form-control-sm" placeholder="Marca, modelo ou placa" value="{{ request.GET.q }}">
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Tipo</label>
+              <select name="tipo" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                {% for val,label in tipo_choices %}
+                  <option value="{{ val }}" {% if request.GET.tipo == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-6 col-md-2">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Combustível</label>
+              <select name="tipo_combustivel" class="form-select form-select-sm">
+                <option value="">— Todos —</option>
+                {% for val,label in fuel_choices %}
+                  <option value="{{ val }}" {% if request.GET.tipo_combustivel == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Transportadora</label>
+              <select name="transportadora_id" class="form-select form-select-sm">
+                <option value="">— Todas —</option>
+                {% for t in transportadoras %}
+                  <option value="{{ t.pk }}" {% if request.GET.transportadora_id == t.pk|stringformat:'s' %}selected{% endif %}>{{ t.razao_social }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'frota:vehicle_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> veículo{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:60px;" class="text-muted small">#</th>
+            <th>Veículo</th>
+            <th>Placa</th>
+            <th style="width:110px;">Tipo</th>
+            <th>Transportadora</th>
+            <th>Motorista</th>
+            <th style="width:100px;">Status</th>
+            <th class="text-center" style="width:90px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in page_obj %}
+            <tr>
+              <td class="text-muted small">{{ v.pk|stringformat:"05d" }}</td>
+              <td>
+                <strong>{{ v.marca }} {{ v.modelo }}</strong>
+                <br>
+                <span class="text-muted small">
+                  {% if v.codigo_patrimonio %}Patrimônio: {{ v.codigo_patrimonio }} · {% endif %}
+                  R$ {{ v.valor_atual|floatformat:2|default:'—' }}
+                  {% if v.consumo_medio %} · {{ v.consumo_medio }} {% if v.consumo_unidade == 'L_KM' %}L/km{% else %}L/h{% endif %}{% endif %}
+                </span>
+              </td>
+              <td class="text-muted small">
+                {% if v.get_current_plate %}
+                  {{ v.get_current_plate }}
+                {% else %}
+                  {% with p=v.plates.first %}{{ p.placa|default:'—' }}{% endwith %}
+                {% endif %}
+              </td>
+              <td>{{ v.get_tipo_display }}</td>
+              <td class="text-muted small">{{ v.transportadora_name|default:'—' }}</td>
+              <td class="text-muted small">{{ v.current_driver_name|default:'—' }}</td>
+              <td>
+                {% if v.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon" href="{% url 'frota:vehicle_detail' v.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="action-icon edit" href="{% url 'frota:vehicle_update' v.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="action-icon danger"
+                     href="#"
+                     data-bs-toggle="modal"
+                     data-bs-target="#deleteModal"
+                     data-delete-url="{% url 'frota:vehicle_delete' v.pk %}"
+                     data-nome="{{ v.marca }} {{ v.modelo }}"
+                     title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-truck fs-3 d-block mb-2"></i>
+                Nenhum veículo encontrado.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
 
   </div>
-  <a id="addVehicleBtn" href="{% url 'frota:vehicle_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Novo Veículo</a>
+
 </div>
 
-<div class="d-flex flex-wrap gap-3 mb-4 justify-content-center">
-  {% for t in tipo_counts %}
-    <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}tipo={{ t.key }}" class="stat-card-vehicle fornecedor-card bg-{{ t.key }}" title="Filtrar por {{ t.label }}">
-      <div class="stat-icon"><i class="bi bi-truck"></i></div>
-      <div>
-        <div class="stat-meta">{{ t.label }}</div>
-        <div class="stat-count">{{ t.count }}</div>
+<!-- Modal de confirmação de exclusão -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar exclusão</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
       </div>
-    </a>
-  {% endfor %}
-</div>
-
-  {% if page_obj and page_obj.object_list %}
-
-    <div class="filter-card">
-      <form method="get" id="filterForm">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
-            <input type="text" name="q" class="form-control" placeholder="Marca, modelo ou placa" value="{{ request.GET.q }}">
-          </div>
-
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Tipo</label>
-            <select name="tipo" class="form-select">
-              <option value="">Todos</option>
-              {% for val,label in tipo_choices %}
-                <option value="{{ val }}" {% if request.GET.tipo == val %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Combustível</label>
-            <select name="tipo_combustivel" class="form-select">
-              <option value="">Todos</option>
-              {% for val,label in fuel_choices %}
-                <option value="{{ val }}" {% if request.GET.tipo_combustivel == val %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Transportadora</label>
-            <select name="transportadora_id" class="form-select">
-              <option value="">Todas</option>
-              {% for t in transportadoras %}
-                <option value="{{ t.pk }}" {% if request.GET.transportadora_id == t.pk|stringformat:'s' %}selected{% endif %}>{{ t.razao_social }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-md-1 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
-          </div>
-
-        </div>
-      </form>
-
-      <div class="mt-3 text-end">
-        <a href="{% url 'frota:vehicle_export_csv' %}?{{ request.GET.urlencode }}" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-file-earmark-spreadsheet"></i> Exportar CSV
-        </a>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja excluir o veículo <strong id="deleteModalNome"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="deleteModalForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Excluir</button>
+        </form>
       </div>
     </div>
-
-    <!-- Lista de Veículos no estilo Fornecedor (um cartão por linha) -->
-    <div id="vehiclesList">
-      <div class="row">
-        {% for v in page_obj %}
-        <div class="col-12">
-          <div class="fornecedor-card">
-            <div class="row align-items-center">
-
-              <!-- Informações Principais -->
-              <div class="col-md-5">
-                <h5 class="mb-1 fw-bold">
-                  <i class="bi bi-truck-fill text-success"></i>
-                  {{ v.marca }} {{ v.modelo }}
-                </h5>
-                <p class="text-muted mb-2 small">
-                  <strong>Placa:</strong>
-                  {% if v.get_current_plate %}
-                    {{ v.get_current_plate }}
-                  {% else %}
-                    {% with p=v.plates.first %}
-                      {{ p.placa|default:'—' }}
-                    {% endwith %}
-                  {% endif %}
-                  {% if v.transportadora_name %}<br><strong>Transportadora:</strong> {{ v.transportadora_name }}{% endif %}
-                </p>
-
-                <div class="mb-2">
-                  <span class="categoria-tag">{{ v.get_tipo_display }}</span>
-                  {% if v.codigo_patrimonio %}<span class="categoria-tag">Patrimônio: {{ v.codigo_patrimonio }}</span>{% endif %}
-                </div>
-              </div>
-
-              <div class="col-md-3 text-center">
-                <div class="mb-2">
-                  {% if v.ativo %}
-                    <span class="badge-status badge-ativo">✓ Ativo</span>
-                  {% else %}
-                    <span class="badge-status badge-inativo">⏸ Inativo</span>
-                  {% endif %}
-                </div>
-                <div class="small text-muted">
-                  <strong>Motorista:</strong><br>
-                  {{ v.current_driver_name|default:'—' }}
-                </div>
-              </div>
-
-              <!-- Estatísticas -->
-              <div class="col-md-2 text-center">
-                <div class="mb-1">
-                  <strong class="text-success">R$ {{ v.valor_atual|floatformat:2|default:'—' }}</strong>
-                  <br><small class="text-muted">Valor Atual</small>
-                </div>
-                <div class="mb-1">
-                  <strong class="text-success">{% if v.consumo_medio %}{{ v.consumo_medio }} {% if v.consumo_unidade == 'L_KM' %}L/km{% else %}L/h{% endif %}{% else %}—{% endif %}</strong>
-                  <br><small class="text-muted">Consumo médio</small>
-                </div>
-                <div class="mb-1">
-                  <strong class="text-success">{% if v.estimated_range_km %}{{ v.estimated_range_km|floatformat:0 }} km{% elif v.estimated_hours_per_tank %}{{ v.estimated_hours_per_tank|floatformat:2 }} h{% else %}—{% endif %}</strong>
-                  <br><small class="text-muted">Autonomia (aprox.)</small>
-                </div>
-                <div>
-                  <strong>{{ v.renavam|default:'—' }}</strong>
-                  <br><small class="text-muted">RENAVAM</small>
-                </div>
-              </div>
-
-              <div class="col-md-2 text-end">
-                <a href="{% url 'frota:vehicle_detail' v.pk %}" class="btn btn-sm btn-outline-info" title="Ver Detalhes"><i class="bi bi-eye"></i></a>
-                <a href="{% url 'frota:vehicle_update' v.pk %}" class="btn btn-sm btn-outline-primary" title="Editar"><i class="bi bi-pencil"></i></a>
-                <a href="{% url 'frota:vehicle_delete' v.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir"><i class="bi bi-trash"></i></a>
-              </div>
-
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-
-      <!-- Total e Paginação -->
-      <div class="mt-3 text-center text-muted">
-        <small>Total: <strong>{{ page_obj.paginator.count }}</strong> veículo{{ page_obj.paginator.count|pluralize }}</small>
-        <div class="small text-muted">Mostrando {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }}</div>
-      </div>
-
-      {% if page_obj.has_other_pages %}
-      <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-          {% if page_obj.has_previous %}
-            <li class="page-item">
-              {% if request.GET %}<a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">&laquo; Anterior</a>{% else %}<a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo; Anterior</a>{% endif %}
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">&laquo; Anterior</span></li>
-          {% endif %}
-
-          {% for p in page_obj.paginator.page_range %}
-            <li class="page-item {% if p == page_obj.number %}active{% endif %}">
-              {% if request.GET %}<a class="page-link" href="?{{ request.GET.urlencode }}&page={{ p }}">{{ p }}</a>{% else %}<a class="page-link" href="?page={{ p }}">{{ p }}</a>{% endif %}
-            </li>
-          {% endfor %}
-
-          {% if page_obj.has_next %}
-            <li class="page-item">
-              {% if request.GET %}<a class="page-link" href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Próximo &raquo;</a>{% else %}<a class="page-link" href="?page={{ page_obj.next_page_number }}">Próximo &raquo;</a>{% endif %}
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">Próximo &raquo;</span></li>
-          {% endif %}
-        </ul>
-      </nav>
-      {% endif %}
-
-    </div>
-
-  {% else %}
-    <div class="empty-state">
-      <i class="bi bi-truck"></i>
-      <h4 class="text-muted">Nenhum veículo encontrado</h4>
-      {% if request.GET.q or request.GET.tipo or request.GET.tipo_combustivel or request.GET.transportadora_id %}
-        <p>Tente ajustar os filtros de pesquisa</p>
-        <a href="{% url 'frota:vehicle_list' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> Limpar Filtros</a>
-      {% else %}
-        <p>Comece cadastrando seu primeiro veículo</p>
-        <a href="{% url 'frota:vehicle_create' %}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Novo Veículo</a>
-      {% endif %}
-    </div>
-  {% endif %}
+  </div>
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const filterForm = document.getElementById('filterForm');
-  if (filterForm) {
-    const selects = filterForm.querySelectorAll('select');
-    selects.forEach(select => select.addEventListener('change', function() { filterForm.submit(); }));
-  }
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
+  });
+
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    document.getElementById('deleteModalForm').action = button.getAttribute('data-delete-url');
+    document.getElementById('deleteModalNome').textContent = button.getAttribute('data-nome');
+  });
 });
 </script>
-
 {% endblock %}

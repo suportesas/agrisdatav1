@@ -3,209 +3,249 @@
 {% block title %}{{ title }} | ERP Agrícola{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+  .section-card {
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-10">
-      <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-wrench text-warning"></i> {{ title }}</h6>
-        </div>
-        <div class="card-body">
-          <form method="post" novalidate>
-            {% csrf_token %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Veículo <span class="text-danger">*</span></label>
-                {{ form.vehicle }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Placa</label>
-                {{ form.placa }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
-                {{ form.tipo }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
-                {{ form.status }}
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold">Descrição do Serviço <span class="text-danger">*</span></label>
-                {{ form.descricao }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Data Abertura <span class="text-danger">*</span></label>
-                {{ form.data_abertura }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Data Conclusão</label>
-                {{ form.data_conclusao }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Hodômetro (km)</label>
-                {{ form.km_odometro }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Horímetro (h)</label>
-                {{ form.horimetro }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Próxima Manutenção (data)</label>
-                {{ form.proxima_data }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Próxima Manutenção (km)</label>
-                {{ form.proximo_km }}
-              </div>
+<div class="container py-4">
 
-              <div class="col-12"><hr class="my-1"><h6 class="text-secondary">Local de Execução</h6></div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Oficina Própria?</label>
-                <div class="form-check mt-2">{{ form.eh_oficina_propria }} <span class="small">Sim — baixa no estoque</span></div>
-              </div>
-              <div class="col-md-5">
-                <label class="form-label fw-semibold">Armazém / Oficina</label>
-                {{ form.local_oficina }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Fornecedor Externo</label>
-                {{ form.fornecedor_externo }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Valor do Serviço (R$)</label>
-                {{ form.valor_servico }}
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold">Observações</label>
-                {{ form.observacoes }}
-              </div>
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:frota_dashboard' %}">Frota</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:manutencao_list' %}">Manutenções</a></li>
+      <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+  </nav>
 
-              <!-- Peças e Materiais -->
-              {% if formset %}
-              <div class="col-12">
-                <hr class="my-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <h6 class="text-secondary mb-0"><i class="bi bi-list-check"></i> Peças e Materiais</h6>
-                  <button type="button" id="btn-adicionar-peca" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-plus-circle"></i> Adicionar Peça
-                  </button>
-                </div>
-              </div>
-              <div class="col-12">
-                {{ formset.management_form }}
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover align-middle" id="pecas-table">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Produto</th>
-                        <th style="width: 70px;">Und</th>
-                        <th class="text-end" style="width: 90px;">Qtd.</th>
-                        <th class="text-end" style="width: 110px;">Custo Unit.</th>
-                        <th class="text-end" style="width: 100px;">Desconto</th>
-                        <th class="text-end" style="width: 110px;">Total (R$)</th>
-                        <th style="width: 40px;"></th>
-                      </tr>
-                    </thead>
-                    <tbody id="pecas-tbody">
-                      {% for item_form in formset %}
-                      <tr class="formset-row" data-form-index="{{ forloop.counter0 }}">
-                        <td class="position-relative">
-                          {{ item_form.id }}
-                          {{ item_form.lote }}
-                          {{ item_form.descricao }}
-                          {{ item_form.valor_unitario }}
-                          <span class="d-none">{{ item_form.DELETE }}</span>
-                          {{ item_form.nome_produto }}
-                        </td>
-                        <td>{{ item_form.unidade_medida }}</td>
-                        <td class="text-end">{{ item_form.quantidade }}</td>
-                        <td class="text-end">{{ item_form.valor_custo }}</td>
-                        <td class="text-end">{{ item_form.desconto }}</td>
-                        <td class="text-end">
-                          <input type="text" class="form-control-plaintext text-end fw-semibold valor-total" readonly>
-                        </td>
-                        <td class="text-center">
-                          <button type="button" class="btn btn-sm btn-outline-danger btn-remover-peca" title="Remover">
-                            <i class="bi bi-trash"></i>
-                          </button>
-                        </td>
-                      </tr>
-                      {% if item_form.non_field_errors %}
-                      <tr class="table-danger">
-                        <td colspan="7" class="small">{{ item_form.non_field_errors }}</td>
-                      </tr>
-                      {% endif %}
-                      {% for field in item_form %}
-                        {% if field.errors and field.name != 'DELETE' %}
-                        <tr class="table-warning">
-                          <td colspan="7" class="small">{{ field.label }}: {{ field.errors }}</td>
-                        </tr>
-                        {% endif %}
-                      {% endfor %}
-                      {% endfor %}
-                    </tbody>
-                    <tfoot>
-                      <tr class="table-light fw-bold">
-                        <td colspan="5" class="text-end">Total Geral:</td>
-                        <td class="text-end text-warning fs-6" id="total-geral">R$ 0,00</td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-wrench text-warning"></i> {{ title }}</h2>
+    <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
 
-              <!-- Template oculto para nova linha (usado pelo JS) -->
-              <template id="empty-form-template">
-                <tr class="formset-row" data-form-index="__prefix__">
-                  <td class="position-relative">
-                    <input type="hidden" name="itens-__prefix__-id" id="id_itens-__prefix__-id">
-                    <input type="hidden" name="itens-__prefix__-lote" id="id_itens-__prefix__-lote" class="lote-hidden">
-                    <input type="hidden" name="itens-__prefix__-descricao" id="id_itens-__prefix__-descricao" class="descricao-hidden">
-                    <input type="hidden" name="itens-__prefix__-valor_unitario" id="id_itens-__prefix__-valor_unitario">
-                    <input type="hidden" name="itens-__prefix__-DELETE" id="id_itens-__prefix__-DELETE" class="delete-hidden">
-                    <input type="text" name="itens-__prefix__-nome_produto" id="id_itens-__prefix__-nome_produto"
-                           class="form-control produto-search-input" placeholder="Buscar produto..." autocomplete="off">
-                  </td>
-                  <td>
-                    <input type="text" name="itens-__prefix__-unidade_medida" id="id_itens-__prefix__-unidade_medida"
-                           class="form-control-plaintext" readonly tabindex="-1">
-                  </td>
-                  <td class="text-end">
-                    <input type="number" name="itens-__prefix__-quantidade" id="id_itens-__prefix__-quantidade"
-                           class="form-control quantidade-input text-end" step="0.001" min="0">
-                  </td>
-                  <td class="text-end">
-                    <input type="number" name="itens-__prefix__-valor_custo" id="id_itens-__prefix__-valor_custo"
-                           class="form-control-plaintext custo-input text-end" readonly step="0.0001" tabindex="-1">
-                  </td>
-                  <td class="text-end">
-                    <input type="number" name="itens-__prefix__-desconto" id="id_itens-__prefix__-desconto"
-                           class="form-control desconto-input text-end" step="0.01" min="0" value="0">
-                  </td>
-                  <td class="text-end">
-                    <input type="text" class="form-control-plaintext text-end fw-semibold valor-total" readonly>
-                  </td>
-                  <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-remover-peca" title="Remover">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-              </template>
-              {% endif %}
-            </div>
-            <div class="d-flex gap-2 mt-4">
-              <button type="submit" class="btn btn-warning"><i class="bi bi-check-lg"></i> Salvar</button>
-              <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
-            </div>
-          </form>
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <!-- Seção 1: Dados da Manutenção -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-wrench"></i> Dados da Manutenção</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Veículo <span class="text-danger">*</span></label>
+            {{ form.vehicle }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Placa</label>
+            {{ form.placa }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+            {{ form.tipo }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+            {{ form.status }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descrição do Serviço <span class="text-danger">*</span></label>
+            {{ form.descricao }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Data Abertura <span class="text-danger">*</span></label>
+            {{ form.data_abertura }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Data Conclusão</label>
+            {{ form.data_conclusao }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Hodômetro (km)</label>
+            {{ form.km_odometro }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Horímetro (h)</label>
+            {{ form.horimetro }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Próxima Manutenção (data)</label>
+            {{ form.proxima_data }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Próxima Manutenção (km)</label>
+            {{ form.proximo_km }}
+          </div>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- Seção 2: Local de Execução -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Local de Execução</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Oficina Própria?</label>
+            <div class="form-check mt-2">{{ form.eh_oficina_propria }} <span class="small">Sim — baixa no estoque</span></div>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Armazém / Oficina</label>
+            {{ form.local_oficina }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Fornecedor Externo</label>
+            {{ form.fornecedor_externo }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Valor do Serviço (R$)</label>
+            {{ form.valor_servico }}
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 3: Peças e Materiais -->
+    {% if formset %}
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header" style="background: #6366f1; color: white;">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="bi bi-list-check"></i> Peças e Materiais</h5>
+          <button type="button" id="btn-adicionar-peca" class="btn btn-sm btn-light">
+            <i class="bi bi-plus-circle"></i> Adicionar Peça
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-4">
+        {{ formset.management_form }}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle" id="pecas-table">
+            <thead class="table-light">
+              <tr>
+                <th>Produto</th>
+                <th style="width: 70px;">Und</th>
+                <th class="text-end" style="width: 90px;">Qtd.</th>
+                <th class="text-end" style="width: 110px;">Custo Unit.</th>
+                <th class="text-end" style="width: 100px;">Desconto</th>
+                <th class="text-end" style="width: 110px;">Total (R$)</th>
+                <th style="width: 40px;"></th>
+              </tr>
+            </thead>
+            <tbody id="pecas-tbody">
+              {% for item_form in formset %}
+              <tr class="formset-row" data-form-index="{{ forloop.counter0 }}">
+                <td class="position-relative">
+                  {{ item_form.id }}
+                  {{ item_form.lote }}
+                  {{ item_form.descricao }}
+                  {{ item_form.valor_unitario }}
+                  <span class="d-none">{{ item_form.DELETE }}</span>
+                  {{ item_form.nome_produto }}
+                </td>
+                <td>{{ item_form.unidade_medida }}</td>
+                <td class="text-end">{{ item_form.quantidade }}</td>
+                <td class="text-end">{{ item_form.valor_custo }}</td>
+                <td class="text-end">{{ item_form.desconto }}</td>
+                <td class="text-end">
+                  <input type="text" class="form-control-plaintext text-end fw-semibold valor-total" readonly>
+                </td>
+                <td class="text-center">
+                  <button type="button" class="btn btn-sm btn-outline-danger btn-remover-peca" title="Remover">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% if item_form.non_field_errors %}
+              <tr class="table-danger">
+                <td colspan="7" class="small">{{ item_form.non_field_errors }}</td>
+              </tr>
+              {% endif %}
+              {% for field in item_form %}
+                {% if field.errors and field.name != 'DELETE' %}
+                <tr class="table-warning">
+                  <td colspan="7" class="small">{{ field.label }}: {{ field.errors }}</td>
+                </tr>
+                {% endif %}
+              {% endfor %}
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr class="table-light fw-bold">
+                <td colspan="5" class="text-end">Total Geral:</td>
+                <td class="text-end text-warning fs-6" id="total-geral">R$ 0,00</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Template oculto para nova linha (usado pelo JS) -->
+        <template id="empty-form-template">
+          <tr class="formset-row" data-form-index="__prefix__">
+            <td class="position-relative">
+              <input type="hidden" name="itens-__prefix__-id" id="id_itens-__prefix__-id">
+              <input type="hidden" name="itens-__prefix__-lote" id="id_itens-__prefix__-lote" class="lote-hidden">
+              <input type="hidden" name="itens-__prefix__-descricao" id="id_itens-__prefix__-descricao" class="descricao-hidden">
+              <input type="hidden" name="itens-__prefix__-valor_unitario" id="id_itens-__prefix__-valor_unitario">
+              <input type="hidden" name="itens-__prefix__-DELETE" id="id_itens-__prefix__-DELETE" class="delete-hidden">
+              <input type="text" name="itens-__prefix__-nome_produto" id="id_itens-__prefix__-nome_produto"
+                     class="form-control produto-search-input" placeholder="Buscar produto..." autocomplete="off">
+            </td>
+            <td>
+              <input type="text" name="itens-__prefix__-unidade_medida" id="id_itens-__prefix__-unidade_medida"
+                     class="form-control-plaintext" readonly tabindex="-1">
+            </td>
+            <td class="text-end">
+              <input type="number" name="itens-__prefix__-quantidade" id="id_itens-__prefix__-quantidade"
+                     class="form-control quantidade-input text-end" step="0.001" min="0">
+            </td>
+            <td class="text-end">
+              <input type="number" name="itens-__prefix__-valor_custo" id="id_itens-__prefix__-valor_custo"
+                     class="form-control-plaintext custo-input text-end" readonly step="0.0001" tabindex="-1">
+            </td>
+            <td class="text-end">
+              <input type="number" name="itens-__prefix__-desconto" id="id_itens-__prefix__-desconto"
+                     class="form-control desconto-input text-end" step="0.01" min="0" value="0">
+            </td>
+            <td class="text-end">
+              <input type="text" class="form-control-plaintext text-end fw-semibold valor-total" readonly>
+            </td>
+            <td class="text-center">
+              <button type="button" class="btn btn-sm btn-outline-danger btn-remover-peca" title="Remover">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+        </template>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-success btn-lg px-5">
+        <i class="bi bi-check-circle"></i> Salvar
+      </button>
+    </div>
+  </form>
 </div>
 
 {% block extra_js %}

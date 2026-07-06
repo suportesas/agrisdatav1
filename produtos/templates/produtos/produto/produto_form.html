@@ -2,68 +2,34 @@
 
 {% block extra_css %}
 <style>
-  /* Estilização melhorada das tabs de produto */
-  #produtoTabs .nav-link {
-    background-color: #e9ecef;
-    color: #495057 !important;
-    font-weight: 500;
-    border: 1px solid #dee2e6;
-    margin-right: 3px;
-    transition: all 0.3s ease;
-  }
-  
-  #produtoTabs .nav-link:hover {
-    background-color: #d3d8dd;
-    color: #212529 !important;
-    border-color: #adb5bd;
-  }
-  
-  #produtoTabs .nav-link.active {
-    background-color: #0d6efd !important;
-    color: #ffffff !important;
-    font-weight: 600;
-    border-color: #0d6efd;
-  }
-  
-  #produtoTabs .nav-link i {
-    opacity: 0.9;
-    color: inherit;
-  }
-  
-  #produtoTabs .nav-link.active i {
-    opacity: 1;
-    color: #ffffff !important;
-  }
-
-  #produtoTabs {
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  #produtoTabs .nav-item {
-    margin-bottom: 0.25rem;
-  }
-
-  @media (max-width: 767.98px) {
-    #produtoTabs .nav-item {
-      flex: 1 1 calc(50% - 0.25rem);
-    }
-
-    #produtoTabs .nav-link {
-      width: 100%;
-      margin-right: 0;
-      text-align: center;
-    }
+  .section-card {
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 1.5rem;
   }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-3 px-3 px-xl-4">
-  <div class="mb-2">
-    <h1 class="mb-0">{{ action }} Produto</h1>
-  </div>
 
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'produtos:produto_list' %}">Produtos</a></li>
+      <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+  </nav>
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">
+      <i class="bi bi-box-seam text-primary"></i> {{ action }} Produto
+    </h2>
+    <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
 
   {% if form.errors %}
   <div class="alert alert-danger">
@@ -74,57 +40,13 @@
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    
-    <ul class="nav nav-tabs" id="produtoTabs" role="tablist">
-      <li class="nav-item">
-        <button class="nav-link active" id="geral-tab" data-bs-toggle="tab" data-bs-target="#geral" type="button">Geral</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" id="fiscal-tab" data-bs-toggle="tab" data-bs-target="#fiscal" type="button">Fiscal</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button">Financeiro</button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" id="estoque-tab" data-bs-toggle="tab" data-bs-target="#estoque" type="button">Estoque</button>
-      </li>
-      <li class="nav-item">
-        <button
-          class="nav-link{% if not object.pk %} text-muted{% endif %}"
-          id="fornecedores-tab"
-          data-bs-toggle="tab"
-          data-bs-target="#fornecedores"
-          type="button"
-          {% if not object.pk %}title="Abra a aba para ver como habilitar fornecedores"{% endif %}>
-          <i class="bi bi-shop me-1"></i>Fornecedores
-        </button>
-      </li>
-      <li class="nav-item" id="agricola-tab-li" style="display: none;">
-        <button class="nav-link" id="agricola-tab" data-bs-toggle="tab" data-bs-target="#agricola" type="button">Agrícola</button>
-      </li>
-      <li class="nav-item" id="defensivo-tab-li" style="display: none;">
-        <button class="nav-link" id="defensivo-tab" data-bs-toggle="tab" data-bs-target="#defensivo" type="button">
-          <i class="bi bi-shield-fill-exclamation me-1"></i>Defensivo - Culturas/Pragas
-        </button>
-      </li>
-      <li class="nav-item" id="fertilizante-tab-li" style="display: none;">
-        <button class="nav-link" id="fertilizante-tab" data-bs-toggle="tab" data-bs-target="#fertilizante" type="button">
-          <i class="bi bi-droplet-fill me-1"></i>Fertilizantes
-        </button>
-      </li>
-      {% if object.pk %}
-      <li class="nav-item">
-        <button class="nav-link" id="documentos-tab" data-bs-toggle="tab" data-bs-target="#documentos" type="button">
-          <i class="bi bi-file-earmark-text me-1"></i>Documentos
-        </button>
-      </li>
-      {% endif %}
-    </ul>
 
-    <div class="tab-content border border-top-0 p-3 p-md-4" id="produtoTabContent">
-      <!-- ABA GERAL -->
-      <div class="tab-pane fade show active" id="geral">
-        <h5 class="mb-3">Informações Gerais</h5>
+    <!-- SEÇÃO GERAL -->
+    <div class="card section-card border-0 shadow-sm" id="geral">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações Gerais</h5>
+      </div>
+      <div class="card-body p-4">
         <div class="row">
           <div class="col-md-3 mb-3">
             {{ form.codigo.label_tag }}
@@ -173,7 +95,7 @@
             </div>
           </div>
         </div>
-        <h5 class="mb-3 mt-4">Unidades</h5>
+        <h6 class="mb-3 mt-4"><i class="bi bi-rulers me-1"></i>Unidades</h6>
         <div class="row">
           <div class="col-md-3 mb-3">
             {{ form.unidade_medida.label_tag }}
@@ -234,7 +156,7 @@
           </div>
         </div>
 
-        <h5 class="mb-3 mt-4">Certificação</h5>
+        <h6 class="mb-3 mt-4"><i class="bi bi-patch-check me-1"></i>Certificação</h6>
         <div class="row">
           <div class="col-md-3 mb-3">
             <div class="form-check mt-4">
@@ -259,10 +181,14 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ABA FISCAL -->
-      <div class="tab-pane fade" id="fiscal">
-        <h5 class="mb-3">Informações Fiscais</h5>
+    <!-- SEÇÃO FISCAL -->
+    <div class="card section-card border-0 shadow-sm" id="fiscal">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-receipt-cutoff"></i> Informações Fiscais</h5>
+      </div>
+      <div class="card-body p-4">
         <div class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label">NCM <span class="text-danger">*</span></label>
@@ -400,10 +326,14 @@
         </div>
         {% endif %}
       </div>
+    </div>
 
-      <!-- ABA FINANCEIRO -->
-      <div class="tab-pane fade" id="financeiro">
-        <h5 class="mb-3">Informações Financeiras</h5>
+    <!-- SEÇÃO FINANCEIRO -->
+    <div class="card section-card border-0 shadow-sm" id="financeiro">
+      <div class="card-header" style="background: #10b981; color: white;">
+        <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Informações Financeiras</h5>
+      </div>
+      <div class="card-body p-4">
         <div class="row">
           <div class="col-md-3 mb-3">
             {{ form.preco_custo.label_tag }}
@@ -423,10 +353,14 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ABA ESTOQUE -->
-      <div class="tab-pane fade" id="estoque">
-        <h5 class="mb-3">Controle de Estoque</h5>
+    <!-- SEÇÃO ESTOQUE -->
+    <div class="card section-card border-0 shadow-sm" id="estoque">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-boxes"></i> Controle de Estoque</h5>
+      </div>
+      <div class="card-body p-4">
         <div class="form-check mb-3">
           {{ form.controla_estoque }} {{ form.controla_estoque.label_tag }}
         </div>
@@ -473,9 +407,14 @@
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- ABA AGRÍCOLA -->
-      <div class="tab-pane fade" id="agricola">
+    <!-- SEÇÃO AGRÍCOLA -->
+    <div class="card section-card border-0 shadow-sm" id="agricola-section" style="display: none;">
+      <div class="card-header" style="background: #6366f1; color: white;">
+        <h5 class="mb-0"><i class="bi bi-flower1"></i> Classificação Agrícola</h5>
+      </div>
+      <div class="card-body p-4" id="agricola">
         <!-- Campo hidden para categoria_agricola -->
         <div style="display: none;">
           {{ form.categoria_agricola }}
@@ -567,18 +506,17 @@
           {{ form.observacoes }}
         </div>
       </div>
+    </div>
 
-
-      <!-- ABA FORNECEDORES -->
-      <div class="tab-pane fade" id="fornecedores">
+    <!-- SEÇÃO FORNECEDORES -->
+    <div class="card section-card border-0 shadow-sm" id="fornecedores">
+      <div class="card-header" style="background: #8b5cf6; color: white;">
+        <h5 class="mb-0"><i class="bi bi-shop"></i> Fornecedores do Produto</h5>
+      </div>
+      <div class="card-body p-4">
         {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 class="mb-0">
-              <i class="bi bi-shop me-2"></i>Fornecedores do Produto
-            </h5>
-            <p class="text-muted mb-0">Gerencie os fornecedores e seus códigos específicos para este produto</p>
-          </div>
+          <p class="text-muted mb-0">Gerencie os fornecedores e seus códigos específicos para este produto</p>
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalFornecedor">
             <i class="bi bi-plus-circle me-1"></i>Adicionar Fornecedor
           </button>
@@ -669,18 +607,17 @@
         </div>
         {% endif %}
       </div>
+    </div>
 
-
-      <!-- ABA DEFENSIVO - CULTURAS/PRAGAS -->
-      <div class="tab-pane fade" id="defensivo">
+    <!-- SEÇÃO DEFENSIVO - CULTURAS/PRAGAS -->
+    <div class="card section-card border-0 shadow-sm" id="defensivo-section" style="display: none;">
+      <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-shield-fill-exclamation"></i> Defensivo - Culturas/Pragas</h5>
+      </div>
+      <div class="card-body p-4" id="defensivo">
         {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <div>
-            <h5 class="mb-0">
-              <i class="bi bi-shield-fill-exclamation me-2"></i>Culturas e Pragas
-            </h5>
-            <p class="text-muted mb-0">Registre para cada cultura as pragas combatidas e as dosagens específicas</p>
-          </div>
+          <p class="text-muted mb-0">Registre para cada cultura as pragas combatidas e as dosagens específicas</p>
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalDefensivoCultura">
             <i class="bi bi-plus-circle me-1"></i>Adicionar Cultura/Praga
           </button>
@@ -757,15 +694,15 @@
         </div>
         {% endif %}
       </div>
-      
-      <!-- ABA FERTILIZANTE -->
-      <div class="tab-pane fade" id="fertilizante">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">
-            <i class="bi bi-droplet-fill me-2"></i>Informações de Fertilizante
-          </h5>
-        </div>
-        
+    </div>
+
+    <!-- SEÇÃO FERTILIZANTE -->
+    <div class="card section-card border-0 shadow-sm" id="fertilizante-section" style="display: none;">
+      <div class="card-header" style="background: #f59e0b; color: white;">
+        <h5 class="mb-0"><i class="bi bi-droplet-fill"></i> Informações de Fertilizante</h5>
+      </div>
+      <div class="card-body p-4" id="fertilizante">
+
         <div class="alert alert-info">
           <i class="bi bi-info-circle me-2"></i>
           <strong>Importante:</strong> Preencha as informações específicas do fertilizante conforme a composição do produto.
@@ -818,14 +755,16 @@
           </div>
         </div>
       </div>
-      
-      <!-- ABA DOCUMENTOS -->
-      {% if object.pk %}
-      <div class="tab-pane fade" id="documentos">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">
-            <i class="bi bi-file-earmark-text me-2"></i>Documentos do Produto
-          </h5>
+    </div>
+
+    <!-- SEÇÃO DOCUMENTOS -->
+    {% if object.pk %}
+    <div class="card section-card border-0 shadow-sm" id="documentos">
+      <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentos do Produto</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-end align-items-center mb-3">
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUploadDocumento">
             <i class="bi bi-cloud-upload me-1"></i>Adicionar Documento
           </button>
@@ -900,13 +839,13 @@
       {% endif %}
     </div>
 
-    <div class="mt-3 d-flex flex-wrap gap-2">
-      <button type="submit" class="btn btn-primary" id="btnSalvarProduto">
-        <i class="bi bi-save me-1"></i>Salvar
-      </button>
-      <a href="{% url 'produtos:produto_list' %}" class="btn btn-secondary">
-        <i class="bi bi-x-circle me-1"></i>Cancelar
+    <div class="d-flex justify-content-between gap-3 mt-2">
+      <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
       </a>
+      <button type="submit" class="btn btn-success btn-lg px-5" id="btnSalvarProduto">
+        <i class="bi bi-check-circle"></i> Salvar Produto
+      </button>
     </div>
   </form>
 </div>
@@ -930,8 +869,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoriaAgricolaInput = document.querySelector('[name="categoria_agricola"]');
     const alertDefensivoInfo = document.getElementById('alertDefensivoInfo');
     const isProdutoExistente = {% if object.pk %}true{% else %}false{% endif %};
-    const defensivoTabLi = document.getElementById('defensivo-tab-li');
-    const agricolaTabLi = document.getElementById('agricola-tab-li');
+    const defensivoTabLi = document.getElementById('defensivo-section');
+    const agricolaTabLi = document.getElementById('agricola-section');
     const possuiCertificado = document.getElementById('id_possui_certificado');
     const certificadoFields = document.querySelectorAll('.certificado-fields');
     // Novo: mapping de categorias condicionais
@@ -1086,35 +1025,6 @@ document.addEventListener('DOMContentLoaded', function() {
       );
     }
 
-    function garantirAbaVisivelAtiva() {
-      const tabButtons = [
-        document.getElementById('fertilizante-tab'),
-        document.getElementById('agricola-tab'),
-        document.getElementById('defensivo-tab'),
-        document.getElementById('geral-tab')
-      ].filter(Boolean);
-
-      const activeButton = document.querySelector('#produtoTabs .nav-link.active');
-      if (!activeButton) {
-        return;
-      }
-
-      const activeLi = activeButton.closest('li');
-      const activeHidden = activeLi && window.getComputedStyle(activeLi).display === 'none';
-      if (!activeHidden) {
-        return;
-      }
-
-      const targetButton = tabButtons.find(btn => {
-        const li = btn.closest('li');
-        return li && window.getComputedStyle(li).display !== 'none';
-      });
-
-      if (targetButton && window.bootstrap && window.bootstrap.Tab) {
-        window.bootstrap.Tab.getOrCreateInstance(targetButton).show();
-      }
-    }
-
     // Função para verificar se a categoria selecionada condiciona campos agrícolas
     function verificarCategoriaAgricolaCondicional() {
       if (!categoriaSelect) {
@@ -1143,12 +1053,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
 
-      garantirAbaVisivelAtiva();
       sincronizarCategoriaAgricola();
     }
-    
+
     // ============== CONTROLE DA ABA FERTILIZANTE ==============
-    const fertilizanteTabLi = document.getElementById('fertilizante-tab-li');
+    const fertilizanteTabLi = document.getElementById('fertilizante-section');
     const alertFertilizanteInfo = document.getElementById('alertFertilizanteInfo');
     
     // Função para verificar se a categoria é "Fertilizante"
@@ -1199,8 +1108,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('❌ Elemento fertilizante-tab-li não encontrado no DOM!');
         }
 
-          garantirAbaVisivelAtiva();
-              sincronizarCategoriaAgricola();
+        sincronizarCategoriaAgricola();
     }
     
     // Verificar ao carregar e ao mudar categoria
@@ -1212,16 +1120,12 @@ document.addEventListener('DOMContentLoaded', function() {
       categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
       categoriaSelect.addEventListener('change', sincronizarCategoriaAgricola);
 
-      // Se a URL vier com hash de aba (ex: #defensivo), ativa a aba após aplicar regras de visibilidade.
+      // Se a URL vier com hash de seção (ex: #defensivo), rola até a seção após aplicar regras de visibilidade.
       const hash = window.location.hash;
-      if (hash && window.bootstrap && window.bootstrap.Tab) {
-        const targetButton = document.querySelector(`#produtoTabs .nav-link[data-bs-target="${hash}"]`);
-        if (targetButton) {
-          const li = targetButton.closest('li');
-          const isVisible = !li || window.getComputedStyle(li).display !== 'none';
-          if (isVisible) {
-            window.bootstrap.Tab.getOrCreateInstance(targetButton).show();
-          }
+      if (hash) {
+        const targetSection = document.querySelector(hash);
+        if (targetSection && targetSection.offsetParent !== null) {
+          targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       }
     } else {

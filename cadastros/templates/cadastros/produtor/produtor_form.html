@@ -2,66 +2,129 @@
 
 {% block title %}{{ action }} Produtor{% endblock %}
 
+{% block extra_css %}
+<style>
+  .section-card {
+    border-left: 4px solid #3b82f6;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0"><i class="bi bi-person-vcard me-2"></i>{{ action }} Produtor</h2>
-    <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Voltar</a>
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:produtor_list' %}">Produtores</a></li>
+      <li class="breadcrumb-item active">{{ action }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-person-vcard text-primary me-2"></i>{{ action }} Produtor</h2>
+    <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
   </div>
 
-  <form method="post" class="card">
+  <form method="post">
     {% csrf_token %}
-    <div class="card-body">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">CNPJ/CPF</label>
-          <div class="input-group">
-            {{ form.cnpj_cpf }}
-            <button class="btn btn-outline-primary" type="button" id="btnConsultarCnpj">Consultar CNPJ</button>
+
+    <!-- Seção 1: Dados Básicos -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-person"></i> Dados Básicos</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">CNPJ/CPF</label>
+            <div class="input-group">
+              {{ form.cnpj_cpf }}
+              <button class="btn btn-outline-primary" type="button" id="btnConsultarCnpj">Consultar CNPJ</button>
+            </div>
+            {% if form.cnpj_cpf.errors %}<div class="text-danger small">{{ form.cnpj_cpf.errors }}</div>{% endif %}
           </div>
-          {% if form.cnpj_cpf.errors %}<div class="text-danger small">{{ form.cnpj_cpf.errors }}</div>{% endif %}
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Razão Social / Nome</label>
+            {{ form.razao_social }}
+            {% if form.razao_social.errors %}<div class="text-danger small">{{ form.razao_social.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Nome Fantasia</label>
+            {{ form.nome_fantasia }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Inscrição Estadual</label>
+            {{ form.inscricao_estadual }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Status</label>
+            {{ form.status }}
+          </div>
         </div>
-        <div class="col-md-5">
-          <label class="form-label">Razão Social / Nome</label>
-          {{ form.razao_social }}
-          {% if form.razao_social.errors %}<div class="text-danger small">{{ form.razao_social.errors }}</div>{% endif %}
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Nome Fantasia</label>
-          {{ form.nome_fantasia }}
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Inscrição Estadual</label>
-          {{ form.inscricao_estadual }}
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Telefone</label>
-          {{ form.telefone }}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">E-mail</label>
-          {{ form.email }}
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Status</label>
-          {{ form.status }}
-        </div>
-
-        <div class="col-md-2"><label class="form-label">CEP</label>{{ form.cep }}</div>
-        <div class="col-md-6"><label class="form-label">Logradouro</label>{{ form.logradouro }}</div>
-        <div class="col-md-2"><label class="form-label">Número</label>{{ form.numero }}</div>
-        <div class="col-md-2"><label class="form-label">Complemento</label>{{ form.complemento }}</div>
-        <div class="col-md-4"><label class="form-label">Bairro</label>{{ form.bairro }}</div>
-        <div class="col-md-6"><label class="form-label">Cidade</label>{{ form.cidade }}</div>
-        <div class="col-md-2"><label class="form-label">UF</label>{{ form.uf }}</div>
-
-        <div class="col-12"><label class="form-label">Observações</label>{{ form.observacoes }}</div>
       </div>
     </div>
-    <div class="card-footer bg-white">
-      <button class="btn btn-primary" type="submit"><i class="bi bi-save me-1"></i>Salvar</button>
-      <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+
+    <!-- Seção 2: Contato -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-telephone"></i> Contato</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Telefone</label>
+            {{ form.telefone }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">E-mail</label>
+            {{ form.email }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 3: Endereço -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-2"><label class="form-label fw-semibold">CEP</label>{{ form.cep }}</div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Logradouro</label>{{ form.logradouro }}</div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Número</label>{{ form.numero }}</div>
+          <div class="col-md-2"><label class="form-label fw-semibold">Complemento</label>{{ form.complemento }}</div>
+          <div class="col-md-4"><label class="form-label fw-semibold">Bairro</label>{{ form.bairro }}</div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Cidade</label>{{ form.cidade }}</div>
+          <div class="col-md-2"><label class="form-label fw-semibold">UF</label>{{ form.uf }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seção 4: Observações -->
+    <div class="card section-card border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações</h5>
+      </div>
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-12">{{ form.observacoes }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-between gap-3 mt-4">
+      <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button class="btn btn-success btn-lg px-5" type="submit">
+        <i class="bi bi-check-circle"></i> Salvar Produtor
+      </button>
     </div>
   </form>
 </div>

@@ -1,9 +1,21 @@
 {% extends 'base.html' %}
 
 {% block title %}Produtores{% endblock %}
+{% block page_title %}Produtores{% endblock %}
+
+{% block extra_css %}
+<style>
+.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
+.action-icon:hover { color: #7c3aed; }
+.action-icon.danger:hover { color: #dc2626; }
+.action-icon.edit:hover { color: #0d6efd; }
+tbody tr:hover td { background: #faf5ff; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
+
   <!-- Cards de Empréstimos -->
   <div class="row g-3 mb-4">
     <div class="col-md-4">
@@ -34,53 +46,98 @@
       </div>
     </div>
   </div>
+
+  <!-- Cabeçalho -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0"><i class="bi bi-person-vcard me-2"></i>Produtores</h2>
-    <a href="{% url 'cadastros:produtor_create' %}" class="btn btn-primary"><i class="bi bi-plus-circle me-1"></i>Novo Produtor</a>
-  </div>
-
-  <div class="card mb-3">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-6">
-          <label class="form-label">Busca</label>
-          <input type="text" class="form-control" name="q" value="{{ q }}" placeholder="Nome, fantasia, CNPJ/CPF, cidade">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Status</label>
-          <select class="form-select" name="status">
-            <option value="">Todos</option>
-            <option value="ATIVO" {% if status == 'ATIVO' %}selected{% endif %}>Ativo</option>
-            <option value="INATIVO" {% if status == 'INATIVO' %}selected{% endif %}>Inativo</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i>Filtrar</button>
-          <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">Limpar</a>
-        </div>
-      </form>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if q or status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i>
+        {% if q or status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'cadastros:produtor_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Novo Produtor
+      </a>
     </div>
   </div>
 
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if q or status %}show{% endif %} mb-3" id="filterCollapse">
+    <div class="card">
+      <div class="card-body py-3">
+        <form method="get" id="filterForm">
+          <div class="row g-2 align-items-end">
+
+            <div class="col-12 col-md-6">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Pesquisar</label>
+              <input type="text" class="form-control form-control-sm" name="q" value="{{ q }}" placeholder="Nome, fantasia, CNPJ/CPF, cidade">
+            </div>
+
+            <div class="col-6 col-md-3">
+              <label class="form-label form-label-sm mb-1 fw-semibold">Status</label>
+              <select class="form-select form-select-sm" name="status">
+                <option value="">— Todos —</option>
+                <option value="ATIVO" {% if status == 'ATIVO' %}selected{% endif %}>Ativo</option>
+                <option value="INATIVO" {% if status == 'INATIVO' %}selected{% endif %}>Inativo</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="d-flex gap-2 mt-3 pt-3 border-top">
+            <button class="btn btn-primary" type="submit">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar filtro
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> produtor{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
   <div class="card">
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
+      <table class="table table-hover align-middle mb-0">
         <thead class="table-light">
           <tr>
+            <th style="width:60px;" class="text-muted small">#</th>
             <th>Razão Social</th>
             <th>Fantasia</th>
             <th>CNPJ/CPF</th>
             <th>Cidade/UF</th>
-            <th>Status</th>
-            <th class="text-end">Ações</th>
+            <th style="width:120px;">Status</th>
+            <th class="text-center" style="width:90px;">Ações</th>
           </tr>
         </thead>
         <tbody>
           {% for produtor in page_obj.object_list %}
           <tr>
-            <td>{{ produtor.razao_social }}</td>
+            <td class="text-muted small">{{ produtor.pk|stringformat:"05d" }}</td>
+            <td><strong>{{ produtor.razao_social }}</strong></td>
             <td>{{ produtor.nome_fantasia|default:'-' }}</td>
-            <td>{{ produtor.get_cnpj_cpf_formatado }}</td>
+            <td class="text-muted small">{{ produtor.get_cnpj_cpf_formatado }}</td>
             <td>{{ produtor.cidade|default:'-' }}{% if produtor.uf %}/{{ produtor.uf }}{% endif %}</td>
             <td>
               {% if produtor.status == 'ATIVO' %}
@@ -89,20 +146,119 @@
               <span class="badge bg-secondary">Inativo</span>
               {% endif %}
             </td>
-            <td class="text-end">
-              <a class="btn btn-sm btn-outline-primary" href="{% url 'cadastros:produtor_detail' produtor.pk %}">Ver</a>
-              <a class="btn btn-sm btn-outline-warning" href="{% url 'cadastros:produtor_update' produtor.pk %}">Editar</a>
-              <a class="btn btn-sm btn-outline-danger" href="{% url 'cadastros:produtor_delete' produtor.pk %}">Inativar</a>
+            <td class="text-center">
+              <div class="d-flex gap-3 justify-content-center">
+                <a class="action-icon" href="{% url 'cadastros:produtor_detail' produtor.pk %}" title="Ver detalhes">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a class="action-icon edit" href="{% url 'cadastros:produtor_update' produtor.pk %}" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a class="action-icon danger"
+                   href="#"
+                   data-bs-toggle="modal"
+                   data-bs-target="#deleteModal"
+                   data-delete-url="{% url 'cadastros:produtor_delete' produtor.pk %}"
+                   data-nome="{{ produtor.razao_social }}"
+                   title="Inativar">
+                  <i class="bi bi-trash"></i>
+                </a>
+              </div>
             </td>
           </tr>
           {% empty %}
-          <tr><td colspan="6" class="text-center text-muted py-4">Nenhum produtor encontrado.</td></tr>
+          <tr>
+            <td colspan="7" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+              Nenhum produtor encontrado.
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-  </div>
 
-  {% include 'partials/pagination.html' with page_obj=page_obj %}
+    <!-- Paginação -->
+    <div class="card-footer d-flex align-items-center justify-content-between">
+      <small class="text-muted">
+        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
+        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
+      </small>
+      <ul class="pagination pagination-sm mb-0">
+
+        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+          {% if page_obj.has_previous %}
+            <a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+          {% endif %}
+        </li>
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ num }}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% endif %}
+        {% endfor %}
+
+        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+          {% if page_obj.has_next %}
+            <a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% else %}
+            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+          {% endif %}
+        </li>
+
+      </ul>
+    </div>
+
+  </div>
 </div>
+
+<!-- Modal de confirmação de inativação -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirmar inativação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Tem certeza que deseja inativar o produtor <strong id="deleteModalNome"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <form method="post" id="deleteModalForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Inativar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  form.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () { form.submit(); });
+  });
+
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    document.getElementById('deleteModalForm').action = button.getAttribute('data-delete-url');
+    document.getElementById('deleteModalNome').textContent = button.getAttribute('data-nome');
+  });
+});
+</script>
 {% endblock %}

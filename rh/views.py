@@ -298,7 +298,7 @@ def ferias_list(request):
         ferias = ferias.filter(data_fim__lte=data_fim)
     
     # Paginação
-    paginator = Paginator(ferias, 25)
+    paginator = Paginator(ferias, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
     
     # Funcionários para filtro
@@ -558,7 +558,7 @@ def afastamento_list(request):
         afastamentos = afastamentos.filter(data_fim__lte=data_fim)
     
     # Paginação
-    paginator = Paginator(afastamentos, 25)
+    paginator = Paginator(afastamentos, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
     
     # Funcionários para filtro
@@ -698,7 +698,7 @@ def vinculo_list(request):
             Q(matricula__icontains=busca)
         )
 
-    paginator = Paginator(vinculos, 25)
+    paginator = Paginator(vinculos, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     context = {
@@ -846,7 +846,7 @@ def laudo_list(request):
             Q(numero_art__icontains=busca)
         )
 
-    paginator = Paginator(laudos, 25)
+    paginator = Paginator(laudos, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     context = {
@@ -943,7 +943,7 @@ def tipo_exame_aso_list(request):
     elif status == 'inativos':
         exames = exames.filter(ativo=False)
 
-    paginator = Paginator(exames, 25)
+    paginator = Paginator(exames, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     context = {
@@ -1113,7 +1113,7 @@ def aso_solicitacao_list(request):
     if funcionario_filter:
         solicitacoes = solicitacoes.filter(funcionario_id=funcionario_filter)
 
-    paginator = Paginator(solicitacoes, 25)
+    paginator = Paginator(solicitacoes, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
 
     context = {
@@ -1797,7 +1797,7 @@ def rescisao_list(request):
         rescisoes = rescisoes.filter(data_desligamento__lte=data_fim)
     
     # Paginação
-    paginator = Paginator(rescisoes, 25)
+    paginator = Paginator(rescisoes, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
     
     # Funcionários para filtro
@@ -2460,12 +2460,15 @@ def funcionario_documento_create(request, funcionario_pk):
 def funcao_list(request):
     """Lista funções de funcionários"""
     funcoes = FuncaoFuncionario.objects.filter(empresa=request.user.empresa)
-    
+
     q = request.GET.get('q', '').strip()
     if q:
         funcoes = funcoes.filter(nome__icontains=q)
-    
-    return render(request, 'cadastros/funcao/funcao_list.html', {'funcoes': funcoes})
+
+    paginator = Paginator(funcoes.order_by('nome'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'cadastros/funcao/funcao_list.html', {'funcoes': page_obj, 'page_obj': page_obj})
 
 
 @login_required
@@ -2491,8 +2494,12 @@ def risco_ambiental_catalogo_list(request):
 
     categorias = CategoriaRiscoAmbiental.objects.filter(empresa=empresa, ativo=True).order_by('nome')
 
+    paginator = Paginator(itens.order_by('categoria__nome', 'nome'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'cadastros/risco_ambiental_catalogo/catalogo_list.html', {
-        'itens': itens.order_by('categoria__nome', 'nome'),
+        'itens': page_obj,
+        'page_obj': page_obj,
         'categorias': categorias,
     })
 
@@ -2735,7 +2742,7 @@ def funcionario_list(request):
         funcionarios = funcionarios.filter(fazenda_id=fazenda_id)
     if funcao_id:
         funcionarios = funcionarios.filter(funcao_id=funcao_id)
-    paginator = Paginator(funcionarios, 25)
+    paginator = Paginator(funcionarios, 20)
     page_number = request.GET.get('page') or 1
     page_obj = paginator.get_page(page_number)
 

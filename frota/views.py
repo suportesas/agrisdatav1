@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Sum, Count, Avg
 from django.forms import inlineformset_factory
 from django.http import HttpResponse, JsonResponse
@@ -123,9 +124,13 @@ def abastecimento_list(request):
 
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
+    paginator = Paginator(qs.order_by('-data', '-criado_em'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'cadastros/frota/abastecimento_list.html', {
         'title': 'Abastecimentos',
-        'abastecimentos': qs.order_by('-data', '-criado_em')[:200],
+        'abastecimentos': page_obj,
+        'page_obj': page_obj,
         'total_litros': total_litros,
         'total_valor': total_valor,
         'veiculos': veiculos,
@@ -348,9 +353,13 @@ def manutencao_list(request):
     alertas_count = AlertaManutencao.objects.filter(empresa=empresa, status='PENDENTE').count()
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
+    paginator = Paginator(qs.order_by('-data_abertura'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'cadastros/frota/manutencao_list.html', {
         'title': 'Manutenções',
-        'manutencoes': qs.order_by('-data_abertura')[:200],
+        'manutencoes': page_obj,
+        'page_obj': page_obj,
         'alertas_count': alertas_count,
         'veiculos': veiculos,
         'status_choices': ManutencaoVeiculo.STATUS_CHOICES,
@@ -693,9 +702,13 @@ def pedagio_list(request):
     total_valor = qs.aggregate(t=Sum('valor'))['t'] or 0
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
+    paginator = Paginator(qs.order_by('-data', '-criado_em'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'cadastros/frota/pedagio_list.html', {
         'title': 'Pedágios',
-        'pedagios': qs.order_by('-data', '-criado_em')[:200],
+        'pedagios': page_obj,
+        'page_obj': page_obj,
         'total_valor': total_valor,
         'veiculos': veiculos,
         'vehicle_selecionado': vehicle_id,
@@ -766,9 +779,13 @@ def viagem_list(request):
     if status:
         qs = qs.filter(status=status)
 
+    paginator = Paginator(qs.order_by('-data'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'cadastros/frota/viagem_list.html', {
         'title': 'Viagens',
-        'viagens': qs.order_by('-data')[:200],
+        'viagens': page_obj,
+        'page_obj': page_obj,
         'status_choices': Viagem.STATUS_CHOICES,
         'status_selecionado': status,
     })
@@ -852,9 +869,13 @@ def telemetria_list(request):
 
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
+    paginator = Paginator(qs.order_by('-data_hora'), 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'cadastros/frota/telemetria_list.html', {
         'title': 'Telemetria',
-        'registros': qs.order_by('-data_hora')[:200],
+        'registros': page_obj,
+        'page_obj': page_obj,
         'veiculos': veiculos,
         'vehicle_selecionado': vehicle_id,
     })

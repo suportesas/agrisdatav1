@@ -3592,8 +3592,13 @@ def vendedor_list(request):
         total_mercado_interno = vendedores.filter(tipo_mercado__in=['INTERNO', 'AMBOS']).count()
         total_exportacao = vendedores.filter(tipo_mercado__in=['EXTERNO', 'AMBOS']).count()
 
+        vendedores = vendedores.order_by('nome_completo')
+        paginator = Paginator(vendedores, 20)
+        page_obj = paginator.get_page(request.GET.get('page'))
+
         context = {
-            'vendedores': vendedores,
+            'vendedores': page_obj,
+            'page_obj': page_obj,
             'filtro_form': filtro_form,
             'total_vendedores': total_vendedores,
             'total_ativos': total_ativos,
@@ -3682,13 +3687,13 @@ def fornecedor_list(request):
     fornecedores = fornecedores.distinct().order_by(sort_map.get(sort_by, 'nome'))
 
     # pagination
-    per_page = request.GET.get('per_page', '25')
+    per_page = request.GET.get('per_page', '20')
     try:
         per_page = int(per_page)
-        if per_page not in [10, 25, 50, 100]:
-            per_page = 25
+        if per_page not in [10, 20]:
+            per_page = 20
     except ValueError:
-        per_page = 25
+        per_page = 20
 
     paginator = Paginator(fornecedores, per_page)
     page = request.GET.get('page')
@@ -3711,7 +3716,7 @@ def fornecedor_list(request):
         'categorias': categorias,
         'paginator': paginator,
         'per_page': per_page,
-        'per_page_options': [10, 25, 50, 100],
+        'per_page_options': [10, 20],
         'sort_by': sort_by,
     }
     return render(request, 'cadastros/fornecedor/fornecedor_list.html', context)
@@ -3962,7 +3967,7 @@ def cliente_list(request):
     clientes_qs = clientes_qs.order_by('razao_social')
 
     # Paginação
-    paginator = Paginator(clientes_qs, 10)
+    paginator = Paginator(clientes_qs, 20)
     try:
         clientes = paginator.page(page)
     except Exception:

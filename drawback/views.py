@@ -397,6 +397,7 @@ def _serialize_resultados(resultados, tipo):
                 'data_nf': r['data_nf'].isoformat() if r['data_nf'] else None,
                 'data_recebimento': r['data_recebimento'].isoformat() if r['data_recebimento'] else None,
                 'produto_ac_id': r['produto_ac'].pk if r['produto_ac'] else None,
+                'produto_variante_id': r['produto_variante'].pk if r.get('produto_variante') else None,
                 'quantidade': str(r['quantidade']),
                 'valor_unitario': str(r['valor_unitario']) if r['valor_unitario'] else None,
                 'observacoes': r['observacoes'],
@@ -409,6 +410,7 @@ def _serialize_resultados(resultados, tipo):
                 'numero_due': r['numero_due'],
                 'data_embarque': r['data_embarque'].isoformat() if r['data_embarque'] else None,
                 'produto_ac_id': r['produto_ac'].pk if r['produto_ac'] else None,
+                'produto_variante_id': r['produto_variante'].pk if r.get('produto_variante') else None,
                 'quantidade': str(r['quantidade']),
                 'valor_fob_usd': str(r['valor_fob_usd']) if r['valor_fob_usd'] else None,
                 'observacoes': r['observacoes'],
@@ -431,14 +433,18 @@ def importar_confirmar(request, ac_pk):
     resultados = dados['resultados']
     criados = 0
 
+    from produtos.models import Produto
+
     for r in resultados:
         if tipo == 'entradas':
             produto_ac = DrawbackProdutoAC.objects.get(pk=r['produto_ac_id'])
+            produto_variante = Produto.objects.get(pk=r['produto_variante_id']) if r.get('produto_variante_id') else None
             from cadastros.models import Fornecedor
             forn = Fornecedor.objects.get(pk=r['fornecedor_id']) if r['fornecedor_id'] else None
             EntradaDrawback.objects.create(
                 ato_concessorio=ac,
                 drawback_produto=produto_ac,
+                produto_variante=produto_variante,
                 fornecedor=forn,
                 numero_nf=r['numero_nf'],
                 serie_nf=r['serie_nf'] or '1',
@@ -455,11 +461,13 @@ def importar_confirmar(request, ac_pk):
             criados += 1
         else:
             produto_ac = DrawbackProdutoAC.objects.get(pk=r['produto_ac_id'])
+            produto_variante = Produto.objects.get(pk=r['produto_variante_id']) if r.get('produto_variante_id') else None
             from cadastros.models import Cliente
             cli = Cliente.objects.get(pk=r['cliente_id']) if r['cliente_id'] else None
             SaidaDrawback.objects.create(
                 ato_concessorio=ac,
                 drawback_produto=produto_ac,
+                produto_variante=produto_variante,
                 cliente=cli,
                 numero_nfe=r['numero_nfe'],
                 numero_re=r['numero_re'],
@@ -854,8 +862,13 @@ def vincular_entrada_erp(request, item_recebimento_id):
     fornecedor = item.recebimento.fornecedor or (
         item.recebimento.pedido.fornecedor if item.recebimento.pedido_id else None
     )
+    # Se o produto do recebimento é uma variante, ela já é conhecida com certeza —
+    # não depende de escolha manual do usuário.
+    variante_recebimento = produto if produto and produto.produto_base_id else None
+
     initial = {
         'drawback_produto': sugestao.pk if sugestao and sugestao.ato_concessorio_id == ac.pk else None,
+        'produto_variante': variante_recebimento.pk if variante_recebimento else None,
         'fornecedor': fornecedor.pk if fornecedor else None,
         'numero_nf': item.recebimento.nota_fiscal,
         'serie_nf': item.recebimento.serie_nota,
@@ -870,6 +883,7 @@ def vincular_entrada_erp(request, item_recebimento_id):
             entrada = form.save(commit=False)
             entrada.ato_concessorio = ac
             entrada.item_recebimento = item
+            entrada.produto_variante = variante_recebimento
             entrada.origem = 'ERP'
             entrada.retroativo = False
             entrada.registrado_por = request.user
@@ -926,8 +940,11 @@ def vincular_saida_erp(request, item_nfe_id):
             'sem_sugestao': True,
         })
 
+    variante_nfe = item_nfe.produto if item_nfe.produto_id and item_nfe.produto.produto_base_id else None
+
     initial = {
         'drawback_produto': sugestao.pk if sugestao and sugestao.ato_concessorio_id == ac.pk else None,
+        'produto_variante': variante_nfe.pk if variante_nfe else None,
         'cliente': item_nfe.nota_fiscal.cliente_id,
         'numero_nfe': item_nfe.nota_fiscal.numero,
         'data_embarque': timezone.now().date(),
@@ -940,6 +957,7 @@ def vincular_saida_erp(request, item_nfe_id):
             saida = form.save(commit=False)
             saida.ato_concessorio = ac
             saida.item_nfe = item_nfe
+            saida.produto_variante = variante_nfe
             saida.origem = 'ERP'
             saida.retroativo = False
             saida.registrado_por = request.user
@@ -970,6 +988,10 @@ def ajax_saldo_produto(request, produto_ac_id):
         pk=produto_ac_id,
         ato_concessorio__empresa=empresa,
     )
+    variantes = [
+        {'id': v.pk, 'nome_completo': v.nome_completo}
+        for v in produto_ac.produto.variantes.filter(ativo=True).order_by('nome')
+    ]
     return JsonResponse({
         'produto': produto_ac.produto.nome,
         'tipo_produto': produto_ac.tipo_produto,
@@ -980,4 +1002,5 @@ def ajax_saldo_produto(request, produto_ac_id):
         'quantidade_exportada': float(produto_ac.quantidade_exportada),
         'saldo_exportacao': float(produto_ac.saldo_exportacao),
         'percentual_cumprido': float(produto_ac.percentual_cumprido),
+        'variantes': variantes,
     })

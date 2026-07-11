@@ -67,6 +67,14 @@ def validar_entradas(workbook, ato_concessorio, empresa):
     for p in _qs_entradas:
         produtos_ac_por_nome[p.produto.nome.lower()] = p
 
+    # Mapa de variantes: nome/nome_completo (lower) de cada variante do produto
+    # principal do AC → (DrawbackProdutoAC, Produto variante)
+    variantes_por_nome = {}
+    for p in _qs_entradas:
+        for variante in p.produto.variantes.filter(ativo=True):
+            variantes_por_nome[variante.nome.lower()] = (p, variante)
+            variantes_por_nome[variante.nome_completo.lower()] = (p, variante)
+
     # mapa de fornecedores: nome_lower → Fornecedor (e cnpj)
     fornecedores = {}
     for f in Fornecedor.objects.filter(empresa=empresa, ativa=True):
@@ -132,6 +140,12 @@ def validar_entradas(workbook, ato_concessorio, empresa):
             produtos_ac_por_tipo.get((produto_str.lower(), tipo_compra))
             or produtos_ac_por_nome.get(produto_str.lower())
         ) if tipo_compra else produtos_ac_por_nome.get(produto_str.lower())
+        produto_variante = None
+        if not produto_ac:
+            # Tenta casar pelo nome de uma variante do produto principal
+            match = variantes_por_nome.get(produto_str.lower())
+            if match:
+                produto_ac, produto_variante = match
         if not produto_ac:
             erros.append(f'Produto "{produto_str}" não encontrado nos insumos autorizados deste AC.')
 
@@ -170,6 +184,7 @@ def validar_entradas(workbook, ato_concessorio, empresa):
             'data_recebimento': data_recebimento,
             'produto_str': produto_str,
             'produto_ac': produto_ac,
+            'produto_variante': produto_variante,
             'quantidade': quantidade,
             'unidade_str': unidade_str,
             'valor_unitario': valor_unitario,
@@ -201,13 +216,18 @@ def validar_saidas(workbook, ato_concessorio, empresa):
             return [], ['Aba "Saídas" não encontrada no arquivo.']
 
     # Apenas produtos de EXPORTACAO são válidos para saídas
-    produtos_ac = {
-        p.produto.nome.lower(): p
-        for p in DrawbackProdutoAC.objects.filter(
-            ato_concessorio=ato_concessorio,
-            tipo_produto='EXPORTACAO',
-        ).select_related('produto', 'unidade_medida')
-    }
+    _qs_saidas = DrawbackProdutoAC.objects.filter(
+        ato_concessorio=ato_concessorio,
+        tipo_produto='EXPORTACAO',
+    ).select_related('produto', 'unidade_medida')
+    produtos_ac = {p.produto.nome.lower(): p for p in _qs_saidas}
+
+    # Mapa de variantes: nome/nome_completo (lower) → (DrawbackProdutoAC, Produto variante)
+    variantes_por_nome = {}
+    for p in _qs_saidas:
+        for variante in p.produto.variantes.filter(ativo=True):
+            variantes_por_nome[variante.nome.lower()] = (p, variante)
+            variantes_por_nome[variante.nome_completo.lower()] = (p, variante)
 
     clientes = {c.nome_fantasia.lower(): c
                 for c in Cliente.objects.filter(empresa=empresa, ativo=True)}
@@ -250,6 +270,11 @@ def validar_saidas(workbook, ato_concessorio, empresa):
         valor_fob = _parse_decimal(fob_raw)
 
         produto_ac = produtos_ac.get(produto_str.lower())
+        produto_variante = None
+        if not produto_ac:
+            match = variantes_por_nome.get(produto_str.lower())
+            if match:
+                produto_ac, produto_variante = match
         if not produto_ac:
             erros.append(f'Produto "{produto_str}" não encontrado nos itens de Exportação deste AC.')
 
@@ -280,6 +305,7 @@ def validar_saidas(workbook, ato_concessorio, empresa):
             'data_embarque': data_embarque,
             'produto_str': produto_str,
             'produto_ac': produto_ac,
+            'produto_variante': produto_variante,
             'quantidade': quantidade,
             'unidade_str': unidade_str,
             'valor_fob_usd': valor_fob,

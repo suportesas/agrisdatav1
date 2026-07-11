@@ -44,6 +44,13 @@
                 {{ form.cliente }}
               </div>
 
+              <div class="col-md-6 d-none" id="grupo-variante">
+                <label class="form-label fw-semibold">Variante Movimentada</label>
+                {{ form.produto_variante }}
+                {% if form.produto_variante.errors %}<div class="text-danger small">{{ form.produto_variante.errors }}</div>{% endif %}
+                <div class="form-text">Selecione a variante exata que consta na NF-e/Invoice.</div>
+              </div>
+
               <div class="col-12">
                 <div id="saldo-info" class="alert alert-secondary py-2 small d-none">
                   <i class="bi bi-bar-chart me-1"></i>
@@ -109,10 +116,24 @@ const saldoUrl = "{% url 'drawback:ajax_saldo_produto' 0 %}".replace('/0/', '/')
 const produtoSelect = document.getElementById('id_drawback_produto');
 const saldoInfo = document.getElementById('saldo-info');
 const saldoTexto = document.getElementById('saldo-texto');
+const grupoVariante = document.getElementById('grupo-variante');
+const varianteSelect = document.getElementById('id_produto_variante');
+
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function popularVariantes(variantes) {
+  const atual = varianteSelect.value;
+  varianteSelect.innerHTML = '<option value="">— Produto principal (sem variante) —</option>' +
+    variantes.map(v => `<option value="${v.id}">${esc(v.nome_completo)}</option>`).join('');
+  if (atual && variantes.some(v => String(v.id) === atual)) varianteSelect.value = atual;
+  grupoVariante.classList.toggle('d-none', variantes.length === 0);
+}
 
 produtoSelect?.addEventListener('change', function() {
   const id = this.value;
-  if (!id) { saldoInfo.classList.add('d-none'); return; }
+  if (!id) { saldoInfo.classList.add('d-none'); popularVariantes([]); return; }
   fetch(saldoUrl + id + '/')
     .then(r => r.json())
     .then(d => {
@@ -120,6 +141,7 @@ produtoSelect?.addEventListener('change', function() {
         `(Autorizado: ${d.quantidade_autorizada.toFixed(3)} — Já exportado: ${d.quantidade_exportada.toFixed(3)})`;
       saldoInfo.classList.remove('d-none');
       saldoInfo.className = 'alert py-2 small ' + (d.saldo_exportacao <= 0 ? 'alert-danger' : 'alert-warning');
+      popularVariantes(d.variantes || []);
     });
 });
 if (produtoSelect?.value) produtoSelect.dispatchEvent(new Event('change'));

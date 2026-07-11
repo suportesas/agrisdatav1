@@ -227,7 +227,10 @@
               </td>
               <td>{{ e.fornecedor|default:"—" }}</td>
               <td>{{ e.numero_nf }}{% if e.serie_nf %}/{{ e.serie_nf }}{% endif %}</td>
-              <td>{{ e.drawback_produto.produto.nome }}</td>
+              <td>
+                {{ e.drawback_produto.produto.nome }}
+                {% if e.produto_variante %}<br><span class="badge bg-light text-dark border">{{ e.produto_variante.nome_completo }}</span>{% endif %}
+              </td>
               <td class="text-end fw-semibold">{{ e.quantidade|floatformat:3|intcomma }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
               <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:4|intcomma }}{% else %}—{% endif %}</td>
               <td>
@@ -293,7 +296,10 @@
               <td>{{ s.numero_nfe|default:"—" }}</td>
               <td>{{ s.numero_re|default:"—" }}</td>
               <td>{{ s.numero_due|default:"—" }}</td>
-              <td>{{ s.drawback_produto.produto.nome }}</td>
+              <td>
+                {{ s.drawback_produto.produto.nome }}
+                {% if s.produto_variante %}<br><span class="badge bg-light text-dark border">{{ s.produto_variante.nome_completo }}</span>{% endif %}
+              </td>
               <td class="text-end fw-semibold">{{ s.quantidade|floatformat:3|intcomma }} {{ s.drawback_produto.unidade_medida.sigla }}</td>
               <td class="text-end">{% if s.valor_fob_usd %}USD {{ s.valor_fob_usd|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
               <td>

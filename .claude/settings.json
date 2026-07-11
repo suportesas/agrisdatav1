@@ -173,7 +173,9 @@
       "Bash(awk '$1==\"D\" && $2 ~ /\\\\.md$/')",
       "Bash(python manage.py makemigrations faturamento --name ibs_cbs_reforma_tributaria)",
       "Bash(python manage.py migrate faturamento)",
-      "Bash(python manage.py makemigrations faturamento --name agro_fields_retirada_gta_defensivo_credito_presumido)"
+      "Bash(python manage.py makemigrations faturamento --name agro_fields_retirada_gta_defensivo_credito_presumido)",
+      "Bash(python manage.py makemigrations drawback)",
+      "Bash(python manage.py migrate drawback)"
     ],
     "additionalDirectories": [
       "C:\\Users\\PAULOA~1\\AppData\\Local\\Temp\\claude\\f--projetos-agrisdatav2\\6d81db74-6ff2-4d94-9e50-b4c6a4504e63\\scratchpad",

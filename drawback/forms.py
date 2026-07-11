@@ -81,12 +81,13 @@ class EntradaDrawbackForm(forms.ModelForm):
     class Meta:
         model = EntradaDrawback
         fields = (
-            'drawback_produto', 'fornecedor',
+            'drawback_produto', 'produto_variante', 'fornecedor',
             'numero_nf', 'serie_nf', 'data_nf', 'data_recebimento',
             'quantidade', 'valor_unitario', 'observacoes',
         )
         widgets = {
             'drawback_produto': forms.Select(attrs={'class': 'form-select'}),
+            'produto_variante': forms.Select(attrs={'class': 'form-select'}),
             'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'numero_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000000'}),
             'serie_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1'}),
@@ -105,11 +106,17 @@ class EntradaDrawbackForm(forms.ModelForm):
                 ato_concessorio=ato_concessorio,
                 tipo_produto__in=['IMPORTACAO', 'MERCADO_INTERNO'],
             ).select_related('produto', 'unidade_medida').order_by('tipo_produto', 'produto__nome')
+        from produtos.models import Produto
+        self.fields['produto_variante'].required = False
+        self.fields['produto_variante'].empty_label = '— Produto principal (sem variante) —'
+        variantes_qs = Produto.objects.filter(produto_base__isnull=False, ativo=True)
         if empresa:
+            variantes_qs = variantes_qs.filter(categoria__empresa=empresa)
             from cadastros.models import Fornecedor
             self.fields['fornecedor'].queryset = Fornecedor.objects.filter(
                 empresa=empresa, ativo=True
             ).order_by('nome_fantasia')
+        self.fields['produto_variante'].queryset = variantes_qs.order_by('produto_base__nome', 'nome')
 
         hoje = timezone.now().date()
         self.fields['data_recebimento'].initial = hoje
@@ -135,12 +142,13 @@ class SaidaDrawbackForm(forms.ModelForm):
     class Meta:
         model = SaidaDrawback
         fields = (
-            'drawback_produto', 'cliente',
+            'drawback_produto', 'produto_variante', 'cliente',
             'numero_nfe', 'numero_re', 'numero_due',
             'data_embarque', 'quantidade', 'valor_fob_usd', 'observacoes',
         )
         widgets = {
             'drawback_produto': forms.Select(attrs={'class': 'form-select'}),
+            'produto_variante': forms.Select(attrs={'class': 'form-select'}),
             'cliente': forms.Select(attrs={'class': 'form-select'}),
             'numero_nfe': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000000'}),
             'numero_re': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25BR000123456-7'}),
@@ -159,11 +167,17 @@ class SaidaDrawbackForm(forms.ModelForm):
                 ato_concessorio=ato_concessorio,
                 tipo_produto='EXPORTACAO',
             ).select_related('produto', 'unidade_medida').order_by('produto__nome')
+        from produtos.models import Produto
+        self.fields['produto_variante'].required = False
+        self.fields['produto_variante'].empty_label = '— Produto principal (sem variante) —'
+        variantes_qs = Produto.objects.filter(produto_base__isnull=False, ativo=True)
         if empresa:
+            variantes_qs = variantes_qs.filter(categoria__empresa=empresa)
             from cadastros.models import Cliente
             self.fields['cliente'].queryset = Cliente.objects.filter(
                 empresa=empresa, ativo=True
             ).order_by('nome_fantasia')
+        self.fields['produto_variante'].queryset = variantes_qs.order_by('produto_base__nome', 'nome')
 
         self.fields['data_embarque'].initial = timezone.now().date()
 

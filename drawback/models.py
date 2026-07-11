@@ -202,6 +202,12 @@ class EntradaDrawback(models.Model):
         related_name='drawback_entradas', verbose_name='Fornecedor',
         null=True, blank=True,
     )
+    produto_variante = models.ForeignKey(
+        'produtos.Produto', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='drawback_entradas_variante', verbose_name='Variante Movimentada',
+        help_text='Preencher quando o produto do AC tiver variantes e o documento '
+                  'real (NF/recebimento) se referir a uma variante específica.',
+    )
     numero_nf = models.CharField('Número da NF', max_length=20)
     serie_nf = models.CharField('Série', max_length=5, blank=True, default='1')
     data_nf = models.DateField('Data da NF')
@@ -240,7 +246,11 @@ class EntradaDrawback(models.Model):
         ]
 
     def __str__(self):
-        return (f'Entrada {self.numero_nf} — {self.drawback_produto.produto.nome} '
+        produto_nome = (
+            self.produto_variante.nome_completo if self.produto_variante_id
+            else self.drawback_produto.produto.nome
+        )
+        return (f'Entrada {self.numero_nf} — {produto_nome} '
                 f'{self.quantidade} ({self.data_recebimento:%d/%m/%Y})')
 
     def clean(self):
@@ -253,6 +263,12 @@ class EntradaDrawback(models.Model):
         if self.drawback_produto_id and self.ato_concessorio_id:
             if self.drawback_produto.ato_concessorio_id != self.ato_concessorio_id:
                 raise ValidationError('O produto não pertence a este Ato Concessório.')
+        if self.produto_variante_id and self.drawback_produto_id:
+            produto_id = self.drawback_produto.produto_id
+            if self.produto_variante_id != produto_id and self.produto_variante.produto_base_id != produto_id:
+                raise ValidationError({
+                    'produto_variante': 'A variante selecionada não pertence ao produto autorizado nesta linha do AC.'
+                })
         if self.data_recebimento and self.ato_concessorio_id:
             ac = self.ato_concessorio
             if self.data_recebimento > ac.data_fim_efetiva:
@@ -294,6 +310,12 @@ class SaidaDrawback(models.Model):
         related_name='drawback_saidas', verbose_name='Cliente',
         null=True, blank=True,
     )
+    produto_variante = models.ForeignKey(
+        'produtos.Produto', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='drawback_saidas_variante', verbose_name='Variante Movimentada',
+        help_text='Preencher quando o produto do AC tiver variantes e o documento '
+                  'real (NF-e) se referir a uma variante específica.',
+    )
     numero_nfe = models.CharField('Número da NF-e / Invoice', max_length=20, blank=True)
     numero_re = models.CharField('RE (Registro de Exportação)', max_length=30, blank=True,
                                  help_text='Número do RE no Siscomex')
@@ -327,7 +349,11 @@ class SaidaDrawback(models.Model):
 
     def __str__(self):
         ref = self.numero_nfe or self.numero_re or self.numero_due or '—'
-        return (f'Saída {ref} — {self.drawback_produto.produto.nome} '
+        produto_nome = (
+            self.produto_variante.nome_completo if self.produto_variante_id
+            else self.drawback_produto.produto.nome
+        )
+        return (f'Saída {ref} — {produto_nome} '
                 f'{self.quantidade} ({self.data_embarque:%d/%m/%Y})')
 
     def clean(self):
@@ -336,6 +362,12 @@ class SaidaDrawback(models.Model):
         if self.drawback_produto_id and self.ato_concessorio_id:
             if self.drawback_produto.ato_concessorio_id != self.ato_concessorio_id:
                 raise ValidationError('O produto não pertence a este Ato Concessório.')
+        if self.produto_variante_id and self.drawback_produto_id:
+            produto_id = self.drawback_produto.produto_id
+            if self.produto_variante_id != produto_id and self.produto_variante.produto_base_id != produto_id:
+                raise ValidationError({
+                    'produto_variante': 'A variante selecionada não pertence ao produto autorizado nesta linha do AC.'
+                })
         if self.data_embarque and self.ato_concessorio_id:
             ac = self.ato_concessorio
             if self.data_embarque > ac.data_fim_efetiva:

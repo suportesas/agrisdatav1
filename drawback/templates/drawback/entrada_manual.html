@@ -46,6 +46,13 @@
                 </div>
               </div>
 
+              <div class="col-md-6 d-none" id="grupo-variante">
+                <label class="form-label fw-semibold">Variante Movimentada</label>
+                {{ form.produto_variante }}
+                {% if form.produto_variante.errors %}<div class="text-danger small">{{ form.produto_variante.errors }}</div>{% endif %}
+                <div class="form-text">Selecione a variante exata que consta na NF/recebimento.</div>
+              </div>
+
               <div class="col-12">
                 <div id="saldo-info" class="alert alert-secondary py-2 small d-none">
                   <i class="bi bi-bar-chart me-1"></i>
@@ -120,17 +127,32 @@ const produtoSelect = document.getElementById('id_drawback_produto');
 const saldoInfo     = document.getElementById('saldo-info');
 const saldoTexto    = document.getElementById('saldo-texto');
 const tipoBadge     = document.getElementById('tipo-badge');
+const grupoVariante = document.getElementById('grupo-variante');
+const varianteSelect = document.getElementById('id_produto_variante');
 
 const TIPO_LABELS = {
   'IMPORTACAO':      { label: 'Importação',      cls: 'bg-primary' },
   'MERCADO_INTERNO': { label: 'Mercado Interno',  cls: 'bg-warning text-dark' },
 };
 
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function popularVariantes(variantes) {
+  const atual = varianteSelect.value;
+  varianteSelect.innerHTML = '<option value="">— Produto principal (sem variante) —</option>' +
+    variantes.map(v => `<option value="${v.id}">${esc(v.nome_completo)}</option>`).join('');
+  if (atual && variantes.some(v => String(v.id) === atual)) varianteSelect.value = atual;
+  grupoVariante.classList.toggle('d-none', variantes.length === 0);
+}
+
 produtoSelect?.addEventListener('change', function() {
   const id = this.value;
   if (!id) {
     saldoInfo.classList.add('d-none');
     tipoBadge.innerHTML = '<span class="badge bg-secondary">Selecione o produto acima</span>';
+    popularVariantes([]);
     return;
   }
   fetch(saldoUrl + id + '/')
@@ -142,6 +164,7 @@ produtoSelect?.addEventListener('change', function() {
         `(Autorizado: ${d.quantidade_autorizada.toFixed(3)} — Já comprado: ${d.quantidade_comprada.toFixed(3)})`;
       saldoInfo.classList.remove('d-none');
       saldoInfo.className = 'alert py-2 small ' + (d.saldo_compra <= 0 ? 'alert-danger' : d.saldo_compra < d.quantidade_autorizada * 0.2 ? 'alert-warning' : 'alert-info');
+      popularVariantes(d.variantes || []);
     });
 });
 if (produtoSelect?.value) produtoSelect.dispatchEvent(new Event('change'));

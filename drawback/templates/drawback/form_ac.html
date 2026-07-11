@@ -377,7 +377,7 @@ $('#ui-produto').select2({
     url: AJAX_BUSCAR,
     dataType: 'json',
     delay: 250,
-    data: p => ({ q: p.term }),
+    data: p => ({ q: p.term, apenas_base: 1 }),
     processResults: d => ({ results: d.results }),
   },
 });

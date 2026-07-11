@@ -142,39 +142,7 @@
         </div>
     </div>
 
-    {% if is_paginated %}
-    <nav aria-label="Paginacao" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Primeira</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Anterior</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">Primeira</span></li>
-            <li class="page-item disabled"><span class="page-link">Anterior</span></li>
-            {% endif %}
-
-            <li class="page-item active">
-                <span class="page-link">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-            </li>
-
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Proxima</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if status %}&status={{ status }}{% endif %}{% if tipo %}&tipo={{ tipo }}{% endif %}">Ultima</a>
-            </li>
-            {% else %}
-            <li class="page-item disabled"><span class="page-link">Proxima</span></li>
-            <li class="page-item disabled"><span class="page-link">Ultima</span></li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
+    {% include 'partials/pagination.html' with page_obj=page_obj %}
 
     {% else %}
     <div class="alert alert-info" role="alert">

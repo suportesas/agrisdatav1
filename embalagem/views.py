@@ -187,25 +187,48 @@ def ordem_gerar_pallets(request, pk):
         return redirect('embalagem:ordem_detail', pk=pk)
 
     hoje = timezone.now().date()
-    with transaction.atomic():
-        for seq in range(1, n_pallets + 1):
-            codigo = PalletEmbalado._gerar_codigo(empresa, hoje, safra=ordem.safra)
-            PalletEmbalado.objects.create(
+    from django.core.exceptions import ValidationError
+    from estoque.services import criar_movimentacao
+    try:
+        with transaction.atomic():
+            for seq in range(1, n_pallets + 1):
+                codigo = PalletEmbalado._gerar_codigo(empresa, hoje, safra=ordem.safra)
+                PalletEmbalado.objects.create(
+                    empresa=empresa,
+                    codigo_pallet=codigo,
+                    ordem_embalagem=ordem,
+                    tipo_embalagem=te,
+                    numero_sequencial=seq,
+                    quantidade_caixas=te.caixas_por_pallet,
+                    peso_bruto_kg=te.peso_bruto_pallet,
+                    peso_liquido_kg=te.peso_liquido_pallet,
+                    data_embalagem=hoje,
+                    armazem=ordem.armazem_destino,
+                    local_estocagem=ordem.local_destino,
+                    status='DISPONIVEL',
+                )
+
+            # Baixa o lote de matéria-prima a granel na quantidade efetivamente
+            # empacotada (n_pallets * peso líquido do pallet), não em
+            # `quantidade_entrada_kg`, que pode ser maior por causa do
+            # arredondamento por baixo (math.floor) acima.
+            quantidade_empacotada = Decimal(n_pallets) * Decimal(peso_liq_pallet)
+            criar_movimentacao(
                 empresa=empresa,
-                codigo_pallet=codigo,
-                ordem_embalagem=ordem,
-                tipo_embalagem=te,
-                numero_sequencial=seq,
-                quantidade_caixas=te.caixas_por_pallet,
-                peso_bruto_kg=te.peso_bruto_pallet,
-                peso_liquido_kg=te.peso_liquido_pallet,
-                data_embalagem=hoje,
-                armazem=ordem.armazem_destino,
-                local_estocagem=ordem.local_destino,
-                status='DISPONIVEL',
+                tipo='SAIDA',
+                origem='PEDIDO_VENDA',
+                quantidade=quantidade_empacotada,
+                usuario=request.user,
+                lote=ordem.lote_origem,
+                documento=ordem.numero,
+                observacao=f'Baixa por embalagem — Ordem {ordem.numero} ({n_pallets} pallets).',
             )
-        ordem.status = 'CONCLUIDA'
-        ordem.save(update_fields=['status'])
+
+            ordem.status = 'CONCLUIDA'
+            ordem.save(update_fields=['status'])
+    except ValidationError as exc:
+        messages.error(request, f'Saldo insuficiente no lote de origem: {"; ".join(exc.messages)}')
+        return redirect('embalagem:ordem_detail', pk=pk)
 
     messages.success(request, f'{n_pallets} pallets gerados com sucesso.')
     return redirect('embalagem:ordem_detail', pk=pk)
@@ -596,6 +619,38 @@ def _agrupar_itens_por_tipo(rom):
     return dict(grupos)
 
 
+def _rastreabilidade_por_tipo(rom):
+    """Para cada TipoEmbalagem do romaneio, retorna o LoteProducao mais antigo
+    entre os pallets que o compõem — usado para popular fazenda/variedade/GGN/
+    datas de colheita no Packing List (RF-110). Se um tipo agregar pallets de
+    mais de um LoteProducao, usa o mais antigo e ignora os demais (não bloqueia
+    a geração do documento).
+    """
+    from collections import defaultdict
+    lotes_por_tipo = defaultdict(list)
+    itens_qs = rom.itens.select_related(
+        'pallet__tipo_embalagem',
+        'pallet__ordem_embalagem__lote_producao__talhao__fazenda',
+        'pallet__ordem_embalagem__lote_producao__cultura',
+    ).prefetch_related('pallet__composicao__tipo_embalagem')
+    for item in itens_qs:
+        pallet = item.pallet
+        lote_producao = pallet.ordem_embalagem.lote_producao
+        if not lote_producao:
+            continue
+        if pallet.is_misto:
+            for comp in pallet.composicao.all():
+                lotes_por_tipo[comp.tipo_embalagem].append(lote_producao)
+        else:
+            lotes_por_tipo[pallet.tipo_embalagem].append(lote_producao)
+
+    resultado = {}
+    for te, lotes in lotes_por_tipo.items():
+        lotes_ordenados = sorted(lotes, key=lambda l: l.data_colheita_inicio or timezone.now().date())
+        resultado[te] = lotes_ordenados[0]
+    return resultado
+
+
 @login_required
 @require_POST
 def romaneio_gerar_invoice(request, pk):
@@ -610,6 +665,13 @@ def romaneio_gerar_invoice(request, pk):
     if rom.invoice_exportacao_id:
         messages.warning(request, 'Romaneio já possui Invoice vinculada.')
         return redirect('embalagem:romaneio_detail', pk=pk)
+    if rom.pedido_venda_id and rom.pedido_venda.invoice_id:
+        # O Pedido de Venda vinculado já foi faturado pelo fluxo vendas-primeiro —
+        # reaproveita essa Invoice em vez de gerar uma segunda para a mesma carga.
+        rom.invoice_exportacao = rom.pedido_venda.invoice
+        rom.save(update_fields=['invoice_exportacao'])
+        messages.info(request, f'Pedido {rom.pedido_venda.numero} já possui Invoice {rom.pedido_venda.invoice.numero} — reaproveitada.')
+        return redirect('faturamento:invoice_detail', pk=rom.pedido_venda.invoice_id)
     if rom.status not in ('CONFIRMADO', 'CARREGANDO', 'CONCLUIDO'):
         messages.error(request, 'Confirme o romaneio antes de gerar a Invoice.')
         return redirect('embalagem:romaneio_detail', pk=pk)
@@ -638,6 +700,12 @@ def romaneio_gerar_invoice(request, pk):
             data_embarque_previsto=data_embarque,
             porto_embarque=porto_embarque,
             porto_destino=porto_destino,
+            banco_nome=empresa.banco_nome,
+            banco_endereco=empresa.banco_endereco,
+            banco_swift=empresa.banco_swift,
+            banco_iban=empresa.banco_iban,
+            banco_numero_conta=empresa.banco_numero_conta,
+            banco_beneficiario_nome=empresa.banco_beneficiario_nome,
             criado_por=request.user,
         )
 
@@ -662,7 +730,22 @@ def romaneio_gerar_invoice(request, pk):
             criado_por=request.user,
         )
         nr_container = rom.container.numero_container if rom.container else ''
+        rastreabilidade = _rastreabilidade_por_tipo(rom)
         for i, (te, totais) in enumerate(grupos.items(), start=1):
+            lote_producao = rastreabilidade.get(te)
+            farm_nome = ''
+            variedade = ''
+            data_colheita_inicio = None
+            data_colheita_fim = None
+            ggn_numero = ''
+            if lote_producao:
+                if lote_producao.talhao and lote_producao.talhao.fazenda:
+                    farm_nome = lote_producao.talhao.fazenda.nome
+                    ggn_numero = lote_producao.talhao.fazenda.ggn_numero
+                if lote_producao.cultura:
+                    variedade = lote_producao.cultura.variedade or lote_producao.cultura.nome
+                data_colheita_inicio = lote_producao.data_colheita_inicio
+                data_colheita_fim = lote_producao.data_colheita_fim
             ItemPackingList.objects.create(
                 packing_list=pl,
                 container=rom.container,
@@ -672,6 +755,11 @@ def romaneio_gerar_invoice(request, pk):
                 quantidade_pallets=totais['pallets'] or None,
                 peso_bruto_kg=totais['peso_bruto'],
                 peso_liquido_kg=totais['peso_liquido'],
+                farm_nome=farm_nome,
+                variedade=variedade,
+                data_colheita_inicio=data_colheita_inicio,
+                data_colheita_fim=data_colheita_fim,
+                ggn_numero=ggn_numero,
                 ordem=i,
             )
 
@@ -693,6 +781,13 @@ def romaneio_gerar_nota_fiscal(request, pk):
     if rom.nota_fiscal_id:
         messages.warning(request, 'Romaneio já possui Nota Fiscal vinculada.')
         return redirect('embalagem:romaneio_detail', pk=pk)
+    if rom.pedido_venda_id and rom.pedido_venda.nota_fiscal_id:
+        # O Pedido de Venda vinculado já foi faturado pelo fluxo vendas-primeiro —
+        # reaproveita essa NF-e em vez de gerar uma segunda para a mesma carga.
+        rom.nota_fiscal = rom.pedido_venda.nota_fiscal
+        rom.save(update_fields=['nota_fiscal'])
+        messages.info(request, f'Pedido {rom.pedido_venda.numero} já possui NF-e {rom.pedido_venda.nota_fiscal.numero} — reaproveitada.')
+        return redirect('faturamento:nota_fiscal_detail', pk=rom.pedido_venda.nota_fiscal_id)
     if rom.status not in ('CONFIRMADO', 'CARREGANDO', 'CONCLUIDO'):
         messages.error(request, 'Confirme o romaneio antes de gerar a Nota Fiscal.')
         return redirect('embalagem:romaneio_detail', pk=pk)

@@ -6,25 +6,6 @@
 {% block extra_css %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-    .metric-card {
-        border-left: 4px solid #0d6efd;
-        transition: transform 0.2s;
-    }
-    .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
-    }
-    .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
-        color: #0d6efd;
-    }
-    .metric-label {
-        font-size: 0.9rem;
-        color: #6c757d;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
     .alert-badge {
         padding: 4px 12px;
         border-radius: 12px;
@@ -73,49 +54,53 @@
     </div>
 
     <!-- KPIs Principais -->
-    <div class="row mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="card metric-card">
-                <div class="card-body">
-                    <div class="metric-label">Empresas Total</div>
-                    <div class="metric-value">{{ total_empresas }}</div>
-                    <small class="text-muted">
+            <div class="kpi-card">
+                <div class="kpi-icon blue"><i class="bi bi-building"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Empresas Total</div>
+                    <div class="kpi-value">{{ total_empresas }}</div>
+                    <div class="kpi-sub">
                         <strong class="text-success">{{ empresas_ativas }}</strong> ativas
                         / <strong class="text-danger">{{ empresas_inativas }}</strong> inativas
-                    </small>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card metric-card">
-                <div class="card-body">
-                    <div class="metric-label">Usuários Total</div>
-                    <div class="metric-value">{{ total_usuarios }}</div>
-                    <small class="text-muted">
+            <div class="kpi-card">
+                <div class="kpi-icon green"><i class="bi bi-people"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Usuários Total</div>
+                    <div class="kpi-value">{{ total_usuarios }}</div>
+                    <div class="kpi-sub">
                         <strong class="text-success">{{ usuarios_ativos }}</strong> ativos
-                    </small>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card metric-card">
-                <div class="card-body">
-                    <div class="metric-label">Receita Mensal</div>
-                    <div class="metric-value">R$ {{ receita_mensal|floatformat:0 }}</div>
-                    <small class="text-muted">
+            <div class="kpi-card">
+                <div class="kpi-icon green"><i class="bi bi-cash-stack"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Receita Mensal</div>
+                    <div class="kpi-value">R$ {{ receita_mensal|floatformat:0 }}</div>
+                    <div class="kpi-sub">
                         Anual: R$ {{ receita_anual|floatformat:0 }}
-                    </small>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card metric-card">
-                <div class="card-body">
-                    <div class="metric-label">Alertas Ativos</div>
-                    <div class="metric-value text-danger">{{ alertas_ativos }}</div>
-                    <small class="text-muted">
-                        <strong class="badge-critica">{{ alertas_criticos }}</strong> críticos
-                    </small>
+            <div class="kpi-card">
+                <div class="kpi-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-label">Alertas Ativos</div>
+                    <div class="kpi-value">{{ alertas_ativos }}</div>
+                    <div class="kpi-sub">
+                        <span class="alert-badge badge-critica">{{ alertas_criticos }}</span> críticos
+                    </div>
                 </div>
             </div>
         </div>

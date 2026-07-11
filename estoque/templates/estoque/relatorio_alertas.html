@@ -30,7 +30,7 @@
                         <i class="fas fa-circle"></i> Alertas Críticos
                     </h5>
                     <p class="card-text display-4">{{ total_criticos }}</p>
-                    <small>Estoque ≤ 0</small>
+                    <small>Estoque ≤ Mínimo</small>
                 </div>
             </div>
         </div>
@@ -67,40 +67,77 @@
             </h5>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Código</th>
-                            <th>Produto</th>
-                            <th>Categoria</th>
-                            <th class="text-end">Saldo Atual</th>
-                            <th class="text-end">Est. Mínimo</th>
-                            <th class="text-end">Est. Máximo</th>
-                            <th>Unidade</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for alerta in alertas_criticos %}
-                        <tr class="table-danger">
-                            <td>
-                                <code>{{ alerta.produto.codigo|default:"-" }}</code>
-                            </td>
-                            <td>
-                                <strong>{{ alerta.produto.nome }}</strong>
-                            </td>
-                            <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
-                            <td class="text-end text-danger">
-                                <strong>{{ alerta.saldo }}</strong>
-                            </td>
-                            <td class="text-end">{{ alerta.minimo }}</td>
-                            <td class="text-end">{{ alerta.maximo }}</td>
-                            <td>{{ alerta.produto.unidade_medida.sigla|default:"-" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <form method="post" action="{% url 'compras:central_alertas_gerar_solicitacao' %}">
+                {% csrf_token %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                {% if pode_gerar_compra %}
+                                <th style="width: 40px;">
+                                    <input type="checkbox" class="form-check-input" id="marcar-todos-criticos">
+                                </th>
+                                {% endif %}
+                                <th>Código</th>
+                                <th>Produto</th>
+                                <th>Categoria</th>
+                                <th class="text-end">Saldo Atual</th>
+                                <th class="text-end">Est. Mínimo</th>
+                                <th class="text-end">Est. Máximo</th>
+                                <th>Unidade</th>
+                                {% if pode_gerar_compra %}
+                                <th style="width: 160px;">Qtd. a Comprar</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alerta in alertas_criticos %}
+                            <tr class="table-danger">
+                                {% if pode_gerar_compra %}
+                                <td>
+                                    {% if alerta.pode_comprar %}
+                                    <input type="checkbox" class="form-check-input item-checkbox-critico" name="produto_id[]" value="{{ alerta.produto.id }}">
+                                    {% elif alerta.ja_solicitado %}
+                                    <span class="badge bg-secondary" title="Já existe solicitação de compra em aberto para este produto">Solicitado</span>
+                                    {% else %}
+                                    <span class="text-muted" title="Produto não controla estoque via compras">—</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                <td>
+                                    <code>{{ alerta.produto.codigo|default:"-" }}</code>
+                                </td>
+                                <td>
+                                    <strong>{{ alerta.produto.nome }}</strong>
+                                </td>
+                                <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
+                                <td class="text-end text-danger">
+                                    <strong>{{ alerta.saldo }}</strong>
+                                </td>
+                                <td class="text-end">{{ alerta.minimo }}</td>
+                                <td class="text-end">{{ alerta.maximo }}</td>
+                                <td>{{ alerta.produto.unidade_medida.sigla|default:"-" }}</td>
+                                {% if pode_gerar_compra %}
+                                <td>
+                                    {% if alerta.pode_comprar %}
+                                    <input type="number" step="0.001" min="0.001" class="form-control form-control-sm"
+                                           name="quantidade_{{ alerta.produto.id }}"
+                                           value="{{ alerta.produto.estoque_maximo|default_if_none:'' }}"
+                                           placeholder="Sugestão automática">
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if pode_gerar_compra and tem_criticos_compraveis %}
+                <button type="submit" class="btn btn-primary mt-2">
+                    <i class="fas fa-cart-plus"></i> Gerar Solicitação de Compra e Ir para Cotação
+                </button>
+                {% endif %}
+            </form>
         </div>
     </div>
     {% endif %}
@@ -180,4 +217,10 @@
         border-radius: 3px;
     }
 </style>
+
+<script>
+document.getElementById('marcar-todos-criticos')?.addEventListener('change', function() {
+    document.querySelectorAll('.item-checkbox-critico').forEach(cb => cb.checked = this.checked);
+});
+</script>
 {% endblock %}

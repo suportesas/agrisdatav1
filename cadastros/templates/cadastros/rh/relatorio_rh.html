@@ -13,25 +13,6 @@
     gap: 5px;
     flex-wrap: wrap;
   }
-  .stat-summary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-  }
-  .stat-item {
-    display: inline-block;
-    margin-right: 30px;
-  }
-  .stat-value {
-    font-size: 1.8rem;
-    font-weight: bold;
-  }
-  .stat-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
-  }
 </style>
 {% endblock %}
 
@@ -60,38 +41,78 @@
   </div>
 
   <!-- Resumo -->
-  <div class="stat-summary">
-    <div class="stat-item">
-      <div class="stat-value">{{ total_funcionarios }}</div>
-      <div class="stat-label">Funcionários Ativos</div>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="fas fa-users"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Funcionários Ativos</div>
+          <div class="kpi-value">{{ total_funcionarios }}</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">{{ total_ferias_agendadas }}</div>
-      <div class="stat-label">Férias Agendadas</div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon blue"><i class="fas fa-calendar-check"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Férias Agendadas</div>
+          <div class="kpi-value">{{ total_ferias_agendadas }}</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">{{ total_afastamentos_ativos }}</div>
-      <div class="stat-label">Afastamentos Ativos</div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon red"><i class="fas fa-medkit"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Afastamentos Ativos</div>
+          <div class="kpi-value">{{ total_afastamentos_ativos }}</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">{{ total_rescisoes }}</div>
-      <div class="stat-label">Rescisões em Processo</div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon gray"><i class="fas fa-user-times"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Rescisões em Processo</div>
+          <div class="kpi-value">{{ total_rescisoes }}</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">{{ vinculos_ativos }}</div>
-      <div class="stat-label">Vínculos Ativos</div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="fas fa-id-card"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Vínculos Ativos</div>
+          <div class="kpi-value">{{ vinculos_ativos }}</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">{{ vinculados_com_risco }}</div>
-      <div class="stat-label">Com Risco Ocupacional</div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon orange"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Com Risco Ocupacional</div>
+          <div class="kpi-value">{{ vinculados_com_risco }}</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">{{ recontratacoes_mes }}</div>
-      <div class="stat-label">Recontratações no Mês</div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon blue"><i class="fas fa-user-plus"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Recontratações no Mês</div>
+          <div class="kpi-value">{{ recontratacoes_mes }}</div>
+        </div>
+      </div>
     </div>
-    <div class="stat-item">
-      <div class="stat-value">{{ taxa_rotatividade }}%</div>
-      <div class="stat-label">Rotatividade do Mês</div>
+    <div class="col-6 col-md-3">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon gray"><i class="fas fa-sync-alt"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Rotatividade do Mês</div>
+          <div class="kpi-value">{{ taxa_rotatividade }}%</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -172,7 +193,11 @@
                 {{ item.data_admissao|date:"d/m/Y" }}
               </td>
               <td>
+                {% if item.idade is not None %}
                 <span class="badge bg-info">{{ item.idade }} anos</span>
+                {% else %}
+                <span class="badge bg-secondary">-</span>
+                {% endif %}
               </td>
               <td>
                 {% if item.ferias_agendadas > 0 %}

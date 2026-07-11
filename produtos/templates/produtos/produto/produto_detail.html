@@ -183,9 +183,9 @@
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
           <strong>
-            <i class="bi bi-layers me-2" style="color:#7c3aed;"></i>
+            <i class="bi bi-layers me-2" style="color:#1a7a3c;"></i>
             Variantes
-            <span class="badge ms-1" style="background:#ede9fe;color:#7c3aed;font-size:.72rem;">{{ variantes|length }}</span>
+            <span class="badge ms-1" style="background:#d1fae5;color:#1a7a3c;font-size:.72rem;">{{ variantes|length }}</span>
           </strong>
           <a href="{% url 'produtos:variacao_form' %}?origem={{ produto.pk }}"
              class="btn btn-sm btn-outline-primary">
@@ -195,7 +195,7 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-sm table-hover align-middle mb-0">
-              <thead style="background:#f5f3ff;">
+              <thead style="background:#eaf5ec;">
                 <tr>
                   <th>Código</th>
                   <th>Nome completo</th>
@@ -218,7 +218,7 @@
                   <td class="small">
                     {% for a in variante.atributos.all %}
                       {% if a.dimensao.nome == dim %}
-                        <span class="badge" style="background:#ede9fe;color:#7c3aed;">{{ a.valor }}</span>
+                        <span class="badge" style="background:#d1fae5;color:#1a7a3c;">{{ a.valor }}</span>
                       {% endif %}
                     {% endfor %}
                   </td>
@@ -571,9 +571,9 @@
 <div class="modal fade" id="modalAtributo" tabindex="-1">
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
-      <div class="modal-header" style="background:#ede9fe;">
+      <div class="modal-header" style="background:#d1fae5;">
         <h6 class="modal-title fw-bold" id="modalAtributoTitulo">
-          <i class="bi bi-tag me-2" style="color:#7c3aed;"></i>Atributo de Variação
+          <i class="bi bi-tag me-2" style="color:#1a7a3c;"></i>Atributo de Variação
         </h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -640,7 +640,7 @@ async function carregarAtributos() {
 
     let rows = data.atributos.map(a => `
       <tr>
-        <td><span class="badge rounded-pill" style="background:#ede9fe;color:#7c3aed;">${esc(a.dimensao__nome)}</span></td>
+        <td><span class="badge rounded-pill" style="background:#d1fae5;color:#1a7a3c;">${esc(a.dimensao__nome)}</span></td>
         <td class="fw-semibold">${esc(a.valor)}</td>
         <td class="text-end">
           <button class="btn btn-xs btn-outline-warning me-1" style="padding:.15rem .45rem;font-size:.78rem;"
@@ -657,10 +657,10 @@ async function carregarAtributos() {
     container.innerHTML = `
       <div class="table-responsive">
         <table class="table table-sm table-hover align-middle mb-0">
-          <thead style="background:#f5f3ff;">
+          <thead style="background:#eaf5ec;">
             <tr>
-              <th style="color:#7c3aed;">Dimensão</th>
-              <th style="color:#7c3aed;">Valor</th>
+              <th style="color:#1a7a3c;">Dimensão</th>
+              <th style="color:#1a7a3c;">Valor</th>
               <th></th>
             </tr>
           </thead>
@@ -678,7 +678,7 @@ function abrirModalAtributo() {
   document.getElementById('atributoDimensao').value = '';
   document.getElementById('atributoValor').value = '';
   document.getElementById('modalAtributoTitulo').innerHTML =
-    '<i class="bi bi-tag me-2" style="color:#7c3aed;"></i>Adicionar Atributo';
+    '<i class="bi bi-tag me-2" style="color:#1a7a3c;"></i>Adicionar Atributo';
   getModal().show();
   setTimeout(() => document.getElementById('atributoDimensao').focus(), 300);
 }
@@ -689,7 +689,7 @@ function editarAtributo(id, dimensao, valor) {
   document.getElementById('atributoDimensao').value = dimensao;
   document.getElementById('atributoValor').value = valor;
   document.getElementById('modalAtributoTitulo').innerHTML =
-    '<i class="bi bi-pencil me-2" style="color:#7c3aed;"></i>Editar Atributo';
+    '<i class="bi bi-pencil me-2" style="color:#1a7a3c;"></i>Editar Atributo';
   getModal().show();
   setTimeout(() => document.getElementById('atributoValor').focus(), 300);
 }

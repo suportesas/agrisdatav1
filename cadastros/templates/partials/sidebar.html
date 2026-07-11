@@ -1,0 +1,75 @@
+<nav class="sidebar d-flex flex-column p-3">
+    <a href="#" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-decoration-none">
+        <i class="bi bi-shield-check text-primary fs-4 me-2"></i>
+        <span class="fs-4 fw-bold">Admin</span>
+    </a>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+        <li class="nav-item">
+            <a href="/dashboard/" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">
+                <i class="bi bi-bar-chart-line me-2"></i> Dashboard Principal
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link">
+                <i class="bi bi-graph-up-arrow me-2"></i> Métricas de Uso
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link">
+                <i class="bi bi-people me-2"></i> Profissionais
+            </a>
+        </li>
+        <li>
+            <a href="#" class="nav-link">
+                <i class="bi bi-cash-coin me-2"></i> Financeiro
+            </a>
+            <ul class="nav flex-column ms-4">
+                <li>
+                    <a href="#" class="nav-link">
+                        <i class="bi bi-gear me-2"></i> Configurações
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'cadastros:prazo_pagamento_list' %}" class="nav-link">
+                        <i class="bi bi-calendar-event me-2"></i> Prazos de Pagamento
+                    </a>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <a href="#" class="nav-link">
+                <i class="bi bi-box-seam me-2"></i> Exportação
+            </a>
+            <ul class="nav flex-column ms-4">
+                <li>
+                    <a href="{% url 'exportacao:solicitacao_booking_list' %}" class="nav-link">
+                        <i class="bi bi-card-list me-2"></i> Solicitações Booking
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'exportacao:booking_list' %}" class="nav-link">
+                        <i class="bi bi-bookmark-check me-2"></i> Bookings
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'exportacao:ordem_coleta_list' %}" class="nav-link">
+                        <i class="bi bi-file-earmark-arrow-down me-2"></i> Ordens de Coleta
+                    </a>
+                </li>
+            </ul>
+        </li>
+    </ul>
+    <hr>
+    <div class="dropdown">
+        <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="https://ui-avatars.com/api/?name={{ request.user.get_full_name|default:request.user.username }}" alt="" width="32" height="32" class="rounded-circle me-2">
+            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        </a>
+        <ul class="dropdown-menu text-small shadow">
+            <li><a class="dropdown-item" href="#">Perfil</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{% url 'logout' %}">Sair</a></li>
+        </ul>
+    </div>
+</nav>

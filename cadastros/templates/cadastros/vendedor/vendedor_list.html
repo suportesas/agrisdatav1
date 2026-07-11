@@ -6,12 +6,6 @@
 
 {% block extra_css %}
 <style>
-  .stat-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-  }
   .status-badge {
     padding: 0.4rem 0.8rem;
     border-radius: 20px;
@@ -22,11 +16,6 @@
   .status-inativo { background: #f8d7da; color: #721c24; }
   .status-ferias { background: #fff3cd; color: #856404; }
   .status-afastado { background: #d1ecf1; color: #0c5460; }
-  .action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
-  .action-icon:hover { color: #7c3aed; }
-  .action-icon.danger:hover { color: #dc2626; }
-  .action-icon.edit:hover { color: #0d6efd; }
-  tbody tr:hover td { background: #faf5ff; }
 </style>
 {% endblock %}
 
@@ -36,46 +25,38 @@
   <!-- Estatísticas -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="stat-card">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="mb-1 opacity-75">Total de Vendedores</h6>
-            <h2 class="mb-0 fw-bold">{{ total_vendedores }}</h2>
-          </div>
-          <i class="bi bi-people fs-1 opacity-50"></i>
+      <div class="kpi-card">
+        <div class="kpi-icon green"><i class="bi bi-people"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Total de Vendedores</div>
+          <div class="kpi-value">{{ total_vendedores }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="mb-1 opacity-75">Vendedores Ativos</h6>
-            <h2 class="mb-0 fw-bold">{{ total_ativos }}</h2>
-          </div>
-          <i class="bi bi-check-circle fs-1 opacity-50"></i>
+      <div class="kpi-card">
+        <div class="kpi-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Vendedores Ativos</div>
+          <div class="kpi-value">{{ total_ativos }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="mb-1 opacity-75">Mercado Interno</h6>
-            <h2 class="mb-0 fw-bold">{{ total_mercado_interno }}</h2>
-          </div>
-          <i class="bi bi-shop fs-1 opacity-50"></i>
+      <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="bi bi-shop"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Mercado Interno</div>
+          <div class="kpi-value">{{ total_mercado_interno }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h6 class="mb-1 opacity-75">Exportação</h6>
-            <h2 class="mb-0 fw-bold">{{ total_exportacao }}</h2>
-          </div>
-          <i class="bi bi-globe fs-1 opacity-50"></i>
+      <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="bi bi-globe"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Exportação</div>
+          <div class="kpi-value">{{ total_exportacao }}</div>
         </div>
       </div>
     </div>
@@ -227,46 +208,8 @@
     </div>
 
     <!-- Paginação -->
-    <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-muted">
-        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
-        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
-      </small>
-      <ul class="pagination pagination-sm mb-0">
-
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-          {% if page_obj.has_previous %}
-            <a class="page-link" href="?busca={{ request.GET.busca }}&status={{ request.GET.status }}&tipo_mercado={{ request.GET.tipo_mercado }}&page={{ page_obj.previous_page_number }}">
-              <i class="bi bi-chevron-left"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-          {% endif %}
-        </li>
-
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-            <li class="page-item">
-              <a class="page-link" href="?busca={{ request.GET.busca }}&status={{ request.GET.status }}&tipo_mercado={{ request.GET.tipo_mercado }}&page={{ num }}">{{ num }}</a>
-            </li>
-          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-          {% endif %}
-        {% endfor %}
-
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-          {% if page_obj.has_next %}
-            <a class="page-link" href="?busca={{ request.GET.busca }}&status={{ request.GET.status }}&tipo_mercado={{ request.GET.tipo_mercado }}&page={{ page_obj.next_page_number }}">
-              <i class="bi bi-chevron-right"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-          {% endif %}
-        </li>
-
-      </ul>
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
     </div>
 
   </div>

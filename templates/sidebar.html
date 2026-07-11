@@ -61,8 +61,6 @@
         </ul>
       </li>
 
-      <li class="nav-divider"></li>
-
       <!-- GESTÃO (Superusuário) -->
       {% if user.is_superuser %}
       <li class="nav-section">
@@ -423,11 +421,6 @@
             </a>
           </li>
           <li class="submenu-divider"></li>
-          <li><a href="{% url 'estoque:escolher_modo_estoque' %}"><i class="bi bi-toggle-on text-primary"></i> Escolher Modo</a></li>
-          <li><a href="{% url 'estoque:entrada_rapida' %}"><i class="bi bi-lightning-charge text-success"></i> Entrada Rápida</a></li>
-          <li><a href="{% url 'estoque:saida_rapida' %}"><i class="bi bi-lightning-charge text-warning"></i> Saída Rápida</a></li>
-          <li><a href="{% url 'estoque:ajuste_rapido' %}"><i class="bi bi-lightning-charge text-info"></i> Ajuste Rápido</a></li>
-          <li class="submenu-divider"></li>
           <li><a href="{% url 'cadastros:requisicao_list' %}"><i class="bi bi-clipboard-check"></i> Requisições</a></li>
           <li><a href="{% url 'cadastros:requisicao_create' %}"><i class="bi bi-plus-circle"></i> Nova Requisição</a></li>
           <li>
@@ -475,15 +468,14 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          <li><a href="{% url 'compras:escolher_modo_compra' %}"><i class="bi bi-toggle-on text-primary"></i> Escolher Modo</a></li>
-          <li><a href="{% url 'compras:compra_rapida' %}"><i class="bi bi-lightning-charge text-success"></i> Compra Rápida</a></li>
-          <li><a href="{% url 'compras:recebimento_rapido' %}"><i class="bi bi-lightning-charge text-warning"></i> Recebimento Rápido</a></li>
+          {% if perms.compras.criar_pedido_direto_fornecedor_unico or user.is_admin_empresa %}
+          <li><a href="{% url 'compras:pedido_direto_create' %}"><i class="bi bi-lightning-charge text-success"></i> Pedido Direto</a></li>
+          {% endif %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:solicitacao_list' %}"><i class="bi bi-file-text"></i> Solicitações</a></li>
           <li><a href="{% url 'compras:solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:cotacao_list' %}"><i class="bi bi-cart3"></i> Cotações</a></li>
-          <li><a href="{% url 'compras:cotacao_inteligente_list' %}"><i class="bi bi-calculator text-primary"></i> Cotações Inteligentes</a></li>
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:pedido_list' %}"><i class="bi bi-file-earmark-check"></i> Pedidos de Compra</a></li>
           <li class="submenu-divider"></li>
@@ -623,6 +615,7 @@
               <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
               <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-building"></i> Armadores</a></li>
               <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-compass"></i> Navios</a></li>
+              <li><a href="{% url 'cadastros:agente_exportacao_list' %}"><i class="bi bi-globe"></i> Agentes de Exportação</a></li>
             </ul>
           </li>
           <li><a href="{% url 'exportacao:solicitacao_booking_list' %}"><i class="bi bi-file-earmark-plus"></i> Solicitações Booking</a></li>
@@ -699,6 +692,7 @@
         <ul class="nav-submenu">
           <li><a href="{% url 'vendas:pedido_list' %}"><i class="bi bi-list-ul"></i> Pedidos de Venda</a></li>
           <li><a href="{% url 'vendas:pedido_create' %}"><i class="bi bi-plus-circle"></i> Novo Pedido</a></li>
+          <li><a href="{% url 'vendas:tabela_preco_list' %}"><i class="bi bi-tags"></i> Tabelas de Preço</a></li>
         </ul>
       </li>
       {% endif %}

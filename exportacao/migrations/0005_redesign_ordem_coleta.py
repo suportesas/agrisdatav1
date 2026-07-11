@@ -9,6 +9,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('cadastros', '0105_safraplan_expand_fields'),
         ('exportacao', '0004_add_booking_shipping_fields'),
+        ('frota', '0001_initial'),
     ]
 
     operations = [

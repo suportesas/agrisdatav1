@@ -71,24 +71,28 @@ def my_view(request):
 
 Each Django app follows the pattern: `models.py → forms.py → views.py → urls.py → templates/<app>/`. URL namespaces are always declared with `app_name = '<app>'` and included in `core/urls.py` as `path('<prefix>/', include(('<app>.urls', '<app>')))`.
 
-Apps and their URL prefixes:
-- `financeiro/` — contas a pagar/receber, parcelas, pagamentos, fluxo de caixa
+There are 27 apps. The canonical, kept-up-to-date list of apps with URL prefixes and descriptions is the "Módulos do Sistema" table in `README.md` (root) — functional documentation per app lives in `docs/2_MODULOS/MODULO_<APP>.md` (see `docs/2_MODULOS/MAPA_COBERTURA_MODULOS.md` for which ones are verified vs. still skeleton). Frequently touched apps:
+- `financeiro/` — contas a pagar/receber, parcelas, pagamentos, fluxo de caixa (see `financeiro/CLAUDE.md`)
 - `plano_contas/` — contas contábeis hierárquicas, centros de custo
 - `faturamento/` — NF-e, Invoice de exportação, CT-e, MDF-e, Packing List
-- `compras/` — solicitações, pedidos, cotações, recebimentos, XML NF-e import
-- `estoque/` — movimentações, requisições, empréstimos, inventário
-- `cadastros/` — clientes, fornecedores, produtores, transportadoras, CFOP, NCM
+- `compras/` — solicitações, cotações, pedidos, recebimentos, XML NF-e import (see `docs/2_MODULOS/MODULO_COMPRAS.md`)
+- `estoque/` — movimentações, lotes, armazéns, inventário cíclico (see `docs/4_TECNICO/ESTRATEGIA_ESTOQUE.md`)
+- `cadastros/` — fazendas, clientes, fornecedores, produtores, transportadoras, CFOP, NCM
+- `produtos/` — catálogo, categorias/subcategorias, tributação
 - `vendas/` — pedidos de venda
 - `exportacao/` — bookings, armadores, portos, ordens de coleta
 - `embalagem/` — ordens, pallets, romaneios
+- `rh/` — funcionários, funções, riscos ambientais (separate app since migration `cadastros/migrations/0112_remove_rh_models.py` — not part of `cadastros` anymore)
 
 ### Templates
 
 Global base: `templates/base.html` (Bootstrap 5.3.2 + Bootstrap Icons 1.11.1 + Google Fonts Inter). Sidebar: `templates/sidebar.html`. App-specific templates live in `<app>/templates/<app>/`.
 
 Design system variables (in `static/css/base.css`):
-- Primary: `#7c3aed` (violet), Accent: `#06b6d4` (cyan)
-- `--radius-card: 14px`, `--shadow-card` with purple tint
+- Primary: `#1a7a3c` (green, matches the sidebar's `--sb-green`), Accent: `#2563eb` (blue)
+- Sidebar (`static/css/sidebar-modern.css`) uses a dark near-black/dark-green theme (`--sb-bg: #10231a`) with the same green accent
+- Pastel status tokens (`--pastel-{green,blue,orange,red,gray}-{bg,text}`) drive badges (soft pill style) and stat-card icons
+- `--radius-card: 14px`, `--shadow-card` neutral (no color tint)
 - Font: Inter. No Tailwind — Bootstrap + custom CSS only.
 
 ### Forms
@@ -144,3 +148,7 @@ FF_<FLAG_NAME>=true     # enable feature flags
 ```
 
 SQLite is used automatically when PostgreSQL env vars are absent (development only).
+
+## Further documentation
+
+Full project documentation lives in `docs/` — see `docs/README.md` for the index and `docs/NAVIGATION.md` for navigation by profile (technical / business / operations). Historical, point-in-time implementation notes for already-completed features are archived under `docs/archive/` (consolidated by topic, not meant to describe current behavior).

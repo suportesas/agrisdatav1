@@ -43,9 +43,9 @@
                 </td>
                 <td>
                     {% if recebimento.pedido %}
-                        {{ recebimento.pedido.fornecedor.nome }}
+                        {{ recebimento.pedido.fornecedor.get_nome_exibicao }}
                     {% else %}
-                        {{ recebimento.fornecedor.nome }}
+                        {{ recebimento.fornecedor.get_nome_exibicao }}
                     {% endif %}
                 </td>
                 <td>{{ recebimento.nota_fiscal }}</td>

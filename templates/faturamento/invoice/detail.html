@@ -23,6 +23,9 @@
       <a href="{% url 'faturamento:packing_list_create' %}?invoice={{ invoice.pk }}" class="btn btn-outline-info">
         <i class="bi bi-box-seam me-1"></i>Gerar Packing List
       </a>
+      <a href="{% url 'faturamento:invoice_devolucao_registrar' invoice.pk %}" class="btn btn-outline-warning">
+        <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
+      </a>
       {% endif %}
       {% if invoice.status == 'RASCUNHO' %}
       <a href="{% url 'faturamento:invoice_update' invoice.pk %}" class="btn btn-outline-secondary">
@@ -180,11 +183,34 @@
       </div>
     </div>
 
-    {% if invoice.banco_beneficiario %}
+    {% if invoice.banco_beneficiario or invoice.banco_nome or invoice.banco_iban %}
     <div class="col-md-6">
       <div class="card border-0 shadow-sm">
         <div class="card-header fw-semibold">Dados Bancários do Beneficiário</div>
-        <div class="card-body" style="white-space:pre-line">{{ invoice.banco_beneficiario }}</div>
+        <div class="card-body">
+          {% if invoice.banco_beneficiario_nome %}<div><strong>Beneficiário:</strong> {{ invoice.banco_beneficiario_nome }}</div>{% endif %}
+          {% if invoice.banco_nome %}<div><strong>Banco:</strong> {{ invoice.banco_nome }}</div>{% endif %}
+          {% if invoice.banco_endereco %}<div><strong>Endereço:</strong> {{ invoice.banco_endereco }}</div>{% endif %}
+          {% if invoice.banco_swift %}<div><strong>SWIFT/BIC:</strong> {{ invoice.banco_swift }}</div>{% endif %}
+          {% if invoice.banco_iban %}<div><strong>IBAN:</strong> {{ invoice.banco_iban }}</div>{% endif %}
+          {% if invoice.banco_numero_conta %}<div><strong>Conta:</strong> {{ invoice.banco_numero_conta }}</div>{% endif %}
+          {% if invoice.banco_correspondente_nome %}<div><strong>Banco Correspondente:</strong> {{ invoice.banco_correspondente_nome }} ({{ invoice.banco_correspondente_swift }})</div>{% endif %}
+          {% if invoice.banco_beneficiario %}<div class="mt-2" style="white-space:pre-line">{{ invoice.banco_beneficiario }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if invoice.regime_drawback != 'NENHUM' %}
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Drawback / Ato Concessório</div>
+        <div class="card-body">
+          <div><strong>Regime:</strong> {{ invoice.get_regime_drawback_display }}</div>
+          {% if invoice.ato_concessorio_numero %}<div><strong>Ato Concessório:</strong> {{ invoice.ato_concessorio_numero }}</div>{% endif %}
+          {% if invoice.ato_concessorio_data %}<div><strong>Data:</strong> {{ invoice.ato_concessorio_data|date:"d/m/Y" }}</div>{% endif %}
+          {% if invoice.ato_concessorio_validade %}<div><strong>Validade:</strong> {{ invoice.ato_concessorio_validade|date:"d/m/Y" }}</div>{% endif %}
+        </div>
       </div>
     </div>
     {% endif %}

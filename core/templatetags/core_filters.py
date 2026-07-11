@@ -2,8 +2,37 @@ import json as _json
 
 from django import template
 from django.template.defaultfilters import floatformat
+from django.urls import NoReverseMatch, reverse
 
 register = template.Library()
+
+
+@register.inclusion_tag('partials/breadcrumb.html')
+def breadcrumb(*items):
+    """Renderiza um breadcrumb padronizado.
+
+    Uso: {% breadcrumb "Dashboard:dashboard:index" "Estoque:estoque:dashboard" "Produtos" %}
+    Cada item é "Label:nome_da_url" (vira link) ou só "Label" (item final/ativo, sem link).
+    Nomes de URL namespaced ("app:view") funcionam normalmente — só o primeiro ':' separa o rótulo.
+
+    Ícone opcional: prefixe o item com "classe-do-icone|" (ex. "bi-house-door|Dashboard:dashboard:index").
+    Só o primeiro '|' separa o ícone do resto — o restante é parseado normalmente.
+    """
+    parsed = []
+    for item in items:
+        icon = None
+        if '|' in item:
+            icon, item = item.split('|', 1)
+        if ':' in item:
+            label, url_name = item.split(':', 1)
+            try:
+                url = reverse(url_name)
+            except NoReverseMatch:
+                url = None
+        else:
+            label, url = item, None
+        parsed.append({'label': label, 'url': url, 'icon': icon})
+    return {'items': parsed}
 
 
 @register.filter

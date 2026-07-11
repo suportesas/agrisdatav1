@@ -12,11 +12,11 @@
   max-height: calc(100vh - 6rem);
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #c4b5fd #f5f3ff;
+  scrollbar-color: #6ee7b7 #eaf5ec;
 }
 .roles-panel::-webkit-scrollbar { width: 5px; }
-.roles-panel::-webkit-scrollbar-track { background: #f5f3ff; border-radius: 4px; }
-.roles-panel::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 4px; }
+.roles-panel::-webkit-scrollbar-track { background: #eaf5ec; border-radius: 4px; }
+.roles-panel::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 4px; }
 
 /* Card de role */
 .role-item {
@@ -33,12 +33,12 @@
   box-shadow: 0 1px 4px rgba(0,0,0,.06);
 }
 .role-item:hover {
-  background: #faf5ff;
-  border-color: #e9d5ff;
+  background: #f7faf8;
+  border-color: #a7f3d0;
 }
 .role-item.active {
-  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
-  border-color: #7c3aed;
+  background: linear-gradient(135deg, #eaf5ec 0%, #d1fae5 100%);
+  border-color: #1a7a3c;
   box-shadow: 0 2px 12px rgba(124,58,237,.15);
 }
 .role-item .role-icon {
@@ -97,12 +97,12 @@
 /* Cabeçalho de módulo */
 .perms-module-header td {
   padding: .75rem 1rem !important;
-  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 60%, #faf5ff 100%) !important;
+  background: linear-gradient(135deg, #eaf5ec 0%, #d1fae5 60%, #f7faf8 100%) !important;
   font-weight: 700;
   font-size: .85rem;
-  color: #5b21b6;
-  border-top: 2px solid #ede9fe !important;
-  border-bottom: 1px solid #ddd6fe !important;
+  color: #0f5c2a;
+  border-top: 2px solid #d1fae5 !important;
+  border-bottom: 1px solid #a7f3d0 !important;
 }
 .perms-module-header:first-child td { border-top: none !important; }
 
@@ -110,7 +110,7 @@
 .perm-cb {
   width: 18px; height: 18px;
   cursor: pointer;
-  accent-color: #7c3aed;
+  accent-color: #1a7a3c;
 }
 .perm-cb:hover { transform: scale(1.15); }
 
@@ -134,7 +134,7 @@
 .module-count {
   font-size: .75rem; padding: .2rem .6rem;
   border-radius: 20px; font-weight: 600;
-  background: #ede9fe; color: #5b21b6;
+  background: #d1fae5; color: #0f5c2a;
 }
 .module-count.full { background: #d1fae5; color: #065f46; }
 .module-count.empty { background: #f3f4f6; color: #9ca3af; }
@@ -175,15 +175,15 @@
   max-height: 65vh;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: #c4b5fd #f5f3ff;
+  scrollbar-color: #6ee7b7 #eaf5ec;
 }
 .perms-scroll::-webkit-scrollbar { width: 5px; }
-.perms-scroll::-webkit-scrollbar-track { background: #f5f3ff; border-radius: 4px; }
-.perms-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 4px; }
+.perms-scroll::-webkit-scrollbar-track { background: #eaf5ec; border-radius: 4px; }
+.perms-scroll::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 4px; }
 
 /* Botão salvar */
 .btn-save-perms {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #1a7a3c 0%, #0f5c2a 100%);
   border: none; color: #fff; font-weight: 600;
   padding: .6rem 2rem; border-radius: 10px;
   transition: all .2s;
@@ -206,17 +206,12 @@
 <div class="container-fluid py-4" style="max-width: 1400px;">
 
   <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Dashboard</a></li>
-      <li class="breadcrumb-item active">Funções e Permissões</li>
-    </ol>
-  </nav>
+  {% breadcrumb "bi-house-door|Dashboard:dashboard:index" "Funções e Permissões" %}
 
   <!-- Cabeçalho -->
   <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
     <div>
-      <h2 class="fw-bold mb-1" style="color:#7c3aed;">
+      <h2 class="fw-bold mb-1" style="color:#1a7a3c;">
         <i class="bi bi-shield-lock me-2"></i>Funções e Permissões
       </h2>
       {% if request.user.empresa %}
@@ -229,7 +224,7 @@
     </div>
     {% if request.user.is_superuser or request.user.is_admin_empresa %}
     <a href="{% url 'empresas:role_create' %}" class="btn btn-sm fw-semibold"
-       style="background:#7c3aed;color:#fff;border-radius:10px;padding:.5rem 1.2rem;">
+       style="background:#1a7a3c;color:#fff;border-radius:10px;padding:.5rem 1.2rem;">
       <i class="bi bi-plus-circle me-1"></i> Nova Função
     </a>
     {% endif %}
@@ -331,7 +326,7 @@
         <div id="perms-content" class="d-none">
           <div class="perms-panel-header">
             <div>
-              <h6 class="mb-0 fw-bold" id="perms-role-name" style="color:#7c3aed;">—</h6>
+              <h6 class="mb-0 fw-bold" id="perms-role-name" style="color:#1a7a3c;">—</h6>
               <small class="text-muted" id="perms-role-meta">Clique nos checkboxes para editar</small>
             </div>
             <div class="perms-toolbar">
@@ -353,7 +348,7 @@
 
           <!-- Loading skeleton -->
           <div id="perms-loading" class="p-4 text-center d-none">
-            <div class="spinner-border" style="color:#7c3aed;" role="status">
+            <div class="spinner-border" style="color:#1a7a3c;" role="status">
               <span class="visually-hidden">Carregando...</span>
             </div>
             <p class="text-muted mt-2 mb-0">Carregando permissões...</p>
@@ -403,7 +398,7 @@
     <div class="modal-content" style="border-radius:16px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.2);">
       <div class="modal-header border-0 pb-0">
         <h5 class="modal-title fw-bold" id="cloneModalLabel">
-          <i class="bi bi-copy me-2" style="color:#7c3aed;"></i>Clonar Função
+          <i class="bi bi-copy me-2" style="color:#1a7a3c;"></i>Clonar Função
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -425,7 +420,7 @@
       <div class="modal-footer border-0 pt-0">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
         <button type="button" id="clone-confirm" class="btn fw-semibold"
-                style="background:#7c3aed;color:#fff;border-radius:10px;">
+                style="background:#1a7a3c;color:#fff;border-radius:10px;">
           <i class="bi bi-copy me-1"></i> Clonar
         </button>
       </div>

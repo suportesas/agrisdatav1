@@ -2,11 +2,13 @@
 
 Owner: Time embalagem
 Status: In Review
-Last Updated: 2026-07-01
+Last Updated: 2026-07-10
 Scope: embalagem
 
 ## Visao geral
 Modulo embalagem mapeado a partir de models e urls do codigo atual.
+
+> Nota: existe um planejamento pré-implementação escrito para o repositório anterior (agrisdatav1), anterior à existência real deste app — arquivado em `docs/archive/embalagem-planejamento-v1/` para referência histórica. Este documento é a fonte de verdade para o estado atual.
 
 ## Objetivo de negocio
 Disponibilizar as funcionalidades de embalagem com isolamento por empresa quando aplicavel e rastreabilidade de operacoes.

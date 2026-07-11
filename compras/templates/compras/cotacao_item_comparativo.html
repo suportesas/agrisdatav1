@@ -44,7 +44,7 @@
                         <tbody>
                             {% for proposta in item.propostas %}
                             <tr {% if proposta.melhor_preco %}class="table-info"{% endif %}>
-                                <td class="fw-bold">{{ proposta.fornecedor.nome }}</td>
+                                <td class="fw-bold">{{ proposta.fornecedor.get_nome_exibicao }}</td>
                                 <td class="text-end">R$ {{ proposta.preco_unitario|floatformat:2 }}</td>
                                 <td class="text-end">R$ {{ proposta.preco_total|floatformat:2 }}</td>
                                 <td class="text-center">{{ proposta.prazo_entrega }} dias</td>

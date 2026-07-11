@@ -9,6 +9,23 @@
     <a href="{% url 'exportacao:booking_update' booking.pk %}" class="btn btn-secondary">Editar Booking</a>
     <a href="{% url 'exportacao:booking_list' %}" class="btn btn-outline-secondary">Voltar à lista</a>
 
+    {% if booking.status == 'ABERTO' %}
+    <form method="post" action="{% url 'exportacao:booking_confirmar' booking.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success" onclick="return confirm('Confirmar este booking?')">
+        <i class="bi bi-check-circle me-1"></i>Confirmar Booking
+      </button>
+    </form>
+    {% endif %}
+    {% if booking.status == 'CONFIRMADO' %}
+    <form method="post" action="{% url 'exportacao:booking_embarcar' booking.pk %}" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary" onclick="return confirm('Marcar este booking como embarcado? Os contêineres pendentes/confirmados serão movidos para EMBARCADO.')">
+        <i class="bi bi-box-arrow-up-right me-1"></i>Marcar Embarcado
+      </button>
+    </form>
+    {% endif %}
+
     {% if saldo > 0 %}
     <a href="{% url 'exportacao:booking_container_create' booking.pk %}" class="btn btn-primary">
       <i class="bi bi-plus-circle me-1"></i>Adicionar Contêiner
@@ -34,6 +51,9 @@
             <dt class="col-5">Porto Origem</dt><dd class="col-7">{{ booking.porto_origem }}</dd>
             <dt class="col-5">Porto Destino</dt><dd class="col-7">{{ booking.porto_destino }}</dd>
             <dt class="col-5">Data Embarque</dt><dd class="col-7">{{ booking.data_embarque_previsto|date:'d/m/Y' }}</dd>
+            <dt class="col-5">Notify Party</dt><dd class="col-7">{{ booking.notify_party|default:'—' }}</dd>
+            <dt class="col-5">Freight Forwarder</dt><dd class="col-7">{{ booking.freight_forwarder|default:'—' }}</dd>
+            <dt class="col-5">Despachante Aduaneiro</dt><dd class="col-7">{{ booking.despachante_aduaneiro|default:'—' }}</dd>
           </dl>
         </div>
       </div>
@@ -184,6 +204,27 @@
       </div>
     </div>
   </div>
+
+  {% if booking.historico.exists %}
+  <div class="card mt-3">
+    <div class="card-body">
+      <h5 class="card-title">Histórico de Status</h5>
+      <ul class="list-group list-group-flush">
+        {% for h in booking.historico.all %}
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+          <div>
+            <strong>{{ h.status_from|default:"—" }} → {{ h.status_to }}</strong>
+            {% if h.observacoes %}<div class="small text-muted">{{ h.observacoes }}</div>{% endif %}
+          </div>
+          <div class="text-end small text-muted">
+            {{ h.data|date:'d/m/Y H:i' }}<br>{{ h.usuario|default:"—" }}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
 

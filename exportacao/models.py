@@ -209,6 +209,34 @@ class Booking(ExportacaoBaseModel):
     etd = models.DateTimeField('ETD', null=True, blank=True)
     eta = models.DateTimeField('ETA', null=True, blank=True)
 
+    notify_party = models.ForeignKey(
+        'cadastros.AgenteExportacao',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='bookings_notify',
+        verbose_name='Notify Party',
+        limit_choices_to={'tipo': 'NOTIFY'},
+    )
+    freight_forwarder = models.ForeignKey(
+        'cadastros.AgenteExportacao',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='bookings_forwarder',
+        verbose_name='Freight Forwarder',
+        limit_choices_to={'tipo': 'FORWARDER'},
+    )
+    despachante_aduaneiro = models.ForeignKey(
+        'cadastros.AgenteExportacao',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='bookings_despachante',
+        verbose_name='Despachante Aduaneiro',
+        limit_choices_to={'tipo': 'DESPACHANTE_ADUANEIRO'},
+    )
+
     class Meta:
         verbose_name = 'Booking'
         verbose_name_plural = 'Bookings'
@@ -264,6 +292,20 @@ class BookingContainer(ExportacaoBaseModel):
     lacre_armador = models.CharField('Lacre do Armador', max_length=50, blank=True)
     lacre_fiscal = models.CharField('Lacre Fiscal', max_length=50, blank=True)
     lacre_terminal = models.CharField('Lacre do Terminal', max_length=50, blank=True)
+    lacre_g7 = models.CharField('Lacre G7', max_length=50, blank=True, help_text='Lacre de segurança adicional (G7), quando exigido.')
+
+    DRAIN_CHOICES = [
+        ('OPEN', 'Aberto'),
+        ('CLOSED', 'Fechado'),
+        ('25', '25%'),
+        ('50', '50%'),
+        ('100', '100%'),
+    ]
+    temperatura_setpoint_c = models.DecimalField('Temperatura Setpoint (°C)', max_digits=5, decimal_places=2, blank=True, null=True)
+    ventilacao_air_exchange = models.CharField('Air Exchange / Ventilação', max_length=30, blank=True,
+        help_text='Ex.: "20 cbm/hour", "Closed", "Auto".')
+    umidade_setpoint_pct = models.DecimalField('Umidade Setpoint (%)', max_digits=5, decimal_places=2, blank=True, null=True)
+    drain_position = models.CharField('Posição do Dreno (Drain)', max_length=10, choices=DRAIN_CHOICES, blank=True)
     porto_origem = models.ForeignKey(
         'cadastros.Porto',
         on_delete=models.SET_NULL,
@@ -344,6 +386,36 @@ class BookingContainerHistory(ExportacaoBaseModel):
         return f'{self.container.numero_container} {self.status_from or ""} → {self.status_to}'
 
 
+class BookingHistory(ExportacaoBaseModel):
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='historico',
+        verbose_name='Booking',
+    )
+    data = models.DateTimeField('Data', default=timezone.now)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='historico_bookings',
+        verbose_name='Usuário',
+    )
+    status_from = models.CharField('Status anterior', max_length=50, blank=True)
+    status_to = models.CharField('Status novo', max_length=50)
+    observacoes = models.TextField('Observações', blank=True)
+
+    class Meta:
+        verbose_name = 'Histórico de Booking'
+        verbose_name_plural = 'Histórico de Bookings'
+        ordering = ['-data']
+        indexes = [models.Index(fields=['empresa', 'data'])]
+
+    def __str__(self):
+        return f'{self.booking.codigo or self.booking_id} {self.status_from or ""} → {self.status_to}'
+
+
 class OrdemColeta(ExportacaoBaseModel):
     STATUS = [
         ('PENDENTE', 'Pendente'),
@@ -378,6 +450,7 @@ class OrdemColeta(ExportacaoBaseModel):
     lacre_armador = models.CharField('Lacre do Armador', max_length=50, blank=True)
     lacre_fiscal = models.CharField('Lacre Fiscal', max_length=50, blank=True)
     lacre_terminal = models.CharField('Lacre do Terminal', max_length=50, blank=True)
+    lacre_g7 = models.CharField('Lacre G7', max_length=50, blank=True)
     transportadora = models.ForeignKey(
         'cadastros.Transportadora',
         on_delete=models.SET_NULL,

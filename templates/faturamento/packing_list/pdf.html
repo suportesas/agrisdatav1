@@ -65,6 +65,12 @@
     <div class="label">Incoterm</div>
     <div class="value">{{ pl.invoice.incoterm }}</div>
   </div>
+  {% if pl.numero_fitossanitario %}
+  <div class="info-cell">
+    <div class="label">Phytosanitary Certificate Nº</div>
+    <div class="value">{{ pl.numero_fitossanitario }}</div>
+  </div>
+  {% endif %}
 </div>
 
 <table>
@@ -98,6 +104,18 @@
       <td class="text-right">{{ item.volume_m3|floatformat:3|default:"—" }}</td>
       <td>{{ item.marks_numbers|default:"" }}</td>
     </tr>
+    {% if item.farm_nome or item.variedade or item.ggn_numero or item.data_colheita_inicio %}
+    <tr>
+      <td></td>
+      <td colspan="10" style="font-size:7pt;color:#555">
+        Traceability / Rastreabilidade:
+        {% if item.farm_nome %}Farm: <strong>{{ item.farm_nome }}</strong>{% endif %}
+        {% if item.variedade %} — Variety: <strong>{{ item.variedade }}</strong>{% endif %}
+        {% if item.data_colheita_inicio %} — Harvest: <strong>{{ item.data_colheita_inicio|date:"d/m/Y" }}{% if item.data_colheita_fim %} a {{ item.data_colheita_fim|date:"d/m/Y" }}{% endif %}</strong>{% endif %}
+        {% if item.ggn_numero %} — GGN: <strong>{{ item.ggn_numero }}</strong>{% endif %}
+      </td>
+    </tr>
+    {% endif %}
     {% endfor %}
   </tbody>
   <tfoot>

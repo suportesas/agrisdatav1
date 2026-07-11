@@ -6,49 +6,12 @@
 {% block extra_css %}
 <style>
   .header-card {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary-dark) 100%);
     color: white;
-    border-radius: 12px;
+    border-radius: var(--radius-card);
     padding: 32px;
     margin-bottom: 24px;
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
-  }
-
-  .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
-  }
-
-  .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    margin-bottom: 16px;
-  }
-
-  .stat-value {
-    font-size: 32px;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-
-  .stat-label {
-    font-size: 14px;
-    color: #6b7280;
-    font-weight: 500;
+    box-shadow: var(--shadow-card);
   }
 
   .section-card {
@@ -269,50 +232,48 @@
   <!-- Cards de Estatísticas -->
   <div class="row g-4 mb-4">
     <div class="col-md-3">
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #dbeafe; color: #1e40af;">
-          <i class="bi bi-grid-3x3"></i>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon blue"><i class="bi bi-grid-3x3"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Talhões Associados</div>
+          <div class="kpi-value">{{ safra.talhoes.count }}</div>
         </div>
-        <div class="stat-value">{{ safra.talhoes.count }}</div>
-        <div class="stat-label">Talhões Associados</div>
       </div>
     </div>
 
     <div class="col-md-3">
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #d1fae5; color: #065f46;">
-          <i class="bi bi-rulers"></i>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="bi bi-rulers"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Hectares Totais</div>
+          <div class="kpi-value">{{ area_total|floatformat:2 }}</div>
         </div>
-        <div class="stat-value">{{ area_total|floatformat:2 }}</div>
-        <div class="stat-label">Hectares Totais</div>
       </div>
     </div>
 
     <div class="col-md-3">
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #fef3c7; color: #92400e;">
-          <i class="bi bi-graph-up-arrow"></i>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon orange"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Produção Planejada (ton)</div>
+          <div class="kpi-value">
+            {% if safra.planned_production %}
+              {{ safra.planned_production|floatformat:0 }}
+            {% else %}
+              -
+            {% endif %}
+          </div>
         </div>
-        <div class="stat-value">
-          {% if safra.planned_production %}
-            {{ safra.planned_production|floatformat:0 }}
-          {% else %}
-            -
-          {% endif %}
-        </div>
-        <div class="stat-label">Produção Planejada (ton)</div>
       </div>
     </div>
 
     <div class="col-md-3">
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #dcfce7; color: #166534;">
-          <i class="bi bi-check-circle"></i>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="bi bi-check-circle"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Produção Real (ton)</div>
+          <div class="kpi-value">{{ safra.real_production|floatformat:0 }}</div>
         </div>
-        <div class="stat-value">
-          {{ safra.real_production|floatformat:0 }}
-        </div>
-        <div class="stat-label">Produção Real (ton)</div>
       </div>
     </div>
   </div>

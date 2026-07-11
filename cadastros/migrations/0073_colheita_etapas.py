@@ -51,7 +51,7 @@ class Migration(migrations.Migration):
                 ('observacoes', models.CharField(blank=True, max_length=200, verbose_name='Observações')),
                 ('etapa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='frotas', to='cadastros.etapacolheita', verbose_name='Etapa de Colheita')),
                 ('operador', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='operacoes_colheita', to='cadastros.funcionario', verbose_name='Operador/Tratorista')),
-                ('trator', models.ForeignKey(limit_choices_to={'tipo__in': ['LEVE', 'MEDIO', 'PESADO']}, on_delete=django.db.models.deletion.PROTECT, related_name='frotas_colheita', to='frota.vehicle', verbose_name='Trator')),
+                ('trator', models.ForeignKey(limit_choices_to={'tipo__in': ['LEVE', 'MEDIO', 'PESADO']}, on_delete=django.db.models.deletion.PROTECT, related_name='frotas_colheita', to='cadastros.vehicle', verbose_name='Trator')),
             ],
             options={
                 'verbose_name': 'Trator na Colheita',
@@ -66,7 +66,7 @@ class Migration(migrations.Migration):
                 ('numero_identificacao', models.CharField(help_text='Auto-preenchido do cadastro. Ex: Carroção 03', max_length=50, verbose_name='Identificação')),
                 ('capacidade_ton', models.DecimalField(blank=True, decimal_places=2, max_digits=8, null=True, validators=[django.core.validators.MinValueValidator(Decimal('0'))], verbose_name='Capacidade (ton)')),
                 ('tara_kg', models.IntegerField(blank=True, null=True, validators=[django.core.validators.MinValueValidator(0)], verbose_name='Tara (kg)')),
-                ('veiculo', models.ForeignKey(limit_choices_to={'tipo': 'REBOQUE'}, on_delete=django.db.models.deletion.PROTECT, related_name='usos_colheita', to='frota.vehicle', verbose_name='Carroção')),
+                ('veiculo', models.ForeignKey(limit_choices_to={'tipo': 'REBOQUE'}, on_delete=django.db.models.deletion.PROTECT, related_name='usos_colheita', to='cadastros.vehicle', verbose_name='Carroção')),
                 ('frota', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='carrocoes', to='cadastros.frotacolheita', verbose_name='Frota (Trator)')),
             ],
             options={

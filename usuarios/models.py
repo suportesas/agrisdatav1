@@ -4,10 +4,13 @@ Sistema de autenticação multi-tenant para ERP Agrícola
 """
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.cache import cache
 from django.db import models
 from django.core.validators import RegexValidator
 from django.utils import timezone
 
+
+TIPO_CONFIG_CACHE_TTL = 120  # segundos — TipoUsuario muda raramente (configuração de admin)
 
 DEFAULT_TIPOS_USUARIO = [
     {
@@ -371,8 +374,19 @@ class Usuario(AbstractUser):
             self._tipo_config_cache = None
             return self._tipo_config_cache
 
-        self._tipo_config_cache = TipoUsuario.objects.filter(codigo=self.tipo).first()
+        cache_key = f'tipo_usuario:{self.tipo}'
+        tipo_config = cache.get(cache_key)
+        if tipo_config is None:
+            tipo_config = TipoUsuario.objects.filter(codigo=self.tipo).first()
+            cache.set(cache_key, tipo_config, TIPO_CONFIG_CACHE_TTL)
+        self._tipo_config_cache = tipo_config
         return self._tipo_config_cache
+
+    def get_grupos_nomes(self):
+        """Nomes dos grupos do usuário, memoizados na instância (1 query por request)."""
+        if not hasattr(self, '_grupos_nomes_cache'):
+            self._grupos_nomes_cache = list(self.groups.values_list('name', flat=True))
+        return self._grupos_nomes_cache
 
     def get_tipo_display(self):
         """Retorna o nome amigável do tipo mesmo sem choices fixos."""

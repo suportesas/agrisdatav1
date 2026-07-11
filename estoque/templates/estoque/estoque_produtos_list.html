@@ -18,12 +18,7 @@
 {% block content %}
 <div class="container-fluid">
   <div class="mb-4">
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'estoque:dashboard' %}">Estoque</a></li>
-        <li class="breadcrumb-item active">Estoque de Produtos</li>
-      </ol>
-    </nav>
+    {% breadcrumb "Estoque:estoque:dashboard" "Estoque de Produtos" %}
     <div class="d-flex justify-content-between align-items-center">
       <h2><i class="bi bi-box-seam"></i> Estoque de Produtos</h2>
       {% if alertas_estoque.total_alertas > 0 %}
@@ -142,7 +137,7 @@
                   <td>
                     <span class="text-muted">{{ produto.categoria.nome }}</span>
                   </td>
-                  <td class="text-center">
+                  <td class="text-center text-mono">
                     {% if produto.estoque_total %}
                       <strong class="text-primary">{{ produto.estoque_total|floatformat:2 }}</strong>
                     {% else %}
@@ -150,22 +145,22 @@
                     {% endif %}
                     <small class="text-muted">{{ produto.unidade_medida.sigla }}</small>
                   </td>
-                  <td class="text-center">
+                  <td class="text-center text-mono">
                     {% if produto.estoque_reservado %}
                       <span class="text-warning fw-bold">{{ produto.estoque_reservado|floatformat:2 }}</span>
                     {% else %}
                       <span class="text-muted">0,00</span>
                     {% endif %}
                   </td>
-                  <td class="text-center">
+                  <td class="text-center text-mono">
                     <strong class="{% if produto.estoque_disponivel <= 0 %}text-danger{% else %}text-success{% endif %}">
                       {{ produto.estoque_disponivel|floatformat:2 }}
                     </strong>
                   </td>
-                  <td class="text-center text-muted">
+                  <td class="text-center text-muted text-mono">
                     {{ produto.estoque_minimo|floatformat:2 }}
                   </td>
-                  <td class="text-center text-muted">
+                  <td class="text-center text-muted text-mono">
                     {{ produto.estoque_maximo|floatformat:2 }}
                   </td>
                   <td class="text-center">
@@ -206,11 +201,15 @@
         <div class="mt-3">
           <p class="text-muted mb-0">
             <i class="bi bi-info-circle"></i>
-            Total: <strong>{{ produtos|length }}</strong> produto(s) encontrado(s)
+            Total: <strong>{{ page_obj.paginator.count }}</strong> produto(s) encontrado(s)
             {% if alertas_criticos > 0 or alertas_excesso > 0 %}
             | <i class="bi bi-exclamation-octagon text-warning"></i> <strong>{{ alertas_criticos }}</strong> crítico(s) + <strong>{{ alertas_excesso }}</strong> acima do máximo
             {% endif %}
           </p>
+        </div>
+
+        <div class="border-top pt-3 mt-3">
+          {% include 'partials/pagination.html' with page_obj=page_obj %}
         </div>
       {% else %}
         <div class="alert alert-info">

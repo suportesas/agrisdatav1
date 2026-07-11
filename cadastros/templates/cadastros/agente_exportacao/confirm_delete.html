@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Desativar Agente | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  {% breadcrumb "Dashboard:dashboard:index" "Agentes de Exportação:cadastros:agente_exportacao_list" "Desativar" %}
+
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Confirmar desativação</h5>
+      <p>Tem certeza que deseja desativar o agente <strong>{{ agente.nome }}</strong>?</p>
+      <p class="text-muted small">O agente não será excluído, apenas marcado como inativo e deixará de aparecer nas seleções de Booking.</p>
+
+      <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Sim, desativar</button>
+        <a class="btn btn-secondary" href="{% url 'cadastros:agente_exportacao_detail' agente.pk %}">Cancelar</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

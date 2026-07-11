@@ -22,6 +22,7 @@ Este diretorio centraliza toda a documentacao funcional, tecnica e operacional d
 - 8_DADOS: seed, migracao e qualidade de dados
 - 9_DEPLOYMENT: deploy e monitoramento
 - 10_FASES_ROADMAP: historico e roadmap das fases
+- archive: documentacao historica de features ja concluidas, consolidada por tema (nao reflete o estado atual)
 - TEMPLATES: modelos oficiais de documentacao
 - NAVIGATION.md: mapa rapido por perfil e necessidade
 
@@ -39,7 +40,10 @@ Scope: <modulo, fluxo ou tema>
 Se houver mudanca de regra de negocio, calculo, condicional ou fluxo, o PR deve incluir update da documentacao correspondente.
 
 ## Backlog inicial
-- Consolidar documentos legados em cada trilha.
 - Produzir matriz de calculos centralizados.
 - Produzir tabela de condicionais criticas por modulo.
 - Vincular regra documentada aos testes existentes.
+- Detalhar os modulos ainda marcados "Draft — a expandir" em `2_MODULOS/MAPA_COBERTURA_MODULOS.md`.
+
+## Historico de reorganizacao
+- 2026-07-10: consolidacao dos ~130 documentos soltos da raiz do repositorio executada (ver `10_FASES_ROADMAP/MIGRACAO_LEGADO.md`). Documentos ativos foram movidos para as pastas numeradas; documentos historicos de features ja concluidas foram consolidados por tema em `archive/`.

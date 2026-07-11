@@ -14,6 +14,8 @@ urlpatterns = [
     path('bookings/novo/', views.booking_create, name='booking_create'),
     path('bookings/<int:pk>/', views.booking_detail, name='booking_detail'),
     path('bookings/<int:pk>/editar/', views.booking_update, name='booking_update'),
+    path('bookings/<int:pk>/confirmar/', views.booking_confirmar, name='booking_confirmar'),
+    path('bookings/<int:pk>/embarcar/', views.booking_embarcar, name='booking_embarcar'),
 
     path('bookings/<int:booking_pk>/containers/', views.container_list, name='booking_container_list'),
     path('containers/', views.container_list, name='container_list'),

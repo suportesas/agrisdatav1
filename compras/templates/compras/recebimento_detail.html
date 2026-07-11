@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load dict_get %}
 
 {% block title %}Recebimento {{ recebimento.numero }}{% endblock %}
 
@@ -39,10 +40,22 @@
                     Conferir Recebimento
                 </a>
             {% elif recebimento.status == 'CONFERIDO' %}
+                {% if recebimento.nota_fiscal and not recebimento.conta_pagar %}
+                <a href="{% url 'compras:faturar_recebimento' recebimento.pk %}" class="btn btn-warning">
+                    <i class="bi bi-file-earmark-invoice me-2"></i>
+                    Gerar Conta a Pagar
+                </a>
+                {% elif not recebimento.nota_fiscal %}
                 <a href="{% url 'compras:faturar_recebimento' recebimento.pk %}" class="btn btn-warning">
                     <i class="bi bi-file-earmark-invoice me-2"></i>
                     Registrar Nota Fiscal
                 </a>
+                {% else %}
+                <button type="button" class="btn btn-outline-secondary" disabled>
+                    <i class="bi bi-lock me-2"></i>
+                    Já faturado
+                </button>
+                {% endif %}
                 {% if recebimento.pedido and recebimento.valor_total_nf > 0 %}
                     <form method="post" action="{% url 'compras:recebimento_entrada_estoque' recebimento.pk %}" style="display:inline;">
                         {% csrf_token %}
@@ -79,7 +92,7 @@
                     <i class="bi bi-check-circle me-2"></i>
                     Entrada no estoque já realizada.
                 </div>
-                {% if recebimento.nota_fiscal and not recebimento.nota_fiscal_faturada %}
+                {% if recebimento.nota_fiscal and not recebimento.conta_pagar %}
                 <a href="{% url 'compras:faturar_recebimento' recebimento.pk %}" class="btn btn-success">
                     <i class="bi bi-file-earmark-invoice me-2"></i>
                     Gerar Conta a Pagar
@@ -318,7 +331,7 @@
                 </div>
                 <div class="col-md-4">
                     <strong>Fornecedor:</strong><br>
-                    {{ recebimento.pedido.fornecedor.nome }}
+                    {{ recebimento.pedido.fornecedor.get_nome_exibicao }}
                 </div>
                 <div class="col-md-4">
                     <strong>Data do Pedido:</strong><br>
@@ -339,7 +352,7 @@
             <div class="row">
                 <div class="col-md-6">
                     <strong>Fornecedor:</strong><br>
-                    {{ recebimento.fornecedor.nome }}
+                    {{ recebimento.fornecedor.get_nome_exibicao }}
                 </div>
                 <div class="col-md-6">
                     <div class="alert alert-warning mb-0 alerta-fixa-entrada-direta" style="position:relative;">
@@ -373,6 +386,7 @@
                             <th>Fabricação</th>
                             <th>Validade</th>
                             <th>Observações</th>
+                            <th>Drawback</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -401,6 +415,21 @@
                             <td>{{ item.data_validade|date:"d/m/Y"|default:"-" }}</td>
                             <td>
                                 <small>{{ item.observacoes|default:"-" }}</small>
+                            </td>
+                            <td>
+                                {% with sugestao=sugestoes_drawback|dict_get:item.pk %}
+                                {% if item.drawback_entrada %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle me-1"></i>Vinculado — AC {{ item.drawback_entrada.ato_concessorio.numero_ac }}
+                                </span>
+                                {% elif sugestao.pk %}
+                                <a href="{% url 'drawback:vincular_entrada_erp' item.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-magic me-1"></i>Vincular ao Drawback (AC {{ sugestao.ato_concessorio.numero_ac }})
+                                </a>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                                {% endwith %}
                             </td>
                         </tr>
                         {% endfor %}

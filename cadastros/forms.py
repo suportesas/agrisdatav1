@@ -36,6 +36,7 @@ from mip.models import (
 )
 from decimal import Decimal
 from .models import Vendedor, ComissaoVendedor
+from .models import AgenteExportacao
 
 # Import fornecedor-related models to set ModelForm Meta.model directly
 from .models import Fornecedor, FornecedorContato, FornecedorDadoBancario, FornecedorEndereco, Transportadora
@@ -3003,6 +3004,54 @@ class PortoForm(forms.ModelForm):
         if commit:
             porto.save()
         return porto
+
+
+class AgenteExportacaoForm(forms.ModelForm):
+    """Formulário para cadastro de Agentes de Exportação (multi-tenant por `empresa`)"""
+
+    class Meta:
+        model = AgenteExportacao
+        exclude = ('empresa', 'data_criacao', 'data_atualizacao')
+        fields = ['tipo', 'nome', 'pais', 'cidade', 'endereco', 'contato_nome',
+                  'contato_telefone', 'contato_email', 'documento_fiscal', 'ativo']
+        widgets = {
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'pais': forms.TextInput(attrs={'class': 'form-control'}),
+            'cidade': forms.TextInput(attrs={'class': 'form-control'}),
+            'endereco': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'contato_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'contato_telefone': forms.TextInput(attrs={'class': 'form-control'}),
+            'contato_email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'documento_fiscal': forms.TextInput(attrs={'class': 'form-control'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        self.empresa = empresa
+        super().__init__(*args, **kwargs)
+
+    def clean_nome(self):
+        nome = self.cleaned_data.get('nome', '').strip()
+        tipo = self.data.get('tipo') or getattr(self.instance, 'tipo', None)
+        if not nome:
+            raise ValidationError('Nome do agente é obrigatório')
+        qs = AgenteExportacao.objects.filter(nome=nome, tipo=tipo)
+        if self.empresa:
+            qs = qs.filter(empresa=self.empresa)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError('Já existe um agente com este nome e tipo para a mesma empresa')
+        return nome
+
+    def save(self, commit=True):
+        agente = super().save(commit=False)
+        if self.empresa:
+            agente.empresa = self.empresa
+        if commit:
+            agente.save()
+        return agente
 
 # =============================================================================
 # Forms: Veículos (Vehicle)

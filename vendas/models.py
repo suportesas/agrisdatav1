@@ -135,6 +135,84 @@ class PedidoVenda(models.Model):
         return f"{prefixo}{seq:04d}"
 
 
+class TabelaPreco(models.Model):
+    """Preço negociado por cliente/produto/porto de destino, com vigência.
+
+    Serve de fonte de verdade para pré-preencher `preco_unitario` em
+    ItemPedidoVenda/ItemInvoice em vez de digitação manual item a item.
+    `cliente` nulo = tabela padrão, aplicável a qualquer cliente.
+    """
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='tabelas_preco', verbose_name='Empresa',
+    )
+    cliente = models.ForeignKey(
+        'cadastros.Cliente', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='tabelas_preco',
+        verbose_name='Cliente', help_text='Deixe em branco para uma tabela padrão (qualquer cliente).',
+    )
+    produto = models.ForeignKey(
+        'produtos.Produto', on_delete=models.PROTECT,
+        related_name='tabelas_preco', verbose_name='Produto',
+    )
+    porto_destino = models.ForeignKey(
+        'cadastros.Porto', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tabelas_preco',
+        verbose_name='Porto de Destino',
+    )
+    moeda = models.CharField('Moeda', max_length=3, choices=PedidoVenda.MOEDA_CHOICES, default='BRL')
+    preco_unitario = models.DecimalField(
+        'Preço Unitário', max_digits=14, decimal_places=4,
+        validators=[MinValueValidator(Decimal('0.0001'))],
+    )
+    vigencia_inicio = models.DateField('Vigência — Início', default=timezone.now)
+    vigencia_fim = models.DateField('Vigência — Fim', null=True, blank=True, help_text='Deixe em branco para vigência em aberto.')
+    ativo = models.BooleanField('Ativo', default=True)
+    observacoes = models.TextField('Observações', blank=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='tabelas_preco_criadas',
+        verbose_name='Criado por',
+    )
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Tabela de Preço'
+        verbose_name_plural = 'Tabelas de Preço'
+        ordering = ['-vigencia_inicio']
+        indexes = [
+            models.Index(fields=['empresa', 'cliente', 'produto', 'vigencia_inicio']),
+            models.Index(fields=['empresa', 'ativo']),
+        ]
+
+    def __str__(self):
+        cliente_str = self.cliente.razao_social if self.cliente_id else 'Padrão (qualquer cliente)'
+        return f'{self.produto} — {cliente_str} — {self.moeda} {self.preco_unitario}'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.vigencia_fim and self.vigencia_fim < self.vigencia_inicio:
+            raise ValidationError({'vigencia_fim': 'A data de fim da vigência não pode ser anterior ao início.'})
+
+        qs = TabelaPreco.objects.filter(
+            empresa=self.empresa,
+            cliente=self.cliente,
+            produto=self.produto,
+            porto_destino=self.porto_destino,
+            moeda=self.moeda,
+            ativo=True,
+        ).exclude(pk=self.pk)
+        fim = self.vigencia_fim or timezone.datetime.max.date()
+        for outra in qs:
+            outra_fim = outra.vigencia_fim or timezone.datetime.max.date()
+            if self.vigencia_inicio <= outra_fim and outra.vigencia_inicio <= fim:
+                raise ValidationError(
+                    'Já existe uma tabela de preço ativa com vigência sobreposta para '
+                    'este cliente/produto/porto/moeda.'
+                )
+
+
 class ItemPedidoVenda(models.Model):
     pedido = models.ForeignKey(
         PedidoVenda, on_delete=models.CASCADE,

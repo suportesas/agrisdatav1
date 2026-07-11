@@ -1,0 +1,1252 @@
+﻿=== usuarios ===
+[models]
+class EmpresaQuerySet(models.QuerySet):
+class UsuarioManager(BaseUserManager):
+class TipoUsuario(models.Model):
+class Usuario(AbstractUser):
+class LoginRegistro(models.Model):
+class PerfilUsuario(models.Model):
+class DoisFatoresAutenticacao(models.Model):
+class LoginAnomalia(models.Model):
+class AlertaSeguranca(models.Model):
+class TrocaSenhaEmergencial(models.Model):
+class GraficoAcesso(models.Model):
+[urls]
+path('', views.usuario_list, name='usuario_list'),
+path('novo/', views.usuario_create, name='usuario_create'),
+path('<int:pk>/editar/', views.usuario_update, name='usuario_update'),
+path('<int:pk>/excluir/', views.usuario_delete, name='usuario_delete'),
+path('tipos/', views.tipo_usuario_list, name='tipo_usuario_list'),
+path('tipos/novo/', views.tipo_usuario_create, name='tipo_usuario_create'),
+path('tipos/quick-create/', views.tipo_usuario_quick_create, name='tipo_usuario_quick_create'),
+path('tipos/<int:pk>/editar/', views.tipo_usuario_update, name='tipo_usuario_update'),
+path('tipos/<int:pk>/excluir/', views.tipo_usuario_delete, name='tipo_usuario_delete'),
+path('<int:pk>/senha-emergencial/', views.usuario_troca_senha_emergencial, name='usuario_troca_senha_emergencial'),
+path('senha-emergencial/cancelar/<str:token>/', views.cancelar_troca_senha_emergencial, name='cancelar_troca_senha_emergencial'),
+path('meu-perfil/', views.meu_perfil, name='meu_perfil'),  # ← DESCOMENTAR
+path('alterar-senha/', views.alterar_senha, name='alterar_senha'),  # ← DESCOMENTAR
+path('registros/', views.login_registros, name='login_registros'),
+path('2fa/configurar/', views_2fa.configurar_2fa, name='configurar_2fa'),
+path('2fa/verificacao/', views_2fa.verificacao_2fa_login, name='verificacao_2fa_login'),
+path('2fa/codigos-backup/', views_2fa.listar_codigos_backup, name='listar_codigos_backup'),
+path('2fa/desabilitar/', views_2fa.desabilitar_2fa, name='desabilitar_2fa'),
+path('2fa/info-seguranca/', views_2fa.info_seguranca, name='info_seguranca'),
+path('api/verificar-2fa/', views_2fa.api_verificar_2fa_necessario, name='api_verificar_2fa'),
+
+=== empresas ===
+[models]
+class Plano(models.Model):
+class GrupoCorporativo(models.Model):
+class Empresa(models.Model):
+class Role(models.Model):
+class RoleAudit(models.Model):
+class PermissionTemplate(models.Model):
+[urls]
+path('', views.empresa_list, name='empresa_list'),
+path('nova/', views.empresa_create, name='empresa_create'),
+path('<int:pk>/editar/', views.empresa_update, name='empresa_update'),
+path('minha-empresa/logo/', views.empresa_logo_update, name='empresa_logo_update'),
+path('<int:pk>/excluir/', views.empresa_delete, name='empresa_delete'),
+path('minha/', views.minha_empresa, name='minha_empresa'),
+path('preferencias/', views.empresa_preferencias, name='empresa_preferencias'),
+path('painel-admin/', views.painel_admin, name='painel_admin'),
+path('roles/', views.role_list, name='roles_list'),
+path('roles/<int:role_id>/permissions/', views.role_permissions, name='role_permissions'),
+path('roles/novo/', views.role_create, name='role_create'),
+path('roles/<int:role_id>/editar/', views.role_update, name='role_update'),
+path('roles/<int:role_id>/clonar/', views.role_clone, name='role_clone'),
+path('roles/<int:role_id>/permissions/save-template/', views.save_permission_template, name='save_permission_template'),
+path('roles/<int:role_id>/permissions/apply-template/', views.apply_template_to_role, name='apply_template_to_role'),
+path('roles/templates/apply-bulk/', views.apply_template_bulk, name='apply_template_bulk'),
+path('roles/templates/', views.permission_templates_list, name='permission_templates_list'),
+path('roles/templates/<int:pk>/', views.permission_template_detail, name='permission_template_detail'),
+path('planos/', views.plano_list, name='plano_list'),
+path('planos/novo/', views.plano_create, name='plano_create'),
+path('planos/<int:pk>/editar/', views.plano_update, name='plano_update'),
+path('planos/<int:pk>/excluir/', views.plano_delete, name='plano_delete'),
+path('planos/inicializar/', views.inicializar_planos_padrao, name='inicializar_planos'),
+path('api/plano/<int:plano_id>/', views.api_plano_dados, name='api_plano_dados'),
+path('grupos/', views_grupo.grupo_list, name='grupo_list'),
+path('grupos/novo/', views_grupo.grupo_create, name='grupo_create'),
+path('grupos/<int:pk>/', views_grupo.grupo_detail, name='grupo_detail'),
+path('grupos/<int:pk>/editar/', views_grupo.grupo_update, name='grupo_update'),
+path('grupos/<int:pk>/deletar/', views_grupo.grupo_delete, name='grupo_delete'),
+path('grupos/<int:pk>/adicionar-empresas/', views_grupo.grupo_adicionar_empresas, name='grupo_adicionar_empresas'),
+path('grupos/<int:grupo_id>/empresas/<int:empresa_id>/remover/', views_grupo.remover_empresa_do_grupo, name='remover_empresa_do_grupo'),
+path('grupos/<int:pk>/relatorio/', views_grupo.grupo_relatorio_consolidado, name='grupo_relatorio_consolidado'),
+path('grupos/ajuda/', views_grupo.ajuda_grupos_corporativos, name='ajuda_grupos_corporativos'),
+path('ajuda/usuarios-grupos/', views_grupo.ajuda_usuarios_grupos, name='ajuda_usuarios_grupos'),
+
+=== cadastros ===
+[models]
+class EmpresaQuerySet(models.QuerySet):
+class AreaManager(models.Manager):
+class TalhaoManager(models.Manager):
+class Fazenda(models.Model):
+class EnderecoFazenda(models.Model):
+class ContatoFazenda(models.Model):
+class ContaBancariaFazenda(models.Model):
+class DocumentoFazenda(models.Model):
+class DocumentoFornecedor(models.Model):
+class Cliente(models.Model):
+class Moeda(models.Model):
+class NCM(models.Model):
+class EmpresaNCM(models.Model):
+class CFOP(models.Model):
+class EmpresaCFOP(models.Model):
+class Produtor(models.Model):
+class EnderecoCliente(models.Model):
+class ContatoCliente(models.Model):
+class ContaBancariaCliente(models.Model):
+class PrazoPagamentoPadrao(models.Model):
+class DocumentoCliente(models.Model):
+class Cultura(models.Model):
+class Praga(models.Model):
+class Area(models.Model):
+class Poco(models.Model):
+class Talhao(models.Model):
+class HistoricoTalhao(models.Model):
+class Safra(models.Model):
+class SafraPlan(models.Model):
+class SafraReal(models.Model):
+class Requisicao(models.Model):
+class RequisicaoItem(models.Model):
+class VendedorQuerySet(models.QuerySet):
+class VendedorManager(models.Manager):
+class Vendedor(models.Model):
+class ComissaoVendedor(models.Model):
+class Fornecedor(models.Model):
+class CategoriaFornecedor(models.Model):
+class Armador(models.Model):
+class Navio(models.Model):
+class ArmadorEndereco(models.Model):
+class ArmadorContato(models.Model):
+class ArmadorDadoBancario(models.Model):
+class TipoNavio(models.Model):
+class Porto(models.Model):
+class SubcategoriaFornecedor(models.Model):
+class FornecedorEndereco(models.Model):
+class FornecedorContato(models.Model):
+class FornecedorDadoBancario(models.Model):
+class Transportadora(models.Model):
+class Viagem(models.Model):
+[urls]
+path('fazendas/', views.fazenda_list, name='fazenda_list'),
+path('fazendas/nova/', views.fazenda_create, name='fazenda_create'),
+path('fazendas/<int:pk>/', views.fazenda_detail, name='fazenda_detail'),
+path('fazendas/<int:pk>/editar/', views.fazenda_update, name='fazenda_update'),
+path('fazendas/<int:pk>/excluir/', views.fazenda_delete, name='fazenda_delete'),
+path('api/buscar-cnpj/', views.buscar_cnpj, name='buscar_cnpj'),
+path('api/buscar-cep/', views.buscar_cep, name='buscar_cep'),
+path('api/buscar-geolocalizacao/', views.buscar_geolocalizacao, name='buscar_geolocalizacao'),
+path('fazendas/<int:fazenda_pk>/enderecos/novo/', views.endereco_create, name='endereco_create'),
+path('fazendas/<int:fazenda_pk>/enderecos/<int:endereco_pk>/editar/', views.endereco_update, name='endereco_update'),
+path('fazendas/<int:fazenda_pk>/enderecos/<int:endereco_pk>/excluir/', views.endereco_delete, name='endereco_delete'),
+path('fazendas/<int:fazenda_pk>/contatos/novo/', views.contato_create, name='contato_create'),
+path('fazendas/<int:fazenda_pk>/contatos/<int:contato_pk>/editar/', views.contato_update, name='contato_update'),
+path('fazendas/<int:fazenda_pk>/contatos/<int:contato_pk>/excluir/', views.contato_delete, name='contato_delete'),
+path('fazendas/<int:fazenda_pk>/contas/nova/', views.conta_bancaria_create, name='conta_bancaria_create'),
+path('fazendas/<int:fazenda_pk>/contas/<int:conta_pk>/editar/', views.conta_bancaria_update, name='conta_bancaria_update'),
+path('fazendas/<int:fazenda_pk>/contas/<int:conta_pk>/excluir/', views.conta_bancaria_delete, name='conta_bancaria_delete'),
+path('fazendas/<int:fazenda_pk>/documentos/novo/', views.documento_create, name='documento_create'),
+path('fazendas/<int:fazenda_pk>/documentos/<int:documento_pk>/excluir/', views.documento_delete, name='documento_delete'),
+path('fazendas/<int:fazenda_pk>/documentos/<int:documento_pk>/editar/', views.documento_update, name='documento_update'),
+path('alertas/', views.dashboard_alertas, name='dashboard_alertas'),
+path('culturas/', views.cultura_list, name='cultura_list'),
+path('culturas/nova/', views.cultura_create, name='cultura_create'),
+path('culturas/<int:pk>/', views.cultura_detail, name='cultura_detail'),
+path('culturas/<int:pk>/editar/', views.cultura_update, name='cultura_update'),
+path('culturas/<int:pk>/excluir/', views.cultura_delete, name='cultura_delete'),
+path('pragas/', views.praga_list, name='praga_list'),
+path('pragas/nova/', views.praga_create, name='praga_create'),
+path('pragas/<int:pk>/', views.praga_detail, name='praga_detail'),
+path('pragas/<int:pk>/editar/', views.praga_update, name='praga_update'),
+path('pragas/<int:pk>/excluir/', views.praga_delete, name='praga_delete'),
+path('areas/', views.area_list, name='area_list'),
+path('areas/nova/', views.area_create, name='area_create'),
+path('areas/<int:pk>/', views.area_detail, name='area_detail'),
+path('areas/<int:pk>/editar/', views.area_update, name='area_update'),
+path('areas/<int:pk>/excluir/', views.area_delete, name='area_delete'),
+path('pocos/', views.poco_list, name='poco_list'),
+path('pocos/novo/', views.poco_create, name='poco_create'),
+path('pocos/<int:pk>/', views.poco_detail, name='poco_detail'),
+path('pocos/<int:pk>/editar/', views.poco_update, name='poco_update'),
+path('pocos/<int:pk>/toggle/', views.poco_toggle, name='poco_toggle'),
+path('talhoes/', views.talhao_list, name='talhao_list'),
+path('talhoes/novo/', views.talhao_create, name='talhao_create'),
+path('talhoes/<int:pk>/', views.talhao_detail, name='talhao_detail'),
+path('talhoes/<int:pk>/editar/', views.talhao_update, name='talhao_update'),
+path('talhoes/<int:pk>/excluir/', views.talhao_delete, name='talhao_delete'),
+path('talhoes/<int:talhao_pk>/historico/nova/', views.historico_create, name='historico_create'),
+path('historico/<int:pk>/editar/', views.historico_update, name='historico_update'),
+path('historico/<int:pk>/excluir/', views.historico_delete, name='historico_delete'),
+path('historico/<int:pk>/', views.historico_detail, name='historico_detail'),
+path('safras/', views.safra_list, name='safra_list'),
+path('safras/nova/', views.safra_create, name='safra_create'),
+path('safras/<int:pk>/', views.safra_detail, name='safra_detail'),
+path('safras/<int:pk>/editar/', views.safra_update, name='safra_update'),
+path('safras/<int:safra_pk>/planejamento/novo/', views.safra_plan_create, name='safra_plan_create'),
+path('safras/<int:safra_pk>/planejamento/editar/', views.safra_plan_update, name='safra_plan_update'),
+path('safras/<int:safra_pk>/planejamento/excluir/', views.safra_plan_delete, name='safra_plan_delete'),
+path('safras/<int:pk>/excluir/', views.safra_delete, name='safra_delete'),
+path('ajax/areas-por-fazenda/<int:fazenda_id>/', views.ajax_areas_por_fazenda, name='ajax_areas_fazenda'),
+path('ajax/talhoes-por-fazenda/<int:fazenda_id>/', views.ajax_talhoes_por_fazenda, name='ajax_talhoes_fazenda'),
+path('vendedores/', views.vendedor_list, name='vendedor_list'),
+path('vendedores/novo/', views.vendedor_create, name='vendedor_create'),
+path('vendedores/<int:pk>/', views.vendedor_detail, name='vendedor_detail'),
+path('vendedores/<int:pk>/editar/', views.vendedor_update, name='vendedor_update'),
+path('vendedores/<int:pk>/excluir/', views.vendedor_delete, name='vendedor_delete'),
+path('vendedores/<int:pk>/inativar/', views.vendedor_inativar, name='vendedor_inativar'),
+path('vendedores/<int:pk>/reativar/', views.vendedor_reativar, name='vendedor_reativar'),
+path('comissoes/', views.comissao_list, name='comissao_list'),
+path('comissoes/nova/', views.comissao_create, name='comissao_create'),
+path('comissoes/<int:pk>/pagar/', views.comissao_pagar, name='comissao_pagar'),
+path('vendedores/api/json/', views.vendedor_json, name='vendedor_json'),
+path('api/vendedores-por-tipo/', views.vendedores_por_tipo, name='vendedores_por_tipo'),
+path('fornecedores/', views.fornecedor_list, name='fornecedor_list'),
+path('fornecedores/novo/', views.fornecedor_create, name='fornecedor_create'),
+path('fornecedores/<int:pk>/', views.fornecedor_detail, name='fornecedor_detail'),
+path('fornecedores/<int:pk>/pdf/', views.fornecedor_pdf, name='fornecedor_pdf'),
+path('fornecedores/<int:pk>/editar/', views.fornecedor_update, name='fornecedor_update'),
+path('fornecedores/<int:pk>/excluir/', views.fornecedor_delete, name='fornecedor_delete'),
+path('fornecedores/<int:pk>/portal/criar-acesso/', views.fornecedor_criar_acesso_portal, name='fornecedor_criar_acesso_portal'),
+path('fornecedores/<int:pk>/portal/bloquear/', views.fornecedor_bloquear_portal, name='fornecedor_bloquear_portal'),
+path('fornecedores/relatorio/', views.relatorio_fornecedor, name='relatorio_fornecedor'),
+path('fornecedores/relatorio-ranking/', views.relatorio_fornecedor_ranking, name='relatorio_fornecedor_ranking'),
+path('fornecedores/ranking-avaliacoes/', views.fornecedor_ranking_avaliacoes, name='fornecedor_ranking_avaliacoes'),
+path('produtores/', views_produtor.produtor_list, name='produtor_list'),
+path('produtores/novo/', views_produtor.produtor_create, name='produtor_create'),
+path('produtores/<int:pk>/', views_produtor.produtor_detail, name='produtor_detail'),
+path('produtores/<int:pk>/editar/', views_produtor.produtor_update, name='produtor_update'),
+path('produtores/<int:pk>/excluir/', views_produtor.produtor_delete, name='produtor_delete'),
+path('produtores/<int:pk>/portal/criar-acesso/', views_produtor.produtor_criar_acesso_portal, name='produtor_criar_acesso_portal'),
+path('produtores/<int:pk>/portal/bloquear/', views_produtor.produtor_bloquear_portal, name='produtor_bloquear_portal'),
+path('transportadoras/', views.transportadora_list, name='transportadora_list'),
+path('transportadoras/<int:pk>/', views.transportadora_detail, name='transportadora_detail'),
+path('transportadoras/novo/', views.transportadora_create, name='transportadora_create'),
+path('transportadoras/<int:pk>/editar/', views.transportadora_update, name='transportadora_update'),
+path('transportadoras/<int:pk>/excluir/', views.transportadora_delete, name='transportadora_delete'),
+path('transportadoras/<int:pk>/frete/', views.transportadora_update_frete, name='transportadora_update_frete'),
+path('api/transportadoras/', views.api_transportadoras, name='api_transportadoras'),
+path('api/transportadoras/<int:pk>/', views.api_transportadora_detail, name='api_transportadora_detail'),
+path('api/transportadoras/<int:pk>/viagens/', views.api_transportadora_viagens, name='api_transportadora_viagens'),
+path('requisicoes/', views_requisicao.requisicao_list, name='requisicao_list'),
+path('requisicoes/pendentes-aprovacao/', views_requisicao.requisicao_pendentes_aprovacao, name='requisicao_pendentes_aprovacao'),
+path('requisicoes/aguardando-atendimento/', views_requisicao.requisicao_pendentes_atendimento, name='requisicao_pendentes_atendimento'),
+path('requisicoes/nova/', views_requisicao.requisicao_create, name='requisicao_create'),
+path('requisicoes/<int:pk>/', views_requisicao.requisicao_detail, name='requisicao_detail'),
+path('requisicoes/<int:pk>/editar/', views_requisicao.requisicao_update, name='requisicao_update'),
+path('requisicoes/<int:pk>/excluir/', views_requisicao.requisicao_delete, name='requisicao_delete'),
+path('requisicoes/<int:pk>/aprovar/', views_requisicao.requisicao_aprovar, name='requisicao_aprovar'),
+path('requisicoes/<int:pk>/atender/', views_requisicao.requisicao_atender, name='requisicao_atender'),
+path('requisicoes/<int:pk>/cancelar/', views_requisicao.requisicao_cancelar, name='requisicao_cancelar'),
+path('requisicoes/<int:requisicao_id>/itens/novo/', views_requisicao.requisicao_item_create, name='requisicao_item_create'),
+path('requisicoes/<int:requisicao_id>/itens/<int:item_id>/editar/', views_requisicao.requisicao_item_update, name='requisicao_item_update'),
+path('requisicoes/<int:requisicao_id>/itens/<int:item_id>/excluir/', views_requisicao.requisicao_item_delete, name='requisicao_item_delete'),
+path('api/requisicoes/produto-dados/<int:produto_id>/', views_requisicao.ajax_produto_dados_requisicao, name='ajax_produto_dados_requisicao'),
+path('api/requisicoes/safras-por-talhao/<int:talhao_id>/', views_requisicao.ajax_safras_por_talhao, name='ajax_safras_por_talhao'),
+path('api/requisicoes/talhao-por-codigo/', views_requisicao.ajax_talhao_por_codigo, name='ajax_talhao_por_codigo'),
+path('api/requisicoes/funcionarios-por-fazenda/<int:fazenda_id>/', views_requisicao.ajax_funcionarios_por_fazenda, name='ajax_funcionarios_por_fazenda'),
+path('fornecedores/<int:fornecedor_pk>/enderecos/novo/', views.fornecedor_endereco_create, name='fornecedor_endereco_create'),
+path('fornecedores/<int:fornecedor_pk>/enderecos/<int:endereco_pk>/editar/', views.fornecedor_endereco_update, name='fornecedor_endereco_update'),
+path('fornecedores/<int:fornecedor_pk>/enderecos/<int:endereco_pk>/excluir/', views.fornecedor_endereco_delete, name='fornecedor_endereco_delete'),
+path('fornecedores/<int:fornecedor_pk>/contatos/novo/', views.fornecedor_contato_create, name='fornecedor_contato_create'),
+path('fornecedores/<int:fornecedor_pk>/contatos/<int:contato_pk>/editar/', views.fornecedor_contato_update, name='fornecedor_contato_update'),
+path('fornecedores/<int:fornecedor_pk>/contatos/<int:contato_pk>/excluir/', views.fornecedor_contato_delete, name='fornecedor_contato_delete'),
+path('fornecedores/<int:fornecedor_pk>/contas/nova/', views.fornecedor_conta_create, name='fornecedor_conta_create'),
+path('fornecedores/<int:fornecedor_pk>/contas/<int:conta_pk>/editar/', views.fornecedor_conta_update, name='fornecedor_conta_update'),
+path('fornecedores/<int:fornecedor_pk>/contas/<int:conta_pk>/excluir/', views.fornecedor_conta_delete, name='fornecedor_conta_delete'),
+path('fornecedores/<int:fornecedor_pk>/documentos/novo/', views.fornecedor_documento_create, name='fornecedor_documento_create'),
+path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/excluir/', views.fornecedor_documento_delete, name='fornecedor_documento_delete'),
+path('fornecedores/<int:fornecedor_pk>/documentos/<int:documento_pk>/editar/', views.fornecedor_documento_update, name='fornecedor_documento_update'),
+path('clientes/', views.cliente_list, name='cliente_list'),
+path('clientes/novo/', views.cliente_create, name='cliente_create'),
+path('clientes/<int:pk>/', views.cliente_detail, name='cliente_detail'),
+path('clientes/<int:pk>/pdf/', views.cliente_pdf, name='cliente_pdf'),
+path('clientes/<int:pk>/editar/', views.cliente_update, name='cliente_update'),
+path('clientes/<int:pk>/excluir/', views.cliente_delete, name='cliente_delete'),
+path('clientes/<int:pk>/reativar/', views.cliente_activate, name='cliente_activate'),
+path('clientes/relatorio/', views.relatorio_cliente, name='relatorio_cliente'),
+path('moedas/novo-ajax/', views.moeda_create_ajax, name='moeda_create_ajax'),
+path('ncm/', views.ncm_list, name='ncm_list'),
+path('ncm/popular/', views.ncm_seed, name='ncm_seed'),
+path('ncm/novo/', views.ncm_create, name='ncm_create'),
+path('ncm/<int:pk>/editar/', views.ncm_update, name='ncm_update'),
+path('ncm/<int:pk>/excluir/', views.ncm_delete, name='ncm_delete'),
+path('api/ncm/autocomplete/', views.ncm_autocomplete, name='ncm_autocomplete'),
+path('ncm/importar/', views.ncm_import, name='ncm_import'),
+path('cfop/', views.cfop_list, name='cfop_list'),
+path('cfop/popular/', views.cfop_seed, name='cfop_seed'),
+path('cfop/novo/', views.cfop_create, name='cfop_create'),
+path('cfop/importar/', views.cfop_import, name='cfop_import'),
+path('cfop/<int:pk>/editar/', views.cfop_update, name='cfop_update'),
+path('cfop/<int:pk>/excluir/', views.cfop_delete, name='cfop_delete'),
+path('api/cfop/autocomplete/', views.cfop_autocomplete, name='cfop_autocomplete'),
+path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),
+path('clientes/<int:cliente_pk>/enderecos/<int:endereco_pk>/editar/', views.cliente_endereco_update, name='cliente_endereco_update'),
+path('clientes/<int:cliente_pk>/enderecos/<int:endereco_pk>/excluir/', views.cliente_endereco_delete, name='cliente_endereco_delete'),
+path('clientes/<int:cliente_pk>/contatos/novo/', views.cliente_contato_create, name='cliente_contato_create'),
+path('clientes/<int:cliente_pk>/contatos/ajax/novo/', views.cliente_contato_create_ajax, name='cliente_contato_create_ajax'),
+path('clientes/<int:cliente_pk>/contatos/<int:contato_pk>/editar/', views.cliente_contato_update, name='cliente_contato_update'),
+path('clientes/<int:cliente_pk>/contatos/<int:contato_pk>/excluir/', views.cliente_contato_delete, name='cliente_contato_delete'),
+path('clientes/<int:cliente_pk>/contas/nova/', views.cliente_conta_create, name='cliente_conta_create'),
+path('clientes/<int:cliente_pk>/contas/ajax/nova/', views.cliente_conta_create_ajax, name='cliente_conta_create_ajax'),
+path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/editar/', views.cliente_conta_update, name='cliente_conta_update'),
+path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/excluir/', views.cliente_conta_delete, name='cliente_conta_delete'),
+path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/editar/ajax/', views.cliente_conta_update_ajax, name='cliente_conta_update_ajax'),
+path('clientes/<int:cliente_pk>/contas/<int:conta_pk>/excluir/ajax/', views.cliente_conta_delete_ajax, name='cliente_conta_delete_ajax'),
+path('clientes/<int:cliente_pk>/documentos/novo/', views.cliente_documento_create, name='cliente_documento_create'),
+path('clientes/<int:cliente_pk>/documentos/ajax/novo/', views.cliente_documento_create_ajax, name='cliente_documento_create_ajax'),
+path('clientes/<int:cliente_pk>/documentos/<int:documento_pk>/excluir/', views.cliente_documento_delete, name='cliente_documento_delete'),
+path('clientes/<int:cliente_pk>/documentos/<int:documento_pk>/editar/', views.cliente_documento_update, name='cliente_documento_update'),
+path('portos/', views.porto_list, name='porto_list'),
+path('portos/novo/', views.porto_create, name='porto_create'),
+path('portos/<int:pk>/', views.porto_detail, name='porto_detail'),
+path('portos/<int:pk>/editar/', views.porto_update, name='porto_update'),
+path('portos/<int:pk>/excluir/', views.porto_delete, name='porto_delete'),
+path('armadores/', views.armador_list, name='armador_list'),
+path('armadores/create/', views.armador_create, name='armador_create'),
+path('armadores/<int:pk>/', views.armador_detail, name='armador_detail'),
+path('armadores/<int:pk>/edit/', views.armador_update, name='armador_update'),
+path('armadores/<int:pk>/delete/', views.armador_delete, name='armador_delete'),
+path('armadores/<int:armador_pk>/endereco/create/', views.armador_endereco_create, name='armador_endereco_create'),
+path('armadores/<int:armador_pk>/endereco/<int:pk>/edit/', views.armador_endereco_update, name='armador_endereco_update'),
+path('armadores/<int:armador_pk>/endereco/<int:pk>/delete/', views.armador_endereco_delete, name='armador_endereco_delete'),
+path('armadores/<int:armador_pk>/contato/create/', views.armador_contato_create, name='armador_contato_create'),
+path('armadores/<int:armador_pk>/contato/<int:pk>/edit/', views.armador_contato_update, name='armador_contato_update'),
+path('armadores/<int:armador_pk>/contato/<int:pk>/delete/', views.armador_contato_delete, name='armador_contato_delete'),
+path('armadores/<int:armador_pk>/banco/create/', views.armador_banco_create, name='armador_banco_create'),
+path('armadores/<int:armador_pk>/banco/<int:pk>/edit/', views.armador_banco_update, name='armador_banco_update'),
+path('armadores/<int:armador_pk>/banco/<int:pk>/delete/', views.armador_banco_delete, name='armador_banco_delete'),
+path('navios/', views.navio_list, name='navio_list'),
+path('navios/create/', views.navio_create, name='navio_create'),
+path('navios/<int:pk>/', views.navio_detail, name='navio_detail'),
+path('navios/<int:pk>/edit/', views.navio_update, name='navio_update'),
+path('navios/<int:pk>/delete/', views.navio_delete, name='navio_delete'),
+path('prazos-pagamento/', views.prazo_pagamento_list, name='prazo_pagamento_list'),
+path('prazos-pagamento/novo/', views.prazo_pagamento_create, name='prazo_pagamento_create'),
+path('prazos-pagamento/<int:pk>/', views.prazo_pagamento_detail, name='prazo_pagamento_detail'),
+path('prazos-pagamento/<int:pk>/editar/', views.prazo_pagamento_update, name='prazo_pagamento_update'),
+path('prazos-pagamento/<int:pk>/excluir/', views.prazo_pagamento_delete, name='prazo_pagamento_delete'),
+
+=== produtos ===
+[models]
+class TipoProduto(models.Model):
+class UnidadeMedida(models.Model):
+class Categoria(models.Model):
+class SubCategoria(models.Model):
+class NaturezaOperacao(models.Model):
+class Produto(models.Model):
+class ProdutoFornecedor(models.Model):
+class ProdutoTributacao(models.Model):
+class ProdutoDefensivoCultura(models.Model):
+class ProdutoDocumento(models.Model):
+class DimensaoVariante(models.Model):
+class ProdutoAtributo(models.Model):
+[urls]
+path('dashboard/', views.dashboard, name='dashboard'),
+path('tipos-produto/', views_tipo_produto.tipo_produto_list, name='tipo_produto_list'),
+path('tipos-produto/cadastrar/', views_tipo_produto.tipo_produto_create, name='tipo_produto_create'),
+path('tipos-produto/<int:pk>/editar/', views_tipo_produto.tipo_produto_update, name='tipo_produto_update'),
+path('tipos-produto/<int:pk>/excluir/', views_tipo_produto.tipo_produto_delete, name='tipo_produto_delete'),
+path('tipos-produto/ajax/listar/', views_tipo_produto.tipo_produto_listar_ajax, name='tipo_produto_listar_ajax'),
+path('unidades/', views.unidademedida_list, name='unidademedida_list'),
+path('unidades/cadastrar/', views.unidademedida_create, name='unidademedida_create'),
+path('unidades/<int:pk>/editar/', views.unidademedida_update, name='unidademedida_update'),
+path('unidades/<int:pk>/excluir/', views.unidademedida_delete, name='unidademedida_delete'),
+path('unidades/ajax/criar/', views.unidademedida_create_ajax, name='unidademedida_create_ajax'),
+path('ncm/buscar/', views.ncm_buscar_ajax, name='ncm_buscar_ajax'),
+path('cfop/buscar/', views.cfop_buscar_ajax, name='cfop_buscar_ajax'),
+path('naturezas/', views.naturezaoperacao_list, name='naturezaoperacao_list'),
+path('naturezas/cadastrar/', views.naturezaoperacao_create, name='naturezaoperacao_create'),
+path('naturezas/<int:pk>/editar/', views.naturezaoperacao_update, name='naturezaoperacao_update'),
+path('naturezas/<int:pk>/excluir/', views.naturezaoperacao_delete, name='naturezaoperacao_delete'),
+path('categorias/', views.categoria_list, name='categoria_list'),
+path('categorias/popular/', views.categoria_seed, name='categoria_seed'),
+path('categorias/cadastrar/', views.categoria_create, name='categoria_create'),
+path('categorias/<int:pk>/editar/', views.categoria_update, name='categoria_update'),
+path('categorias/<int:pk>/excluir/', views.categoria_delete, name='categoria_delete'),
+path('categorias/ajax/criar/', views.categoria_create_ajax, name='categoria_create_ajax'),
+path('subcategorias/', views.subcategoria_list, name='subcategoria_list'),
+path('subcategorias/cadastrar/', views.subcategoria_create, name='subcategoria_create'),
+path('subcategorias/<int:pk>/editar/', views.subcategoria_update, name='subcategoria_update'),
+path('subcategorias/<int:pk>/excluir/', views.subcategoria_delete, name='subcategoria_delete'),
+path('subcategorias/ajax/criar/', views.subcategoria_create_ajax, name='subcategoria_create_ajax'),
+path('variacao/gerar/', views.produto_variacao_form, name='variacao_form'),
+path('variacao/criar/', views.produto_variacao_gerar, name='variacao_gerar'),
+path('<int:produto_pk>/atributos/', views.produto_atributo_listar, name='atributo_listar'),
+path('<int:produto_pk>/atributos/salvar/', views.produto_atributo_salvar, name='atributo_salvar'),
+path('atributos/<int:pk>/excluir/', views.produto_atributo_excluir, name='atributo_excluir'),
+path('', views.produto_list, name='produto_list'),
+path('<int:pk>/', views.produto_detail, name='produto_detail'),
+path('cadastrar/', views.produto_create, name='produto_create'),
+path('<int:pk>/editar/', views.produto_update, name='produto_update'),
+path('<int:pk>/excluir/', views.produto_delete, name='produto_delete'),
+path('<int:pk>/clonar/', views.produto_clone, name='produto_clone'),
+path('<int:produto_id>/tributacao/cadastrar/', views.produtotributacao_create, name='tributacao_create'),
+path('tributacao/<int:pk>/editar/', views.produtotributacao_update, name='tributacao_update'),
+path('tributacao/<int:pk>/excluir/', views.produtotributacao_delete, name='tributacao_delete'),
+path('ajax/buscar/', views.ajax_buscar_produtos, name='ajax_buscar_produtos'),
+path('ajax/<int:produto_id>/tributacoes/', views.ajax_produto_tributacoes, name='ajax_produto_tributacoes'),
+path('ajax/variante/dimensoes/', views.ajax_variante_dimensoes, name='ajax_variante_dimensoes'),
+path('ajax/variante/resolver/', views.ajax_variante_resolver, name='ajax_variante_resolver'),
+path('relatorio/atributos/', views.relatorio_por_atributo, name='relatorio_por_atributo'),
+path('<int:produto_pk>/defensivo-cultura/cadastrar/', views.defensivo_cultura_create, name='defensivo_cultura_create'),
+path('defensivo-cultura/<int:pk>/edit/', views.defensivo_cultura_edit, name='defensivo_cultura_edit'),
+path('defensivo-cultura/<int:pk>/delete/', views.defensivo_cultura_delete, name='defensivo_cultura_delete'),
+path('culturas/ajax/criar/', views.cultura_create_ajax, name='cultura_create_ajax'),
+path('fornecedores/listar/', views.fornecedores_listar, name='fornecedores_listar'),
+path('<int:produto_pk>/fornecedor/criar/', views.produto_fornecedor_create, name='produto_fornecedor_create'),
+path('fornecedor/<int:pk>/excluir/', views.produto_fornecedor_delete, name='produto_fornecedor_delete'),
+path('fornecedor/<int:pk>/json/', views.produto_fornecedor_json, name='produto_fornecedor_json'),
+path('fornecedor/<int:pk>/editar/', views.produto_fornecedor_editar, name='produto_fornecedor_editar'),
+path('<int:produto_pk>/documentos/upload/', views.documento_upload, name='documento_upload'),
+path('documentos/<int:pk>/delete/', views.documento_delete, name='documento_delete'),
+
+=== compras ===
+[models]
+class RecebimentoMensagem(models.Model):
+class SolicitacaoMensagem(models.Model):
+class SolicitacaoCompra(models.Model):
+class ItemSolicitacaoCompra(models.Model):
+class Cotacao(models.Model):
+class ItemCotacao(models.Model):
+class FornecedorCotacao(models.Model):
+class PedidoCompra(models.Model):
+class ItemPedidoCompra(models.Model):
+class RecebimentoCompra(models.Model):
+class ItemRecebimento(models.Model):
+class TipoDivergencia(models.Model):
+class DivergenciaRecebimento(models.Model):
+class AvaliacaoFornecedor(models.Model):
+class PedidoCompraMensagem(models.Model):
+class PlanejamentoComprasEmbalagem(models.Model):
+class ItemPlanejamentoEmbalagem(models.Model):
+[urls]
+path('compra-rapida/', views_simples.compra_rapida, name='compra_rapida'),
+path('pedidos/<int:pk>/editar/', views_simples.pedido_edit, name='pedido_edit'),
+path('recebimento-rapido/', views_simples.recebimento_rapido, name='recebimento_rapido'),
+path('recebimento-rapido/<int:pedido_pk>/', views_simples.recebimento_rapido, name='recebimento_rapido_pedido'),
+path('escolher-modo/', views_simples.escolher_modo_compra, name='escolher_modo_compra'),
+path('solicitacoes/', views.solicitacao_list, name='solicitacao_list'),
+path('solicitacoes/nova/', views.solicitacao_create, name='solicitacao_create'),
+path('solicitacoes/<int:pk>/', views.solicitacao_detail, name='solicitacao_detail'),
+path('solicitacoes/<int:pk>/aprovar/', views.solicitacao_aprovar, name='solicitacao_aprovar'),
+path('solicitacoes/<int:pk>/cancelar/', views.solicitacao_cancelar, name='solicitacao_cancelar'),
+path('solicitacoes/<int:pk>/selecionar-itens/', views.selecionar_itens_cotar, name='selecionar_itens_cotar'),
+path('cotacoes/', views.cotacao_list, name='cotacao_list'),
+path('cotacoes/nova/<int:solicitacao_pk>/', views.cotacao_create, name='cotacao_create'),
+path('cotacoes/<int:pk>/', views.cotacao_detail, name='cotacao_detail'),
+path('cotacoes/<int:pk>/comparativo/', views.cotacao_item_comparativo, name='cotacao_item_comparativo'),
+path('cotacoes/<int:pk>/concluir/', views.cotacao_concluir, name='cotacao_concluir'),
+path('cotacoes/<int:cotacao_pk>/item/<int:item_pk>/proposta/', views.adicionar_proposta, name='adicionar_proposta'),
+path('propostas/<int:proposta_pk>/selecionar/', views.selecionar_fornecedor, name='selecionar_fornecedor'),
+path('propostas/<int:proposta_pk>/remover/', views.remover_proposta, name='remover_proposta'),
+path('pedidos/', views.pedido_list, name='pedido_list'),
+path('pedidos/<int:pk>/', views.pedido_detail, name='pedido_detail'),
+path('pedidos/gerar/<int:cotacao_pk>/', views.pedido_gerar, name='pedido_gerar'),
+path('pedidos/<int:pk>/enviar/', views.pedido_enviar, name='pedido_enviar'),
+path('pedidos/<int:pk>/cancelar/', views.pedido_cancelar, name='pedido_cancelar'),
+path('pedidos/<int:pk>/pdf/', views.pedido_pdf, name='pedido_pdf'),
+path('pedidos/<int:pk>/enviar-email/', views.pedido_enviar_email, name='pedido_enviar_email'),
+path('pedidos/<int:pk>/whatsapp/', views.pedido_whatsapp, name='pedido_whatsapp'),
+path('historico/<int:solicitacao_pk>/', views.historico_completo, name='historico_completo'),
+path('recebimentos/', views.recebimento_list, name='recebimento_list'),
+path('recebimentos/entrada-direta/', views.entrada_direta_nf, name='entrada_direta_nf'),
+path('recebimentos/entrada-direta/buscar-produto/', views.produto_busca_ajax, name='produto_busca_ajax'),
+path('recebimentos/entrada-direta/salvar-vinculo/', views.salvar_vinculo_xml_ajax, name='salvar_vinculo_xml_ajax'),
+path('recebimentos/<int:pk>/', views.recebimento_detail, name='recebimento_detail'),
+path('recebimentos/novo/<int:pedido_id>/', views.recebimento_create, name='recebimento_create'),
+path('recebimentos/<int:pk>/conferir/', views.recebimento_conferir, name='recebimento_conferir'),
+path('recebimentos/<int:pk>/entrada-estoque/', views.recebimento_entrada_estoque, name='recebimento_entrada_estoque'),
+path('recebimentos/<int:pk>/avaliar-fornecedor/', views.avaliar_fornecedor, name='avaliar_fornecedor'),
+path('recebimentos/<int:pk>/manifestar/', views.recebimento_manifestar, name='recebimento_manifestar'),
+path('recebimentos/<int:pk>/devolucao/', views.devolucao_compra_create, name='devolucao_compra'),
+path('mde/', views.mde_list, name='mde_list'),
+path('recebimentos/<int:recebimento_pk>/faturar/', views_simples.faturar_recebimento, name='faturar_recebimento'),
+path('cotacoes-inteligentes/', cotacao_list, name='cotacao_inteligente_list'),
+path('cotacoes-inteligentes/nova/passo-1/', cotacao_create_step1, name='cotacao_create_step1'),
+path('cotacoes-inteligentes/nova/passo-2/', cotacao_create_step2, name='cotacao_create_step2'),
+path('cotacoes-inteligentes/<int:pk>/', cotacao_detail, name='cotacao_inteligente_detail'),
+path('cotacoes-inteligentes/<int:cotacao_pk>/item/<int:item_pk>/proposta/', proposta_create, name='proposta_inteligente_create'),
+path('cotacoes-inteligentes/proposta/<int:proposta_pk>/selecionar/', proposta_selecionar, name='proposta_inteligente_selecionar'),
+path('produtos/<int:produto_pk>/historico-precos/', historico_precos, name='historico_precos'),
+path('historico-precos/', historico_precos_list, name='historico_precos_list'),
+path('formas-pagamento/', forma_pagamento_list, name='forma_pagamento_list'),
+path('formas-pagamento/nova/', forma_pagamento_create, name='forma_pagamento_create'),
+path('formas-pagamento/<int:pk>/editar/', forma_pagamento_edit, name='forma_pagamento_edit'),
+path('formas-pagamento/<int:pk>/excluir/', forma_pagamento_delete, name='forma_pagamento_delete'),
+path('api/produto/<int:produto_id>/estoque/', views.get_produto_estoque, name='get_produto_estoque'),
+path('api/produto/<int:produto_id>/unidades/', views.get_produto_unidades, name='get_produto_unidades'),
+path('api/empresa/unidades/', views.get_empresa_unidades, name='get_empresa_unidades'),
+path('dashboard-compras/', dashboard_compras, name='dashboard_compras'),
+path('cotacoes/teste-template/',
+path('planejamento-embalagem/', planejamento_embalagem_list, name='planejamento_embalagem_list'),
+path('planejamento-embalagem/novo/', planejamento_embalagem_create, name='planejamento_embalagem_create'),
+path('planejamento-embalagem/<int:pk>/', planejamento_embalagem_detail, name='planejamento_embalagem_detail'),
+path('planejamento-embalagem/<int:pk>/editar/', planejamento_embalagem_update, name='planejamento_embalagem_update'),
+path('planejamento-embalagem/<int:pk>/aprovar/', planejamento_embalagem_aprovar, name='planejamento_embalagem_aprovar'),
+path('planejamento-embalagem/<int:pk>/revisar-precos/', planejamento_embalagem_revisar_precos, name='planejamento_embalagem_revisar_precos'),
+path('planejamento-embalagem/<int:pk>/gerar/', planejamento_embalagem_gerar, name='planejamento_embalagem_gerar'),
+path('relatorios/', views.relatorio_compras_simples, name='relatorio_compras_simples'),
+path('relatorios/pdf/', views.relatorio_compras_simples_pdf, name='relatorio_compras_simples_pdf'),
+path('relatorios/geral/', views.relatorio_compras_geral, name='relatorio_compras_geral'),
+path('relatorios/pedidos-pendentes/', views.relatorio_pedidos_pendentes, name='relatorio_pedidos_pendentes'),
+path('relatorios/compras/', views.relatorio_compras, name='relatorio_compras'),
+
+=== estoque ===
+[models]
+class EmpresaQuerySet(models.QuerySet):
+class ArmazemManager(models.Manager):
+class Armazem(models.Model):
+class LocalEstocagem(models.Model):
+class Lote(models.Model):
+class MovimentacaoEstoque(models.Model):
+class InventarioCiclicoSchedule(models.Model):
+class InventarioCiclico(models.Model):
+class InventarioCiclicoItem(models.Model):
+[urls]
+path('entrada-rapida/', views_simples.entrada_rapida, name='entrada_rapida'),
+path('saida-rapida/', views_simples.saida_rapida, name='saida_rapida'),
+path('ajuste-rapido/', views_simples.ajuste_rapido, name='ajuste_rapido'),
+path('escolher-modo-estoque/', views_simples.escolher_modo_estoque, name='escolher_modo_estoque'),
+path('', views.dashboard, name='dashboard'),
+path('armazens/', views.armazem_list, name='armazem_list'),
+path('armazens/create/', views.armazem_create, name='armazem_create'),
+path('armazens/<int:pk>/', views.armazem_detail, name='armazem_detail'),
+path('armazens/<int:pk>/edit/', views.armazem_edit, name='armazem_edit'),
+path('armazens/<int:pk>/delete/', views.armazem_delete, name='armazem_delete'),
+path('locais/', views.local_list, name='local_list'),
+path('locais/create/', views.local_create, name='local_create'),
+path('locais/<int:pk>/edit/', views.local_edit, name='local_edit'),
+path('locais/<int:pk>/delete/', views.local_delete, name='local_delete'),
+path('locais/<int:pk>/bloquear/', views.local_bloquear, name='local_bloquear'),
+path('locais/<int:pk>/desbloquear/', views.local_desbloquear, name='local_desbloquear'),
+path('lotes/', views.lote_list, name='lote_list'),
+path('lotes/create/', views.lote_create, name='lote_create'),
+path('lotes/<int:pk>/', views.lote_detail, name='lote_detail'),
+path('lotes/<int:pk>/edit/', views.lote_edit, name='lote_edit'),
+path('lotes/<int:pk>/bloquear/', views.lote_bloquear, name='lote_bloquear'),
+path('lotes/<int:pk>/desbloquear/', views.lote_desbloquear, name='lote_desbloquear'),
+path('movimentacoes/', views.movimentacao_list, name='movimentacao_list'),
+path('movimentacoes/create/', views.movimentacao_create, name='movimentacao_create'),
+path('movimentacoes/<int:pk>/', views.movimentacao_detail, name='movimentacao_detail'),
+path('movimentacoes/<int:pk>/aprovar/', views.movimentacao_aprovar, name='movimentacao_aprovar'),
+path('movimentacoes/<int:pk>/executar/', views.movimentacao_executar, name='movimentacao_executar'),
+path('movimentacoes/<int:pk>/cancelar/', views.movimentacao_cancelar, name='movimentacao_cancelar'),
+path('entrada/', views.entrada_create, name='entrada_create'),
+path('saida/', views.saida_create, name='saida_create'),
+path('transferencia/', views.transferencia_create, name='transferencia_create'),
+path('relatorio/', views.relatorio_estoque, name='relatorio_estoque'),
+path('relatorio/produto/', views.relatorio_produto, name='relatorio_produto'),
+path('relatorio/alertas/', views.relatorio_alertas_estoque, name='relatorio_alertas_estoque'),
+path('relatorio/abc/', views.relatorio_analise_abc, name='relatorio_abc'),
+path('relatorio/comparativo/', views.relatorio_comparativo_periodos, name='relatorio_comparativo'),
+path('relatorio/auditoria/', views.relatorio_auditoria, name='relatorio_auditoria'),
+path('relatorio/rastreamento/', views.relatorio_rastreamento_lote, name='relatorio_rastreamento'),
+path('relatorio/rastreamento/dashboard/', views.relatorio_rastreamento_dashboard, name='relatorio_rastreamento_dashboard'),
+path('relatorio/rastreamento/<int:lote_id>/', views.relatorio_rastreamento_lote, name='relatorio_rastreamento_detalhes'),
+path('relatorio/validacao-disponibilidade/', views.relatorio_validacao_disponibilidade, name='relatorio_validacao_disponibilidade'),
+path('inventario-ciclico/', views.inventario_ciclico_list, name='inventario_ciclico_list'),
+path('inventario-ciclico/create/', views.inventario_ciclico_create, name='inventario_ciclico_create'),
+path('inventario-ciclico/<int:pk>/', views.inventario_ciclico_detail, name='inventario_ciclico_detail'),
+path('inventario-ciclico/<int:pk>/registrar-contagem/', views.inventario_ciclico_registrar_contagem, name='inventario_ciclico_registrar_contagem'),
+path('inventario-ciclico/<int:pk>/conciliar/', views.inventario_ciclico_conciliar, name='inventario_ciclico_conciliar'),
+path('inventario-ciclico/<int:pk>/finalizar/', views.inventario_ciclico_finalizar, name='inventario_ciclico_finalizar'),
+path('inventario-ciclico/relatorio/acuracia/', views.inventario_ciclico_relatorio_acuracia, name='inventario_ciclico_relatorio_acuracia'),
+path('api/lotes-disponiveis/', views.get_lotes_disponiveis, name='api_lotes_disponiveis'),
+path('api/produto/<int:produto_id>/unidade/', views.get_produto_unidade, name='api_produto_unidade'),
+path('api/dashboard/dados/', views.api_dashboard_dados, name='api_dashboard_dados'),
+path('produtos/', views.estoque_produtos_list, name='estoque_produtos_list'),
+path('produto/<int:pk>/historico/', views.produto_historico, name='produto_historico'),
+path('produto/<int:pk>/historico/pdf/', views.produto_historico_pdf, name='produto_historico_pdf'),
+
+=== financeiro ===
+[models]
+class FormaPagemento(models.Model):
+class ConfiguracaoJurosMulta(models.Model):
+class ContaPagar(models.Model):
+class ParcelaContaPagar(models.Model):
+class PagamentoContaPagar(models.Model):
+class LogAlteracaoPagamento(models.Model):
+class AjusteContaPagar(models.Model):
+class ContaReceber(models.Model):
+class ParcelaContaReceber(models.Model):
+class RecebimentoContaReceber(models.Model):
+[urls]
+path('', views.financeiro_dashboard, name='dashboard'),
+path('contas/', views.conta_pagar_list, name='conta_pagar_list'),
+path('contas/<int:pk>/', views.conta_pagar_detail, name='conta_pagar_detail'),
+path('contas/criar/', views.conta_pagar_create, name='conta_pagar_create'),
+path('contas/<int:pk>/editar/', views.conta_pagar_edit, name='conta_pagar_edit'),
+path('contas/<int:pk>/aprovar/', views.conta_pagar_aprovar, name='conta_pagar_aprovar'),
+path('parcelas/', views.parcela_list, name='parcela_list'),
+path('contas/<int:conta_pk>/parcelas/criar/', views.parcela_criar, name='parcela_criar'),
+path('parcelas/<int:parcela_pk>/pagar/', views.parcela_pagar, name='parcela_pagar'),
+path('pagamentos/<int:pk>/retornar-pendente/', views.pagamento_retornar_pendente, name='pagamento_retornar_pendente'),
+path('contas/<int:pk>/quitar-saldo/', views.conta_quitar_saldo, name='conta_quitar_saldo'),
+path('contas/<int:pk>/ajuste/', views.ajuste_criar, name='ajuste_criar'),
+path('relatorios/contas-a-vencer/', views.relatorio_contas_vencer, name='relatorio_contas_vencer'),
+path('relatorios/contas-vencidas/', views.relatorio_contas_vencidas, name='relatorio_contas_vencidas'),
+path('relatorios/fluxo-caixa/', views.relatorio_fluxo_caixa, name='relatorio_fluxo_caixa'),
+path('contas/<int:conta_pk>/recalcular-juros/', views.recalcular_juros_multas, name='recalcular_juros'),
+path('contas-receber/', views.conta_receber_list, name='conta_receber_list'),
+path('contas-receber/nova/', views.conta_receber_create, name='conta_receber_create'),
+path('contas-receber/<int:pk>/', views.conta_receber_detail, name='conta_receber_detail'),
+path('contas-receber/<int:pk>/cancelar/', views.conta_receber_cancelar, name='conta_receber_cancelar'),
+path('contas-receber/parcela/<int:parcela_pk>/receber/', views.parcela_receber_registrar, name='parcela_receber_registrar'),
+
+=== faturamento ===
+[models]
+class FaturamentoBaseModel(models.Model):
+class ConfiguracaoFiscal(models.Model):
+class NotaFiscal(FaturamentoBaseModel):
+class ItemNotaFiscal(models.Model):
+class PagamentoNF(models.Model):
+class DuplicataNF(models.Model):
+class CartaCorrecaoNFe(models.Model):
+class InutilizacaoNFe(models.Model):
+class NFeReferenciada(models.Model):
+class InvoiceExportacao(FaturamentoBaseModel):
+class ItemInvoice(models.Model):
+class PackingList(FaturamentoBaseModel):
+class ConhecimentoTransporte(FaturamentoBaseModel):
+class ComponenteValorCTe(models.Model):
+class DocumentoVinculadoCTe(models.Model):
+class CartaCorrecaoCTe(models.Model):
+class ManifestoDocumentoFiscal(FaturamentoBaseModel):
+class DocumentoVinculadoMDFe(models.Model):
+class PercursoMDFe(models.Model):
+class CondutorAdicionalMDFe(models.Model):
+class CondutorMDFe(models.Model):
+class ReboqueMDFe(models.Model):
+class CiotMDFe(models.Model):
+class ContratanteMDFe(models.Model):
+class ValePedagioMDFe(models.Model):
+class PagamentoFreteMDFe(models.Model):
+class SeguroMDFe(models.Model):
+class ProdutoPredominanteMDFe(models.Model):
+class ItemPackingList(models.Model):
+class CotacaoBCB(models.Model):
+[urls]
+path('', views.faturamento_dashboard, name='dashboard'),
+path('notas-fiscais/', views.nota_fiscal_list, name='nota_fiscal_list'),
+path('notas-fiscais/nova/', views.nota_fiscal_create, name='nota_fiscal_create'),
+path('notas-fiscais/<int:pk>/', views.nota_fiscal_detail, name='nota_fiscal_detail'),
+path('notas-fiscais/<int:pk>/editar/', views.nota_fiscal_update, name='nota_fiscal_update'),
+path('notas-fiscais/<int:pk>/emitir/', views.nota_fiscal_emitir, name='nota_fiscal_emitir'),
+path('notas-fiscais/<int:pk>/emitir/ajax/', views.nota_fiscal_emitir_ajax, name='nota_fiscal_emitir_ajax'),
+path('notas-fiscais/<int:pk>/debug-payload/', views.nota_fiscal_debug_payload, name='nota_fiscal_debug_payload'),
+path('notas-fiscais/<int:pk>/cancelar/', views.nota_fiscal_cancelar, name='nota_fiscal_cancelar'),
+path('notas-fiscais/<int:pk>/consultar/', views.nota_fiscal_consultar, name='nota_fiscal_consultar'),
+path('notas-fiscais/<int:pk>/consultar/ajax/', views.nota_fiscal_consultar_ajax, name='nota_fiscal_consultar_ajax'),
+path('notas-fiscais/<int:pk>/recuperar/', views.nota_fiscal_recuperar, name='nota_fiscal_recuperar'),
+path('notas-fiscais/<int:pk>/pdf/', views.nota_fiscal_pdf, name='nota_fiscal_pdf'),
+path('notas-fiscais/<int:pk>/danfe/', views.nota_fiscal_danfe, name='nota_fiscal_danfe'),
+path('notas-fiscais/<int:pk>/danfe-preview/', views.nota_fiscal_danfe_preview, name='nota_fiscal_danfe_preview'),
+path('notas-fiscais/<int:pk>/xml/', views.nota_fiscal_xml, name='nota_fiscal_xml'),
+path('notas-fiscais/<int:pk>/clonar/', views.nota_fiscal_clone, name='nota_fiscal_clone'),
+path('notas-fiscais/<int:pk>/devolucao/', views.nota_fiscal_devolucao, name='nota_fiscal_devolucao'),
+path('notas-fiscais/<int:pk>/carta-correcao/', views.nota_fiscal_carta_correcao, name='nota_fiscal_carta_correcao'),
+path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/print/', views.nfe_cce_print, name='nfe_cce_print'),
+path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/xml/', views.nfe_cce_xml, name='nfe_cce_xml'),
+path('notas-fiscais/inutilizar/', views.nota_fiscal_inutilizar, name='nota_fiscal_inutilizar'),
+path('invoices/', views.invoice_list, name='invoice_list'),
+path('invoices/nova/', views.invoice_create, name='invoice_create'),
+path('invoices/<int:pk>/', views.invoice_detail, name='invoice_detail'),
+path('invoices/<int:pk>/editar/', views.invoice_update, name='invoice_update'),
+path('invoices/<int:pk>/emitir/', views.invoice_emitir, name='invoice_emitir'),
+path('invoices/<int:pk>/cancelar/', views.invoice_cancelar, name='invoice_cancelar'),
+path('invoices/<int:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
+path('packing-lists/', views.packing_list_list, name='packing_list_list'),
+path('packing-lists/nova/', views.packing_list_create, name='packing_list_create'),
+path('packing-lists/<int:pk>/', views.packing_list_detail, name='packing_list_detail'),
+path('packing-lists/<int:pk>/editar/', views.packing_list_update, name='packing_list_update'),
+path('packing-lists/<int:pk>/emitir/', views.packing_list_emitir, name='packing_list_emitir'),
+path('packing-lists/<int:pk>/pdf/', views.packing_list_pdf, name='packing_list_pdf'),
+path('configuracao/', views.configuracao_fiscal, name='configuracao'),
+path('configuracao/certificado/', views.certificado_upload, name='certificado_upload'),
+path('configuracao/certificado/excluir/', views.certificado_delete, name='certificado_delete'),
+path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
+path('configuracao/testar-token/', views.integranotas_test_token, name='integranotas_test_token'),
+path('cte/', views.cte_list, name='cte_list'),
+path('cte/novo/', views.cte_create, name='cte_create'),
+path('cte/<int:pk>/', views.cte_detail, name='cte_detail'),
+path('cte/<int:pk>/editar/', views.cte_update, name='cte_update'),
+path('cte/<int:pk>/validar/', views.cte_validar, name='cte_validar'),
+path('cte/<int:pk>/emitir-ajax/', views.cte_emitir_ajax, name='cte_emitir_ajax'),
+path('cte/<int:pk>/consultar-ajax/', views.cte_consultar_ajax, name='cte_consultar_ajax'),
+path('cte/<int:pk>/emitir/', views.cte_emitir, name='cte_emitir'),
+path('cte/<int:pk>/cancelar/', views.cte_cancelar, name='cte_cancelar'),
+path('cte/<int:pk>/dacte/', views.cte_dacte, name='cte_dacte'),
+path('cte/<int:pk>/consultar/', views.cte_consultar, name='cte_consultar'),
+path('cte/<int:pk>/carta-correcao/', views.cte_carta_correcao, name='cte_carta_correcao'),
+path('cte/<int:pk>/desacordo/', views.cte_manifestar_desacordo, name='cte_manifestar_desacordo'),
+path('cte/<int:pk>/insucesso-entrega/', views.cte_insucesso_entrega, name='cte_insucesso_entrega'),
+path('cte/<int:cte_pk>/cce/<int:cc_pk>/print/', views.cte_cce_print, name='cte_cce_print'),
+path('cte/<int:cte_pk>/cce/<int:cc_pk>/xml/', views.cte_cce_xml, name='cte_cce_xml'),
+path('cte/<int:pk>/preview/', views.cte_preview, name='cte_preview'),
+path('cte/<int:pk>/clonar/', views.cte_clone, name='cte_clone'),
+path('cte/<int:pk>/xml/', views.cte_xml, name='cte_xml'),
+path('cte/<int:pk>/xml-cancelamento/', views.cte_xml_cancelamento, name='cte_xml_cancelamento'),
+path('cte/<int:pk>/reenviar-email/', views.cte_reenviar_email, name='cte_reenviar_email'),
+path('mdfe/', views.mdfe_list, name='mdfe_list'),
+path('mdfe/novo/', views.mdfe_create, name='mdfe_create'),
+path('mdfe/<int:pk>/', views.mdfe_detail, name='mdfe_detail'),
+path('mdfe/<int:pk>/editar/', views.mdfe_update, name='mdfe_update'),
+path('mdfe/<int:pk>/emitir/', views.mdfe_emitir, name='mdfe_emitir'),
+path('mdfe/<int:pk>/emitir-ajax/', views.mdfe_emitir_ajax, name='mdfe_emitir_ajax'),
+path('mdfe/<int:pk>/consultar-ajax/', views.mdfe_consultar_ajax, name='mdfe_consultar_ajax'),
+path('mdfe/<int:pk>/encerrar/', views.mdfe_encerrar, name='mdfe_encerrar'),
+path('mdfe/<int:pk>/cancelar/', views.mdfe_cancelar, name='mdfe_cancelar'),
+path('mdfe/<int:pk>/damdfe/', views.mdfe_damdfe, name='mdfe_damdfe'),
+path('mdfe/<int:pk>/consultar/', views.mdfe_consultar, name='mdfe_consultar'),
+path('mdfe/<int:pk>/xml/', views.mdfe_xml, name='mdfe_xml'),
+path('mdfe/<int:pk>/xml-cancelamento/', views.mdfe_xml_cancelamento, name='mdfe_xml_cancelamento'),
+path('mdfe/<int:pk>/preview/', views.mdfe_preview, name='mdfe_preview'),
+path('mdfe/<int:pk>/inclui-condutor/', views.mdfe_inclui_condutor, name='mdfe_inclui_condutor'),
+path('mdfe/<int:pk>/inclui-nfe/', views.mdfe_inclui_nfe, name='mdfe_inclui_nfe'),
+path('mdfe/<int:pk>/clonar/', views.mdfe_clonar, name='mdfe_clonar'),
+path('docs/integranotas/', views.docs_integranotas, name='docs_integranotas'),
+path('cotacoes-bcb/', views.cotacoes_bcb_list, name='cotacoes_bcb_list'),
+path('cotacoes-bcb/buscar-hoje/', views.cotacoes_bcb_buscar_hoje, name='cotacoes_bcb_buscar_hoje'),
+path('remessas-pendentes/', views.remessas_pendentes, name='remessas_pendentes'),
+path('fechar-lote/', views.fechar_lote, name='fechar_lote'),
+path('gerar-nota-mae/', views.gerar_nota_mae, name='gerar_nota_mae'),
+path('ajax/produto/<int:pk>/', views.ajax_produto_detail, name='ajax_produto_detail'),
+path('ajax/booking/<int:pk>/', views.ajax_booking_preview, name='ajax_booking_preview'),
+path('ajax/cotacao-bcb/', views.ajax_cotacao_bcb, name='ajax_cotacao_bcb'),
+path('ajax/nfe-para-cte/', views.ajax_nfe_para_cte, name='ajax_nfe_para_cte'),
+path('ajax/nfe-para-mdfe/', views.ajax_nfe_para_mdfe, name='ajax_nfe_para_mdfe'),
+path('ajax/cte-para-mdfe/', views.ajax_cte_para_mdfe, name='ajax_cte_para_mdfe'),
+
+=== vendas ===
+[models]
+class PedidoVenda(models.Model):
+class ItemPedidoVenda(models.Model):
+[urls]
+path('', views.pedido_list, name='pedido_list'),
+path('novo/', views.pedido_create, name='pedido_create'),
+path('<int:pk>/', views.pedido_detail, name='pedido_detail'),
+path('<int:pk>/editar/', views.pedido_update, name='pedido_update'),
+path('<int:pk>/aprovar/', views.pedido_aprovar, name='pedido_aprovar'),
+path('<int:pk>/emitir/', views.pedido_emitir_documento, name='pedido_emitir'),
+path('<int:pk>/cancelar/', views.pedido_cancelar, name='pedido_cancelar'),
+
+=== exportacao ===
+[models]
+class ExportacaoBaseModel(models.Model):
+class SolicitacaoBooking(ExportacaoBaseModel):
+class Booking(ExportacaoBaseModel):
+class BookingContainer(ExportacaoBaseModel):
+class BookingContainerHistory(ExportacaoBaseModel):
+class OrdemColeta(ExportacaoBaseModel):
+class FotoOrdemColeta(models.Model):
+[urls]
+path('solicitacoes/', views.solicitacao_booking_list, name='solicitacao_booking_list'),
+path('solicitacoes/nova/', views.solicitacao_booking_create, name='solicitacao_booking_create'),
+path('solicitacoes/<int:pk>/', views.solicitacao_booking_detail, name='solicitacao_booking_detail'),
+path('solicitacoes/<int:pk>/editar/', views.solicitacao_booking_update, name='solicitacao_booking_update'),
+path('solicitacoes/<int:pk>/pdf/', views.solicitacao_booking_pdf, name='solicitacao_booking_pdf'),
+path('bookings/', views.booking_list, name='booking_list'),
+path('bookings/novo/', views.booking_create, name='booking_create'),
+path('bookings/<int:pk>/', views.booking_detail, name='booking_detail'),
+path('bookings/<int:pk>/editar/', views.booking_update, name='booking_update'),
+path('bookings/<int:booking_pk>/containers/', views.container_list, name='booking_container_list'),
+path('containers/', views.container_list, name='container_list'),
+path('bookings/<int:booking_pk>/containers/novo/', views.container_create, name='booking_container_create'),
+path('containers/<int:pk>/editar/', views.container_update, name='container_update'),
+path('containers/<int:pk>/transferir/', views.container_transferir, name='container_transferir'),
+path('containers/<int:pk>/historico/', views.container_historico, name='container_historico'),
+path('ordens-coleta/', views.ordem_coleta_list, name='ordem_coleta_list'),
+path('ordens-coleta/nova/', views.ordem_coleta_create, name='ordem_coleta_create'),
+path('ordens-coleta/<int:pk>/editar/', views.ordem_coleta_update, name='ordem_coleta_update'),
+path('ordens-coleta/<int:pk>/imprimir/', views.ordem_coleta_print, name='ordem_coleta_print'),
+path('ordens-coleta/<int:pk>/carta-temperatura/', views.ordem_coleta_carta_temperatura, name='ordem_coleta_carta_temperatura'),
+path('ordens-coleta/<int:pk>/fotos/', views.ordem_coleta_fotos_admin, name='ordem_coleta_fotos'),
+path('ajax/cultura/<int:pk>/exportacao/', views.ajax_cultura_exportacao, name='ajax_cultura_exportacao'),
+path('ajax/solicitacao/<int:pk>/preview/', views.ajax_solicitacao_preview, name='ajax_solicitacao_preview'),
+path('ajax/booking/<int:pk>/coleta-preview/', views.ajax_booking_coleta_preview, name='ajax_booking_coleta_preview'),
+path('ajax/booking/<int:pk>/container-preview/', views.ajax_booking_container_preview, name='ajax_booking_container_preview'),
+path('ajax/booking/<int:pk>/ordens-coleta/', views.ajax_booking_ordens_coleta, name='ajax_booking_ordens_coleta'),
+path('ajax/ordem-coleta/<int:pk>/container-dados/', views.ajax_ordem_coleta_container_dados, name='ajax_ordem_coleta_container_dados'),
+path('ajax/transportadora/<int:pk>/preview/', views.ajax_transportadora_preview, name='ajax_transportadora_preview'),
+path('ajax/motorista/<int:pk>/preview/', views.ajax_motorista_preview, name='ajax_motorista_preview'),
+path('ajax/transportadora/<int:pk>/motoristas/', views.ajax_motoristas_por_transportadora, name='ajax_motoristas_por_transportadora'),
+
+=== embalagem ===
+[models]
+class TipoEmbalagem(models.Model):
+class OrdemEmbalagem(models.Model):
+class PalletEmbalado(models.Model):
+class ItemPallet(models.Model):
+class RomaneioVenda(models.Model):
+class ItemRomaneioVenda(models.Model):
+[urls]
+path('', views.embalagem_dashboard, name='dashboard'),
+path('tipos/', views.tipo_embalagem_list, name='tipo_embalagem_list'),
+path('tipos/novo/', views.tipo_embalagem_create, name='tipo_embalagem_create'),
+path('tipos/<int:pk>/editar/', views.tipo_embalagem_update, name='tipo_embalagem_update'),
+path('ordens/', views.ordem_list, name='ordem_list'),
+path('ordens/nova/', views.ordem_create, name='ordem_create'),
+path('ordens/<int:pk>/', views.ordem_detail, name='ordem_detail'),
+path('ordens/<int:pk>/gerar-pallets/', views.ordem_gerar_pallets, name='ordem_gerar_pallets'),
+path('ordens/<int:pk>/etiquetas/', views.ordem_etiquetas_pdf, name='ordem_etiquetas_pdf'),
+path('pallets/', views.pallet_list, name='pallet_list'),
+path('pallets/<int:pk>/etiqueta/', views.pallet_etiqueta_pdf, name='pallet_etiqueta_pdf'),
+path('ordens/<int:ordem_pk>/pallet-misto/', views.pallet_misto_create, name='pallet_misto_create'),
+path('pallets/<int:pk>/misto/', views.pallet_misto_detail, name='pallet_misto_detail'),
+path('pallets/<int:pk>/misto/adicionar/', views.pallet_misto_add_item, name='pallet_misto_add_item'),
+path('pallets/<int:pk>/misto/remover/<int:item_pk>/', views.pallet_misto_remove_item, name='pallet_misto_remove_item'),
+path('romaneios/', views.romaneio_list, name='romaneio_list'),
+path('romaneios/novo/', views.romaneio_create, name='romaneio_create'),
+path('romaneios/<int:pk>/', views.romaneio_detail, name='romaneio_detail'),
+path('romaneios/<int:pk>/editar/', views.romaneio_update, name='romaneio_update'),
+path('romaneios/<int:pk>/confirmar/', views.romaneio_confirmar, name='romaneio_confirmar'),
+path('romaneios/<int:pk>/gerar-pedido/', views.romaneio_gerar_pedido, name='romaneio_gerar_pedido'),
+path('romaneios/<int:pk>/etiquetas/', views.romaneio_etiquetas_pdf, name='romaneio_etiquetas_pdf'),
+path('romaneios/<int:pk>/conferencia/', views.romaneio_conferencia, name='romaneio_conferencia'),
+path('romaneios/<int:pk>/conferencia-pdf/', views.romaneio_conferencia_pdf, name='romaneio_conferencia_pdf'),
+path('romaneios/<int:pk>/remover-pallet/<int:item_pk>/', views.romaneio_remover_pallet, name='romaneio_remover_pallet'),
+path('romaneios/<int:pk>/trocar-cliente/', views.romaneio_trocar_cliente, name='romaneio_trocar_cliente'),
+path('romaneios/<int:pk>/gerar-invoice/', views.romaneio_gerar_invoice, name='romaneio_gerar_invoice'),
+path('romaneios/<int:pk>/gerar-nota-fiscal/', views.romaneio_gerar_nota_fiscal, name='romaneio_gerar_nota_fiscal'),
+path('ajax/pallets/', views.ajax_pallets_disponiveis, name='ajax_pallets_disponiveis'),
+path('ajax/adicionar-pallet/', views.ajax_adicionar_pallet, name='ajax_adicionar_pallet'),
+path('ajax/conferir-pallet/', views.ajax_conferir_pallet, name='ajax_conferir_pallet'),
+
+=== operacoes_campo ===
+[models]
+class CustoHoraMaquina(models.Model):
+class TipoServicoOS(models.Model):
+class SubtipoServicoOS(models.Model):
+class ModalidadeExecucaoOS(models.Model):
+class OrdemServico(models.Model):
+class OrdemServicoInsumo(models.Model):
+class OSFuncionario(models.Model):
+class OSIntervalo(models.Model):
+class OSMaquina(models.Model):
+class CustoTalhao(models.Model):
+class EtapaColheita(models.Model):
+class FrotaColheita(models.Model):
+class CarrocaoFrota(models.Model):
+class ViagemColheita(models.Model):
+class LoteProducao(models.Model):
+class RegistroPluviometria(models.Model):
+class InspecaoQualidadeCampo(models.Model):
+class RegistroCadernoCampo(models.Model):
+class RegistroCadernoCampoInsumo(models.Model):
+class RegistroCadernoCampoFuncionario(models.Model):
+class PlanejamentoCustoSafra(models.Model):
+class SubcategoriaItemCusto(models.Model):
+class PlanejamentoCustoItem(models.Model):
+class PlanejamentoCustoItemIndireto(models.Model):
+class FormacaoPreco(models.Model):
+class OSRegistroExecucao(models.Model):
+class PushSubscriptionCampo(models.Model):
+class PortalCampoConfig(models.Model):
+[urls]
+path('ordens-servico/', views_os.os_list, name='os_list'),
+path('ordens-servico/nova/', views_os.os_create, name='os_create'),
+path('ordens-servico/custos-talhao/', views_os.custo_talhao_list, name='custo_talhao_list'),
+path('ordens-servico/<int:pk>/', views_os.os_detail, name='os_detail'),
+path('ordens-servico/<int:pk>/editar/', views_os.os_update, name='os_update'),
+path('ordens-servico/<int:pk>/excluir/', views_os.os_delete, name='os_delete'),
+path('ordens-servico/<int:pk>/aprovar/', views_os.os_aprovar, name='os_aprovar'),
+path('ordens-servico/<int:pk>/iniciar/', views_os.os_iniciar, name='os_iniciar'),
+path('ordens-servico/<int:pk>/concluir/', views_os.os_concluir, name='os_concluir'),
+path('ordens-servico/<int:pk>/recalcular-custos/', views_os.os_recalcular_custos, name='os_recalcular_custos'),
+path('ordens-servico/<int:pk>/pausar/', views_os.os_pausar_admin, name='os_pausar_admin'),
+path('ordens-servico/<int:pk>/retomar/', views_os.os_retomar_admin, name='os_retomar_admin'),
+path('ordens-servico/<int:pk>/insumos/novo/', views_os.os_insumo_add, name='os_insumo_add'),
+path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/editar/', views_os.os_insumo_edit, name='os_insumo_edit'),
+path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_os.os_insumo_delete, name='os_insumo_delete'),
+path('custos-maquina/', views_os.custo_maquina_list, name='custo_maquina_list'),
+path('custos-maquina/novo/', views_os.custo_maquina_create, name='custo_maquina_create'),
+path('custos-maquina/<int:pk>/editar/', views_os.custo_maquina_update, name='custo_maquina_update'),
+path('ordens-servico/ajax/opcoes-servico/', views_os.ajax_opcoes_servico, name='os_ajax_opcoes_servico'),
+path('ordens-servico/ajax/opcoes-talhao/', views_os.ajax_opcoes_talhao, name='os_ajax_opcoes_talhao'),
+path('ordens-servico/ajax/produto-info/', views_os.ajax_produto_info, name='os_ajax_produto_info'),
+path('delegacao/', views_os.os_painel_delegacao, name='os_painel_delegacao'),
+path('portal-campo/config/', views_portal_config.portal_campo_config_view, name='portal_campo_config'),
+path('ordens-servico/<int:pk>/atribuir/', views_os.os_atribuir_responsavel, name='os_atribuir_responsavel'),
+path('ordens-servico/<int:os_pk>/colheita/nova-etapa/', views_colheita.etapa_nova, name='colheita_nova_etapa'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/', views_colheita.etapa_detalhe, name='colheita_detalhe'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/concluir/', views_colheita.etapa_concluir, name='colheita_concluir'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/adicionar/', views_colheita.frota_adicionar, name='colheita_frota_adicionar'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/<int:frota_pk>/horimetro/', views_colheita.frota_horimetro_final, name='colheita_frota_horimetro'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/frota/<int:frota_pk>/carrocao/adicionar/', views_colheita.carrocao_adicionar, name='colheita_carrocao_adicionar'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/carrocao/<int:carrocao_pk>/remover/', views_colheita.carrocao_remover, name='colheita_carrocao_remover'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/carrocao/<int:carrocao_pk>/viagem/nova/', views_colheita.viagem_nova, name='colheita_viagem_nova'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/editar/', views_colheita.viagem_editar, name='colheita_viagem_editar'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/excluir/', views_colheita.viagem_excluir, name='colheita_viagem_excluir'),
+path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/ajax/carrocoes/', views_colheita.ajax_carrocoes_disponiveis, name='colheita_ajax_carrocoes'),
+path('pluviometria/', views_pluviometria.pluviometria_list, name='pluviometria_list'),
+path('pluviometria/novo/', views_pluviometria.pluviometria_create, name='pluviometria_create'),
+path('pluviometria/<int:pk>/editar/', views_pluviometria.pluviometria_update, name='pluviometria_update'),
+path('pluviometria/<int:pk>/excluir/', views_pluviometria.pluviometria_delete, name='pluviometria_delete'),
+path('pluviometria/dashboard/', views_pluviometria.pluviometria_dashboard, name='pluviometria_dashboard'),
+path('qualidade-campo/', views_qualidade_campo.qualidade_campo_list, name='qualidade_campo_list'),
+path('qualidade-campo/nova/', views_qualidade_campo.qualidade_campo_create, name='qualidade_campo_create'),
+path('qualidade-campo/<int:pk>/', views_qualidade_campo.qualidade_campo_detail, name='qualidade_campo_detail'),
+path('qualidade-campo/<int:pk>/editar/', views_qualidade_campo.qualidade_campo_update, name='qualidade_campo_update'),
+path('qualidade-campo/<int:pk>/excluir/', views_qualidade_campo.qualidade_campo_delete, name='qualidade_campo_delete'),
+path('qualidade-campo/<int:pk>/pdf/', views_qualidade_campo.qualidade_campo_pdf, name='qualidade_campo_pdf'),
+path('caderno-campo/', views_caderno_campo.caderno_campo_list, name='caderno_campo_list'),
+path('caderno-campo/novo/', views_caderno_campo.caderno_campo_create, name='caderno_campo_create'),
+path('caderno-campo/pdf/', views_caderno_campo.caderno_campo_pdf, name='caderno_campo_pdf'),
+path('caderno-campo/<int:pk>/', views_caderno_campo.caderno_campo_detail, name='caderno_campo_detail'),
+path('caderno-campo/<int:pk>/editar/', views_caderno_campo.caderno_campo_update, name='caderno_campo_update'),
+path('caderno-campo/<int:pk>/excluir/', views_caderno_campo.caderno_campo_delete, name='caderno_campo_delete'),
+path('caderno-campo/<int:pk>/insumos/novo/', views_caderno_campo.caderno_campo_insumo_add, name='caderno_campo_insumo_add'),
+path('caderno-campo/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_caderno_campo.caderno_campo_insumo_delete, name='caderno_campo_insumo_delete'),
+path('caderno-campo/<int:pk>/funcionarios/novo/', views_caderno_campo.caderno_campo_funcionario_add, name='caderno_campo_funcionario_add'),
+path('caderno-campo/<int:pk>/funcionarios/<int:func_pk>/excluir/', views_caderno_campo.caderno_campo_funcionario_delete, name='caderno_campo_funcionario_delete'),
+path('planejamento-custo/', views_planejamento_custo.planejamento_custo_list, name='planejamento_custo_list'),
+path('planejamento-custo/novo/', views_planejamento_custo.planejamento_custo_create, name='planejamento_custo_create'),
+path('planejamento-custo/<int:pk>/', views_planejamento_custo.planejamento_custo_detail, name='planejamento_custo_detail'),
+path('planejamento-custo/<int:pk>/editar/', views_planejamento_custo.planejamento_custo_edit, name='planejamento_custo_edit'),
+path('planejamento-custo/<int:pk>/excluir/', views_planejamento_custo.planejamento_custo_delete, name='planejamento_custo_delete'),
+path('planejamento-custo/<int:pk>/itens/novo/', views_planejamento_custo.planejamento_custo_item_add, name='planejamento_custo_item_add'),
+path('planejamento-custo/<int:pk>/itens/<int:item_pk>/editar/', views_planejamento_custo.planejamento_custo_item_edit, name='planejamento_custo_item_edit'),
+path('planejamento-custo/<int:pk>/itens/<int:item_pk>/excluir/', views_planejamento_custo.planejamento_custo_item_delete, name='planejamento_custo_item_delete'),
+path('planejamento-custo/<int:pk>/indireto/novo/', views_planejamento_custo.planejamento_custo_indireto_add, name='planejamento_custo_indireto_add'),
+path('planejamento-custo/<int:pk>/indireto/<int:item_pk>/excluir/', views_planejamento_custo.planejamento_custo_indireto_delete, name='planejamento_custo_indireto_delete'),
+path('planejamento-custo/<int:pk>/formacao-preco/', views_planejamento_custo.planejamento_custo_formacao_preco_salvar, name='planejamento_custo_formacao_preco'),
+path('planejamento-custo/ajax/preco-produto/', views_planejamento_custo.ajax_preco_produto, name='ajax_preco_produto'),
+path('planejamento-custo/ajax/safras/', views_planejamento_custo.ajax_safras_por_cultura, name='ajax_safras_planejamento_custo'),
+path('planejamento-custo/ajax/talhoes/', views_planejamento_custo.ajax_talhoes_por_safra, name='ajax_talhoes_planejamento_custo'),
+path('planejamento-custo/ajax/cotacoes/', views_planejamento_custo.ajax_cotacoes_bcb, name='ajax_cotacoes_bcb'),
+path('planejamento-custo/ajax/energia/', views_planejamento_custo.ajax_energia_periodo, name='ajax_energia_periodo'),
+path('planejamento-custo/ajax/subcategorias/', views_planejamento_custo.ajax_subcategorias_por_categoria, name='ajax_subcategorias_custo'),
+path('planejamento-custo/<int:pk>/ajax/talhoes-comparativo/', views_planejamento_custo.ajax_talhoes_comparativo, name='ajax_talhoes_comparativo'),
+path('planejamento-custo/<int:pk>/ajax/comparativo-talhao/', views_planejamento_custo.ajax_comparativo_talhao, name='ajax_comparativo_talhao'),
+path('lotes-producao/', views_lote_producao.lote_list, name='lote_list'),
+path('lotes-producao/<int:pk>/', views_lote_producao.lote_detail, name='lote_detail'),
+path('lotes-producao/<int:pk>/recepcao/', views_lote_producao.lote_recepcao_packing, name='lote_recepcao'),
+
+=== mip ===
+[models]
+class EstagioDesenvolvimento(models.Model):
+class MonitoramentoMIP(models.Model):
+class PragaNoMonitoramento(models.Model):
+class PontoMonitoramento(models.Model):
+[urls]
+path('estagios/', views.estagio_list, name='estagio_list'),
+path('estagios/novo/', views.estagio_create, name='estagio_create'),
+path('estagios/<int:pk>/editar/', views.estagio_update, name='estagio_update'),
+path('estagios/<int:pk>/excluir/', views.estagio_delete, name='estagio_delete'),
+path('estagios/cadastro-lote/', views.estagio_cadastro_em_lote, name='estagio_cadastro_em_lote'),
+path('monitoramento/', views.monitoramento_mip_list, name='monitoramento_mip_list'),
+path('monitoramento/novo/', views.monitoramento_mip_create, name='monitoramento_mip_create'),
+path('monitoramento/<int:pk>/', views.monitoramento_mip_detail, name='monitoramento_mip_detail'),
+path('monitoramento/<int:pk>/pdf/', views.monitoramento_mip_pdf, name='monitoramento_mip_pdf'),
+path('monitoramento/<int:pk>/adicionar-praga/', views.monitoramento_mip_add_praga, name='monitoramento_mip_add_praga'),
+path('monitoramento/praga/<int:pk>/', views.monitoramento_mip_praga_detail, name='monitoramento_mip_praga_detail'),
+path('monitoramento/praga/<int:pk>/editar/', views.monitoramento_mip_praga_edit, name='monitoramento_mip_praga_edit'),
+path('monitoramento/praga/<int:pk>/excluir/', views.monitoramento_mip_praga_delete, name='monitoramento_mip_praga_delete'),
+path('monitoramento/praga/<int:pk>/adicionar-ponto/', views.monitoramento_mip_add_ponto, name='monitoramento_mip_add_ponto'),
+path('ajax/estagios-praga/', views.ajax_get_estagios_praga, name='ajax_get_estagios_praga'),
+path('ajax/pragas-cultura/', views.ajax_get_pragas_cultura, name='ajax_get_pragas_cultura'),
+path('ajax/calcular-incidencia/', views.ajax_calcular_incidencia, name='ajax_calcular_incidencia'),
+path('ajax/adicionar-estagio/', views.ajax_adicionar_estagio, name='ajax_adicionar_estagio'),
+path('ajax/carregar-estagios/', views.ajax_carregar_estagios, name='ajax_carregar_estagios'),
+path('ajax/deletar-estagio/<int:pk>/', views.ajax_deletar_estagio, name='ajax_deletar_estagio'),
+path('ajax/buscar-talhoes/', views.ajax_buscar_talhoes, name='ajax_buscar_talhoes'),
+path('ajax/talhao-info/<int:talhao_id>/', views.ajax_talhao_info, name='ajax_talhao_info'),
+
+=== rh ===
+[models]
+class HistoricoFuncionario(models.Model):
+class FuncaoFuncionario(models.Model):
+class CategoriaRiscoAmbiental(models.Model):
+class RiscoAmbientalFuncao(models.Model):
+class RiscoAmbientalCatalogo(models.Model):
+class VinculoContrato(models.Model):
+class Funcionario(models.Model):
+class DocumentoFuncionario(models.Model):
+class FeriasFuncionario(models.Model):
+class AfastamentoFuncionario(models.Model):
+class LaudoRisco(models.Model):
+class TipoExameASO(models.Model):
+class SolicitacaoASO(models.Model):
+class LogEnvioSolicitacaoASO(models.Model):
+class RescisaoContrato(models.Model):
+[urls]
+path('funcoes/', views.funcao_list, name='funcao_list'),
+path('funcoes/novo/', views.funcao_create, name='funcao_create'),
+path('funcoes/criar-ajax/', views.funcao_create_ajax, name='funcao_create_ajax'),
+path('funcoes/get-salario/', views.funcao_get_salario, name='funcao_get_salario'),
+path('funcoes/<int:pk>/editar/', views.funcao_update, name='funcao_update'),
+path('funcoes/<int:pk>/excluir/', views.funcao_delete, name='funcao_delete'),
+path('riscos-ambientais/', views.risco_ambiental_catalogo_list, name='risco_ambiental_catalogo_list'),
+path('riscos-ambientais/novo/', views.risco_ambiental_catalogo_create, name='risco_ambiental_catalogo_create'),
+path('riscos-ambientais/<int:pk>/editar/', views.risco_ambiental_catalogo_update, name='risco_ambiental_catalogo_update'),
+path('riscos-ambientais/<int:pk>/excluir/', views.risco_ambiental_catalogo_delete, name='risco_ambiental_catalogo_delete'),
+path('funcionarios/', views.funcionario_list, name='funcionario_list'),
+path('funcionarios/novo/', views.funcionario_create, name='funcionario_create'),
+path('funcionarios/<int:pk>/', views.funcionario_detail, name='funcionario_detail'),
+path('funcionarios/<int:pk>/editar/', views.funcionario_update, name='funcionario_update'),
+path('funcionarios/<int:pk>/excluir/', views.funcionario_delete, name='funcionario_delete'),
+path('funcionarios/<int:pk>/pin/', views.funcionario_set_pin, name='funcionario_set_pin'),
+path('funcionarios/<int:funcionario_pk>/documentos/novo/', views.funcionario_documento_create, name='funcionario_documento_create'),
+path('', views.rh_dashboard, name='rh_dashboard'),
+path('ferias/', views.ferias_list, name='ferias_list'),
+path('ferias/relatorio/previsao-pdf/', views.ferias_previsao_pdf, name='ferias_previsao_pdf'),
+path('ferias/novo/', views.ferias_create, name='ferias_create'),
+path('ferias/<int:pk>/', views.ferias_detail, name='ferias_detail'),
+path('ferias/<int:pk>/editar/', views.ferias_update, name='ferias_update'),
+path('ferias/<int:pk>/excluir/', views.ferias_delete, name='ferias_delete'),
+path('afastamentos/', views.afastamento_list, name='afastamento_list'),
+path('afastamentos/novo/', views.afastamento_create, name='afastamento_create'),
+path('afastamentos/<int:pk>/', views.afastamento_detail, name='afastamento_detail'),
+path('afastamentos/<int:pk>/editar/', views.afastamento_update, name='afastamento_update'),
+path('afastamentos/<int:pk>/excluir/', views.afastamento_delete, name='afastamento_delete'),
+path('vinculos/', views.vinculo_list, name='vinculo_list'),
+path('vinculos/novo/', views.vinculo_create, name='vinculo_create'),
+path('vinculos/<int:pk>/', views.vinculo_detail, name='vinculo_detail'),
+path('vinculos/<int:pk>/editar/', views.vinculo_update, name='vinculo_update'),
+path('laudos/', views.laudo_list, name='laudo_list'),
+path('laudos/novo/', views.laudo_create, name='laudo_create'),
+path('laudos/<int:pk>/', views.laudo_detail, name='laudo_detail'),
+path('laudos/<int:pk>/editar/', views.laudo_update, name='laudo_update'),
+path('aso/tipos-exame/', views.tipo_exame_aso_list, name='tipo_exame_aso_list'),
+path('aso/tipos-exame/novo/', views.tipo_exame_aso_create, name='tipo_exame_aso_create'),
+path('aso/tipos-exame/<int:pk>/editar/', views.tipo_exame_aso_update, name='tipo_exame_aso_update'),
+path('aso/tipos-exame/<int:pk>/toggle-ativo/', views.tipo_exame_aso_toggle_ativo, name='tipo_exame_aso_toggle_ativo'),
+path('aso/solicitacoes/', views.aso_solicitacao_list, name='aso_solicitacao_list'),
+path('aso/solicitacoes/nova/', views.aso_solicitacao_create, name='aso_solicitacao_create'),
+path('aso/funcionarios/<int:funcionario_id>/riscos/', views.aso_funcionario_riscos, name='aso_funcionario_riscos'),
+path('aso/buscar-laboratorio/', views.aso_buscar_laboratorio, name='aso_buscar_laboratorio'),
+path('aso/solicitacoes/<int:pk>/', views.aso_solicitacao_detail, name='aso_solicitacao_detail'),
+path('aso/solicitacoes/<int:pk>/editar/', views.aso_solicitacao_update, name='aso_solicitacao_update'),
+path('aso/solicitacoes/<int:pk>/assinar/', views.aso_solicitacao_assinar, name='aso_solicitacao_assinar'),
+path('aso/solicitacoes/<int:pk>/pdf/', views.aso_solicitacao_pdf, name='aso_solicitacao_pdf'),
+path('aso/solicitacoes/<int:pk>/enviar-email/', views.aso_solicitacao_enviar_email, name='aso_solicitacao_enviar_email'),
+path('aso/solicitacoes/<int:pk>/enviar-whatsapp/', views.aso_solicitacao_enviar_whatsapp, name='aso_solicitacao_enviar_whatsapp'),
+path('rescisoes/', views.rescisao_list, name='rescisao_list'),
+path('rescisoes/novo/', views.rescisao_create, name='rescisao_create'),
+path('rescisoes/vinculos-por-funcionario/', views.vinculos_por_funcionario, name='vinculos_por_funcionario'),
+path('rescisoes/calcular/', views.rescisao_calcular, name='rescisao_calcular'),
+path('rescisoes/<int:pk>/', views.rescisao_detail, name='rescisao_detail'),
+path('rescisoes/<int:pk>/editar/', views.rescisao_update, name='rescisao_update'),
+path('rescisoes/<int:pk>/excluir/', views.rescisao_delete, name='rescisao_delete'),
+path('relatorio/', views.relatorio_rh, name='relatorio_rh'),
+path('relatorio/pdf/', views.relatorio_rh_pdf, name='relatorio_rh_pdf'),
+
+=== frota ===
+[models]
+class Vehicle(models.Model):
+class VehicleValueHistory(models.Model):
+class VehiclePlate(models.Model):
+class VehicleDocument(models.Model):
+class Motorista(models.Model):
+class MotoristadoDocumento(models.Model):
+class MotoristaVinculoPlaca(models.Model):
+class AbastecimentoVeiculo(models.Model):
+class ManutencaoVeiculo(models.Model):
+class ManutencaoItem(models.Model):
+class DocumentoManutencao(models.Model):
+class AlertaManutencao(models.Model):
+class PedagioVeiculo(models.Model):
+class TelemetriaVeiculo(models.Model):
+class FotoAbastecimento(models.Model):
+[urls]
+path('veiculos/', views_vehicle.vehicle_list, name='vehicle_list'),
+path('veiculos/novo/', views_vehicle.vehicle_create, name='vehicle_create'),
+path('veiculos/<int:pk>/', views_vehicle.vehicle_detail, name='vehicle_detail'),
+path('veiculos/<int:pk>/editar/', views_vehicle.vehicle_update, name='vehicle_update'),
+path('veiculos/<int:pk>/excluir/', views_vehicle.vehicle_delete, name='vehicle_delete'),
+path('veiculos/<int:vehicle_pk>/placas/nova/', views_vehicle.vehicle_plate_create, name='vehicle_plate_create'),
+path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/editar/', views_vehicle.vehicle_plate_update, name='vehicle_plate_update'),
+path('veiculos/<int:vehicle_pk>/placas/<int:plate_pk>/excluir/', views_vehicle.vehicle_plate_delete, name='vehicle_plate_delete'),
+path('api/veiculos/', views_vehicle.api_vehicles, name='api_vehicles'),
+path('veiculos/export/csv/', views_vehicle.vehicle_export_csv, name='vehicle_export_csv'),
+path('motoristas/', views_motorista.motorista_list, name='motorista_list'),
+path('motoristas/criar/', views_motorista.motorista_create, name='motorista_create'),
+path('motoristas/<int:pk>/', views_motorista.motorista_detail, name='motorista_detail'),
+path('motoristas/<int:pk>/editar/', views_motorista.motorista_update, name='motorista_update'),
+path('motoristas/<int:pk>/deletar/', views_motorista.motorista_delete, name='motorista_delete'),
+path('motoristas/<int:pk>/portal-acesso/', views_motorista.motorista_set_pin, name='motorista_set_pin'),
+path('motoristas/vinculos/', views_motorista.motorista_vinculo_list, name='motorista_vinculo_list'),
+path('motoristas/vinculos/novo/', views_motorista.motorista_vinculo_create, name='motorista_vinculo_create'),
+path('motoristas/vinculos/<int:pk>/', views_motorista.motorista_vinculo_detail, name='motorista_vinculo_detail'),
+path('motoristas/vinculos/<int:pk>/editar/', views_motorista.motorista_vinculo_update, name='motorista_vinculo_update'),
+path('motoristas/vinculos/consulta/', views_motorista.motorista_vinculo_consulta, name='motorista_vinculo_consulta'),
+path('motoristas/vinculos/consulta/pdf/', views_motorista.motorista_vinculo_consulta_pdf, name='motorista_vinculo_consulta_pdf'),
+path('motoristas/<int:motorista_pk>/documentos/criar/', views_motorista.motorista_documento_create, name='motorista_documento_create'),
+path('motoristas/<int:motorista_pk>/documentos/<int:documento_pk>/deletar/', views_motorista.motorista_documento_delete, name='motorista_documento_delete'),
+path('api/buscar-cep-motorista/', views_motorista.buscar_cep_motorista, name='buscar_cep_motorista'),
+path('', views.frota_dashboard, name='frota_dashboard'),
+path('abastecimentos/', views.abastecimento_list, name='abastecimento_list'),
+path('abastecimentos/novo/', views.abastecimento_create, name='abastecimento_create'),
+path('abastecimentos/<int:pk>/', views.abastecimento_detail, name='abastecimento_detail'),
+path('abastecimentos/<int:pk>/editar/', views.abastecimento_update, name='abastecimento_update'),
+path('abastecimentos/<int:pk>/excluir/', views.abastecimento_delete, name='abastecimento_delete'),
+path('abastecimentos/<int:pk>/conta-pagar/', views.abastecimento_gerar_conta_pagar, name='abastecimento_gerar_conta_pagar'),
+path('abastecimentos/importar/', views.abastecimento_importar, name='abastecimento_importar'),
+path('abastecimentos/modelo-csv/', views.abastecimento_download_modelo, name='abastecimento_download_modelo'),
+path('api/veiculo-abastecimento-info/', views.api_veiculo_info_abastecimento, name='api_veiculo_info_abastecimento'),
+path('manutencoes/', views.manutencao_list, name='manutencao_list'),
+path('manutencoes/nova/', views.manutencao_create, name='manutencao_create'),
+path('manutencoes/<int:pk>/', views.manutencao_detail, name='manutencao_detail'),
+path('manutencoes/<int:pk>/editar/', views.manutencao_update, name='manutencao_update'),
+path('manutencoes/<int:pk>/excluir/', views.manutencao_delete, name='manutencao_delete'),
+path('manutencoes/<int:pk>/itens/novo/', views.manutencao_item_add, name='manutencao_item_add'),
+path('manutencoes/<int:pk>/itens/<int:item_pk>/excluir/', views.manutencao_item_delete, name='manutencao_item_delete'),
+path('manutencoes/<int:pk>/documentos/novo/', views.manutencao_documento_add, name='manutencao_documento_add'),
+path('manutencoes/<int:pk>/documentos/<int:doc_pk>/excluir/', views.manutencao_documento_delete, name='manutencao_documento_delete'),
+path('manutencoes/<int:pk>/conta-pagar/', views.manutencao_gerar_conta_pagar, name='manutencao_gerar_conta_pagar'),
+path('alertas/', views.alertas_manutencao_list, name='alertas_manutencao_list'),
+path('alertas/<int:pk>/resolver/', views.alerta_resolver, name='alerta_resolver'),
+path('api/lote-produto-data/', views.get_lote_produto_data, name='lote_produto_data'),
+path('api/produto-busca/', views.produto_busca, name='produto_busca'),
+path('pedagios/', views.pedagio_list, name='pedagio_list'),
+path('pedagios/novo/', views.pedagio_create, name='pedagio_create'),
+path('pedagios/<int:pk>/editar/', views.pedagio_update, name='pedagio_update'),
+path('pedagios/<int:pk>/excluir/', views.pedagio_delete, name='pedagio_delete'),
+path('viagens/', views.viagem_list, name='viagem_list'),
+path('viagens/nova/', views.viagem_create, name='viagem_create'),
+path('viagens/<int:pk>/', views.viagem_detail, name='viagem_frota_detail'),
+path('viagens/<int:pk>/editar/', views.viagem_update, name='viagem_frota_update'),
+path('viagens/<int:pk>/excluir/', views.viagem_delete, name='viagem_frota_delete'),
+path('telemetria/', views.telemetria_list, name='telemetria_list'),
+path('telemetria/nova/', views.telemetria_create, name='telemetria_create'),
+path('telemetria/<int:pk>/excluir/', views.telemetria_delete, name='telemetria_delete'),
+path('telemetria/mapa/<int:vehicle_pk>/', views.telemetria_mapa, name='telemetria_mapa'),
+path('api/telemetria/', views.api_telemetria_ingest, name='api_telemetria_ingest'),
+
+=== energia ===
+[models]
+class UsinaFotovoltaica(models.Model):
+class UnidadeConsumidora(models.Model):
+class LancamentoMensal(models.Model):
+class RelatorioMensalUsina(models.Model):
+class OcorrenciaUsina(models.Model):
+[urls]
+path('', views.dashboard, name='dashboard'),
+path('consolidado/', views.consolidado, name='consolidado'),
+path('usinas/', views.usina_list, name='usina_list'),
+path('usinas/nova/', views.usina_create, name='usina_create'),
+path('usinas/<int:pk>/', views.usina_detail, name='usina_detail'),
+path('usinas/<int:pk>/editar/', views.usina_update, name='usina_update'),
+path('unidades/', views.uc_list, name='uc_list'),
+path('unidades/nova/', views.uc_create, name='uc_create'),
+path('unidades/<int:pk>/', views.uc_detail, name='uc_detail'),
+path('unidades/<int:pk>/editar/', views.uc_update, name='uc_update'),
+path('lancamentos/', views.lancamento_list, name='lancamento_list'),
+path('lancamentos/novo/', views.lancamento_create, name='lancamento_create'),
+path('lancamentos/<int:pk>/', views.lancamento_detail, name='lancamento_detail'),
+path('lancamentos/<int:pk>/editar/', views.lancamento_update, name='lancamento_update'),
+path('relatorios-usina/', views.relatorio_usina_list, name='relatorio_usina_list'),
+path('relatorios-usina/novo/', views.relatorio_usina_create, name='relatorio_usina_create'),
+path('relatorios-usina/<int:pk>/', views.relatorio_usina_detail, name='relatorio_usina_detail'),
+path('relatorios-usina/<int:pk>/editar/', views.relatorio_usina_update, name='relatorio_usina_update'),
+path('ocorrencias/', views.ocorrencia_list, name='ocorrencia_list'),
+path('ocorrencias/nova/', views.ocorrencia_create, name='ocorrencia_create'),
+path('ocorrencias/nova/usina/<int:usina_pk>/', views.ocorrencia_create, name='ocorrencia_create_usina'),
+path('ocorrencias/<int:pk>/', views.ocorrencia_detail, name='ocorrencia_detail'),
+path('ocorrencias/<int:pk>/editar/', views.ocorrencia_update, name='ocorrencia_update'),
+path('ocorrencias/<int:pk>/resolver/', views.ocorrencia_resolver, name='ocorrencia_resolver'),
+
+=== emprestimos ===
+[models]
+class EmprestimoProdutor(models.Model):
+class EmprestimoMovimento(models.Model):
+class EmprestimoInteracao(models.Model):
+class EmprestimoMensagem(models.Model):
+class EmprestimoMensagemAnexo(models.Model):
+[urls]
+path('ajax/registrar-alerta-visual/', views.registrar_alerta_visual_exibido, name='registrar_alerta_visual_exibido'),
+path('extrato/', views.emprestimo_extrato, name='emprestimo_extrato'),
+path('extrato/imprimir/', views.emprestimo_extrato_imprimir, name='emprestimo_extrato_imprimir'),
+path('extrato/pdf/', views.emprestimo_exportar_pdf, name='emprestimo_exportar_pdf'),
+path('extrato/excel/', views.emprestimo_exportar_excel, name='emprestimo_exportar_excel'),
+path('devolucao/nova/', views.emprestimo_devolucao_create, name='emprestimo_devolucao_create'),
+path('mensagens/anexos/<int:anexo_id>/download/', views.emprestimo_mensagem_anexo_download, name='emprestimo_mensagem_anexo_download'),
+path('<int:pk>/', views.emprestimo_detalhe, name='emprestimo_detalhe'),
+path('<int:pk>/imprimir/', views.emprestimo_imprimir, name='emprestimo_imprimir'),
+path('<int:pk>/assinar-liberacao/', views.emprestimo_assinar_liberacao, name='emprestimo_assinar_liberacao'),
+path('<int:pk>/reenviar-whatsapp/', views.emprestimo_reenviar_whatsapp, name='emprestimo_reenviar_whatsapp'),
+path('<int:pk>/mensagens/nova/', views.emprestimo_mensagem_create, name='emprestimo_mensagem_create'),
+
+=== adiantamentos ===
+[models]
+class AdiantamentoInternacional(models.Model):
+class DescontoAdiantamento(models.Model):
+class MigracaoAdiantamento(models.Model):
+[urls]
+path('', views.adiantamento_list, name='adiantamento_list'),
+path('novo/', views.adiantamento_create, name='adiantamento_create'),
+path('<int:pk>/', views.adiantamento_detail, name='adiantamento_detail'),
+path('<int:pk>/editar/', views.adiantamento_edit, name='adiantamento_edit'),
+path('<int:pk>/cancelar/', views.adiantamento_cancelar, name='adiantamento_cancelar'),
+path('<int:pk>/aplicar-desconto/', views.aplicar_desconto, name='aplicar_desconto'),
+path('<int:pk>/pular-desconto/', views.pular_desconto, name='pular_desconto'),
+path('<int:pk>/migrar/', views.migrar_adiantamento, name='migrar_adiantamento'),
+path('descontos/<int:desconto_pk>/cancelar/', views.cancelar_desconto, name='cancelar_desconto'),
+path('relatorio/', views.relatorio_adiantamentos, name='relatorio_adiantamentos'),
+path('ajax/cliente/<int:cliente_pk>/', views.ajax_adiantamentos_cliente, name='ajax_adiantamentos_cliente'),
+path('ajax/<int:pk>/desconto-sugerido/', views.ajax_desconto_sugerido, name='ajax_desconto_sugerido'),
+
+=== bancario ===
+[models]
+class ContaBancaria(models.Model):
+class ImportacaoExtrato(models.Model):
+class ExtratoLancamento(models.Model):
+class ConciliacaoLancamento(models.Model):
+[urls]
+path('contas/', views.conta_bancaria_list, name='conta_bancaria_list'),
+path('contas/nova/', views.conta_bancaria_create, name='conta_bancaria_create'),
+path('contas/<int:pk>/', views.conta_bancaria_detail, name='conta_bancaria_detail'),
+path('contas/<int:pk>/editar/', views.conta_bancaria_edit, name='conta_bancaria_edit'),
+path('contas/<int:pk>/toggle/', views.conta_bancaria_toggle, name='conta_bancaria_toggle'),
+path('contas/<int:pk>/importar/', views.importar_extrato, name='importar_extrato'),
+path('importacoes/<int:pk>/', views.importacao_detail, name='importacao_detail'),
+path('importacoes/<int:pk>/deletar/', views.importacao_deletar, name='importacao_deletar'),
+path('conciliacao/confirmar/', views.conciliacao_confirmar, name='conciliacao_confirmar'),
+path('conciliacao/ignorar/', views.conciliacao_ignorar, name='conciliacao_ignorar'),
+path('conciliacao/desfazer/', views.conciliacao_desfazer, name='conciliacao_desfazer'),
+path('conciliacao/manual/', views.conciliacao_manual, name='conciliacao_manual'),
+path('conciliacao/<int:importacao_pk>/', views.conciliacao_workspace, name='conciliacao_workspace'),
+path('relatorio/', views.relatorio_conciliacao, name='relatorio_conciliacao'),
+path('ajax/sugestoes/<int:lancamento_pk>/', views.ajax_sugestoes, name='ajax_sugestoes'),
+
+=== plano_contas ===
+[models]
+class ContaContabil(models.Model):
+class CentroCusto(models.Model):
+[urls]
+path('', views.conta_list, name='conta_list'),
+path('arvore/', views.conta_arvore, name='conta_arvore'),
+path('nova/', views.conta_create, name='conta_create'),
+path('<int:pk>/', views.conta_detail, name='conta_detail'),
+path('<int:pk>/editar/', views.conta_edit, name='conta_edit'),
+path('<int:pk>/toggle/', views.conta_toggle_ativo, name='conta_toggle'),
+path('autocomplete/', views.conta_autocomplete, name='conta_autocomplete'),
+path('balancete/', views.balancete, name='balancete'),
+path('centros/', views.centro_list, name='centro_list'),
+path('centros/novo/', views.centro_create, name='centro_create'),
+path('centros/<int:pk>/', views.centro_detail, name='centro_detail'),
+path('centros/<int:pk>/editar/', views.centro_edit, name='centro_edit'),
+path('centros/<int:pk>/toggle/', views.centro_toggle_ativo, name='centro_toggle'),
+path('centros/autocomplete/', views.centro_autocomplete, name='centro_autocomplete'),
+
+=== dashboard ===
+[models]
+(sem classes detectadas)
+[urls]
+path('', views.index, name='index'),
+
+=== metricas ===
+[models]
+class ConsumoRecurso(models.Model):
+class Alerta(models.Model):
+class MetricaDiaria(models.Model):
+class LogAcesso(models.Model):
+[urls]
+path('', views.dashboard_executivo, name='dashboard_executivo'),
+path('consumo/', views.consumo_recursos_list, name='consumo_lista'),
+path('consumo/<int:empresa_id>/', views.consumo_empresa_detail, name='consumo_detail'),
+path('alertas/', views.alertas_list, name='alertas_lista'),
+

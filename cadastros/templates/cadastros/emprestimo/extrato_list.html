@@ -200,33 +200,7 @@
 
     {% if pagina_obj and pagina_obj.paginator.num_pages > 1 %}
     <div class="card-footer bg-white">
-      <nav aria-label="Paginação do extrato">
-        <ul class="pagination pagination-sm justify-content-end mb-0">
-          <li class="page-item {% if not pagina_obj.has_previous %}disabled{% endif %}">
-            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page=1">Primeira</a>
-          </li>
-          <li class="page-item {% if not pagina_obj.has_previous %}disabled{% endif %}">
-            {% if pagina_obj.has_previous %}
-            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina_obj.previous_page_number }}">Anterior</a>
-            {% else %}
-            <span class="page-link">Anterior</span>
-            {% endif %}
-          </li>
-          <li class="page-item disabled">
-            <span class="page-link">Página {{ pagina_obj.number }} de {{ pagina_obj.paginator.num_pages }}</span>
-          </li>
-          <li class="page-item {% if not pagina_obj.has_next %}disabled{% endif %}">
-            {% if pagina_obj.has_next %}
-            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina_obj.next_page_number }}">Próxima</a>
-            {% else %}
-            <span class="page-link">Próxima</span>
-            {% endif %}
-          </li>
-          <li class="page-item {% if not pagina_obj.has_next %}disabled{% endif %}">
-            <a class="page-link" href="?{% if query_string %}{{ query_string }}&{% endif %}page={{ pagina_obj.paginator.num_pages }}">Última</a>
-          </li>
-        </ul>
-      </nav>
+      {% include 'partials/pagination.html' with page_obj=pagina_obj %}
     </div>
     {% endif %}
   </div>

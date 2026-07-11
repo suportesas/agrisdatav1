@@ -4,6 +4,7 @@ Views do módulo Estoque
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.db import models
@@ -170,14 +171,21 @@ def armazem_edit(request, pk):
 
 @login_required
 def armazem_delete(request, pk):
-    """Deletar armazém"""
+    """Desativar armazém (soft delete)"""
     armazem = get_object_or_404(Armazem, pk=pk, empresa=request.user.empresa)
-    
+
     if request.method == 'POST':
-        armazem.delete()
-        messages.success(request, 'Armazém excluído com sucesso!')
+        if LocalEstocagem.objects.filter(armazem=armazem, ativo=True).exists():
+            messages.error(
+                request,
+                'Não é possível desativar este armazém: existem locais de estocagem ativos vinculados a ele.'
+            )
+        else:
+            armazem.ativo = False
+            armazem.save(update_fields=['ativo'])
+            messages.success(request, 'Armazém desativado com sucesso!')
         return redirect('estoque:armazem_list')
-    
+
     # Se GET, redireciona para a lista
     return redirect('estoque:armazem_list')
 
@@ -228,14 +236,21 @@ def local_edit(request, pk):
 
 @login_required
 def local_delete(request, pk):
-    """Deletar local"""
+    """Desativar local de estocagem (soft delete)"""
     local = get_object_or_404(LocalEstocagem, pk=pk, armazem__empresa=request.user.empresa)
-    
+
     if request.method == 'POST':
-        local.delete()
-        messages.success(request, 'Local de estocagem excluído com sucesso!')
+        if Lote.objects.filter(local_estocagem=local, quantidade_atual__gt=0).exists():
+            messages.error(
+                request,
+                'Não é possível desativar este local: existem lotes com saldo de estoque vinculados a ele.'
+            )
+        else:
+            local.ativo = False
+            local.save(update_fields=['ativo'])
+            messages.success(request, 'Local de estocagem desativado com sucesso!')
         return redirect('estoque:local_list')
-    
+
     return redirect('estoque:local_list')
 
 
@@ -246,7 +261,7 @@ def local_bloquear(request, pk):
     
     if request.method == 'POST':
         motivo = request.POST.get('motivo', 'Bloqueio manual')
-        local.bloquear(request.user, motivo)
+        local.bloquear(motivo, request.user)
         messages.warning(request, f'Local {local.codigo} bloqueado com sucesso!')
         return redirect('estoque:local_list')
     
@@ -257,8 +272,8 @@ def local_bloquear(request, pk):
 def local_desbloquear(request, pk):
     """Desbloquear local"""
     local = get_object_or_404(LocalEstocagem, pk=pk, armazem__empresa=request.user.empresa)
-    
-    if request.method == 'POST' or request.method == 'GET':
+
+    if request.method == 'POST':
         local.desbloquear()
         messages.success(request, f'Local {local.codigo} desbloqueado com sucesso!')
         return redirect('estoque:local_list')
@@ -332,8 +347,8 @@ def lote_bloquear(request, pk):
 def lote_desbloquear(request, pk):
     """Desbloquear lote"""
     lote = get_object_or_404(Lote, pk=pk, empresa=request.user.empresa)
-    
-    if request.method == 'POST' or request.method == 'GET':
+
+    if request.method == 'POST':
         lote.desbloquear()
         messages.success(request, f'Lote {lote.numero_lote} desbloqueado com sucesso!')
         return redirect('estoque:lote_detail', pk=pk)
@@ -351,7 +366,7 @@ def movimentacao_list(request):
     movimentacoes = MovimentacaoEstoque.objects.filter(
         empresa=request.user.empresa
     ).select_related(
-        'lote__produto', 'armazem_origem', 'armazem_destino',
+        'lote__produto', 'lote__unidade_medida', 'armazem_origem', 'armazem_destino',
         'cadastrado_por', 'aprovador', 'executado_por'
     ).order_by('-data_movimentacao')
     
@@ -363,9 +378,15 @@ def movimentacao_list(request):
         movimentacoes = movimentacoes.filter(tipo=tipo)
     if status:
         movimentacoes = movimentacoes.filter(status=status)
-    
+
+    paginator = Paginator(movimentacoes, 30)
+    page_number = request.GET.get('page')
+    movimentacoes_page = paginator.get_page(page_number)
+
     context = {
-        'movimentacoes': movimentacoes,
+        'movimentacoes': movimentacoes_page,
+        'page_obj': movimentacoes_page,
+        'is_paginated': movimentacoes_page.has_other_pages(),
         'tipos': MovimentacaoEstoque.TIPO_CHOICES,
         'status_choices': MovimentacaoEstoque.STATUS_CHOICES,
         'tipo_filtro': tipo,
@@ -596,71 +617,80 @@ def estoque_produtos_list(request):
     from django.db.models import Q, Sum
     from decimal import Decimal
     from cadastros.models import Fazenda
+    from produtos.models import Categoria
     from usuarios.views import is_admin
     from estoque.disponibilidade import reservas_por_produto
 
     empresa = request.user.empresa
     busca = request.GET.get('busca', '')
-    reservas = reservas_por_produto(empresa)
+    categoria_selecionada = request.GET.get('categoria', '')
+    filtro_estoque = request.GET.get('estoque', '')
+
     # Admins automaticamente têm permissão de ver estoque de outras fazendas
     can_choose_fazenda = is_admin(request.user) or request.user.has_perm('cadastros.view_other_fazendas_estoque')
     fazenda_id = request.GET.get('fazenda') if can_choose_fazenda else None
     fazenda_filtro = None
     if can_choose_fazenda and fazenda_id:
         fazenda_filtro = Fazenda.objects.filter(id=fazenda_id, empresa=empresa).first()
-    produtos = Produto.objects.filter(ativo=True, categoria__empresa=empresa)
+
+    produtos_qs = Produto.objects.filter(
+        ativo=True, categoria__empresa=empresa
+    ).select_related('categoria', 'unidade_medida').order_by('nome')
     if busca:
-        produtos = produtos.filter(nome__icontains=busca)
-    
-    # Contadores de alertas
-    alertas_criticos = 0
-    alertas_excesso = 0
-    
-    # Calcula estoque a partir de DOIS fontes:
+        produtos_qs = produtos_qs.filter(nome__icontains=busca)
+    if categoria_selecionada:
+        produtos_qs = produtos_qs.filter(categoria_id=categoria_selecionada)
+
+    produtos = list(produtos_qs)
+    produto_ids = [p.id for p in produtos]
+
+    # Calcula estoque a partir de DUAS fontes, em consultas agregadas por produto
+    # (uma consulta por fonte para todos os produtos, em vez de 3 por produto):
     # 1. Lotes com status DISPONIVEL ou BLOQUEADO (quantidade_atual)
     # 2. Movimentacoes diretas EXECUTADAS (ENTRADA - SAIDA) para produtos sem lote
+    lotes_filtro = Q(empresa=empresa, produto_id__in=produto_ids, status__in=['DISPONIVEL', 'BLOQUEADO'])
+    if fazenda_filtro:
+        lotes_filtro &= Q(armazem__fazenda=fazenda_filtro)
+    total_lotes_por_produto = {
+        row['produto']: row['total'] or Decimal('0')
+        for row in Lote.objects.filter(lotes_filtro).values('produto').annotate(total=Sum('quantidade_atual'))
+    }
+
+    entradas_filtro = Q(empresa=empresa, produto_id__in=produto_ids, lote__isnull=True, tipo='ENTRADA', status='EXECUTADO')
+    if fazenda_filtro:
+        entradas_filtro &= Q(armazem_destino__fazenda=fazenda_filtro)
+    entradas_por_produto = {
+        row['produto']: row['total'] or Decimal('0')
+        for row in MovimentacaoEstoque.objects.filter(entradas_filtro).values('produto').annotate(total=Sum('quantidade'))
+    }
+
+    saidas_filtro = Q(empresa=empresa, produto_id__in=produto_ids, lote__isnull=True, tipo='SAIDA', status='EXECUTADO')
+    if fazenda_filtro:
+        saidas_filtro &= Q(armazem_origem__fazenda=fazenda_filtro)
+    saidas_por_produto = {
+        row['produto']: row['total'] or Decimal('0')
+        for row in MovimentacaoEstoque.objects.filter(saidas_filtro).values('produto').annotate(total=Sum('quantidade'))
+    }
+
+    reservas = reservas_por_produto(empresa)
+
+    alertas_criticos = 0
+    alertas_excesso = 0
+    produtos_desatualizados = []
+
     for produto in produtos:
-        # 1. Total de lotes disponiveis/bloqueados
-        lotes_qs = Lote.objects.filter(
-            empresa=empresa,
-            produto=produto,
-            status__in=['DISPONIVEL', 'BLOQUEADO']
-        )
-        if fazenda_filtro:
-            lotes_qs = lotes_qs.filter(armazem__fazenda=fazenda_filtro)
-        total_lotes = lotes_qs.aggregate(total=Sum('quantidade_atual'))['total'] or Decimal('0')
-        
-        # 2. Movimentacoes diretas (sem lote) EXECUTADAS
-        movs_entrada_qs = MovimentacaoEstoque.objects.filter(
-            empresa=empresa,
-            produto=produto,
-            lote__isnull=True,
-            tipo='ENTRADA',
-            status='EXECUTADO'
-        )
-        if fazenda_filtro:
-            movs_entrada_qs = movs_entrada_qs.filter(armazem_destino__fazenda=fazenda_filtro)
-        movs_diretas_entrada = movs_entrada_qs.aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
-        
-        movs_saida_qs = MovimentacaoEstoque.objects.filter(
-            empresa=empresa,
-            produto=produto,
-            lote__isnull=True,
-            tipo='SAIDA',
-            status='EXECUTADO'
-        )
-        if fazenda_filtro:
-            movs_saida_qs = movs_saida_qs.filter(armazem_origem__fazenda=fazenda_filtro)
-        movs_diretas_saida = movs_saida_qs.aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
-        
+        total_lotes = total_lotes_por_produto.get(produto.id, Decimal('0'))
+        movs_diretas_entrada = entradas_por_produto.get(produto.id, Decimal('0'))
+        movs_diretas_saida = saidas_por_produto.get(produto.id, Decimal('0'))
+
         # Saldo = Lotes + (Entradas diretas - Saidas diretas)
         saldo = Decimal(total_lotes) + (Decimal(movs_diretas_entrada) - Decimal(movs_diretas_saida))
-        
-        # Atualiza no banco se divergir
+
+        # Marca para atualização em lote se divergir (sem gravar aqui, um produto por vez)
         if float(produto.estoque_atual) != float(saldo):
             produto.estoque_atual = saldo
-            produto.save(update_fields=['estoque_atual'])
-        
+            produtos_desatualizados.append(produto)
+
         # Define atributo para template (compatibilidade)
         produto.estoque_total = float(saldo)
 
@@ -677,10 +707,31 @@ def estoque_produtos_list(request):
         elif produto.estoque_maximo > 0 and saldo > produto.estoque_maximo:
             produto.alerta_tipo = 'excesso'
             alertas_excesso += 1
-    
+
+    if produtos_desatualizados:
+        Produto.objects.bulk_update(produtos_desatualizados, ['estoque_atual'])
+
+    if filtro_estoque == 'disponivel':
+        produtos = [p for p in produtos if p.estoque_disponivel > 0]
+    elif filtro_estoque == 'baixo':
+        produtos = [
+            p for p in produtos
+            if p.estoque_total > 0 and p.estoque_minimo and p.estoque_total <= float(p.estoque_minimo)
+        ]
+    elif filtro_estoque == 'zerado':
+        produtos = [p for p in produtos if p.estoque_total <= 0]
+
+    paginator = Paginator(produtos, 30)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'produtos': produtos,
+        'produtos': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': page_obj.has_other_pages(),
         'busca': busca,
+        'categorias': Categoria.objects.filter(empresa=empresa).order_by('nome'),
+        'categoria_selecionada': categoria_selecionada,
+        'filtro_estoque': filtro_estoque,
         'alertas_criticos': alertas_criticos,
         'alertas_excesso': alertas_excesso,
         'total_alertas': alertas_criticos + alertas_excesso,
@@ -1064,6 +1115,7 @@ def relatorio_analise_abc(request):
     
     # Pegar produtos com seus valores de movimentação
     produtos = Produto.objects.filter(
+        categoria__empresa=empresa,
         ativo=True
     ).annotate(
         total_entrada=Sum(
@@ -1240,7 +1292,7 @@ def relatorio_auditoria(request):
     data_inicio = request.GET.get('data_inicio', '')
     data_fim = request.GET.get('data_fim', '')
     
-    movimentacoes = MovimentacaoEstoque.objects.all().select_related(
+    movimentacoes = MovimentacaoEstoque.objects.filter(empresa=empresa).select_related(
         'produto', 'cadastrado_por', 'armazem_origem'
     ).order_by('-data_movimentacao')
     
@@ -1455,45 +1507,6 @@ def relatorio_validacao_disponibilidade(request):
 
 
 @login_required
-def relatorio_baixo_estoque_alertas(request):
-    """
-    Alertas de estoque baixo com sugestão de reposição
-    """
-    empresa = request.user.empresa
-    
-    # Produtos com estoque abaixo do mínimo
-    produtos_baixos = Produto.objects.filter(
-        ativo=True,
-        estoque_atual__lt=models.F('estoque_minimo')
-    ).annotate(
-        diferenca=models.F('estoque_minimo') - models.F('estoque_atual')
-    ).select_related('unidade_medida')
-    
-    # Produtos chegando ao mínimo (entre 80% e 100% do mínimo)
-    produtos_alerta = Produto.objects.filter(
-        ativo=True,
-        estoque_atual__gte=models.F('estoque_minimo') * 0.8,
-        estoque_atual__lt=models.F('estoque_minimo')
-    ).select_related('unidade_medida')
-    
-    # Produtos críticos (zerados ou negativos)
-    produtos_criticos = Produto.objects.filter(
-        ativo=True,
-        estoque_atual__lte=0
-    ).select_related('unidade_medida')
-    
-    context = {
-        'produtos_criticos': produtos_criticos,
-        'produtos_baixos': produtos_baixos,
-        'produtos_alerta': produtos_alerta,
-        'total_problemas': produtos_criticos.count() + produtos_baixos.count(),
-        'title': 'Alertas de Estoque Baixo',
-    }
-    
-    return render(request, 'estoque/relatorio_alertas.html', context)
-
-
-@login_required
 def api_dashboard_dados(request):
     """
     API para retornar dados do dashboard em JSON
@@ -1510,15 +1523,17 @@ def api_dashboard_dados(request):
     for i in range(30):
         data = data_inicio + timedelta(days=i)
         entradas = MovimentacaoEstoque.objects.filter(
+            empresa=empresa,
             tipo='ENTRADA',
             status='EXECUTADO',
-            data_criacao__date=data.date()
+            data_movimentacao__date=data.date()
         ).aggregate(Sum('quantidade'))['quantidade__sum'] or 0
-        
+
         saidas = MovimentacaoEstoque.objects.filter(
+            empresa=empresa,
             tipo='SAIDA',
             status='EXECUTADO',
-            data_criacao__date=data.date()
+            data_movimentacao__date=data.date()
         ).aggregate(Sum('quantidade'))['quantidade__sum'] or 0
         
         movimentacoes_dia.append({
@@ -1529,6 +1544,7 @@ def api_dashboard_dados(request):
     
     # Produtos com menor estoque
     produtos_menor = Produto.objects.filter(
+        categoria__empresa=empresa,
         ativo=True
     ).order_by('estoque_atual')[:5]
     
@@ -1547,40 +1563,29 @@ def api_dashboard_dados(request):
 
 @login_required
 def relatorio_alertas_estoque(request):
-    """Relatório de alertas de estoque (Crítico e Excesso)"""
-    from decimal import Decimal
-    
+    """Relatório de alertas de estoque (Crítico e Excesso).
+
+    Crítico = saldo real <= estoque mínimo (mesmo critério que a extinta
+    Central de Alertas de Estoque Mínimo usava). Produtos críticos que
+    controlam estoque e não têm solicitação de compra em aberto ganham
+    checkbox no template para gerar, em lote, uma SolicitacaoCompra via
+    compras:central_alertas_gerar_solicitacao — ação incorporada aqui para
+    unificar as duas telas que existiam antes.
+    """
+    from compras.models import ItemSolicitacaoCompra
+    from compras.permissions import usuario_tem_atalho
+
     empresa = request.user.empresa
     produtos = Produto.objects.filter(ativo=True, categoria__empresa=empresa)
-    
+
     alertas_criticos = []
     alertas_excesso = []
-    
+
     for produto in produtos:
-        # Calcula saldo
-        total_lotes = Lote.objects.filter(
-            produto=produto,
-            status__in=['DISPONIVEL', 'BLOQUEADO']
-        ).aggregate(total=Sum('quantidade_atual'))['total'] or Decimal('0')
-        
-        movs_diretas_entrada = MovimentacaoEstoque.objects.filter(
-            produto=produto,
-            lote__isnull=True,
-            tipo='ENTRADA',
-            status='EXECUTADO'
-        ).aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
-        
-        movs_diretas_saida = MovimentacaoEstoque.objects.filter(
-            produto=produto,
-            lote__isnull=True,
-            tipo='SAIDA',
-            status='EXECUTADO'
-        ).aggregate(total=Sum('quantidade'))['total'] or Decimal('0')
-        
-        saldo = Decimal(total_lotes) + (Decimal(movs_diretas_entrada) - Decimal(movs_diretas_saida))
-        
+        saldo = produto.calcular_saldo_real()
+
         # Categoriza alertas
-        if saldo <= 0:
+        if saldo <= produto.estoque_minimo:
             alertas_criticos.append({
                 'produto': produto,
                 'saldo': saldo,
@@ -1596,27 +1601,39 @@ def relatorio_alertas_estoque(request):
                 'maximo': produto.estoque_maximo,
                 'tipo': 'EXCESSO',
             })
-    
+
     # Ordenar por saldo
     alertas_criticos.sort(key=lambda x: x['saldo'])
     alertas_excesso.sort(key=lambda x: x['saldo'], reverse=True)
-    
+
     # Verificar se é exportação
     export_format = request.GET.get('export')
-    
+
     if export_format == 'excel':
         return exportar_alertas_excel(empresa, alertas_criticos, alertas_excesso)
     elif export_format == 'pdf':
         return exportar_alertas_pdf(empresa, alertas_criticos, alertas_excesso)
-    
+
+    produtos_ja_solicitados = set(ItemSolicitacaoCompra.objects.filter(
+        produto_id__in=[a['produto'].id for a in alertas_criticos],
+    ).exclude(
+        solicitacao__status__in=['CANCELADA', 'CONCLUIDA']
+    ).values_list('produto_id', flat=True))
+
+    for alerta in alertas_criticos:
+        alerta['ja_solicitado'] = alerta['produto'].id in produtos_ja_solicitados
+        alerta['pode_comprar'] = alerta['produto'].controla_estoque and not alerta['ja_solicitado']
+
     context = {
         'alertas_criticos': alertas_criticos,
         'alertas_excesso': alertas_excesso,
         'total_criticos': len(alertas_criticos),
         'total_excesso': len(alertas_excesso),
         'total_alertas': len(alertas_criticos) + len(alertas_excesso),
+        'pode_gerar_compra': usuario_tem_atalho(request.user, 'criar_cotacao_direto_estoque_minimo'),
+        'tem_criticos_compraveis': any(a['pode_comprar'] for a in alertas_criticos),
     }
-    
+
     return render(request, 'estoque/relatorio_alertas.html', context)
 
 
@@ -1653,7 +1670,7 @@ def exportar_alertas_excel(empresa, alertas_criticos, alertas_excesso):
     ws['A2'].font = Font(italic=True, size=10)
     
     # Cabeçalho Críticos
-    ws['A4'] = "ALERTAS CRÍTICOS (Estoque ≤ 0)"
+    ws['A4'] = "ALERTAS CRÍTICOS (Estoque ≤ Mínimo)"
     ws['A4'].font = Font(bold=True, size=11, color="FFFFFF")
     ws['A4'].fill = PatternFill(start_color="CC0000", end_color="CC0000", fill_type="solid")
     ws.merge_cells('A4:G4')

@@ -115,10 +115,66 @@
             </div>
           </div>
         </div>
-        <div class="card border-0 shadow-sm">
+        <div class="card border-0 shadow-sm mb-3">
           <div class="card-header fw-semibold">Dados Bancários</div>
           <div class="card-body">
-            {{ form.banco_beneficiario }}
+            <div class="mb-2">
+              <label class="form-label small">Nome do Beneficiário</label>
+              {{ form.banco_beneficiario_nome }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Banco</label>
+              {{ form.banco_nome }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Endereço do Banco</label>
+              {{ form.banco_endereco }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">SWIFT/BIC</label>
+              {{ form.banco_swift }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">IBAN</label>
+              {{ form.banco_iban }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Número da Conta</label>
+              {{ form.banco_numero_conta }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Banco Correspondente</label>
+              {{ form.banco_correspondente_nome }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">SWIFT Banco Correspondente</label>
+              {{ form.banco_correspondente_swift }}
+            </div>
+            <div class="mb-0">
+              <label class="form-label small">Observações Bancárias (texto livre)</label>
+              {{ form.banco_beneficiario }}
+            </div>
+          </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+          <div class="card-header fw-semibold">Drawback / Ato Concessório</div>
+          <div class="card-body">
+            <div class="mb-2">
+              <label class="form-label small">Regime</label>
+              {{ form.regime_drawback }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Nº do Ato Concessório</label>
+              {{ form.ato_concessorio_numero }}
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Data do Ato Concessório</label>
+              {{ form.ato_concessorio_data }}
+            </div>
+            <div class="mb-0">
+              <label class="form-label small">Validade do Ato Concessório</label>
+              {{ form.ato_concessorio_validade }}
+            </div>
           </div>
         </div>
       </div>

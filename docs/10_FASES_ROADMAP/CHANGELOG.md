@@ -8,8 +8,8 @@
 - **Estimativa**: 22 horas (~2-3 semanas para 1 dev)
 - **Timeline**: Sprint 1 (Apr 4-8), Sprint 2 (Apr 11-15), Sprint 3 (Apr 18-22)
 - **Documentos**: 
-  - [Plano de Execução](./docs/fase2/PLANO_EXECUCAO_FASE2_XE.md)
-  - [Kickoff](./docs/fase2/KICKOFF_FASE2_XE.md)
+  - [Plano de Execução](../fase2/PLANO_EXECUCAO_FASE2_XE.md)
+  - [Kickoff](../fase2/KICKOFF_FASE2_XE.md)
 - **Bloqueadores**: Certificado A1, WSDL SEFAZ, Staging network access (a validar)
 
 ### Status Fase 1 (Completed)

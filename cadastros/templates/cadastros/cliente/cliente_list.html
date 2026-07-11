@@ -3,16 +3,6 @@
 {% block title %}Clientes{% endblock %}
 {% block page_title %}Clientes{% endblock %}
 
-{% block extra_css %}
-<style>
-.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
-.action-icon:hover { color: #7c3aed; }
-.action-icon.danger:hover { color: #dc2626; }
-.action-icon.edit:hover { color: #0d6efd; }
-tbody tr:hover td { background: #faf5ff; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -123,14 +113,14 @@ tbody tr:hover td { background: #faf5ff; }
         <tbody>
           {% for cliente in clientes %}
             <tr>
-              <td class="text-muted small">{{ cliente.pk|stringformat:"05d" }}</td>
+              <td class="text-muted small text-mono">{{ cliente.pk|stringformat:"05d" }}</td>
               <td>
                 <strong>{{ cliente.nome_comercial|default:cliente.razao_social }}</strong>
                 {% if cliente.nome_comercial and cliente.razao_social and cliente.razao_social != cliente.nome_comercial %}
                   <br><span class="text-muted small">{{ cliente.razao_social }}</span>
                 {% endif %}
               </td>
-              <td class="text-muted small">{{ cliente.get_cnpj_cpf_formatado }}</td>
+              <td class="text-muted small text-mono">{{ cliente.get_cnpj_cpf_formatado }}</td>
               <td>
                 {% if cliente.tipo_cliente == 'IMPORTADOR' %}
                   <span class="badge bg-primary">Importador</span>
@@ -182,46 +172,8 @@ tbody tr:hover td { background: #faf5ff; }
     </div>
 
     <!-- Paginação -->
-    <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-muted">
-        Página <strong>{{ clientes.number }}</strong> de <strong>{{ clientes.paginator.num_pages }}</strong>
-        &mdash; {{ clientes.paginator.count }} registro{{ clientes.paginator.count|pluralize }}
-      </small>
-      <ul class="pagination pagination-sm mb-0">
-
-        <li class="page-item {% if not clientes.has_previous %}disabled{% endif %}">
-          {% if clientes.has_previous %}
-            <a class="page-link" href="?q={{ q }}&status={{ status_atual }}&tipo={{ tipo_atual }}&vendedor={{ vendedor_atual }}&page={{ clientes.previous_page_number }}">
-              <i class="bi bi-chevron-left"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-          {% endif %}
-        </li>
-
-        {% for num in clientes.paginator.page_range %}
-          {% if clientes.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num == 1 or num == clientes.paginator.num_pages or num >= clientes.number|add:"-2" and num <= clientes.number|add:"2" %}
-            <li class="page-item">
-              <a class="page-link" href="?q={{ q }}&status={{ status_atual }}&tipo={{ tipo_atual }}&vendedor={{ vendedor_atual }}&page={{ num }}">{{ num }}</a>
-            </li>
-          {% elif num == clientes.number|add:"-3" or num == clientes.number|add:"3" %}
-            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-          {% endif %}
-        {% endfor %}
-
-        <li class="page-item {% if not clientes.has_next %}disabled{% endif %}">
-          {% if clientes.has_next %}
-            <a class="page-link" href="?q={{ q }}&status={{ status_atual }}&tipo={{ tipo_atual }}&vendedor={{ vendedor_atual }}&page={{ clientes.next_page_number }}">
-              <i class="bi bi-chevron-right"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-          {% endif %}
-        </li>
-
-      </ul>
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=clientes %}
     </div>
 
   </div>

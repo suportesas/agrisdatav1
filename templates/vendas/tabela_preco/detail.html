@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Tabela de Preço{% endblock %}
+{% block page_title %}Tabela de Preço{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'vendas:tabela_preco_list' %}" class="btn btn-outline-secondary me-3">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <h3 class="mb-0">{{ tabela.produto }}</h3>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'vendas:tabela_preco_update' tabela.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      <a href="{% url 'vendas:tabela_preco_delete' tabela.pk %}" class="btn btn-outline-danger">
+        <i class="bi bi-x-circle me-1"></i>Desativar
+      </a>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-3">Produto</dt><dd class="col-9">{{ tabela.produto }}</dd>
+        <dt class="col-3">Cliente</dt><dd class="col-9">{{ tabela.cliente.razao_social|default:"Padrão (qualquer cliente)" }}</dd>
+        <dt class="col-3">Porto de Destino</dt><dd class="col-9">{{ tabela.porto_destino|default:"—" }}</dd>
+        <dt class="col-3">Preço</dt><dd class="col-9">{{ tabela.moeda }} {{ tabela.preco_unitario|floatformat:4 }}</dd>
+        <dt class="col-3">Vigência</dt><dd class="col-9">{{ tabela.vigencia_inicio|date:"d/m/Y" }} — {{ tabela.vigencia_fim|date:"d/m/Y"|default:"em aberto" }}</dd>
+        <dt class="col-3">Status</dt>
+        <dd class="col-9">
+          {% if tabela.ativo %}<span class="badge bg-success">Ativa</span>
+          {% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}
+        </dd>
+        {% if tabela.observacoes %}
+        <dt class="col-3">Observações</dt><dd class="col-9">{{ tabela.observacoes }}</dd>
+        {% endif %}
+      </dl>
+    </div>
+  </div>
+</div>
+{% endblock %}

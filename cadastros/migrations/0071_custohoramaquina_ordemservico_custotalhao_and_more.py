@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('data_atualizacao', models.DateTimeField(auto_now=True, verbose_name='Última Atualização')),
                 ('cadastrado_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='custos_maquina_cadastrados', to=settings.AUTH_USER_MODEL, verbose_name='Cadastrado por')),
                 ('empresa', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='custos_hora_maquina', to='empresas.empresa', verbose_name='Empresa')),
-                ('veiculo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='configuracoes_custo', to='frota.vehicle', verbose_name='Veículo/Máquina')),
+                ('veiculo', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='configuracoes_custo', to='cadastros.vehicle', verbose_name='Veículo/Máquina')),
             ],
             options={
                 'verbose_name': 'Custo/Hora de Máquina',
@@ -121,7 +121,7 @@ class Migration(migrations.Migration):
                 ('custo_hora_config', models.ForeignKey(blank=True, help_text='Se vazio, usa a configuração ativa mais recente da máquina', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='usos_os', to='cadastros.custohoramaquina', verbose_name='Configuração de Custo/Hora')),
                 ('operador', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='operacoes_maquina_os', to='cadastros.funcionario', verbose_name='Operador')),
                 ('os', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='maquinas_os', to='cadastros.ordemservico', verbose_name='Ordem de Serviço')),
-                ('veiculo', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='usos_os', to='frota.vehicle', verbose_name='Veículo/Máquina')),
+                ('veiculo', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='usos_os', to='cadastros.vehicle', verbose_name='Veículo/Máquina')),
             ],
             options={
                 'verbose_name': 'Máquina na OS',

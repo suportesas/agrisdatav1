@@ -61,7 +61,7 @@
                             <select name="fornecedor" class="form-select" required>
                                 <option value="">Selecione...</option>
                                 {% for fornecedor in fornecedores %}
-                                <option value="{{ fornecedor.pk }}" {% if xml_data.fornecedor_id == fornecedor.pk or xml_data.fornecedor_nome and fornecedor.nome == xml_data.fornecedor_nome %}selected{% endif %}>{{ fornecedor.nome }}</option>
+                                <option value="{{ fornecedor.pk }}" {% if xml_data.fornecedor_id == fornecedor.pk or xml_data.fornecedor_nome and fornecedor.nome == xml_data.fornecedor_nome %}selected{% endif %}>{{ fornecedor.get_nome_exibicao_com_documento }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -76,6 +76,30 @@
                         <div class="mb-3">
                             <label class="form-label">Série</label>
                             <input type="text" name="serie_nota" class="form-control" value="{{ xml_data.serie_nota|default:'1' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Vincular a um Pedido de Compra existente</label>
+                            <select name="pedido_vinculado" id="pedidoVinculado" class="form-select">
+                                <option value="">-- Sem pedido (regularização posterior) --</option>
+                                {% for pedido in pedidos_disponiveis %}
+                                <option value="{{ pedido.pk }}" data-fornecedor="{{ pedido.fornecedor_id }}">
+                                    {{ pedido.numero }} — {{ pedido.fornecedor.get_nome_exibicao }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Se a nota corresponde a um pedido já feito, selecione aqui para manter a rastreabilidade.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6" id="justificativaRegularizacaoWrapper">
+                        <div class="mb-3">
+                            <label class="form-label">Justificativa da Regularização *</label>
+                            <textarea name="justificativa_regularizacao" id="justificativaRegularizacao" class="form-control" rows="2" placeholder="Ex: compra feita diretamente pelo gestor, sem passar pelo setor de compras."></textarea>
+                            <div class="form-text text-danger">Obrigatório quando não há pedido vinculado.</div>
                         </div>
                     </div>
                 </div>
@@ -221,15 +245,8 @@
                     <div class="row g-2">
                         <div class="col-md-4">
                             <label class="form-label small mb-1">Produto <span class="text-danger">*</span></label>
-                            <select id="inp_produto" class="form-select form-select-sm">
-                                <option value="">Selecione...</option>
-                                {% for produto in produtos %}
-                                <option value="{{ produto.pk }}"
-                                        data-unidade-id="{{ produto.unidade_medida.pk }}"
-                                        data-unidade-sigla="{{ produto.unidade_medida.sigla }}">
-                                    {{ produto.nome }}{% if produto.codigo %} — {{ produto.codigo }}{% endif %}
-                                </option>
-                                {% endfor %}
+                            <select id="inp_produto" class="form-select form-select-sm" disabled>
+                                <option value="">-- Selecione um fornecedor primeiro --</option>
                             </select>
                         </div>
                         <div class="col-md-2">
@@ -463,7 +480,47 @@
     </div>
 </div>
 
+{{ produtos_por_fornecedor|json_script:"produtos-por-fornecedor-data" }}
+{{ todos_produtos_form|json_script:"todos-produtos-form-data" }}
 <script>
+const PRODUTOS_POR_FORNECEDOR_ED = JSON.parse(document.getElementById('produtos-por-fornecedor-data').textContent);
+const TODOS_PRODUTOS_ED = JSON.parse(document.getElementById('todos-produtos-form-data').textContent);
+
+function opcoesProdutoEntradaHtml(lista, placeholder) {
+    let html = `<option value="">${placeholder}</option>`;
+    lista.forEach(p => {
+        html += `<option value="${p.id}" data-unidade-id="${p.unidade_id}" data-unidade-sigla="${p.unidade_sigla}">${p.nome}</option>`;
+    });
+    return html;
+}
+
+function atualizarProdutosEntradaDireta() {
+    const fornecedorSelect = document.querySelector('select[name="fornecedor"]');
+    const produtoSelect = document.getElementById('inp_produto');
+    if (!fornecedorSelect || !produtoSelect) return;
+
+    const fornecedorId = fornecedorSelect.value;
+    let lista = [];
+    let placeholder = '-- Selecione um fornecedor primeiro --';
+
+    if (fornecedorId) {
+        const produtosFornecedor = PRODUTOS_POR_FORNECEDOR_ED[fornecedorId];
+        lista = (produtosFornecedor && produtosFornecedor.length > 0) ? produtosFornecedor : TODOS_PRODUTOS_ED;
+        placeholder = '-- Selecione um produto --';
+    }
+
+    produtoSelect.innerHTML = opcoesProdutoEntradaHtml(lista, placeholder);
+    produtoSelect.disabled = !fornecedorId;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const fornecedorSelectParaProduto = document.querySelector('select[name="fornecedor"]');
+    if (fornecedorSelectParaProduto) {
+        fornecedorSelectParaProduto.addEventListener('change', atualizarProdutosEntradaDireta);
+    }
+    atualizarProdutosEntradaDireta();
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Preenche data e hora atual
     const dataRecebimento = document.getElementById('dataRecebimento');
@@ -896,9 +953,46 @@ document.addEventListener('DOMContentLoaded', function () {
             if (semLocal.length > 0) {
                 e.preventDefault();
                 alert('Defina o Local de Estoque para: ' + semLocal.join(', ') + '. Clique no botão de editar (lápis) da linha para preencher.');
+                return;
+            }
+
+            const pedidoVinculado = document.getElementById('pedidoVinculado');
+            const justificativa = document.getElementById('justificativaRegularizacao');
+            if (pedidoVinculado && !pedidoVinculado.value && justificativa && !justificativa.value.trim()) {
+                e.preventDefault();
+                alert('Sem pedido vinculado, a justificativa da regularização é obrigatória.');
+                justificativa.focus();
             }
         });
     }
+
+    // Filtra as opções de pedido pelo fornecedor selecionado, e exige
+    // justificativa apenas quando nenhum pedido está vinculado.
+    const fornecedorSelectEl = document.querySelector('select[name="fornecedor"]');
+    const pedidoVinculadoEl = document.getElementById('pedidoVinculado');
+    const justificativaEl = document.getElementById('justificativaRegularizacao');
+
+    function atualizarOpcoesPedido() {
+        if (!pedidoVinculadoEl) return;
+        const fornecedorId = fornecedorSelectEl ? fornecedorSelectEl.value : '';
+        Array.from(pedidoVinculadoEl.options).forEach(opt => {
+            if (!opt.value) return;
+            opt.hidden = !!(fornecedorId && opt.dataset.fornecedor !== fornecedorId);
+        });
+        if (pedidoVinculadoEl.selectedOptions[0]?.hidden) {
+            pedidoVinculadoEl.value = '';
+        }
+    }
+
+    function atualizarObrigatoriedadeJustificativa() {
+        if (!justificativaEl || !pedidoVinculadoEl) return;
+        justificativaEl.required = !pedidoVinculadoEl.value;
+    }
+
+    if (fornecedorSelectEl) fornecedorSelectEl.addEventListener('change', atualizarOpcoesPedido);
+    if (pedidoVinculadoEl) pedidoVinculadoEl.addEventListener('change', atualizarObrigatoriedadeJustificativa);
+    atualizarOpcoesPedido();
+    atualizarObrigatoriedadeJustificativa();
 });
 </script>
 {% endblock %}

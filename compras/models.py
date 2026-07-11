@@ -7,6 +7,17 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
 
+# Modelos legados da extinta "Cotação Inteligente" — sem tela ativa, mantidos
+# apenas para não perder cotações já registradas por ali. Precisam continuar
+# importados aqui para que o Django registre o model no app registry, já que
+# HistoricoPrecoFornecedor (abaixo, em uso ativo) referencia CotacaoInteligente.
+from .models_cotacao import (  # noqa: F401
+    CotacaoInteligente,
+    CotacaoInteligenteItem,
+    CotacaoInteligenteFornecedor,
+    CotacaoInteligenteProposta,
+)
+
 # ...existing code...
 
 # Comunicação de divergências em recebimentos
@@ -109,27 +120,26 @@ class SolicitacaoCompra(models.Model):
     data_leitura_aprovador = models.DateTimeField('Última leitura do aprovador', null=True, blank=True)
 
     def tem_nova_mensagem_para(self, usuario):
+        """Retorna True se há mensagens não lidas para o usuário informado.
+
+        Opera sobre self.mensagens.all() para aproveitar o cache de
+        prefetch_related('mensagens') feito na view — não usar .filter()/
+        .order_by() aqui, pois isso ignora o cache do prefetch e gera uma
+        query nova por chamada (N+1 em listagens).
         """
-        Retorna True se há mensagens não lidas para o usuário informado.
-        Para simplificação, considera nova mensagem se existe alguma mensagem cujo autor não é o usuário e data_envio > data_ultimo_acesso (ou data_aprovacao, se não houver campo de acesso).
-        """
-        # Se não houver mensagens, não há novidade
-        if not hasattr(self, 'mensagens') or not self.mensagens.exists():
+        mensagens = list(self.mensagens.all())
+        if not mensagens:
             return False
-    # Se o usuário for o solicitante, verifica se há mensagem do aprovador após a última leitura
-    def tem_nova_mensagem_para(self, usuario):
-        msgs = self.mensagens.order_by('-data_envio')
         if usuario == self.solicitante:
-            if self.data_leitura_solicitante:
-                return msgs.filter(autor=self.aprovador, data_envio__gt=self.data_leitura_solicitante).exists()
-            else:
-                return msgs.filter(autor=self.aprovador).exists()
+            autor_esperado, ultima_leitura = self.aprovador, self.data_leitura_solicitante
         elif usuario == self.aprovador:
-            if self.data_leitura_aprovador:
-                return msgs.filter(autor=self.solicitante, data_envio__gt=self.data_leitura_aprovador).exists()
-            else:
-                return msgs.filter(autor=self.solicitante).exists()
-        return False
+            autor_esperado, ultima_leitura = self.solicitante, self.data_leitura_aprovador
+        else:
+            return False
+        return any(
+            m.autor_id == getattr(autor_esperado, 'id', None) and (ultima_leitura is None or m.data_envio > ultima_leitura)
+            for m in mensagens
+        )
     """
     Solicitação de Compra (Requisição Interna)
     RF-050: Solicitações de compra com aprovações por nível
@@ -229,13 +239,21 @@ class SolicitacaoCompra(models.Model):
         default=False,
         help_text='Marcado como emergencial pula a aprovação formal'
     )
-    # TODO: Adicionar permissão 'compras.add_solicitacao_emergencial' 
-    # para restringir quem pode criar compras emergenciais
-    # Níveis sugeridos:
-    # - Supervisor: até R$ 10.000
-    # - Gerente: até R$ 50.000
-    # - Diretor: sem limite
-    
+
+    ORIGEM_CHOICES = [
+        ('MANUAL', 'Manual'),
+        ('ESTOQUE_MINIMO', 'Estoque Mínimo'),
+        ('FORNECEDOR_UNICO', 'Fornecedor Único'),
+        ('REGULARIZACAO_POSTERIOR', 'Regularização Posterior'),
+    ]
+    origem = models.CharField(
+        'Origem',
+        max_length=30,
+        choices=ORIGEM_CHOICES,
+        default='MANUAL',
+        help_text='Como esta solicitação foi gerada'
+    )
+
     justificativa_emergencial = models.TextField(
         'Justificativa da Emergência',
         blank=True,
@@ -261,6 +279,11 @@ class SolicitacaoCompra(models.Model):
             models.Index(fields=['empresa', 'status']),
             models.Index(fields=['numero']),
             models.Index(fields=['data_solicitacao']),
+        ]
+        permissions = [
+            ('criar_solicitacao_emergencial', 'Pode criar solicitação de compra emergencial'),
+            ('criar_cotacao_direto_estoque_minimo', 'Pode gerar cotação direto da Central de Alertas de Estoque Mínimo'),
+            ('criar_pedido_direto_fornecedor_unico', 'Pode gerar pedido de compra direto sem cotação formal'),
         ]
     
     def __str__(self):
@@ -290,12 +313,18 @@ class SolicitacaoCompra(models.Model):
         return f"SC-{proximo_num:06d}"
     
     def calcular_percentual_cotado(self):
-        """Calcula percentual de itens já cotados ou aprovados para compra"""
-        total_itens = self.itens.count()
+        """Calcula percentual de itens já cotados ou aprovados para compra.
+
+        Opera sobre self.itens.all() em memória (não .filter().count()) para
+        aproveitar o cache de prefetch_related('itens') feito nas listagens —
+        .filter() sobre o related manager ignora o cache do prefetch e gera
+        uma query nova por chamada (mesmo problema de tem_nova_mensagem_para).
+        """
+        itens = list(self.itens.all())
+        total_itens = len(itens)
         if total_itens == 0:
             return 0
-        # Considera cotados ou aprovados
-        itens_cotados = self.itens.filter(status_item__in=['COTADO', 'APROVADO']).count()
+        itens_cotados = sum(1 for item in itens if item.status_item in ('COTADO', 'APROVADO'))
         return int((itens_cotados / total_itens) * 100)
     
     def atualizar_status_cotacao(self):
@@ -2342,3 +2371,38 @@ class ItemPlanejamentoEmbalagem(models.Model):
         if self.preco_estimado_unitario and self.preco_estimado_unitario != 0:
             return ((self.preco_atual_unitario - self.preco_estimado_unitario) / self.preco_estimado_unitario) * 100
         return None
+
+
+class HistoricoPrecoFornecedor(models.Model):
+    """Histórico de preços praticados por fornecedores, alimentado pelo fluxo
+    tradicional de cotação (ver adicionar_proposta em compras/views.py)."""
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.CASCADE, related_name='historico_precos')
+    fornecedor = models.ForeignKey('cadastros.Fornecedor', on_delete=models.CASCADE)
+
+    # Dados do preço
+    preco_unitario = models.DecimalField(max_digits=15, decimal_places=2)
+    quantidade = models.DecimalField(max_digits=15, decimal_places=3)
+    data_cotacao = models.DateField()
+
+    # Origem — cotacao aponta para a extinta Cotação Inteligente (legado);
+    # documento_referencia (número da Cotacao tradicional) é o campo em uso.
+    cotacao = models.ForeignKey('CotacaoInteligente', on_delete=models.SET_NULL, null=True, blank=True)
+    documento_referencia = models.CharField(max_length=100, blank=True, help_text='NF, Pedido, etc')
+
+    # Condições
+    prazo_entrega = models.IntegerField(blank=True, null=True)
+    condicao_pagamento = models.CharField(max_length=200, blank=True)
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'compras_historico_preco_fornecedor'
+        verbose_name = 'Histórico de Preço'
+        verbose_name_plural = 'Histórico de Preços'
+        ordering = ['-data_cotacao']
+        indexes = [
+            models.Index(fields=['produto', 'fornecedor', '-data_cotacao']),
+        ]
+
+    def __str__(self):
+        return f"{self.produto.nome} - {self.fornecedor.nome} - R$ {self.preco_unitario} ({self.data_cotacao})"

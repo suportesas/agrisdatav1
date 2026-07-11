@@ -43,9 +43,9 @@
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #06b6d4 !important;">
+      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #2563eb !important;">
         <div class="card-body text-center py-3">
-          <div class="fs-2 fw-bold" style="color:#06b6d4">{{ total_ciencia }}</div>
+          <div class="fs-2 fw-bold" style="color:#2563eb">{{ total_ciencia }}</div>
           <div class="small text-muted">Ciência da Operação</div>
         </div>
       </div>
@@ -65,7 +65,7 @@
         <select name="fornecedor" class="form-select form-select-sm">
           <option value="">Todos</option>
           {% for f in fornecedores %}
-          <option value="{{ f.pk }}" {% if fornecedor_id == f.pk|stringformat:"s" %}selected{% endif %}>{{ f.nome }}</option>
+          <option value="{{ f.pk }}" {% if fornecedor_id == f.pk|stringformat:"s" %}selected{% endif %}>{{ f.get_nome_exibicao_com_documento }}</option>
           {% endfor %}
         </select>
       </div>
@@ -125,9 +125,9 @@
               </td>
               <td>
                 {% if rec.fornecedor %}
-                  {{ rec.fornecedor.nome }}
+                  {{ rec.fornecedor.get_nome_exibicao }}
                 {% elif rec.pedido and rec.pedido.fornecedor %}
-                  {{ rec.pedido.fornecedor.nome }}
+                  {{ rec.pedido.fornecedor.get_nome_exibicao }}
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
@@ -139,7 +139,7 @@
                 {% if rec.manifestacao_tipo == 'confirmacao_operacao' %}
                   <span class="badge bg-success">Confirmada</span>
                 {% elif rec.manifestacao_tipo == 'ciencia_operacao' %}
-                  <span class="badge" style="background:#06b6d4">Ciência</span>
+                  <span class="badge" style="background:#2563eb">Ciência</span>
                 {% elif rec.manifestacao_tipo == 'desconhecimento_operacao' %}
                   <span class="badge bg-danger">Desconhecimento</span>
                 {% elif rec.manifestacao_tipo == 'operacao_nao_realizada' %}
@@ -185,25 +185,7 @@
   </div>
 
   <!-- Paginação -->
-  {% if page_obj.has_other_pages %}
-  <nav class="mt-3">
-    <ul class="pagination justify-content-center mb-0">
-      {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&fornecedor={{ fornecedor_id }}&mde={{ mde_status }}&data_ini={{ data_ini }}&data_fim={{ data_fim }}">Anterior</a>
-      </li>
-      {% endif %}
-      <li class="page-item disabled">
-        <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-      </li>
-      {% if page_obj.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&fornecedor={{ fornecedor_id }}&mde={{ mde_status }}&data_ini={{ data_ini }}&data_fim={{ data_fim }}">Próximo</a>
-      </li>
-      {% endif %}
-    </ul>
-  </nav>
-  {% endif %}
+  {% include 'partials/pagination.html' with page_obj=page_obj %}
 
 </div>
 {% endblock %}

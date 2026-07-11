@@ -1,21 +1,5 @@
-# Método utilitário para recalcular estoque do produto
 from decimal import Decimal
 from django.core.exceptions import ValidationError
-from django.db import models
-
-def recalcular_estoque(self):
-    """
-    Recalcula o estoque_atual baseado em todos os lotes
-    Útil para ajustes manuais ou correções
-    """
-    total = self.lotes.filter(
-        status__in=['DISPONIVEL', 'BLOQUEADO']
-    ).aggregate(total=models.Sum('quantidade_atual'))['total']
-    self.estoque_atual = Decimal(total) if total is not None else Decimal('0.000')
-    self.save(update_fields=['estoque_atual'])
-
-# Adicione ao modelo Produto:
-setattr(models.Model, 'recalcular_estoque', recalcular_estoque)
 from django.db import models
 from cadastros.models import NCM, Fornecedor, CFOP
 
@@ -629,6 +613,43 @@ class Produto(models.Model):
             return self.tributacoes.get(cfop=cfop)
         except ProdutoTributacao.DoesNotExist:
             return None
+
+    def recalcular_estoque(self):
+        """
+        Recalcula o estoque_atual baseado em todos os lotes
+        Útil para ajustes manuais ou correções
+        """
+        total = self.lotes.filter(
+            status__in=['DISPONIVEL', 'BLOQUEADO']
+        ).aggregate(total=models.Sum('quantidade_atual'))['total']
+        self.estoque_atual = Decimal(total) if total is not None else Decimal('0.000')
+        self.save(update_fields=['estoque_atual'])
+
+    def calcular_saldo_real(self):
+        """
+        Saldo real de estoque: soma dos lotes ativos + movimentações
+        lançadas diretamente no produto (sem lote vinculado).
+
+        Difere de `estoque_atual` (que só soma lotes) quando há
+        movimentação direta sem lote. Fonte única usada pelos alertas de
+        estoque (relatório de estoque e central de compras) para que as
+        duas telas nunca divirjam.
+        """
+        from estoque.models import Lote, MovimentacaoEstoque
+
+        total_lotes = self.lotes.filter(
+            status__in=['DISPONIVEL', 'BLOQUEADO']
+        ).aggregate(total=models.Sum('quantidade_atual'))['total'] or Decimal('0')
+
+        movs_diretas_entrada = MovimentacaoEstoque.objects.filter(
+            produto=self, lote__isnull=True, tipo='ENTRADA', status='EXECUTADO'
+        ).aggregate(total=models.Sum('quantidade'))['total'] or Decimal('0')
+
+        movs_diretas_saida = MovimentacaoEstoque.objects.filter(
+            produto=self, lote__isnull=True, tipo='SAIDA', status='EXECUTADO'
+        ).aggregate(total=models.Sum('quantidade'))['total'] or Decimal('0')
+
+        return Decimal(total_lotes) + (Decimal(movs_diretas_entrada) - Decimal(movs_diretas_saida))
 
 
 class ProdutoFornecedor(models.Model):

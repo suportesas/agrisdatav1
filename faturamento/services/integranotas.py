@@ -538,6 +538,66 @@ class IntegranNotasClient:
                 entrega_block['cpf'] = doc_entrega
             payload['local_entrega'] = entrega_block
 
+        # Local de Retirada — grupo F da NF-e (endereço diferente do destinatário)
+        if getattr(nf, 'retirada_ativo', False):
+            doc_retirada = _digits(nf.retirada_cnpj_cpf or '')
+            retirada_block: dict = {
+                'logradouro':       nf.retirada_logradouro or '',
+                'numero':           nf.retirada_numero or 'S/N',
+                'complemento':      nf.retirada_complemento or '',
+                'bairro':           nf.retirada_bairro or '',
+                'codigo_municipio': nf.retirada_codigo_municipio or '',
+                'nome_municipio':   nf.retirada_nome_municipio or '',
+                'uf':               nf.retirada_uf or '',
+            }
+            if len(doc_retirada) == 14:
+                retirada_block['cnpj'] = doc_retirada
+            elif len(doc_retirada) == 11:
+                retirada_block['cpf'] = doc_retirada
+            payload['local_retirada'] = retirada_block
+
+        # Nota de Produtor Rural — documento de origem referenciado
+        pr_uf = (getattr(nf, 'produtor_rural_uf', '') or '').strip().upper()
+        pr_numero = (getattr(nf, 'produtor_rural_numero', '') or '').strip()
+        if pr_uf and pr_numero:
+            pr_cnpj = _digits(getattr(nf, 'produtor_rural_cnpj', '') or '')
+            pr_cpf = _digits(getattr(nf, 'produtor_rural_cpf', '') or '')
+            pr_block: dict = {
+                'uf':     pr_uf,
+                'anomes': (getattr(nf, 'produtor_rural_anomes', '') or '').strip(),
+                'inscricao_estadual': (getattr(nf, 'produtor_rural_ie', '') or '').strip(),
+                'modelo': (getattr(nf, 'produtor_rural_modelo', '') or '').strip(),
+                'serie':  (getattr(nf, 'produtor_rural_serie', '') or '').strip(),
+                'numero': pr_numero,
+            }
+            if pr_cnpj:
+                pr_block['cnpj'] = pr_cnpj
+            elif pr_cpf:
+                pr_block['cpf'] = pr_cpf
+            payload['nota_produtor_rural'] = pr_block
+
+        # Agropecuário — Guia de Trânsito Animal e Defensivo Agrícola
+        agro_block: dict = {}
+        gta_tipo = (getattr(nf, 'gta_tipo', '') or '').strip()
+        gta_uf = (getattr(nf, 'gta_uf', '') or '').strip().upper()
+        gta_numero = (getattr(nf, 'gta_numero', '') or '').strip()
+        if gta_tipo and gta_uf and gta_numero:
+            agro_block['guia_transito_animal'] = {
+                'tipo':   gta_tipo,
+                'uf':     gta_uf,
+                'serie':  (getattr(nf, 'gta_serie', '') or '').strip(),
+                'numero': gta_numero,
+            }
+        defensivo_receituario = (getattr(nf, 'defensivo_numero_receituario', '') or '').strip()
+        defensivo_cpf = _digits(getattr(nf, 'defensivo_cpf_responsavel', '') or '')
+        if defensivo_receituario and defensivo_cpf:
+            agro_block['defensivo'] = [{
+                'numero_receituario': defensivo_receituario,
+                'cpf_responsavel':    defensivo_cpf,
+            }]
+        if agro_block:
+            payload['agropecuario'] = agro_block
+
         # NF-e Referenciada — obrigatória para devolução e para Nota Mãe de agrupamento
         refs = []
         # Prioridade 1: modelo NFeReferenciada (Nota Mãe com N filhas referenciadas)
@@ -757,7 +817,7 @@ class IntegranNotasClient:
         item_dict = {
             'numero_item': str(item.numero_item),
             'codigo_produto': produto_codigo or 'SEM CODIGO',
-            'ean': item.ean or 'SEM GTIN',
+            'codigo_barras_comercial': item.ean or 'SEM GTIN',
             'descricao': item.descricao,
             'codigo_ncm': item.ncm or '',
             'cest': item.cest or '',
@@ -771,6 +831,21 @@ class IntegranNotasClient:
             'origem': item.origem_mercadoria or '0',
             'imposto': self._build_impostos(item),
         }
+
+        # Benefício Fiscal (cBenef) — campo do item, não de imposto.icms
+        cbenefit = (getattr(item, 'beneficio_fiscal', '') or '').strip()
+        if cbenefit:
+            item_dict['codigo_beneficio_fiscal'] = cbenefit
+
+        # Crédito Presumido de ICMS (item) — benefício estadual comum em commodities agrícolas
+        cred_pres_cod = (getattr(item, 'credito_presumido_codigo_beneficio', '') or '').strip()
+        cred_pres_pct = float(getattr(item, 'credito_presumido_percentual', 0) or 0)
+        if cred_pres_cod and cred_pres_pct > 0:
+            item_dict['creditos_presumido'] = [{
+                'codigo_beneficio_fiscal': cred_pres_cod,
+                'percentual': str(item.credito_presumido_percentual),
+                'valor': str(item.credito_presumido_valor),
+            }]
 
         # Rateio por item
         if float(getattr(item, 'valor_frete_item', 0) or 0) > 0:
@@ -788,10 +863,10 @@ class IntegranNotasClient:
             if item_ped:
                 item_dict['item_pedido_compra'] = item_ped
 
-        # Informações adicionais do produto (DANFE)
+        # Informações adicionais do produto (DANFE / infAdProd)
         comp = (getattr(item, 'complemento_descricao', '') or '').strip()
         if comp:
-            item_dict['informacoes_adicionais_produto'] = comp[:500]
+            item_dict['informacoes_adicionais'] = comp[:500]
 
         # Unidade Tributável — exportação (CFOP 7xxx): qTrib / uTrib / vUnTrib
         # vUnTrib exige até 10 casas decimais no leiaute NF-e (NT 2012/003)
@@ -804,21 +879,27 @@ class IntegranNotasClient:
         # DI — Declaração de Importação (origens 1, 2, 6, 7 ou CFOP 3xxx)
         di = self._build_di(item)
         if di:
-            # Tentamos todas as variações de nome conhecidas — IntegraNotas ignora
-            # campos desconhecidos, então enviar múltiplos nomes é seguro.
-            item_dict['declaracao_importacao']  = [di]   # nome descritivo (singular)
-            item_dict['declaracoes_importacao'] = [di]   # nome descritivo (plural)
-            item_dict['di']                     = [di]   # tag XML <DI> (abreviado)
+            item_dict['documentos_importacao'] = [di]
             # IntegraNotas só gera <DI> no XML quando origem indica produto estrangeiro.
             # Para CFOP 3xxx com DI obrigatória (ex.: devolução drawback), forçamos
             # origem='1' no payload — apenas para a API, sem alterar o banco de dados.
             if item_dict.get('origem') == '0':
                 item_dict['origem'] = '1'
 
+        # Documentos de Exportação — drawback / exportação indireta (separado da DI)
+        doc_exp = self._build_documento_exportacao(item)
+        if doc_exp:
+            item_dict['documentos_exportacao'] = [doc_exp]
+
+        # Rastros — rastreabilidade de lote (numero_lote/quantidade/validade)
+        rastro = self._build_rastro(item)
+        if rastro:
+            item_dict['rastros'] = [rastro]
+
         return item_dict
 
     def _build_di(self, item) -> dict | None:
-        """Constrói o bloco DI para item importado ou CFOP 3xxx (devolução do exterior/drawback)."""
+        """Constrói o bloco DI (documentos_importacao) para item importado ou CFOP 3xxx."""
         cfop = str(getattr(item, 'cfop', '') or '').strip()
         origem = item.origem_mercadoria
         precisa_di = (origem in ('1', '2', '6', '7')) or cfop.startswith('3')
@@ -838,24 +919,24 @@ class IntegranNotasClient:
         numero = numero_digits or numero[:10]
 
         di: dict = {
-            'numero':            numero,
-            'data_registro':     item.di_data_registro.strftime('%Y-%m-%d') if item.di_data_registro else '',
-            'local_desembaraco': (item.di_local_desembaraco or '').strip(),
-            'uf_desembaraco':    (item.di_uf_desembaraco or '').strip().upper(),
-            'data_desembaraco':  item.di_data_desembaraco.strftime('%Y-%m-%d') if item.di_data_desembaraco else '',
-            'via_transporte':    (item.di_via_transporte or '').strip(),
-            'tipo_intermediario': (item.di_tipo_intermediario or '1').strip(),
-            'codigo_exportador': (item.di_codigo_exportador or '').strip(),
+            'numero':                       numero,
+            'data_registro':                item.di_data_registro.strftime('%Y-%m-%d') if item.di_data_registro else '',
+            'local_desembaraco_aduaneiro':  (item.di_local_desembaraco or '').strip(),
+            'uf_desembaraco_aduaneiro':     (item.di_uf_desembaraco or '').strip().upper(),
+            'data_desembaraco_aduaneiro':   item.di_data_desembaraco.strftime('%Y-%m-%d') if item.di_data_desembaraco else '',
+            'via_transporte':               (item.di_via_transporte or '').strip(),
+            'forma_intermedio':             (item.di_tipo_intermediario or '1').strip(),
+            'codigo_exportador':            (item.di_codigo_exportador or '').strip(),
         }
 
         # AFRMM só para via marítima (via = 1)
         if item.di_via_transporte == '1':
             di['valor_afrmm'] = str(item.di_valor_afrmm or '0.00')
 
-        # CNPJ adquirente quando tipo 2 ou 3
-        cnpj_adq = _digits(item.di_cnpj_adquirente or '')
-        if item.di_tipo_intermediario in ('2', '3') and cnpj_adq:
-            di['cnpj_adquirente'] = cnpj_adq
+        # CNPJ/CPF do adquirente/encomendante quando forma_intermedio = 2 ou 3
+        doc_adq = _digits(item.di_cnpj_adquirente or '')
+        if item.di_tipo_intermediario in ('2', '3') and doc_adq:
+            di['cnpj' if len(doc_adq) == 14 else 'cpf'] = doc_adq
 
         # Adição da DI
         num_adicao = (item.di_numero_adicao or '1').strip() or '1'
@@ -867,25 +948,57 @@ class IntegranNotasClient:
         desconto_adi = float(item.di_desconto_adicao or 0)
         if desconto_adi > 0:
             adicao['valor_desconto'] = str(item.di_desconto_adicao)
-        drawback = (item.di_numero_drawback or '').strip()
-        if drawback:
-            # SEFAZ schema nDraw: [0-9]{11} — exatamente 11 dígitos (ou omitido)
-            digs_dw = re.sub(r'\D', '', drawback)
-            if len(digs_dw) == 11:
-                adicao['numero_drawback'] = digs_dw
-            else:
-                logger.warning('DI drawback "%s" ignorado — deve ter 11 dígitos (tem %d)', drawback, len(digs_dw))
 
         di['adicoes'] = [adicao]
 
         # Garante que todos os campos obrigatórios da DI estão preenchidos.
         # Campos vazios causam rejeição silenciosa no IntegraNotas.
-        campos_obrig = ['data_registro', 'local_desembaraco', 'uf_desembaraco',
-                        'data_desembaraco', 'via_transporte']
+        campos_obrig = ['data_registro', 'local_desembaraco_aduaneiro', 'uf_desembaraco_aduaneiro',
+                        'data_desembaraco_aduaneiro', 'via_transporte']
         if any(not di.get(c) for c in campos_obrig):
             return None
 
         return di
+
+    def _build_documento_exportacao(self, item) -> dict | None:
+        """Constrói documentos_exportacao (drawback / exportação indireta) — bloco
+        independente da DI, conforme schema da IntegraNotas."""
+        drawback = (getattr(item, 'di_numero_drawback', '') or '').strip()
+        numero_re = (getattr(item, 'exportacao_indireta_numero_re', '') or '').strip()
+        chave_nfe_exp = (getattr(item, 'exportacao_indireta_chave_nfe', '') or '').strip()
+        if not drawback and not (numero_re and chave_nfe_exp):
+            return None
+
+        doc: dict = {}
+        if drawback:
+            # SEFAZ schema nDraw: [0-9]{11} — exatamente 11 dígitos
+            digs_dw = re.sub(r'\D', '', drawback)
+            if len(digs_dw) == 11:
+                doc['numero_drawback'] = digs_dw
+            else:
+                logger.warning('Drawback "%s" ignorado — deve ter 11 dígitos (tem %d)', drawback, len(digs_dw))
+
+        if numero_re and chave_nfe_exp and len(chave_nfe_exp) == 44:
+            quantidade_exp = getattr(item, 'exportacao_indireta_quantidade', 0) or item.quantidade
+            doc['exportacao_indireta'] = {
+                'numero_re': numero_re,
+                'chave_nfe': chave_nfe_exp,
+                'quantidade': str(quantidade_exp),
+            }
+
+        return doc or None
+
+    def _build_rastro(self, item) -> dict | None:
+        """Constrói rastros[] (rastreabilidade de lote) a partir de ItemNotaFiscal.lote."""
+        lote = getattr(item, 'lote', None)
+        if not lote or not lote.data_fabricacao or not lote.data_validade:
+            return None
+        return {
+            'numero_lote':      lote.numero_lote,
+            'quantidade_lote':  str(item.quantidade),
+            'data_fabricacao':  lote.data_fabricacao.strftime('%Y-%m-%d'),
+            'data_validade':    lote.data_validade.strftime('%Y-%m-%d'),
+        }
 
     def _build_impostos(self, item) -> dict:
         impostos: dict = {}
@@ -897,11 +1010,6 @@ class IntegranNotasClient:
 
         icms_block: dict = {'situacao_tributaria': cst_icms}
 
-        # Benefício Fiscal (cBenef)
-        cbenefit = (getattr(item, 'beneficio_fiscal', '') or '').strip()
-        if cbenefit:
-            icms_block['codigo_beneficio_fiscal'] = cbenefit
-
         if item.aliquota_icms and float(item.aliquota_icms) > 0:
             icms_block.update({
                 'modalidade_base_calculo': modalidade_bc,
@@ -910,14 +1018,14 @@ class IntegranNotasClient:
                 'valor': str(item.valor_icms),
             })
             if reducao_bc > 0:
-                icms_block['percentual_reducao_base'] = str(reducao_bc)
+                icms_block['aliquota_reducao_base_calculo'] = str(reducao_bc)
 
         # Desoneração ICMS
         motivo_deson = (getattr(item, 'icms_motivo_desoneracao', '') or '').strip()
         valor_deson  = float(getattr(item, 'icms_valor_desoneracao', 0) or 0)
         if motivo_deson and valor_deson > 0:
             icms_block['motivo_desoneracao'] = motivo_deson
-            icms_block['valor_desoneracao']  = str(item.icms_valor_desoneracao)
+            icms_block['valor_desonerado']   = str(item.icms_valor_desoneracao)
 
         # ICMS ST (CST 10, 30, 70, 90 etc.)
         valor_st = float(getattr(item, 'valor_icms_st', 0) or 0)
@@ -928,32 +1036,34 @@ class IntegranNotasClient:
             bc_st  = float(getattr(item, 'icms_st_base_calculo', 0) or 0)
             icms_block.update({
                 'modalidade_base_calculo_st': '4',
-                'percentual_mva_st': str(mva),
-                'percentual_reducao_base_st': str(red_st),
-                'base_calculo_st': str(bc_st),
+                'aliquota_margem_valor_adicionado_st': str(mva),
+                'aliquota_reducao_base_calculo_st': str(red_st),
+                'valor_base_calculo_st': str(bc_st),
                 'aliquota_st': str(aliq_st),
                 'valor_st': str(valor_st),
             })
-            # FCP ST
-            fcp_st_aliq = float(getattr(item, 'fcp_st_aliquota', 0) or 0)
-            fcp_st_val  = float(getattr(item, 'fcp_st_valor', 0) or 0)
-            if fcp_st_aliq > 0:
-                icms_block.update({
-                    'percentual_fcp_st': str(item.fcp_st_aliquota),
-                    'valor_fcp_st':      str(item.fcp_st_valor),
-                    'base_calculo_fcp_st': str(item.fcp_st_base_calculo),
-                })
 
         impostos['icms'] = icms_block
 
-        # FCP normal
-        fcp_aliq = float(getattr(item, 'fcp_aliquota', 0) or 0)
-        if fcp_aliq > 0:
-            impostos['fcp'] = {
-                'valor_base_calculo': str(item.fcp_base_calculo),
-                'aliquota':           str(item.fcp_aliquota),
-                'valor':              str(item.fcp_valor),
-            }
+        # FCP normal e FCP-ST — mesmo objeto imposto.fcp, campos independentes
+        # (FCP-ST pode existir sem FCP normal e vice-versa)
+        fcp_aliq    = float(getattr(item, 'fcp_aliquota', 0) or 0)
+        fcp_st_aliq = float(getattr(item, 'fcp_st_aliquota', 0) or 0)
+        if fcp_aliq > 0 or fcp_st_aliq > 0:
+            fcp_block: dict = {}
+            if fcp_aliq > 0:
+                fcp_block.update({
+                    'valor_base_calculo': str(item.fcp_base_calculo),
+                    'aliquota':           str(item.fcp_aliquota),
+                    'valor':              str(item.fcp_valor),
+                })
+            if fcp_st_aliq > 0:
+                fcp_block.update({
+                    'valor_base_calculo_st': str(item.fcp_st_base_calculo),
+                    'aliquota_st':           str(item.fcp_st_aliquota),
+                    'valor_st':              str(item.fcp_st_valor),
+                })
+            impostos['fcp'] = fcp_block
 
         # IPI
         # Omite bloco IPI quando alíquota = 0 — o grupo é opcional na NF-e.
@@ -1006,23 +1116,47 @@ class IntegranNotasClient:
             cofins_block['valor'] = '0.00'
         impostos['cofins'] = cofins_block
 
+        # IBS/CBS — Reforma Tributária (NT 2024/2025, grupo_ibs_cbs)
+        cst_reforma = (getattr(item, 'ibs_cbs_situacao_tributaria', '') or '').strip()
+        if cst_reforma:
+            cclasstrib = (getattr(item, 'ibs_cbs_classificacao_tributaria', '') or '').strip()
+            impostos['ibs_cbs'] = {
+                'situacao_tributaria': cst_reforma,
+                'classificacao_tributaria': cclasstrib,
+                'grupo_ibs_cbs': {
+                    'valor_base_calculo': str(item.ibs_cbs_base_calculo),
+                    'ibs_estadual': {
+                        'aliquota': str(item.ibs_cbs_aliquota_uf),
+                        'valor': str(item.ibs_cbs_valor_uf),
+                    },
+                    'ibs_municipal': {
+                        'aliquota': str(item.ibs_cbs_aliquota_municipal),
+                        'valor': str(item.ibs_cbs_valor_municipal),
+                    },
+                    'cbs': {
+                        'aliquota': str(item.ibs_cbs_aliquota_cbs),
+                        'valor': str(item.ibs_cbs_valor_cbs),
+                    },
+                },
+            }
+
         return impostos
 
     def _build_totais(self, nf) -> dict:
         itens = list(nf.itens.all())
         return {
-            'base_calculo_icms': str(sum(i.icms_base_calculo for i in itens)),
-            'valor_icms': str(nf.valor_icms),
-            'valor_icms_st': str(getattr(nf, 'valor_icms_st', 0) or 0),
-            'base_calculo_icms_st': str(sum(getattr(i, 'icms_st_base_calculo', 0) or 0 for i in itens)),
-            'valor_ipi': str(nf.valor_ipi),
-            'valor_pis': str(nf.valor_pis),
-            'valor_cofins': str(nf.valor_cofins),
-            'valor_produtos': str(nf.valor_produtos),
-            'valor_frete': str(nf.valor_frete),
-            'valor_seguro': str(nf.valor_seguro),
-            'valor_desconto': str(nf.valor_desconto),
-            'valor_nota': str(nf.valor_total),
+            'icms_base_calculo': str(sum(i.icms_base_calculo for i in itens)),
+            'icms_valor_total': str(nf.valor_icms),
+            'icms_st_valor_total': str(getattr(nf, 'valor_icms_st', 0) or 0),
+            'icms_st_base_calculo': str(sum(getattr(i, 'icms_st_base_calculo', 0) or 0 for i in itens)),
+            'ipi_valor_total': str(nf.valor_ipi),
+            'pis_valor_total': str(nf.valor_pis),
+            'cofins_valor_total': str(nf.valor_cofins),
+            'valor_produtos_total': str(nf.valor_produtos),
+            'valor_frete_total': str(nf.valor_frete),
+            'valor_seguro_total': str(nf.valor_seguro),
+            'valor_desconto_total': str(nf.valor_desconto),
+            'valor_total': str(nf.valor_total),
         }
 
     def _build_frete(self, nf) -> dict:
@@ -1048,13 +1182,13 @@ class IntegranNotasClient:
             cnpj_raiz_igual = bool(cnpj and emit_cnpj and cnpj[:8] == emit_cnpj[:8])
             if cnpj and not cnpj_raiz_igual:
                 transp_data['cnpj' if len(cnpj) == 14 else 'cpf'] = cnpj
-            if nome:       transp_data['nome']     = nome[:60]
-            if ie:         transp_data['ie']        = ie
-            if endereco:   transp_data['endereco']  = endereco[:60]
-            if municipio:  transp_data['municipio'] = municipio[:60]
-            if uf:         transp_data['uf']        = uf
+            if nome:       transp_data['nome']             = nome[:60]
+            if ie:         transp_data['inscricao_estadual'] = ie
+            if endereco:   transp_data['endereco']         = endereco[:60]
+            if municipio:  transp_data['nome_municipio']   = municipio[:60]
+            if uf:         transp_data['uf']               = uf
             if transp_data:
-                frete['transportadora'] = transp_data
+                frete['transportador'] = transp_data
 
         if nf.veic_placa:
             frete['veiculo'] = {
@@ -1070,7 +1204,7 @@ class IntegranNotasClient:
             if nf.quantidade_volumes: vol['quantidade']   = nf.quantidade_volumes
             if nf.especie_volumes:    vol['especie']      = nf.especie_volumes
             if nf.marca_volumes:      vol['marca']        = nf.marca_volumes
-            if nf.numeracao_volumes:  vol['numeracao']    = nf.numeracao_volumes
+            if nf.numeracao_volumes:  vol['numero']       = nf.numeracao_volumes
             if nf.peso_liquido_kg:    vol['peso_liquido'] = str(nf.peso_liquido_kg)
             if nf.peso_bruto_kg:      vol['peso_bruto']   = str(nf.peso_bruto_kg)
             frete['volumes'] = [vol]

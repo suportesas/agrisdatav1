@@ -11,6 +11,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ('cadastros', '0054_vehicle_descricao'),
         ('empresas', '0020_alter_plano_codigo'),
+        ('frota', '0001_initial'),
     ]
 
     operations = [

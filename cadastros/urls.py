@@ -263,6 +263,13 @@ urlpatterns = [
     path('portos/<int:pk>/editar/', views.porto_update, name='porto_update'),
     path('portos/<int:pk>/excluir/', views.porto_delete, name='porto_delete'),
 
+    # ==================== AGENTES DE EXPORTAÇÃO ====================
+    path('agentes-exportacao/', views.agente_exportacao_list, name='agente_exportacao_list'),
+    path('agentes-exportacao/novo/', views.agente_exportacao_create, name='agente_exportacao_create'),
+    path('agentes-exportacao/<int:pk>/', views.agente_exportacao_detail, name='agente_exportacao_detail'),
+    path('agentes-exportacao/<int:pk>/editar/', views.agente_exportacao_update, name='agente_exportacao_update'),
+    path('agentes-exportacao/<int:pk>/excluir/', views.agente_exportacao_delete, name='agente_exportacao_delete'),
+
     # ==================== ARMADORES ====================
     path('armadores/', views.armador_list, name='armador_list'),
     path('armadores/create/', views.armador_create, name='armador_create'),

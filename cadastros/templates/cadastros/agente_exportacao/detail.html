@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}{{ agente.nome }} | ERP Agrícola{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:agente_exportacao_list' %}">Agentes de Exportação</a></li>
+      <li class="breadcrumb-item active">{{ agente.nome }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="bi bi-globe text-primary"></i> {{ agente.nome }} <small class="text-muted">({{ agente.get_tipo_display }})</small></h2>
+      <p class="text-muted mb-0">Detalhes do agente de exportação</p>
+    </div>
+    <div>
+      <a href="{% url 'cadastros:agente_exportacao_update' agente.pk %}" class="btn btn-outline-primary">Editar</a>
+      <a href="{% url 'cadastros:agente_exportacao_delete' agente.pk %}" class="btn btn-outline-danger">Desativar</a>
+      <a href="{% url 'cadastros:agente_exportacao_list' %}" class="btn btn-secondary">Voltar</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="fw-semibold">Localização</h6>
+          <p class="mb-1"><strong>Cidade:</strong> {{ agente.cidade|default:"—" }}</p>
+          <p class="mb-1"><strong>País:</strong> {{ agente.pais }}</p>
+          <p class="mb-0"><strong>Endereço:</strong> {{ agente.endereco|default:"—" }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card mb-3">
+        <div class="card-body">
+          <h6 class="fw-semibold">Contato</h6>
+          <p class="mb-1"><strong>Nome:</strong> {{ agente.contato_nome|default:"—" }}</p>
+          <p class="mb-1"><strong>Telefone:</strong> {{ agente.contato_telefone|default:"—" }}</p>
+          <p class="mb-1"><strong>E-mail:</strong> {{ agente.contato_email|default:"—" }}</p>
+          <p class="mb-1"><strong>CNPJ / Tax ID / VAT:</strong> {{ agente.documento_fiscal|default:"—" }}</p>
+          <p class="mb-1"><strong>Ativo:</strong> {% if agente.ativo %}Sim{% else %}Não{% endif %}</p>
+          <p class="text-muted small mb-0">Criado em: {{ agente.data_criacao }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

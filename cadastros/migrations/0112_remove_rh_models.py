@@ -12,6 +12,12 @@ class Migration(migrations.Migration):
     dependencies = [
         ('cadastros', '0111_remove_estufa_models'),
         ('rh', '0001_initial'),
+        # Precisa rodar só depois que outros apps já tiverem repontado seus FKs
+        # de cadastros.Funcionario para rh.Funcionario, senão a checagem de
+        # referências (lazy references) do Django falha para esses campos.
+        ('estufas', '0002_initial'),
+        ('estoque', '0019_alter_armazem_responsavel_rh_funcionario'),
+        ('patrimonio', '0003_initial'),
     ]
 
     operations = [

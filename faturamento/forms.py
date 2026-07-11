@@ -79,6 +79,61 @@ class CertificadoDigitalForm(forms.Form):
         return arquivo
 
 
+class DevolucaoVendaForm(forms.Form):
+    """Registra a devolução (entrada de estoque) de um produto vendido.
+
+    `produto` é restrito aos produtos presentes na NF-e/Invoice quando possível
+    (ver `__init__`); para Invoice de exportação, `ItemInvoice` não referencia
+    `produtos.Produto` diretamente, então o campo fica aberto a todos os
+    produtos da empresa.
+    """
+    produto = forms.ModelChoiceField(
+        label='Produto',
+        queryset=None,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    lote = forms.ModelChoiceField(
+        label='Lote (opcional)',
+        queryset=None,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text='Se informado, o saldo devolvido entra nesse lote específico.',
+    )
+    quantidade = forms.DecimalField(
+        label='Quantidade Devolvida',
+        min_value=Decimal('0.001'),
+        max_digits=14,
+        decimal_places=3,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+    )
+    justificativa = forms.CharField(
+        label='Justificativa da Devolução',
+        min_length=15,
+        max_length=500,
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4,
+                                     'placeholder': 'Informe o motivo da devolução (mínimo 15 caracteres)'}),
+        validators=[MinLengthValidator(15)],
+    )
+
+    def __init__(self, *args, empresa=None, produtos_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from produtos.models import Produto
+        from estoque.models import Lote
+        self.fields['produto'].queryset = (
+            produtos_queryset if produtos_queryset is not None
+            else Produto.objects.filter(empresa=empresa)
+        )
+        self.fields['lote'].queryset = Lote.objects.filter(empresa=empresa) if empresa else Lote.objects.none()
+
+    def clean(self):
+        cleaned = super().clean()
+        lote = cleaned.get('lote')
+        produto = cleaned.get('produto')
+        if lote and produto and lote.produto_id != produto.pk:
+            self.add_error('lote', 'O lote selecionado não pertence ao produto escolhido.')
+        return cleaned
+
+
 class NotaFiscalCancelarForm(forms.Form):
     justificativa = forms.CharField(
         label='Justificativa do Cancelamento',
@@ -304,6 +359,33 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'entrega_codigo_municipio',
             'entrega_nome_municipio',
             'entrega_uf',
+            # Local de retirada
+            'retirada_ativo',
+            'retirada_cnpj_cpf',
+            'retirada_logradouro',
+            'retirada_numero',
+            'retirada_complemento',
+            'retirada_bairro',
+            'retirada_codigo_municipio',
+            'retirada_nome_municipio',
+            'retirada_uf',
+            # Nota de Produtor Rural (documento de origem)
+            'produtor_rural_uf',
+            'produtor_rural_anomes',
+            'produtor_rural_cnpj',
+            'produtor_rural_cpf',
+            'produtor_rural_ie',
+            'produtor_rural_modelo',
+            'produtor_rural_serie',
+            'produtor_rural_numero',
+            # Agropecuário — GTA
+            'gta_tipo',
+            'gta_uf',
+            'gta_serie',
+            'gta_numero',
+            # Agropecuário — Defensivo Agrícola
+            'defensivo_numero_receituario',
+            'defensivo_cpf_responsavel',
             # Intermediador
             'ind_intermediador',
             'intermediador_cnpj',
@@ -359,6 +441,33 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'entrega_codigo_municipio': forms.TextInput(attrs={**_fc, 'placeholder': '7 dígitos IBGE', 'maxlength': '7'}),
             'entrega_nome_municipio': forms.TextInput(attrs={**_fc, 'placeholder': 'Município'}),
             'entrega_uf': forms.TextInput(attrs={**_fc, 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
+            # Local de retirada
+            'retirada_ativo': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_retirada_ativo'}),
+            'retirada_cnpj_cpf': forms.TextInput(attrs={**_fc, 'placeholder': 'Somente dígitos (CNPJ 14 / CPF 11)', 'maxlength': '14'}),
+            'retirada_logradouro': forms.TextInput(attrs={**_fc, 'placeholder': 'Rua, Av., Rodovia...'}),
+            'retirada_numero': forms.TextInput(attrs={**_fc, 'placeholder': 'S/N'}),
+            'retirada_complemento': forms.TextInput(attrs={**_fc, 'placeholder': 'Apto, Sala, Bloco...'}),
+            'retirada_bairro': forms.TextInput(attrs={**_fc, 'placeholder': 'Bairro'}),
+            'retirada_codigo_municipio': forms.TextInput(attrs={**_fc, 'placeholder': '7 dígitos IBGE', 'maxlength': '7'}),
+            'retirada_nome_municipio': forms.TextInput(attrs={**_fc, 'placeholder': 'Município'}),
+            'retirada_uf': forms.TextInput(attrs={**_fc, 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
+            # Nota de Produtor Rural
+            'produtor_rural_uf': forms.TextInput(attrs={**_fc, 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
+            'produtor_rural_anomes': forms.TextInput(attrs={**_fc, 'placeholder': 'AAMM', 'maxlength': '4'}),
+            'produtor_rural_cnpj': forms.TextInput(attrs={**_fc, 'placeholder': 'CNPJ (14 dígitos)', 'maxlength': '14'}),
+            'produtor_rural_cpf': forms.TextInput(attrs={**_fc, 'placeholder': 'CPF (11 dígitos)', 'maxlength': '11'}),
+            'produtor_rural_ie': forms.TextInput(attrs={**_fc, 'placeholder': 'Inscrição Estadual', 'maxlength': '14'}),
+            'produtor_rural_modelo': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'produtor_rural_serie': forms.TextInput(attrs={**_fc, 'maxlength': '3'}),
+            'produtor_rural_numero': forms.TextInput(attrs={**_fc, 'maxlength': '9'}),
+            # Agropecuário — GTA
+            'gta_tipo': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'gta_uf': forms.TextInput(attrs={**_fc, 'placeholder': 'UF', 'maxlength': '2', 'style': 'text-transform:uppercase;'}),
+            'gta_serie': forms.TextInput(attrs={**_fc, 'maxlength': '9'}),
+            'gta_numero': forms.TextInput(attrs={**_fc, 'maxlength': '9'}),
+            # Agropecuário — Defensivo Agrícola
+            'defensivo_numero_receituario': forms.TextInput(attrs={**_fc, 'placeholder': 'Nº do receituário', 'maxlength': '30'}),
+            'defensivo_cpf_responsavel': forms.TextInput(attrs={**_fc, 'placeholder': 'CPF do responsável técnico', 'maxlength': '11'}),
             # Intermediador
             'ind_intermediador': forms.Select(attrs={'class': 'form-select form-select-sm', 'id': 'id_ind_intermediador'}),
             'intermediador_cnpj': forms.TextInput(attrs={**_fc, 'placeholder': 'Somente dígitos (14)', 'maxlength': '14'}),
@@ -390,6 +499,14 @@ class NotaFiscalForm(FaturamentoBaseForm):
                   'entrega_cnpj_cpf', 'entrega_logradouro', 'entrega_numero',
                   'entrega_complemento', 'entrega_bairro',
                   'entrega_codigo_municipio', 'entrega_nome_municipio', 'entrega_uf',
+                  'retirada_cnpj_cpf', 'retirada_logradouro', 'retirada_numero',
+                  'retirada_complemento', 'retirada_bairro',
+                  'retirada_codigo_municipio', 'retirada_nome_municipio', 'retirada_uf',
+                  'produtor_rural_uf', 'produtor_rural_anomes', 'produtor_rural_cnpj',
+                  'produtor_rural_cpf', 'produtor_rural_ie', 'produtor_rural_modelo',
+                  'produtor_rural_serie', 'produtor_rural_numero',
+                  'gta_tipo', 'gta_uf', 'gta_serie', 'gta_numero',
+                  'defensivo_numero_receituario', 'defensivo_cpf_responsavel',
                   'ind_intermediador', 'intermediador_cnpj', 'intermediador_id_cadastro'):
             self.fields[f].required = False
 
@@ -461,6 +578,11 @@ class ItemNotaFiscalForm(forms.ModelForm):
         'valor_frete_item', 'valor_seguro_item', 'valor_outras_despesas',
         # FCP
         'fcp_aliquota', 'fcp_st_aliquota',
+        # IBS/CBS (Reforma Tributária)
+        'ibs_cbs_aliquota_uf', 'ibs_cbs_aliquota_municipal', 'ibs_cbs_aliquota_cbs',
+        # Crédito Presumido / Exportação Indireta
+        'credito_presumido_percentual', 'credito_presumido_valor',
+        'exportacao_indireta_quantidade',
     )
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -549,6 +671,15 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'beneficio_fiscal', 'icms_motivo_desoneracao',
             # FCP
             'fcp_aliquota', 'fcp_st_aliquota',
+            # IBS/CBS (Reforma Tributária)
+            'ibs_cbs_situacao_tributaria', 'ibs_cbs_classificacao_tributaria',
+            'ibs_cbs_aliquota_uf', 'ibs_cbs_aliquota_municipal', 'ibs_cbs_aliquota_cbs',
+            # Crédito Presumido de ICMS
+            'credito_presumido_codigo_beneficio', 'credito_presumido_percentual',
+            'credito_presumido_valor',
+            # Exportação Indireta (via trading)
+            'exportacao_indireta_numero_re', 'exportacao_indireta_chave_nfe',
+            'exportacao_indireta_quantidade',
             # Complemento
             'complemento_descricao',
             # Rastreabilidade
@@ -632,6 +763,25 @@ class ItemNotaFiscalForm(forms.ModelForm):
             # FCP
             'fcp_aliquota':    forms.NumberInput(attrs=_sm_num),
             'fcp_st_aliquota': forms.NumberInput(attrs=_sm_num),
+            # IBS/CBS (Reforma Tributária)
+            'ibs_cbs_situacao_tributaria':      forms.Select(attrs=_sm_sel),
+            'ibs_cbs_classificacao_tributaria': forms.TextInput(attrs={**_sm, 'maxlength': '6',
+                                                                       'placeholder': '000001',
+                                                                       'title': 'cClassTrib — 6 dígitos'}),
+            'ibs_cbs_aliquota_uf':        forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'ibs_cbs_aliquota_municipal': forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'ibs_cbs_aliquota_cbs':       forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            # Crédito Presumido de ICMS
+            'credito_presumido_codigo_beneficio': forms.TextInput(attrs={**_sm, 'maxlength': '10',
+                                                                          'placeholder': 'Ex: PR810001'}),
+            'credito_presumido_percentual': forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'credito_presumido_valor':      forms.NumberInput(attrs=_sm_num),
+            # Exportação Indireta (via trading)
+            'exportacao_indireta_numero_re':    forms.TextInput(attrs={**_sm, 'maxlength': '12',
+                                                                        'placeholder': 'Registro de Exportação'}),
+            'exportacao_indireta_chave_nfe':    forms.TextInput(attrs={**_sm, 'maxlength': '44',
+                                                                        'placeholder': '44 dígitos'}),
+            'exportacao_indireta_quantidade':   forms.NumberInput(attrs=_sm_num4),
             # Complemento
             'complemento_descricao': forms.TextInput(attrs={**_sm, 'maxlength': '500',
                                                             'placeholder': 'Complemento para DANFE (infAdProd)'}),
@@ -738,6 +888,18 @@ class InvoiceExportacaoForm(FaturamentoBaseForm):
             'porto_destino',
             'condicao_pagamento',
             'banco_beneficiario',
+            'banco_nome',
+            'banco_endereco',
+            'banco_swift',
+            'banco_iban',
+            'banco_numero_conta',
+            'banco_beneficiario_nome',
+            'banco_correspondente_nome',
+            'banco_correspondente_swift',
+            'regime_drawback',
+            'ato_concessorio_numero',
+            'ato_concessorio_data',
+            'ato_concessorio_validade',
             'valor_frete',
             'valor_seguro',
             'observacoes',
@@ -754,6 +916,18 @@ class InvoiceExportacaoForm(FaturamentoBaseForm):
             'porto_destino': forms.TextInput(attrs={'class': 'form-control'}),
             'condicao_pagamento': forms.TextInput(attrs={'class': 'form-control'}),
             'banco_beneficiario': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'banco_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_endereco': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_swift': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_iban': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_numero_conta': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_beneficiario_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_correspondente_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'banco_correspondente_swift': forms.TextInput(attrs={'class': 'form-control'}),
+            'regime_drawback': forms.Select(attrs={'class': 'form-select'}),
+            'ato_concessorio_numero': forms.TextInput(attrs={'class': 'form-control'}),
+            'ato_concessorio_data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'ato_concessorio_validade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'valor_frete': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_seguro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -775,6 +949,16 @@ class InvoiceExportacaoForm(FaturamentoBaseForm):
             ).order_by('razao_social')
             self.fields['taxa_cambio'].required = False
             self.fields['data_embarque_previsto'].required = False
+            if not self.instance.pk:
+                # Snapshot dos dados bancários da empresa como sugestão inicial —
+                # a Invoice pode sobrescrever, mas não muda retroativamente se os
+                # dados da empresa mudarem depois de emitida.
+                self.fields['banco_nome'].initial = empresa.banco_nome
+                self.fields['banco_endereco'].initial = empresa.banco_endereco
+                self.fields['banco_swift'].initial = empresa.banco_swift
+                self.fields['banco_iban'].initial = empresa.banco_iban
+                self.fields['banco_numero_conta'].initial = empresa.banco_numero_conta
+                self.fields['banco_beneficiario_nome'].initial = empresa.banco_beneficiario_nome
 
     def clean(self):
         cleaned = super().clean()
@@ -835,11 +1019,13 @@ class PackingListForm(FaturamentoBaseForm):
         fields = [
             'invoice',
             'data_emissao',
+            'numero_fitossanitario',
             'observacoes',
         ]
         widgets = {
             'invoice': forms.Select(attrs={'class': 'form-select'}),
             'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'numero_fitossanitario': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº do Certificado Fitossanitário (MAPA)'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -921,7 +1107,7 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'tipo_tomador', 'tomador', 'transportadora',
             'motorista', 'veiculo',
             'data_emissao', 'cfop', 'natureza_operacao', 'tipo_servico',
-            'globalizado', 'referencia_despacho',
+            'globalizado', 'referencia_despacho', 'romaneio_venda',
             'uf_inicio', 'municipio_inicio', 'codigo_municipio_inicio',
             'uf_fim', 'municipio_fim', 'codigo_municipio_fim',
             'modalidade_frete', 'valor_servico', 'valor_receber',
@@ -968,6 +1154,7 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
                 'placeholder': 'Número do manifesto/despacho',
                 'id': 'id_referencia_despacho',
             }),
+            'romaneio_venda': forms.Select(attrs={'class': 'form-select'}),
             'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
             'municipio_inicio':          forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_municipio_inicio':   forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '2408003'}),
@@ -1014,6 +1201,7 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
         if empresa:
             from cadastros.models import Cliente, Transportadora
             from frota.models import Motorista, Vehicle
+            from embalagem.models import RomaneioVenda
             clientes_ativos = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
             self.fields['remetente'].queryset = clientes_ativos
             self.fields['destinatario'].queryset = clientes_ativos
@@ -1023,11 +1211,13 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=empresa).order_by('razao_social')
             self.fields['motorista'].queryset = Motorista.objects.filter(empresa=empresa, ativo=True).order_by('nome')
             self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa).order_by('descricao')
+            self.fields['romaneio_venda'].queryset = RomaneioVenda.objects.filter(empresa=empresa).order_by('-criado_em')
         self.fields['motorista'].required = False
         self.fields['veiculo'].required = False
         self.fields['expedidor'].required = False
         self.fields['recebedor'].required = False
         self.fields['tomador'].required = False
+        self.fields['romaneio_venda'].required = False
 
     def clean(self):
         cleaned = super().clean()
@@ -1097,6 +1287,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'serie',
             'motorista', 'veiculo',
             'data_emissao',
+            'booking',
             'uf_inicio', 'municipio_carregamento', 'codigo_municipio_carregamento', 'uf_fim',
             'tipo_emitente', 'tipo_transporte', 'valor_carga', 'peso_bruto_kg',
             # Modal Rodoviário — Veículo de Tração extras
@@ -1114,6 +1305,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'motorista':                 forms.Select(attrs={'class': 'form-select'}),
             'veiculo':                   forms.Select(attrs={'class': 'form-select', 'id': 'id_veiculo'}),
             'data_emissao':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'booking':                   forms.Select(attrs={'class': 'form-select'}),
             'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
             'municipio_carregamento':         forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_municipio_carregamento':  forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '7 dígitos IBGE'}),
@@ -1146,8 +1338,11 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
         super().__init__(*args, empresa=empresa, **kwargs)
         if empresa:
             from frota.models import Motorista, Vehicle
+            from exportacao.models import Booking
             self.fields['motorista'].queryset = Motorista.objects.filter(empresa=empresa, ativo=True).order_by('nome')
             self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa).order_by('descricao')
+            self.fields['booking'].queryset = Booking.objects.filter(empresa=empresa).order_by('-data_embarque_previsto')
+        self.fields['booking'].required = False
         if instance and instance.veiculo:
             if not instance.tipo_carroceria:
                 self.initial.setdefault('tipo_carroceria', instance.veiculo.tipo_carroceria)

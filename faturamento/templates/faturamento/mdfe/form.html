@@ -81,6 +81,10 @@
                     <label class="form-label">Data de Emissão <span class="text-danger">*</span></label>
                     {{ form.data_emissao }}
                   </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Booking (embarque de exportação)</label>
+                    {{ form.booking }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -749,13 +753,13 @@
           <li class="nav-item">
             <button class="nav-link active" id="tab-nfe-btn" data-bs-toggle="tab" data-bs-target="#tab-nfe" type="button">
               <i class="bi bi-file-earmark-text me-1"></i>NF-e
-              <span id="badge-nfe" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
+              <span id="badge-nfe" class="badge rounded-pill ms-1" style="background:#1a7a3c;display:none;">0</span>
             </button>
           </li>
           <li class="nav-item">
             <button class="nav-link" id="tab-cte-btn" data-bs-toggle="tab" data-bs-target="#tab-cte" type="button">
               <i class="bi bi-truck me-1"></i>CT-e
-              <span id="badge-cte" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
+              <span id="badge-cte" class="badge rounded-pill ms-1" style="background:#1a7a3c;display:none;">0</span>
             </button>
           </li>
         </ul>

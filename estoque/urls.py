@@ -3,23 +3,10 @@ URLs do módulo Estoque
 """
 from django.urls import path
 from . import views
-from . import views_simples
 
 app_name = 'estoque'
 
 urlpatterns = [
-    # ========================================
-    # 🚀 MODO SIMPLES - Movimentações Rápidas
-    # ========================================
-    path('entrada-rapida/', views_simples.entrada_rapida, name='entrada_rapida'),
-    path('saida-rapida/', views_simples.saida_rapida, name='saida_rapida'),
-    path('ajuste-rapido/', views_simples.ajuste_rapido, name='ajuste_rapido'),
-    path('escolher-modo-estoque/', views_simples.escolher_modo_estoque, name='escolher_modo_estoque'),
-    
-    # ========================================
-    # 📋 MODO FORMAL - Fluxo Completo
-    # ========================================
-    
     # Dashboard
     path('', views.dashboard, name='dashboard'),
     

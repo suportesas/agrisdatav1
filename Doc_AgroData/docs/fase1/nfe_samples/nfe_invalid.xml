@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfe>
+  <infNFe Id="NFe35260402035088122662990551234567890123456789a">
+    <ide>
+      <cUF>35</cUF>
+      <natOp>COMPRA</natOp>
+      <model>55</model>
+      <serie>1
+      <!-- Tag não fechada propositalmente -->
+      <nNF>111111</nNF>
+    </ide>
+    <emit>
+      <CNPJ>35088122662099</CNPJ>
+      <xNome>TESTE INVALIDO
+    </emit>
+    <!-- Estrutura malformada abaixo -->
+    <dest
+      <CNPJ>11222333000181</xCNPJ>
+    </detail>
+  </infNFe>
+</nfe>

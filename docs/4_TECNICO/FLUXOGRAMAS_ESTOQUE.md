@@ -1,4 +1,9 @@
-z# Fluxogramas do Sistema de Estoque
+Owner: Estoque
+Status: Approved
+Last Updated: 2026-07-10
+Scope: Movimentação e cálculo de estoque
+
+# Fluxogramas do Sistema de Estoque
 
 ## 1. Fluxo Atual de Entrada (Entrada Rápida SEM Lote)
 

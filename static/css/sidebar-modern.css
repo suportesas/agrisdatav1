@@ -5,27 +5,27 @@
 
 :root {
   --sidebar-width: 272px;
-  --sidebar-collapsed-width: 68px;
+  --sidebar-collapsed-width: 64px;
 
   /* Cores base */
-  --sb-bg:        #ffffff;
-  --sb-bg2:       #f7faf8;
-  --sb-border:    #e3ece4;
-  --sb-border2:   #c6dbc8;
+  --sb-bg:        #10231a;
+  --sb-bg2:       #16301f;
+  --sb-border:    #23412d;
+  --sb-border2:   #2f5138;
 
   /* Texto */
-  --sb-text:      #5a7a5e;
-  --sb-text-dark: #1a2c1c;
-  --sb-muted:     #94b098;
+  --sb-text:      #b9c9bb;
+  --sb-text-dark: #f4f7f4;
+  --sb-muted:     #7c9482;
 
   /* Acento verde */
-  --sb-green:     #1a7a3c;
-  --sb-green2:    #22a24f;
-  --sb-green-bg:  #d4edda;
-  --sb-green-bg2: #eaf5ec;
+  --sb-green:     #22a24f;
+  --sb-green2:    #34c96a;
+  --sb-green-bg:  rgba(34,162,79,.18);
+  --sb-green-bg2: rgba(34,162,79,.10);
 
   /* Sombra */
-  --sb-shadow:    4px 0 20px rgba(0,0,0,.06);
+  --sb-shadow:    4px 0 24px rgba(0,0,0,.35);
 
   --transition-speed: 0.25s;
 }
@@ -33,16 +33,16 @@
 /* ── TEMA SAAS OWNER (superusuário) ── */
 /* mantém mesma paleta — distinção só no logo mark */
 .sidebar-modern.saas-owner-nav {
-  --sb-green:    #0f5c2a;
-  --sb-green2:   #1a7a3c;
+  --sb-green:    #178a45;
+  --sb-green2:   #22a24f;
 }
 .sidebar-modern.saas-owner-nav .brand-logo {
-  background: linear-gradient(135deg, #1a7a3c, #22a24f);
+  background: linear-gradient(135deg, #178a45, #22a24f);
   box-shadow: 0 3px 10px rgba(26,122,60,.25);
 }
 .sidebar-modern.saas-owner-nav .user-avatar {
-  background: #d4edda;
-  border-color: #c6dbc8;
+  background: rgba(23,138,69,.18);
+  border-color: #2f5138;
 }
 .sidebar-modern.saas-owner-nav .user-avatar i { color: var(--sb-green); }
 
@@ -346,7 +346,7 @@
   list-style: none; padding: 0; margin: 0;
   max-height: 0; overflow: hidden;
   transition: max-height .28s ease, opacity .2s ease;
-  background: #f0f7f2;
+  background: #0d1f15;
   border-radius: 6px; margin-top: 2px; margin-left: 16px;
   opacity: 0;
 }
@@ -400,15 +400,15 @@
 .btn-logout {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 12px; width: 100%;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: rgba(239,68,68,.12);
+  border: 1px solid rgba(239,68,68,.35);
   border-radius: 9px;
-  color: #dc2626;
+  color: #f87171;
   text-decoration: none;
   transition: all .2s; font-weight: 500; font-size: .88rem;
 }
 .btn-logout:hover {
-  background: #fee2e2; border-color: #f87171; color: #b91c1c;
+  background: rgba(239,68,68,.2); border-color: #f87171; color: #fca5a5;
 }
 .btn-logout i { font-size: 1rem; }
 .btn-logout span { transition: opacity var(--transition-speed); }
@@ -457,7 +457,7 @@
   content: attr(data-tooltip);
   position: fixed;
   left: calc(var(--sidebar-collapsed-width) + 8px);
-  background: var(--sb-text-dark);
+  background: #000;
   color: #fff;
   padding: 4px 10px;
   border-radius: 6px;

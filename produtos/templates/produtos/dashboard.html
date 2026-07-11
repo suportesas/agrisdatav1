@@ -5,34 +5,6 @@
 
 {% block extra_css %}
 <style>
-  .stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: transform 0.2s;
-  }
-  .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  }
-  .stat-value {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #1e293b;
-  }
-  .stat-label {
-    color: #64748b;
-    font-size: 0.95rem;
-    margin-top: 8px;
-  }
-  .stat-icon {
-    font-size: 3rem;
-    opacity: 0.2;
-    position: absolute;
-    right: 24px;
-    top: 24px;
-  }
   .quick-actions {
     background: white;
     border-radius: 12px;
@@ -50,77 +22,78 @@
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
-  .category-bar {
-    height: 50px;
-    border-radius: 8px;
+  /* Linha de categoria: texto sempre em largura total (nunca quebra/vaza),
+     só a barrinha de progresso abaixo varia de largura conforme o percentual. */
+  .category-row {
+    margin-bottom: 16px;
+  }
+  .category-row:last-child {
+    margin-bottom: 0;
+  }
+  .category-row-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
-    color: white;
-    font-weight: 600;
-    margin-bottom: 12px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    position: relative;
-    overflow: hidden;
+    margin-bottom: 6px;
+    gap: 12px;
   }
-  .category-bar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 100%);
-    pointer-events: none;
-  }
-  .category-bar:hover {
-    transform: translateX(8px) scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  }
-  .category-bar:nth-child(1) { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-  .category-bar:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-  .category-bar:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-  .category-bar:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-  .category-bar:nth-child(5) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-  
   .category-info {
     display: flex;
     align-items: center;
-    gap: 12px;
-    z-index: 1;
+    gap: 10px;
+    min-width: 0;
   }
   .category-number {
-    background: rgba(255,255,255,0.3);
-    width: 32px;
-    height: 32px;
+    background: var(--pastel-green-bg);
+    color: var(--pastel-green-text);
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
     font-weight: 700;
+    flex-shrink: 0;
   }
   .category-name {
-    font-size: 1rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .category-stats {
     display: flex;
-    align-items: center;
-    gap: 16px;
-    z-index: 1;
+    align-items: baseline;
+    gap: 10px;
+    flex-shrink: 0;
   }
   .category-count {
-    font-size: 1.3rem;
+    font-family: var(--font-mono);
+    font-size: 1rem;
     font-weight: 700;
+    color: var(--color-text-primary);
   }
   .category-percent {
-    background: rgba(255,255,255,0.3);
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    min-width: 34px;
+    text-align: right;
+  }
+  .category-track {
+    height: 8px;
+    background: var(--color-neutral-bg);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .category-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--color-primary);
+    min-width: 4px;
   }
 </style>
 {% endblock %}
@@ -137,31 +110,39 @@
   <!-- Estatísticas -->
   <div class="row mb-4">
     <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-box-seam stat-icon"></i>
-        <div class="stat-value text-primary">{{ total_produtos }}</div>
-        <div class="stat-label">Produtos Ativos</div>
+      <div class="kpi-card">
+        <div class="kpi-icon green"><i class="bi bi-box-seam"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Produtos Ativos</div>
+          <div class="kpi-value">{{ total_produtos }}</div>
+        </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-folder stat-icon"></i>
-        <div class="stat-value text-success">{{ total_categorias }}</div>
-        <div class="stat-label">Categorias</div>
+      <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="bi bi-folder"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Categorias</div>
+          <div class="kpi-value">{{ total_categorias }}</div>
+        </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-tag stat-icon"></i>
-        <div class="stat-value text-info">{{ total_subcategorias }}</div>
-        <div class="stat-label">Subcategorias</div>
+      <div class="kpi-card">
+        <div class="kpi-icon gray"><i class="bi bi-tag"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Subcategorias</div>
+          <div class="kpi-value">{{ total_subcategorias }}</div>
+        </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="stat-card position-relative">
-        <i class="bi bi-exclamation-triangle stat-icon"></i>
-        <div class="stat-value text-warning">{{ produtos_sem_tributacao }}</div>
-        <div class="stat-label">Sem Tributação</div>
+      <div class="kpi-card">
+        <div class="kpi-icon orange"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Sem Tributação</div>
+          <div class="kpi-value">{{ produtos_sem_tributacao }}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -199,16 +180,19 @@
         <h5 class="mb-4"><i class="bi bi-bar-chart-fill"></i> Top 5 Categorias com Mais Produtos</h5>
         {% if produtos_por_categoria %}
           {% for categoria in produtos_por_categoria %}
-            <div class="category-bar" style="width: {% widthratio categoria.total_produtos produtos_por_categoria.0.total_produtos 100 %}%;">
-              <div class="category-info">
-                <span class="category-number">{{ forloop.counter }}</span>
-                <span class="category-name">{{ categoria.nome }}</span>
+            <div class="category-row">
+              <div class="category-row-top">
+                <div class="category-info">
+                  <span class="category-number">{{ forloop.counter }}</span>
+                  <span class="category-name">{{ categoria.nome }}</span>
+                </div>
+                <div class="category-stats">
+                  <span class="category-count">{{ categoria.total_produtos }}</span>
+                  <span class="category-percent">{% widthratio categoria.total_produtos total_produtos 100 %}%</span>
+                </div>
               </div>
-              <div class="category-stats">
-                <span class="category-count">{{ categoria.total_produtos }}</span>
-                <span class="category-percent">
-                  {% widthratio categoria.total_produtos total_produtos 100 %}%
-                </span>
+              <div class="category-track">
+                <div class="category-fill" style="width: {% widthratio categoria.total_produtos produtos_por_categoria.0.total_produtos 100 %}%;"></div>
               </div>
             </div>
           {% endfor %}

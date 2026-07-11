@@ -170,6 +170,28 @@
 
         <hr class="my-3">
 
+        <!-- Agentes de Exportação -->
+        <h6 class="text-uppercase text-muted fw-bold mb-3">Agentes de Exportação</h6>
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label for="{{ form.notify_party.id_for_label }}" class="form-label fw-semibold">{{ form.notify_party.label }}</label>
+            {{ form.notify_party }}
+            {% if form.notify_party.errors %}<div class="text-danger small mt-1">{{ form.notify_party.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.freight_forwarder.id_for_label }}" class="form-label fw-semibold">{{ form.freight_forwarder.label }}</label>
+            {{ form.freight_forwarder }}
+            {% if form.freight_forwarder.errors %}<div class="text-danger small mt-1">{{ form.freight_forwarder.errors }}</div>{% endif %}
+          </div>
+          <div class="col-md-4">
+            <label for="{{ form.despachante_aduaneiro.id_for_label }}" class="form-label fw-semibold">{{ form.despachante_aduaneiro.label }}</label>
+            {{ form.despachante_aduaneiro }}
+            {% if form.despachante_aduaneiro.errors %}<div class="text-danger small mt-1">{{ form.despachante_aduaneiro.errors }}</div>{% endif %}
+          </div>
+        </div>
+
+        <hr class="my-3">
+
         <!-- Financeiro e Observações -->
         <h6 class="text-uppercase text-muted fw-bold mb-3">Financeiro</h6>
         <div class="row g-3 mb-3">

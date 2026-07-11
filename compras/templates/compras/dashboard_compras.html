@@ -26,93 +26,6 @@
                             gap: 1.5rem;
                             margin-bottom: 2rem;
                         }
-                        .stat-card {
-                            background: white;
-                            border-radius: 12px;
-                            padding: 1.5rem;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-                            transition: transform 0.3s ease, box-shadow 0.3s ease;
-                            position: relative;
-                            overflow: hidden;
-                        }
-                        .stat-card:hover {
-                            transform: translateY(-5px);
-                            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-                        }
-                        .stat-card::before {
-                            content: '';
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            width: 4px;
-                            height: 100%;
-                            background: var(--card-color);
-                        }
-                        .stat-card.blue { --card-color: #3498db; }
-                        .stat-card.green { --card-color: #27ae60; }
-                        .stat-card.yellow { --card-color: #f39c12; }
-                        .stat-card.red { --card-color: #e74c3c; }
-                        .stat-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: flex-start;
-                            margin-bottom: 1rem;
-                        }
-                        .stat-icon {
-                            width: 50px;
-                            height: 50px;
-                            border-radius: 10px;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            font-size: 1.5rem;
-                            color: white;
-                            background: var(--card-color);
-                        }
-                        .stat-card.blue .stat-icon { background: linear-gradient(135deg, #3498db, #2980b9); }
-                        .stat-card.green .stat-icon { background: linear-gradient(135deg, #27ae60, #229954); }
-                        .stat-card.yellow .stat-icon { background: linear-gradient(135deg, #f39c12, #e67e22); }
-                        .stat-card.red .stat-icon { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-                        .stat-content h5 {
-                            font-size: 0.85rem;
-                            color: #7f8c8d;
-                            font-weight: 500;
-                            margin-bottom: 0.5rem;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                        }
-                        .stat-content h2 {
-                            font-size: 2rem;
-                            color: #2c3e50;
-                            margin: 0;
-                            font-weight: 700;
-                        }
-                        .stat-footer {
-                            display: flex;
-                            align-items: center;
-                            gap: 0.5rem;
-                            margin-top: 1rem;
-                            padding-top: 1rem;
-                            border-top: 1px solid #ecf0f1;
-                        }
-                        .stat-badge {
-                            padding: 0.25rem 0.75rem;
-                            border-radius: 20px;
-                            font-size: 0.75rem;
-                            font-weight: 600;
-                        }
-                        .stat-badge.positive {
-                            background: #d4edda;
-                            color: #155724;
-                        }
-                        .stat-badge.negative {
-                            background: #f8d7da;
-                            color: #721c24;
-                        }
-                        .stat-text {
-                            font-size: 0.8rem;
-                            color: #95a5a6;
-                        }
                         /* Activity Card Styles */
                         .activity-card {
                             padding: 1.5rem;
@@ -373,7 +286,7 @@
                         @media (max-width: 768px) {
                             .dashboard-container { padding: 1rem; }
                             .stats-grid { grid-template-columns: 1fr; }
-                            .stat-content h2 { font-size: 1.5rem; }
+                            .kpi-card .kpi-value { font-size: 1.5rem; }
                             .page-header h1 { font-size: 1.5rem; }
                         }
                     </style>
@@ -383,56 +296,36 @@
                             <p>Visão geral das compras e solicitações</p>
                         </div>
                         <div class="stats-grid">
-                            <div class="stat-card blue">
-                                <div class="stat-header">
-                                    <div class="stat-content">
-                                        <h5>Total Compras Ano</h5>
-                                        <h2>R$ {{ compras_ano|floatformat:2|intcomma }}</h2>
-                                    </div>
-                                    <div class="stat-icon"><i class="bi bi-calendar3"></i></div>
-                                </div>
-                                <div class="stat-footer">
-                                    <span class="stat-badge positive">Ano</span>
-                                    <span class="stat-text">Total de compras no ano</span>
+                            <div class="kpi-card">
+                                <div class="kpi-icon blue"><i class="bi bi-calendar3"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Total Compras Ano</div>
+                                    <div class="kpi-value">R$ {{ compras_ano|floatformat:2|intcomma }}</div>
+                                    <div class="kpi-sub">Total de compras no ano</div>
                                 </div>
                             </div>
-                            <div class="stat-card green">
-                                <div class="stat-header">
-                                    <div class="stat-content">
-                                        <h5>Total Compras Mês</h5>
-                                        <h2>R$ {{ compras_mes|floatformat:2|intcomma }}</h2>
-                                    </div>
-                                    <div class="stat-icon"><i class="bi bi-calendar2-month"></i></div>
-                                </div>
-                                <div class="stat-footer">
-                                    <span class="stat-badge positive">Mês</span>
-                                    <span class="stat-text">Total de compras no mês</span>
+                            <div class="kpi-card">
+                                <div class="kpi-icon green"><i class="bi bi-calendar2-month"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Total Compras Mês</div>
+                                    <div class="kpi-value">R$ {{ compras_mes|floatformat:2|intcomma }}</div>
+                                    <div class="kpi-sub">Total de compras no mês</div>
                                 </div>
                             </div>
-                            <div class="stat-card yellow">
-                                <div class="stat-header">
-                                    <div class="stat-content">
-                                        <h5>Total Compras Semana</h5>
-                                        <h2>R$ {{ compras_semana|floatformat:2|intcomma }}</h2>
-                                    </div>
-                                    <div class="stat-icon"><i class="bi bi-calendar-week"></i></div>
-                                </div>
-                                <div class="stat-footer">
-                                    <span class="stat-badge positive">Semana</span>
-                                    <span class="stat-text">Total de compras na semana</span>
+                            <div class="kpi-card">
+                                <div class="kpi-icon orange"><i class="bi bi-calendar-week"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Total Compras Semana</div>
+                                    <div class="kpi-value">R$ {{ compras_semana|floatformat:2|intcomma }}</div>
+                                    <div class="kpi-sub">Total de compras na semana</div>
                                 </div>
                             </div>
-                            <div class="stat-card red">
-                                <div class="stat-header">
-                                    <div class="stat-content">
-                                        <h5>Solicitações Cotadas Pendentes</h5>
-                                        <h2>{{ solicitacoes_cotadas_sem_pedido.count }}</h2>
-                                    </div>
-                                    <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
-                                </div>
-                                <div class="stat-footer">
-                                    <span class="stat-badge negative">Cotadas</span>
-                                    <span class="stat-text">Aguardando pedido de compra</span>
+                            <div class="kpi-card">
+                                <div class="kpi-icon red"><i class="bi bi-exclamation-triangle"></i></div>
+                                <div class="kpi-body">
+                                    <div class="kpi-label">Solicitações Cotadas Pendentes</div>
+                                    <div class="kpi-value">{{ solicitacoes_cotadas_sem_pedido.count }}</div>
+                                    <div class="kpi-sub">Aguardando pedido de compra</div>
                                 </div>
                             </div>
                         </div>

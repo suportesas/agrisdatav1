@@ -19,7 +19,7 @@
   text-decoration: none; transition: all .15s;
 }
 .cfg-nav-list li a:hover,
-.cfg-nav-list li a.active { background: #ede9fe; color: #7c3aed; }
+.cfg-nav-list li a.active { background: #d1fae5; color: #1a7a3c; }
 .cfg-nav-list li a i { width: 18px; text-align: center; }
 .cfg-nav-section {
   font-size: .7rem; font-weight: 700; letter-spacing: .08em;
@@ -77,11 +77,11 @@
   text-align: center;
 }
 .shortcut-card:hover {
-  border-color: #a78bfa; background: #faf5ff;
+  border-color: #22a24f; background: #f7faf8;
   box-shadow: 0 2px 8px rgba(124,58,237,.12);
   transform: translateY(-2px);
 }
-.shortcut-card i { font-size: 1.5rem; color: #7c3aed; }
+.shortcut-card i { font-size: 1.5rem; color: #1a7a3c; }
 .shortcut-card .sc-label { font-size: .78rem; font-weight: 600; color: #374151; }
 .shortcut-card .sc-count {
   font-size: .68rem; color: #9ca3af;
@@ -95,13 +95,13 @@
   cursor: pointer; transition: all .15s; margin-bottom: .5rem;
 }
 .mode-option:last-child { margin-bottom: 0; }
-.mode-option.selected { border-color: #7c3aed; background: #faf5ff; }
+.mode-option.selected { border-color: #1a7a3c; background: #f7faf8; }
 .mode-option input { margin-top: .2rem; flex-shrink: 0; }
 .mode-option .mo-label { font-size: .83rem; font-weight: 600; color: #1e1b4b; }
 .mode-option .mo-desc { font-size: .75rem; color: #6b7280; margin-top: .1rem; }
 
 /* Cores das seções */
-.sec-empresa { background: linear-gradient(135deg, #7c3aed, #5b21b6); }
+.sec-empresa { background: linear-gradient(135deg, #1a7a3c, #0f5c2a); }
 .sec-sistema { background: linear-gradient(135deg, #0369a1, #075985); }
 .sec-fiscal  { background: linear-gradient(135deg, #065f46, #047857); }
 .sec-seguranca { background: linear-gradient(135deg, #92400e, #78350f); }
@@ -112,7 +112,7 @@
 {% block content %}
 <!-- Cabeçalho -->
 <div class="d-flex align-items-center gap-3 mb-4">
-  <div style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:14px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+  <div style="background:linear-gradient(135deg,#1a7a3c,#0f5c2a);border-radius:14px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
     <i class="bi bi-gear-fill text-white" style="font-size:1.4rem;"></i>
   </div>
   <div>
@@ -160,8 +160,8 @@
           <div class="col-12 col-md-6">
             <div class="cfg-card">
               <div class="cfg-card-header">
-                <div class="cfg-card-icon" style="background:#ede9fe;">
-                  <i class="bi bi-building" style="color:#7c3aed;"></i>
+                <div class="cfg-card-icon" style="background:#d1fae5;">
+                  <i class="bi bi-building" style="color:#1a7a3c;"></i>
                 </div>
                 <div>
                   <p class="cfg-card-title">Minha Empresa</p>
@@ -174,7 +174,7 @@
                   <dd class="col-7 fw-semibold">{{ empresa.cnpj|default:"Não informado" }}</dd>
                   <dt class="col-5 text-muted fw-normal">Plano</dt>
                   <dd class="col-7">
-                    <span class="badge" style="background:#ede9fe;color:#7c3aed;">
+                    <span class="badge" style="background:#d1fae5;color:#1a7a3c;">
                       {{ empresa.plano.nome|default:"Sem plano" }}
                     </span>
                   </dd>
@@ -258,43 +258,6 @@
       </div>
       <div class="cfg-section-body">
         <div class="row g-3">
-
-          <!-- Modo de Compras -->
-          <div class="col-12 col-md-4">
-            <div class="cfg-card">
-              <div class="cfg-card-header">
-                <div class="cfg-card-icon" style="background:#e0f2fe;">
-                  <i class="bi bi-cart3" style="color:#0369a1;"></i>
-                </div>
-                <div>
-                  <p class="cfg-card-title">Modo de Compras</p>
-                  <p class="cfg-card-subtitle">Fluxo de aprovação</p>
-                </div>
-              </div>
-              <div class="cfg-card-body">
-                {% if config_sistema %}
-                  <div class="mb-2">
-                    <span class="status-badge status-ok">
-                      <i class="bi bi-check-circle-fill"></i>
-                      {% if config_sistema.modo_compras == 'SIMPLES' %}Simples
-                      {% elif config_sistema.modo_compras == 'FORMAL' %}Formal
-                      {% else %}Híbrido{% endif %}
-                    </span>
-                  </div>
-                  <p class="small text-muted mb-3">
-                    {% if config_sistema.modo_compras == 'SIMPLES' %}Compra direta e rápida, sem fluxo de aprovação.
-                    {% elif config_sistema.modo_compras == 'FORMAL' %}Com solicitação, cotação e aprovações.
-                    {% else %}Escolhe o fluxo por compra individualmente.{% endif %}
-                  </p>
-                {% else %}
-                  <p class="small text-muted mb-3">Configuração não encontrada.</p>
-                {% endif %}
-                <a href="{% url 'configuracao_sistema' %}" class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-gear me-1"></i>Configurar
-                </a>
-              </div>
-            </div>
-          </div>
 
           <!-- Controle de Estoque -->
           <div class="col-12 col-md-4">
@@ -471,8 +434,8 @@
           <div class="col-12 col-md-4">
             <div class="cfg-card">
               <div class="cfg-card-header">
-                <div class="cfg-card-icon" style="background:#ede9fe;">
-                  <i class="bi bi-plug" style="color:#7c3aed;"></i>
+                <div class="cfg-card-icon" style="background:#d1fae5;">
+                  <i class="bi bi-plug" style="color:#1a7a3c;"></i>
                 </div>
                 <div>
                   <p class="cfg-card-title">IntegraNota</p>
@@ -529,7 +492,7 @@
                 </div>
               </div>
               <div class="cfg-card-body">
-                <p class="display-6 fw-bold text-center mb-1" style="color:#7c3aed;">
+                <p class="display-6 fw-bold text-center mb-1" style="color:#1a7a3c;">
                   {{ counts.roles|default:"—" }}
                 </p>
                 <p class="text-center small text-muted mb-3">funções cadastradas</p>
@@ -544,8 +507,8 @@
           <div class="col-12 col-md-4">
             <div class="cfg-card">
               <div class="cfg-card-header">
-                <div class="cfg-card-icon" style="background:#ede9fe;">
-                  <i class="bi bi-people" style="color:#7c3aed;"></i>
+                <div class="cfg-card-icon" style="background:#d1fae5;">
+                  <i class="bi bi-people" style="color:#1a7a3c;"></i>
                 </div>
                 <div>
                   <p class="cfg-card-title">Usuários</p>
@@ -553,7 +516,7 @@
                 </div>
               </div>
               <div class="cfg-card-body">
-                <p class="display-6 fw-bold text-center mb-1" style="color:#7c3aed;">
+                <p class="display-6 fw-bold text-center mb-1" style="color:#1a7a3c;">
                   {{ counts.usuarios|default:"—" }}
                 </p>
                 <p class="text-center small text-muted mb-3">usuários ativos</p>

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Vincular ao Drawback{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+
+      <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'compras:recebimento_detail' item.recebimento_id %}" class="btn btn-sm btn-outline-secondary me-3">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+          <h1 class="h4 fw-bold mb-0" style="color:var(--color-primary)">Vincular ao Drawback</h1>
+          <small class="text-muted">
+            Recebimento NF {{ item.recebimento.nota_fiscal }} &bull;
+            {% if item.item_pedido %}{{ item.item_pedido.produto.nome }}{% else %}{{ item.produto.nome }}{% endif %}
+            &bull; {{ item.quantidade_recebida }}
+            {% if item.item_pedido %}{{ item.item_pedido.unidade_medida.sigla }}{% else %}{{ item.unidade_medida.sigla }}{% endif %}
+          </small>
+        </div>
+      </div>
+
+      {% if sem_sugestao %}
+      <div class="alert alert-warning py-2">
+        <i class="bi bi-exclamation-triangle me-1"></i>
+        Nenhum AC ativo com saldo disponível foi encontrado automaticamente para este produto.
+        Selecione um AC manualmente para continuar.
+      </div>
+      <div class="card" style="border-radius:var(--radius-card)">
+        <div class="card-body">
+          <form method="get">
+            <label class="form-label fw-semibold">Ato Concessório</label>
+            <select name="ac_id" class="form-select mb-3" required>
+              <option value="">Selecione...</option>
+              {% for ac_opt in acs %}
+              <option value="{{ ac_opt.pk }}">{{ ac_opt.numero_ac }} — vence {{ ac_opt.data_fim_efetiva|date:"d/m/Y" }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Continuar</button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+
+      <div class="alert {% if acs_candidatos.count > 1 %}alert-info{% else %}alert-success{% endif %} d-flex align-items-start gap-2 py-2">
+        <i class="bi bi-magic mt-1"></i>
+        <div class="small">
+          {% if sugestao %}
+            <strong>Sugerido automaticamente:</strong> AC {{ ac.numero_ac }} — vence em {{ ac.dias_para_vencer }} dia(s).
+          {% else %}
+            <strong>AC selecionado:</strong> {{ ac.numero_ac }} — vence em {{ ac.dias_para_vencer }} dia(s).
+            Nenhum saldo de compra disponível foi encontrado automaticamente; confira o produto/quantidade abaixo.
+          {% endif %}
+          {% if acs_candidatos.count > 1 %}
+          <form method="get" class="mt-2 d-flex align-items-center gap-2">
+            <label class="form-label fw-semibold mb-0 small">Trocar AC:</label>
+            <select name="ac_id" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+              {% for ac_opt in acs_candidatos %}
+              <option value="{{ ac_opt.pk }}" {% if ac_opt.pk == ac.pk %}selected{% endif %}>{{ ac_opt.numero_ac }}</option>
+              {% endfor %}
+            </select>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card" style="border-radius:var(--radius-card)">
+        <div class="card-header" style="background:var(--color-primary);color:#fff">
+          <i class="bi bi-box-arrow-in-down me-2"></i>Confirmar vínculo da Entrada
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Produto do AC <span class="text-danger">*</span></label>
+                {{ form.drawback_produto }}
+                {% if form.drawback_produto.errors %}<div class="text-danger small">{{ form.drawback_produto.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Tipo de Compra</label>
+                <div id="tipo-badge" class="mt-1">
+                  <span class="badge bg-secondary">Selecione o produto acima</span>
+                </div>
+              </div>
+
+              <div class="col-12">
+                <div id="saldo-info" class="alert alert-secondary py-2 small d-none">
+                  <i class="bi bi-bar-chart me-1"></i>
+                  <span id="saldo-texto"></span>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Fornecedor <span class="text-danger">*</span></label>
+                {{ form.fornecedor }}
+                {% if form.fornecedor.errors %}<div class="text-danger small">{{ form.fornecedor.errors }}</div>{% endif %}
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Número da NF <span class="text-danger">*</span></label>
+                {{ form.numero_nf }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Série</label>
+                {{ form.serie_nf }}
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Data da NF <span class="text-danger">*</span></label>
+                {{ form.data_nf }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Data do Recebimento <span class="text-danger">*</span></label>
+                {{ form.data_recebimento }}
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label fw-semibold">Quantidade <span class="text-danger">*</span></label>
+                {{ form.quantidade }}
+                {% if form.quantidade.errors %}<div class="text-danger small">{{ form.quantidade.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label fw-semibold">Valor Unit. (R$)</label>
+                {{ form.valor_unitario }}
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Observações</label>
+                {{ form.observacoes }}
+              </div>
+
+              {% if form.non_field_errors %}
+              <div class="col-12">
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+              </div>
+              {% endif %}
+
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-success px-4">
+                <i class="bi bi-check-circle me-1"></i>Confirmar Vínculo
+              </button>
+              <a href="{% url 'compras:recebimento_detail' item.recebimento_id %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <script>
+      const saldoUrl     = "{% url 'drawback:ajax_saldo_produto' 0 %}".replace('/0/', '/');
+      const produtoSelect = document.getElementById('id_drawback_produto');
+      const saldoInfo     = document.getElementById('saldo-info');
+      const saldoTexto    = document.getElementById('saldo-texto');
+      const tipoBadge     = document.getElementById('tipo-badge');
+
+      const TIPO_LABELS = {
+        'IMPORTACAO':      { label: 'Importação',      cls: 'bg-primary' },
+        'MERCADO_INTERNO': { label: 'Mercado Interno',  cls: 'bg-warning text-dark' },
+      };
+
+      function atualizarSaldo() {
+        const id = produtoSelect.value;
+        if (!id) {
+          saldoInfo.classList.add('d-none');
+          tipoBadge.innerHTML = '<span class="badge bg-secondary">Selecione o produto acima</span>';
+          return;
+        }
+        fetch(saldoUrl + id + '/')
+          .then(r => r.json())
+          .then(d => {
+            const t = TIPO_LABELS[d.tipo_produto] || { label: d.tipo_produto, cls: 'bg-secondary' };
+            tipoBadge.innerHTML = `<span class="badge ${t.cls}">${t.label}</span>`;
+            saldoTexto.textContent = `Saldo disponível para comprar: ${d.saldo_compra.toFixed(3)} ${d.unidade} ` +
+              `(Autorizado: ${d.quantidade_autorizada.toFixed(3)} — Já comprado: ${d.quantidade_comprada.toFixed(3)})`;
+            saldoInfo.classList.remove('d-none');
+            saldoInfo.className = 'alert py-2 small ' + (d.saldo_compra <= 0 ? 'alert-danger' : d.saldo_compra < d.quantidade_autorizada * 0.2 ? 'alert-warning' : 'alert-info');
+          });
+      }
+      produtoSelect?.addEventListener('change', atualizarSaldo);
+      if (produtoSelect?.value) atualizarSaldo();
+      </script>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

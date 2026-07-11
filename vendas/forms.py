@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import PedidoVenda, ItemPedidoVenda
+from .models import PedidoVenda, ItemPedidoVenda, TabelaPreco
 
 
 class PedidoVendaForm(forms.ModelForm):
@@ -64,7 +64,7 @@ class ItemPedidoVendaForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if empresa:
             from produtos.models import Produto
-            self.fields['produto'].queryset = Produto.objects.filter(empresa=empresa)
+            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=empresa, ativo=True).order_by('nome')
         self.fields['produto'].required = False
         self.fields['ncm'].required = False
         self.fields['cfop'].required = False
@@ -79,3 +79,53 @@ ItemPedidoVendaFormSet = inlineformset_factory(
     min_num=1,
     can_delete=True,
 )
+
+
+class TabelaPrecoForm(forms.ModelForm):
+    class Meta:
+        model = TabelaPreco
+        fields = [
+            'cliente', 'produto', 'porto_destino', 'moeda', 'preco_unitario',
+            'vigencia_inicio', 'vigencia_fim', 'ativo', 'observacoes',
+        ]
+        widgets = {
+            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'porto_destino': forms.Select(attrs={'class': 'form-select'}),
+            'moeda': forms.Select(attrs={'class': 'form-select'}),
+            'preco_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'vigencia_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'vigencia_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        self.empresa = empresa
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from cadastros.models import Cliente, Porto
+            from produtos.models import Produto
+            self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=empresa, ativo=True).order_by('nome')
+            self.fields['porto_destino'].queryset = Porto.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+        self.fields['cliente'].required = False
+        self.fields['porto_destino'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        instance = self.instance
+        instance.empresa = self.empresa
+        for field in ('cliente', 'produto', 'porto_destino', 'moeda', 'vigencia_inicio', 'vigencia_fim'):
+            if field in cleaned:
+                setattr(instance, field, cleaned[field])
+        try:
+            instance.clean()
+        except forms.ValidationError as exc:
+            if hasattr(exc, 'error_dict'):
+                for field, errors in exc.error_dict.items():
+                    for error in errors:
+                        self.add_error(field if field in self.fields else None, error)
+            else:
+                raise
+        return cleaned

@@ -151,10 +151,15 @@
                 <label class="form-label">Natureza da Operação</label>
                 {{ form.natureza_operacao }}
               </div>
+              <div class="col-md-6">
+                <label class="form-label">Romaneio de Venda (embarque de origem)</label>
+                {{ form.romaneio_venda }}
+                <div class="form-text">Vincula este CT-e ao romaneio/embarque de origem, para navegação cruzada.</div>
+              </div>
             </div>
 
             <!-- CT-e Globalizado -->
-            <div class="rounded py-2 px-3 d-flex align-items-start gap-3 mt-3" style="background:#fefce8;border:1px solid #fde68a;border-left:4px solid #7c3aed;">
+            <div class="rounded py-2 px-3 d-flex align-items-start gap-3 mt-3" style="background:#fefce8;border:1px solid #fde68a;border-left:4px solid #1a7a3c;">
               <i class="bi bi-info-circle-fill mt-1" style="color:#f59e0b;flex-shrink:0;"></i>
               <div class="small">
                 Você pode incluir várias notas fiscais originadas de uma mesma coleta ou destinadas a uma única entrega
@@ -572,7 +577,7 @@
 <div class="modal fade" id="modalAjudaAba" tabindex="-1" aria-labelledby="modalAjudaAbaLbl" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
     <div class="modal-content">
-      <div class="modal-header py-2 border-0" style="background:linear-gradient(135deg,#7c3aed 0%,#06b6d4 100%);">
+      <div class="modal-header py-2 border-0" style="background:linear-gradient(135deg,#1a7a3c 0%,#2563eb 100%);">
         <h6 class="modal-title text-white fw-semibold mb-0" id="modalAjudaAbaLbl">
           <i class="bi bi-question-circle me-2"></i><span id="ajuda-titulo"></span>
         </h6>
@@ -647,13 +652,13 @@
           <li class="nav-item">
             <button class="nav-link active" id="docs-tab-nfe-btn" data-bs-toggle="tab" data-bs-target="#docs-tab-nfe" type="button">
               <i class="bi bi-file-earmark-text me-1"></i>NF-e
-              <span id="docs-badge-nfe" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
+              <span id="docs-badge-nfe" class="badge rounded-pill ms-1" style="background:#1a7a3c;display:none;">0</span>
             </button>
           </li>
           <li class="nav-item">
             <button class="nav-link" id="docs-tab-cte-btn" data-bs-toggle="tab" data-bs-target="#docs-tab-cte" type="button">
               <i class="bi bi-truck me-1"></i>CT-e
-              <span id="docs-badge-cte" class="badge rounded-pill ms-1" style="background:#7c3aed;display:none;">0</span>
+              <span id="docs-badge-cte" class="badge rounded-pill ms-1" style="background:#1a7a3c;display:none;">0</span>
             </button>
           </li>
         </ul>
@@ -1438,7 +1443,7 @@ function adicionarLinhaPrestacao() {
     }
     dropdown.innerHTML = items.map(function(item, idx){
       var label = '<strong>' + esc(item.codigo) + '</strong> — ' + esc(item.nome || item.descricao || '');
-      var sub   = item.natureza ? '<br><span style="color:#7c3aed;font-size:.78rem;">Nat. Op.: ' + esc(item.natureza) + '</span>' : '';
+      var sub   = item.natureza ? '<br><span style="color:#1a7a3c;font-size:.78rem;">Nat. Op.: ' + esc(item.natureza) + '</span>' : '';
       return '<div class="cfop-opt" data-idx="' + idx + '" style="padding:8px 14px;cursor:pointer;border-bottom:1px solid #f3f4f6;font-size:.875rem;">' + label + sub + '</div>';
     }).join('');
     dropdown.style.display = 'block';
@@ -1458,7 +1463,7 @@ function adicionarLinhaPrestacao() {
     var opts = dropdown.querySelectorAll('.cfop-opt');
     opts.forEach(function(el){ el.style.background = ''; el.style.color = ''; });
     if (idx >= 0 && idx < opts.length){
-      opts[idx].style.background = '#7c3aed';
+      opts[idx].style.background = '#1a7a3c';
       opts[idx].style.color = '#fff';
       opts[idx].scrollIntoView({block:'nearest'});
     }

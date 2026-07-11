@@ -258,7 +258,7 @@
               <td>
                 {{ ct.get_tipo_servico_display }}
                 {% if ct.globalizado %}
-                  <span class="badge ms-1" style="background:#7c3aed;">Globalizado</span>
+                  <span class="badge ms-1" style="background:#1a7a3c;">Globalizado</span>
                   {% if ct.referencia_despacho %}
                     <span class="text-muted small ms-1">Despacho: <code>{{ ct.referencia_despacho }}</code></span>
                   {% endif %}
@@ -269,6 +269,9 @@
             <tr><th>Valor Frete</th><td><strong>R$ {{ ct.valor_servico|floatformat:2 }}</strong></td></tr>
             <tr><th>Valor Carga</th><td>R$ {{ ct.valor_carga|floatformat:2 }}</td></tr>
             <tr><th>Peso Bruto</th><td>{{ ct.peso_bruto_kg|floatformat:3 }} kg</td></tr>
+            {% if ct.romaneio_venda %}
+            <tr><th>Romaneio de Venda</th><td><a href="{% url 'embalagem:romaneio_detail' ct.romaneio_venda.pk %}">{{ ct.romaneio_venda.numero }}</a></td></tr>
+            {% endif %}
           </table>
         </div>
       </div>

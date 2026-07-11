@@ -1,70 +1,36 @@
-# Modulo cadastros
-
 Owner: Time cadastros
-Status: In Review
-Last Updated: 2026-07-01
-Scope: cadastros
+Status: Approved
+Last Updated: 2026-07-10
+Scope: cadastros (`/cadastros/`)
 
-## Visao geral
-Modulo cadastros mapeado a partir de models e urls do codigo atual.
+# Módulo Cadastros
 
-## Objetivo de negocio
-Disponibilizar as funcionalidades de cadastros com isolamento por empresa quando aplicavel e rastreabilidade de operacoes.
+## Visão geral
+Cadastros de apoio usados pelos demais módulos: fazendas, clientes, fornecedores, produtores, transportadoras, CFOP e NCM. Praticamente todo outro módulo depende de entidades daqui (ex: `compras` referencia `Fornecedor`, `faturamento` referencia `CFOP`/`NCM`/`Cliente`).
 
 ## Entidades principais
-| Entidade | Papel | Campos criticos |
-|---|---|---|
-| EmpresaQuerySet | Entidade de dominio do modulo | A validar por campo |
-| AreaManager | Entidade de dominio do modulo | A validar por campo |
-| TalhaoManager | Entidade de dominio do modulo | A validar por campo |
-| Fazenda | Entidade de dominio do modulo | A validar por campo |
-| EnderecoFazenda | Entidade de dominio do modulo | A validar por campo |
-| ContatoFazenda | Entidade de dominio do modulo | A validar por campo |
-| ContaBancariaFazenda | Entidade de dominio do modulo | A validar por campo |
-| DocumentoFazenda | Entidade de dominio do modulo | A validar por campo |
+| Entidade | Papel |
+|---|---|
+| `Fazenda` (+ `EnderecoFazenda`, `ContatoFazenda`, `ContaBancariaFazenda`, `DocumentoFazenda`) | Propriedade rural vinculada à empresa; hub de dados de endereço/contato/documentos |
+| `Cliente`, `Fornecedor` (+ `DocumentoFornecedor`) | Cadastros comerciais |
+| `Moeda` | Moedas suportadas (usado por `faturamento`/`exportacao` para operações multi-moeda) |
+| `NCM` | Nomenclatura Comum do Mercosul, usada na emissão de NF-e |
+| CFOP, transportadoras, produtores | Cadastros fiscais/logísticos de apoio |
 
-Resumo de entidades: EmpresaQuerySet, AreaManager, TalhaoManager, Fazenda, EnderecoFazenda, ContatoFazenda, ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor, Cliente, Moeda, NCM
+### NCM (Nomenclatura Comum do Mercosul)
+CRUD com validação + comando de importação da tabela oficial:
+```bash
+python manage.py import_ncm --path /caminho/para/ncm.csv
+python manage.py import_ncm --url "https://exemplo.org/ncm.csv"
+```
+Opções: `--replace` (remove NCMs que não estão no arquivo, sincroniza com a fonte oficial), `--dry-run` (não aplica, só mostra o resultado). CSV esperado com colunas `codigo`, `nome` (opcional `cest`). Fixture de desenvolvimento: `cadastros/fixtures/ncm_small.json` (`python manage.py loaddata ncm_small.json`).
 
-## Funcionalidades
-| Funcionalidade | Entrada | Regra principal | Saida |
-|---|---|---|---|
-| Listagem e consulta | Filtros por tela | Respeitar escopo de empresa/permissao | Dados exibidos por perfil |
-| Cadastro e edicao | Formulario de negocio | Validacoes de dominio | Registro persistido |
-| Acao operacional | Evento de usuario | Regras de status e consistencia | Estado atualizado |
+## Rotas de referência (amostra)
+`fazendas/`, `fazendas/nova/`, `fazendas/<id>/`, `fazendas/<id>/editar/`, `fazendas/<id>/excluir/`, `fazendas/<fazenda_pk>/enderecos/novo/`, `fazendas/<fazenda_pk>/contatos/novo/`, `api/buscar-cnpj/`, `api/buscar-cep/`, `api/buscar-geolocalizacao/` (autocomplete/consulta externa usados nos formulários de fazenda/cadastro).
 
-## Fluxos principais
-- Entrada via rotas do modulo e processamento em views.
-- Persistencia nas entidades de dominio listadas acima.
-- Integracao com outros modulos conforme regras de negocio.
+## Permissões e isolamento
+Filtro por `empresa` obrigatório em toda consulta — ver padrão de tenant enforcement em `CLAUDE.md` raiz ("Multi-tenant isolation").
 
-Rotas de referencia (amostra): fazendas/; fazendas/nova/; fazendas/<int:pk>/; fazendas/<int:pk>/editar/; fazendas/<int:pk>/excluir/; api/buscar-cnpj/; api/buscar-cep/; api/buscar-geolocalizacao/; fazendas/<int:fazenda_pk>/enderecos/novo/; fazendas/<int:fazenda_pk>/enderecos/<int:endereco_pk>/editar/; fazendas/<int:fazenda_pk>/enderecos/<int:endereco_pk>/excluir/; fazendas/<int:fazenda_pk>/contatos/novo/
-
-## Estados e transicoes
-| Estado atual | Evento | Proximo estado | Restricoes |
-|---|---|---|---|
-| Draft/Inicial | Criacao | Ativo/Em processamento | Validacoes obrigatorias |
-| Ativo | Acao de negocio | Concluido/Cancelado | Permissao e consistencia |
-
-## Calculos e condicionais vinculados
-- Consultar docs/4_TECNICO/CALCULOS_CENTRALIZADOS.md
-- Consultar docs/4_TECNICO/CONDICIONAIS_CRITICAS.md
-
-## Permissoes e isolamento
-- Aplicar filtro por empresa em consultas sensiveis de cadastros.
-- Garantir autorizacao por perfil antes de alterar estado.
-
-## Integracoes
-- Integracao por URL include com core/urls.py.
-- Eventos podem alimentar financeiro, estoque, faturamento e relatorios conforme modulo.
-
-## Evidencias de teste
-| Regra | Teste existente | Gap |
-|---|---|---|
-| Escopo por empresa | A mapear por modulo | Sim |
-| Transicao de status | A mapear por modulo | Sim |
-| Fluxo principal | A mapear por modulo | Sim |
-
-## Referencias
-- cadastros/models.py
-- cadastros/urls.py
-- docs/TEMPLATES/TEMPLATE_MODULO.md
+## Referências
+- `cadastros/models.py`, `cadastros/urls.py`
+- Comando `import_ncm` (`cadastros/management/commands/import_ncm.py`)

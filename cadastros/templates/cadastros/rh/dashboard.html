@@ -4,34 +4,6 @@
 {% block title %}Dashboard RH | ERP Agrícola{% endblock %}
 
 {% block extra_css %}
-<style>
-  .stat-card {
-    transition: all 0.3s ease;
-    border-left: 4px solid #3b82f6;
-  }
-  .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-  }
-  .stat-card.warning {
-    border-left-color: #f59e0b;
-  }
-  .stat-card.danger {
-    border-left-color: #dc3545;
-  }
-  .stat-card.success {
-    border-left-color: #10b981;
-  }
-  .stat-card.critical {
-    border-left-color: #991b1b;
-  }
-  .stat-number {
-    font-size: 2.5rem;
-    font-weight: bold;
-    line-height: 1;
-  }
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Verificar localStorage para alertas dismissidos
@@ -235,121 +207,75 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="row g-3 mb-4">
     <!-- Funcionários Ativos -->
     <div class="col-md-3">
-      <div class="card stat-card success">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Funcionários Ativos</p>
-              <h2 class="stat-number text-success mb-0">{{ total_funcionarios }}</h2>
-            </div>
-            <div class="bg-success bg-opacity-10 p-3 rounded">
-              <i class="fas fa-users fa-2x text-success"></i>
-            </div>
-          </div>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="fas fa-users"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Funcionários Ativos</div>
+          <div class="kpi-value">{{ total_funcionarios }}</div>
         </div>
       </div>
     </div>
 
     <!-- Férias Agendadas -->
     <div class="col-md-3">
-      <div class="card stat-card">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Férias Agendadas</p>
-              <h2 class="stat-number text-primary mb-0">{{ ferias_agendadas }}</h2>
-            </div>
-            <div class="bg-primary bg-opacity-10 p-3 rounded">
-              <i class="fas fa-calendar-check fa-2x text-primary"></i>
-            </div>
-          </div>
-          <a href="{% url 'rh:ferias_list' %}?status=AGENDADA" class="btn btn-sm btn-link p-0 mt-2">
-            Ver todas <i class="fas fa-arrow-right ms-1"></i>
-          </a>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon blue"><i class="fas fa-calendar-check"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Férias Agendadas</div>
+          <div class="kpi-value">{{ ferias_agendadas }}</div>
+          <a href="{% url 'rh:ferias_list' %}?status=AGENDADA" class="kpi-sub">Ver todas <i class="fas fa-arrow-right ms-1"></i></a>
         </div>
       </div>
     </div>
 
     <!-- Férias em Gozo -->
     <div class="col-md-3">
-      <div class="card stat-card warning">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Férias em Gozo</p>
-              <h2 class="stat-number text-warning mb-0">{{ ferias_em_gozo }}</h2>
-            </div>
-            <div class="bg-warning bg-opacity-10 p-3 rounded">
-              <i class="fas fa-umbrella-beach fa-2x text-warning"></i>
-            </div>
-          </div>
-          <a href="{% url 'rh:ferias_list' %}?status=EM_GOZO" class="btn btn-sm btn-link p-0 mt-2">
-            Ver todas <i class="fas fa-arrow-right ms-1"></i>
-          </a>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon orange"><i class="fas fa-umbrella-beach"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Férias em Gozo</div>
+          <div class="kpi-value">{{ ferias_em_gozo }}</div>
+          <a href="{% url 'rh:ferias_list' %}?status=EM_GOZO" class="kpi-sub">Ver todas <i class="fas fa-arrow-right ms-1"></i></a>
         </div>
       </div>
     </div>
 
     <!-- Afastamentos Ativos -->
     <div class="col-md-3">
-      <div class="card stat-card danger">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Afastamentos Ativos</p>
-              <h2 class="stat-number text-danger mb-0">{{ afastamentos_ativos }}</h2>
-            </div>
-            <div class="bg-danger bg-opacity-10 p-3 rounded">
-              <i class="fas fa-medkit fa-2x text-danger"></i>
-            </div>
-          </div>
-          <a href="{% url 'rh:afastamento_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
-            Ver todos <i class="fas fa-arrow-right ms-1"></i>
-          </a>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon red"><i class="fas fa-medkit"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Afastamentos Ativos</div>
+          <div class="kpi-value">{{ afastamentos_ativos }}</div>
+          <a href="{% url 'rh:afastamento_list' %}?status=ATIVO" class="kpi-sub">Ver todos <i class="fas fa-arrow-right ms-1"></i></a>
         </div>
       </div>
     </div>
 
     <!-- Vínculos Ativos -->
     <div class="col-md-3">
-      <div class="card stat-card success">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Vínculos Ativos</p>
-              <h2 class="stat-number text-success mb-0">{{ vinculos_ativos }}</h2>
-            </div>
-            <div class="bg-success bg-opacity-10 p-3 rounded">
-              <i class="fas fa-id-card fa-2x text-success"></i>
-            </div>
-          </div>
-          <a href="{% url 'rh:vinculo_list' %}?status=ATIVO" class="btn btn-sm btn-link p-0 mt-2">
-            Ver vínculos <i class="fas fa-arrow-right ms-1"></i>
-          </a>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="fas fa-id-card"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Vínculos Ativos</div>
+          <div class="kpi-value">{{ vinculos_ativos }}</div>
+          <a href="{% url 'rh:vinculo_list' %}?status=ATIVO" class="kpi-sub">Ver vínculos <i class="fas fa-arrow-right ms-1"></i></a>
         </div>
       </div>
     </div>
 
     <div class="col-md-3">
-      <div class="card stat-card {% if experiencias_status.overdue > 0 %}critical{% elif experiencias_status.urgent > 0 %}danger{% else %}warning{% endif %}">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Experiências em 30 Dias</p>
-              <h2 class="stat-number {% if experiencias_status.overdue > 0 %}text-danger{% elif experiencias_status.urgent > 0 %}text-danger{% else %}text-warning{% endif %} mb-0">{{ total_experiencias_vencendo }}</h2>
-            </div>
-            <div class="{% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %}bg-danger{% else %}bg-warning{% endif %} bg-opacity-10 p-3 rounded">
-              <i class="fas fa-user-clock fa-2x {% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %}text-danger{% else %}text-warning{% endif %}"></i>
-            </div>
-          </div>
-          <div class="small mt-2 text-muted">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon {% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %}red{% else %}orange{% endif %}"><i class="fas fa-user-clock"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Experiências em 30 Dias</div>
+          <div class="kpi-value">{{ total_experiencias_vencendo }}</div>
+          <div class="kpi-sub">
             {% if experiencias_status.overdue > 0 %}{{ experiencias_status.overdue }} vencida(s){% endif %}
             {% if experiencias_status.urgent > 0 %}{% if experiencias_status.overdue > 0 %} • {% endif %}{{ experiencias_status.urgent }} em até 7 dias{% endif %}
             {% if experiencias_status.warning > 0 %}{% if experiencias_status.overdue > 0 or experiencias_status.urgent > 0 %} • {% endif %}{{ experiencias_status.warning }} até 30 dias{% endif %}
           </div>
-          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
-            Ver experiências <i class="fas fa-arrow-right ms-1"></i>
-          </a>
+          <a href="{% url 'rh:vinculo_list' %}" class="kpi-sub d-block">Ver experiências <i class="fas fa-arrow-right ms-1"></i></a>
           <div class="mt-2">
             <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-outline-warning">Regularizar agora</a>
           </div>
@@ -358,25 +284,17 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
     <div class="col-md-3">
-      <div class="card stat-card {% if temporarios_status.overdue > 0 %}critical{% elif temporarios_status.urgent > 0 %}danger{% else %}warning{% endif %}">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Temporários em 15 Dias</p>
-              <h2 class="stat-number text-danger mb-0">{{ total_contratos_temporarios_vencendo }}</h2>
-            </div>
-            <div class="bg-danger bg-opacity-10 p-3 rounded">
-              <i class="fas fa-hourglass-end fa-2x text-danger"></i>
-            </div>
-          </div>
-          <div class="small mt-2 text-muted">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon red"><i class="fas fa-hourglass-end"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Temporários em 15 Dias</div>
+          <div class="kpi-value">{{ total_contratos_temporarios_vencendo }}</div>
+          <div class="kpi-sub">
             {% if temporarios_status.overdue > 0 %}{{ temporarios_status.overdue }} vencido(s){% endif %}
             {% if temporarios_status.urgent > 0 %}{% if temporarios_status.overdue > 0 %} • {% endif %}{{ temporarios_status.urgent }} em até 7 dias{% endif %}
             {% if temporarios_status.warning > 0 %}{% if temporarios_status.overdue > 0 or temporarios_status.urgent > 0 %} • {% endif %}{{ temporarios_status.warning }} até 15 dias{% endif %}
           </div>
-          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-link p-0 mt-2">
-            Ver contratos <i class="fas fa-arrow-right ms-1"></i>
-          </a>
+          <a href="{% url 'rh:vinculo_list' %}" class="kpi-sub d-block">Ver contratos <i class="fas fa-arrow-right ms-1"></i></a>
           <div class="mt-2">
             <a href="{% url 'rh:vinculo_list' %}" class="btn btn-sm btn-outline-danger">Tratar contratos</a>
           </div>
@@ -385,18 +303,12 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 
     <div class="col-md-3">
-      <div class="card stat-card {% if laudos_status.overdue > 0 %}critical{% elif laudos_status.urgent > 0 %}danger{% else %}warning{% endif %}">
-        <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Laudos Vencendo</p>
-              <h2 class="stat-number text-danger mb-0">{{ total_laudos_vencendo }}</h2>
-            </div>
-            <div class="bg-danger bg-opacity-10 p-3 rounded">
-              <i class="fas fa-file-shield fa-2x text-danger"></i>
-            </div>
-          </div>
-          <div class="small mt-2 text-muted">
+      <div class="kpi-card h-100">
+        <div class="kpi-icon red"><i class="fas fa-file-shield"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Laudos Vencendo</div>
+          <div class="kpi-value">{{ total_laudos_vencendo }}</div>
+          <div class="kpi-sub">
             {% if laudos_status.overdue > 0 %}{{ laudos_status.overdue }} vencido(s){% endif %}
             {% if laudos_status.urgent > 0 %}{% if laudos_status.overdue > 0 %} • {% endif %}{{ laudos_status.urgent }} em até 7 dias{% endif %}
             {% if laudos_status.warning > 0 %}{% if laudos_status.overdue > 0 or laudos_status.urgent > 0 %} • {% endif %}{{ laudos_status.warning }} até 30 dias{% endif %}

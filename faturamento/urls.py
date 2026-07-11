@@ -37,6 +37,7 @@ urlpatterns = [
     path('invoices/<int:pk>/editar/', views.invoice_update, name='invoice_update'),
     path('invoices/<int:pk>/emitir/', views.invoice_emitir, name='invoice_emitir'),
     path('invoices/<int:pk>/cancelar/', views.invoice_cancelar, name='invoice_cancelar'),
+    path('invoices/<int:pk>/devolucao/', views.invoice_devolucao_registrar, name='invoice_devolucao_registrar'),
     path('invoices/<int:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
 
     # Packing List

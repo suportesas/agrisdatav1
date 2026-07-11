@@ -1,70 +1,69 @@
-# Modulo compras
-
 Owner: Time compras
-Status: In Review
-Last Updated: 2026-07-01
-Scope: compras
+Status: Approved
+Last Updated: 2026-07-10
+Scope: compras (`/compras/`)
 
-## Visao geral
-Modulo compras mapeado a partir de models e urls do codigo atual.
+# Módulo Compras
 
-## Objetivo de negocio
-Disponibilizar as funcionalidades de compras com isolamento por empresa quando aplicavel e rastreabilidade de operacoes.
+## Visão geral
+Gestão de solicitações de compra (SC) com cotação seletiva multi-fornecedor: o comprador escolhe quais itens de uma SC cotar em cada rodada, permite múltiplas rodadas de cotação parciais até cobrir 100% dos itens, e converte a cotação vencedora em pedido/recebimento (ver `docs/3_FLUXOS_PROCESSOS/FLUXO_COMPRA_FINANCEIRO.md` para o fluxo até a conta a pagar).
 
 ## Entidades principais
-| Entidade | Papel | Campos criticos |
-|---|---|---|
-| RecebimentoMensagem | Entidade de dominio do modulo | A validar por campo |
-| SolicitacaoMensagem | Entidade de dominio do modulo | A validar por campo |
-| SolicitacaoCompra | Entidade de dominio do modulo | A validar por campo |
-| ItemSolicitacaoCompra | Entidade de dominio do modulo | A validar por campo |
-| Cotacao | Entidade de dominio do modulo | A validar por campo |
-| ItemCotacao | Entidade de dominio do modulo | A validar por campo |
-| FornecedorCotacao | Entidade de dominio do modulo | A validar por campo |
-| PedidoCompra | Entidade de dominio do modulo | A validar por campo |
+| Entidade | Papel |
+|---|---|
+| `SolicitacaoCompra` | Documento raiz (SC-######); status com % cotado calculado a partir dos itens |
+| `ItemSolicitacaoCompra` | Item da SC; `selecionado_para_cotar` (bool) habilita a cotação seletiva; mantém FK de rastreabilidade até a cotação vencedora |
+| `Cotacao` | Rodada de cotação (COT-######) vinculada a uma SC; pode conter só parte dos itens |
+| `ItemCotacao` | Item cotado, com link de volta ao `ItemSolicitacaoCompra` original |
+| `FornecedorCotacao` | Proposta de um fornecedor para um item cotado (preço, prazo, condição de pagamento); `selecionado=True` marca o vencedor |
+| `PedidoCompra`, `ItemPedidoCompra` | Pedido gerado a partir da cotação concluída |
+| `RecebimentoCompra`, `ItemRecebimento` | Recebimento físico + registro da NF; ver `docs/4_TECNICO/ESTRATEGIA_ESTOQUE.md` para o efeito no estoque |
 
-Resumo de entidades: RecebimentoMensagem, SolicitacaoMensagem, SolicitacaoCompra, ItemSolicitacaoCompra, Cotacao, ItemCotacao, FornecedorCotacao, PedidoCompra, ItemPedidoCompra, RecebimentoCompra, ItemRecebimento, TipoDivergencia
+## Fluxo — Solicitação de Compra
+```
+RASCUNHO → PENDENTE → APROVADA → PARCIALMENTE_COTADA → TOTALMENTE_COTADA → EM_COMPRA → CONCLUIDA
+```
+Fluxo emergencial (`emergencial=True` no formulário): pula `PENDENTE` e vai direto para `APROVADA` ao salvar, com o próprio solicitante como aprovador — exige preenchimento de `justificativa_emergencial`. Pensado para quebra de equipamento, falta de insumo crítico ou situações com perda financeira que não podem esperar aprovação formal (24-48h). **Atualmente qualquer usuário pode marcar emergencial** — permissões granulares por limite de valor (`compras.add_solicitacao_emergencial_basico/medio/total`, ver `docs/5_DESENVOLVIMENTO/BACKLOG_PERMISSOES_COMPRAS.md`) estão desenhadas mas não implementadas; tratar como gap de segurança conhecido até serem aplicadas.
 
-## Funcionalidades
-| Funcionalidade | Entrada | Regra principal | Saida |
-|---|---|---|---|
-| Listagem e consulta | Filtros por tela | Respeitar escopo de empresa/permissao | Dados exibidos por perfil |
-| Cadastro e edicao | Formulario de negocio | Validacoes de dominio | Registro persistido |
-| Acao operacional | Evento de usuario | Regras de status e consistencia | Estado atualizado |
+Status de item da SC: `PENDENTE → SELECIONADO → EM_COTACAO → COTADO → APROVADO`.
 
-## Fluxos principais
-- Entrada via rotas do modulo e processamento em views.
-- Persistencia nas entidades de dominio listadas acima.
-- Integracao com outros modulos conforme regras de negocio.
+## Fluxo — Cotação seletiva
+1. SC aprovada mostra checkbox por item `PENDENTE`.
+2. Comprador seleciona 1+ itens → "Cotar Selecionados" → cria `Cotacao` só com esses itens.
+3. Itens não selecionados continuam `PENDENTE` para uma rodada futura.
+4. % cotado = itens com fornecedor vencedor selecionado / total de itens da SC → 0% mantém `PENDENTE`/`APROVADA`, 1-99% vira `PARCIALMENTE_COTADA`, 100% vira `TOTALMENTE_COTADA`.
+5. Selecionar um vencedor em `FornecedorCotacao` desmarca os demais do mesmo item, muda o item para `COTADO` e recalcula o % da SC.
 
-Rotas de referencia (amostra): compra-rapida/; pedidos/<int:pk>/editar/; recebimento-rapido/; recebimento-rapido/<int:pedido_pk>/; escolher-modo/; solicitacoes/; solicitacoes/nova/; solicitacoes/<int:pk>/; solicitacoes/<int:pk>/aprovar/; solicitacoes/<int:pk>/cancelar/; solicitacoes/<int:pk>/selecionar-itens/; cotacoes/
+Fluxo da cotação em si: `RASCUNHO → EM_ANDAMENTO → CONCLUIDA`.
 
-## Estados e transicoes
-| Estado atual | Evento | Proximo estado | Restricoes |
-|---|---|---|---|
-| Draft/Inicial | Criacao | Ativo/Em processamento | Validacoes obrigatorias |
-| Ativo | Acao de negocio | Concluido/Cancelado | Permissao e consistencia |
+## Rotas principais (`/compras/`)
+| Rota | Uso |
+|---|---|
+| `solicitacoes/`, `solicitacoes/nova/`, `solicitacoes/<id>/` | CRUD de SC |
+| `solicitacoes/<id>/aprovar/`, `solicitacoes/<id>/cancelar/` | Transições de status |
+| `solicitacoes/<id>/selecionar-itens/` (POST) | Processa a seleção para cotação |
+| `cotacoes/`, `cotacoes/nova/<solicitacao_id>/`, `cotacoes/<id>/` | CRUD de cotação e comparação de propostas |
+| `cotacoes/<cot_id>/item/<item_id>/proposta/` | Adicionar proposta de fornecedor |
+| `propostas/<id>/selecionar/` | Selecionar fornecedor vencedor |
+| `compra-rapida/` | Modo simplificado — cria `PedidoCompra` direto, sem cotação/proposta (ver `docs/3_FLUXOS_PROCESSOS/FLUXO_COMPRA_FINANCEIRO.md`) |
+| `pedido/<id>/receber/` | Registrar recebimento (parcial ou total) |
+| `recebimento/<id>/fatura/` | Registrar NF do recebimento — dispara criação automática de `ContaPagar` (ver módulo financeiro) |
 
-## Calculos e condicionais vinculados
-- Consultar docs/4_TECNICO/CALCULOS_CENTRALIZADOS.md
-- Consultar docs/4_TECNICO/CONDICIONAIS_CRITICAS.md
+## Integrações
+- **Estoque**: recebimento gera `Lote` e atualiza `Produto.estoque_atual` (`docs/4_TECNICO/ESTRATEGIA_ESTOQUE.md`).
+- **Financeiro**: NF registrada no recebimento cria `ContaPagar` + `ParcelaContaPagar` automaticamente (`docs/2_MODULOS/MODULO_FINANCEIRO.md`, `docs/3_FLUXOS_PROCESSOS/FLUXO_COMPRA_FINANCEIRO.md`).
 
-## Permissoes e isolamento
-- Aplicar filtro por empresa em consultas sensiveis de compras.
-- Garantir autorizacao por perfil antes de alterar estado.
+## Permissões e isolamento
+- Filtro por `empresa` obrigatório em toda consulta de SC/cotação/pedido.
+- Compra emergencial: ver gap de permissões acima — hoje não há bloqueio real por nível hierárquico.
+- Backlog de permissões planejadas: `compras.aprovar_solicitacaocompra`, `compras.selecionar_fornecedor`, `compras.concluir_cotacao` (parte já existe como `Meta.permissions`, confirmar em `compras/models.py` antes de assumir que está ativo).
 
-## Integracoes
-- Integracao por URL include com core/urls.py.
-- Eventos podem alimentar financeiro, estoque, faturamento e relatorios conforme modulo.
+## Roadmap conhecido (não implementado)
+- Avaliação de fornecedores pós-recebimento (qualidade, prazo, conformidade)
+- Notificação automática ao superior em compra emergencial
+- Relatório de uso de compras emergenciais / alerta de uso excessivo (>20%)
 
-## Evidencias de teste
-| Regra | Teste existente | Gap |
-|---|---|---|
-| Escopo por empresa | A mapear por modulo | Sim |
-| Transicao de status | A mapear por modulo | Sim |
-| Fluxo principal | A mapear por modulo | Sim |
-
-## Referencias
-- compras/models.py
-- compras/urls.py
-- docs/TEMPLATES/TEMPLATE_MODULO.md
+## Referências
+- `compras/models.py`, `compras/urls.py`, `compras/views.py`, `compras/views_simples.py`
+- Guia de uso de compras emergenciais: `docs/6_OPERACIONAL/GUIA_COMPRAS_EMERGENCIAIS.md`
+- Backlog de permissões granulares (não implementado): `docs/5_DESENVOLVIMENTO/BACKLOG_PERMISSOES_COMPRAS.md`

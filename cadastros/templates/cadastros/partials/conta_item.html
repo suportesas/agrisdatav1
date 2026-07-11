@@ -1,0 +1,9 @@
+<li class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ b.pk }}">
+  <div>
+    <strong>{{ b.banco }}</strong> — {{ b.conta }}{% if b.conta_digito %}-{{ b.conta_digito }}{% endif %} {% if b.conta_principal %}<span class="badge bg-success">Principal</span>{% endif %}
+  </div>
+  <div>
+    <a href="{% url 'cadastros:cliente_conta_update' b.cliente.pk b.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
+    <a href="{% url 'cadastros:cliente_conta_delete' b.cliente.pk b.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
+  </div>
+</li>

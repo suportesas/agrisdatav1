@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 ('arquivo', models.FileField(blank=True, null=True, upload_to='motorista_docs/', verbose_name='Arquivo')),
                 ('observacoes', models.TextField(blank=True, verbose_name='Observações')),
                 ('data_criacao', models.DateTimeField(auto_now_add=True, verbose_name='Data de Criação')),
-                ('motorista', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documentos', to='frota.motorista', verbose_name='Motorista')),
+                ('motorista', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documentos', to='cadastros.motorista', verbose_name='Motorista')),
             ],
             options={
                 'verbose_name': 'Documento do Motorista',

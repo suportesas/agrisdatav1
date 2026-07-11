@@ -87,33 +87,6 @@
     margin-top: 8px;
 }
 
-.summary-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.summary-card {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border-left: 4px solid;
-}
-
-.summary-card h3 {
-    font-size: 2rem;
-    margin: 0;
-    font-weight: 700;
-}
-
-.summary-card p {
-    margin: 5px 0 0 0;
-    color: #6c757d;
-    font-size: 0.875rem;
-}
-
 @media (max-width: 768px) {
     .timeline::before {
         left: 20px;
@@ -174,31 +147,51 @@
     </div>
     
     <!-- Cards Resumo -->
-    <div class="summary-cards mb-4">
-        <div class="summary-card" style="border-left-color: #0d6efd;">
-            <h3>{{ cotacoes.count }}</h3>
-            <p><i class="bi bi-cart3"></i> Cotaç{{ cotacoes.count|pluralize:"ão,ões" }} Realizada{{ cotacoes.count|pluralize:",s" }}</p>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon blue"><i class="bi bi-cart3"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-value">{{ cotacoes.count }}</div>
+                    <div class="kpi-label">Cotaç{{ cotacoes.count|pluralize:"ão,ões" }} Realizada{{ cotacoes.count|pluralize:",s" }}</div>
+                </div>
+            </div>
         </div>
-        
-        <div class="summary-card" style="border-left-color: #198754;">
-            <h3>{{ pedidos.count }}</h3>
-            <p><i class="bi bi-file-earmark-check"></i> Pedido{{ pedidos.count|pluralize:",s" }} Gerado{{ pedidos.count|pluralize:",s" }}</p>
+
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon green"><i class="bi bi-file-earmark-check"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-value">{{ pedidos.count }}</div>
+                    <div class="kpi-label">Pedido{{ pedidos.count|pluralize:",s" }} Gerado{{ pedidos.count|pluralize:",s" }}</div>
+                </div>
+            </div>
         </div>
-        
-        <div class="summary-card" style="border-left-color: #ffc107;">
-            <h3>{{ eventos|length }}</h3>
-            <p><i class="bi bi-clock-history"></i> Evento{{ eventos|length|pluralize:",s" }} Registrado{{ eventos|length|pluralize:",s" }}</p>
+
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon orange"><i class="bi bi-clock-history"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-value">{{ eventos|length }}</div>
+                    <div class="kpi-label">Evento{{ eventos|length|pluralize:",s" }} Registrado{{ eventos|length|pluralize:",s" }}</div>
+                </div>
+            </div>
         </div>
-        
-        <div class="summary-card" style="border-left-color: #dc3545;">
-            <h3>
-                {% if pedidos %}
-                R$ {% widthratio pedidos.0.valor_final 1 1 %}
-                {% else %}
-                -
-                {% endif %}
-            </h3>
-            <p><i class="bi bi-currency-dollar"></i> Valor Total</p>
+
+        <div class="col-md-3">
+            <div class="kpi-card">
+                <div class="kpi-icon red"><i class="bi bi-currency-dollar"></i></div>
+                <div class="kpi-body">
+                    <div class="kpi-value">
+                        {% if pedidos %}
+                        R$ {% widthratio pedidos.0.valor_final 1 1 %}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                    <div class="kpi-label">Valor Total</div>
+                </div>
+            </div>
         </div>
     </div>
     

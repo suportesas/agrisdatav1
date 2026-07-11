@@ -1715,6 +1715,7 @@ def produto_variacao_form(request):
                 'ncm_id': p.ncm_id,
                 'ncm_codigo': p.ncm.codigo if p.ncm else '',
                 'ncm_descricao': p.ncm.descricao if p.ncm else '',
+                'cest': p.cest,
                 'unidade_medida_id': p.unidade_medida_id,
                 'unidade_compra_id': p.unidade_compra_id,
                 'unidade_venda_id': p.unidade_venda_id,
@@ -1772,6 +1773,11 @@ def produto_variacao_gerar(request):
         except Produto.DoesNotExist:
             pass
 
+    tributacoes_base = (
+        list(ProdutoTributacao.objects.filter(produto=produto_base_obj))
+        if produto_base_obj else []
+    )
+
     try:
         with transaction.atomic():
             for combo in combinacoes:
@@ -1784,6 +1790,7 @@ def produto_variacao_gerar(request):
                     nome=nome,
                     categoria=categoria,
                     ncm=ncm,
+                    cest=data.get('cest', '') or '',
                     unidade_medida=um,
                     unidade_compra=uc,
                     unidade_venda=uv,
@@ -1795,6 +1802,12 @@ def produto_variacao_gerar(request):
                     produto_base=produto_base_obj,
                 )
                 produto.save()
+
+                # Herdar as tributações (CST/alíquotas por CFOP) do produto base
+                for trib in tributacoes_base:
+                    trib.pk = None
+                    trib.produto = produto
+                    trib.save()
 
                 for dim_nome, valor in atributos.items():
                     dim_nome = dim_nome.strip()

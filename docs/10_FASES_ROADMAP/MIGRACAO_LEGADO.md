@@ -1,8 +1,8 @@
 # Migracao de Conteudo Legado
 
 Owner: Documentacao
-Status: Draft
-Last Updated: 2026-07-01
+Status: Approved
+Last Updated: 2026-07-10
 Scope: Consolidacao de arquivos antigos
 
 ## Objetivo
@@ -26,5 +26,8 @@ Mapear documentos ja existentes para a nova estrutura, sem perda de historico.
 | TESTES_*.md na raiz | docs/5_DESENVOLVIMENTO |
 | DEPLOY_*.md na raiz | docs/9_DEPLOYMENT |
 
+## Execucao (2026-07-10)
+Migracao executada: os ~130 documentos soltos da raiz e dos apps foram movidos para as pastas numeradas acima ou consolidados por tema em `docs/archive/` (documentos historicos de features ja concluidas, ver `docs/archive/README.md`). `docs/ROLES.md` foi mesclado em `6_OPERACIONAL/ROLES_PERMISSOES.md`. Apenas `README.md` e `CLAUDE.md` permanecem na raiz do repositorio.
+
 ## Proximo passo
-Executar consolidacao por lotes pequenos e validar links apos cada lote.
+Detalhar os modulos ainda em esqueleto (`2_MODULOS/MAPA_COBERTURA_MODULOS.md`) e revisar periodicamente `docs/archive/` para aposentar de vez conteudo sem valor de referencia.

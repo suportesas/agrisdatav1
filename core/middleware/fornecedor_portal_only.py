@@ -24,7 +24,7 @@ class FornecedorPortalOnlyMiddleware:
         path = request.path
         # Só aplica para usuários autenticados
         if user.is_authenticated:
-            grupos = list(user.groups.values_list('name', flat=True))
+            grupos = user.get_grupos_nomes()
             # Se for apenas FORNECEDOR
             if grupos == [FORNECEDOR_GROUP]:
                 # Permite acesso ao portal do fornecedor e URLs isentas

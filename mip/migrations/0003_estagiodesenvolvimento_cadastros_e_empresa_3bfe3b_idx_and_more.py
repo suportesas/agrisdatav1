@@ -10,52 +10,61 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddIndex(
-            model_name='estagiodesenvolvimento',
-            index=models.Index(fields=['empresa', 'praga'], name='cadastros_e_empresa_3bfe3b_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='estagiodesenvolvimento',
-            index=models.Index(fields=['tipo_estagio'], name='cadastros_e_tipo_es_d0d4b8_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='monitoramentomip',
-            index=models.Index(fields=['empresa', 'data_monitoramento'], name='cadastros_m_empresa_ca989d_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='monitoramentomip',
-            index=models.Index(fields=['talhao', 'data_monitoramento'], name='cadastros_m_talhao__cc5e2f_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='monitoramentomip',
-            index=models.Index(fields=['status'], name='cadastros_m_status_f63faa_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='pontomonitoramento',
-            index=models.Index(fields=['praga_monitoramento', 'numero_ponto'], name='cadastros_p_praga_m_bbad29_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='praganomonitoramento',
-            index=models.Index(fields=['monitoramento', 'ned_atingido'], name='cadastros_p_monitor_ea22f5_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='praganomonitoramento',
-            index=models.Index(fields=['resultado_acao'], name='cadastros_p_resulta_376ced_idx'),
-        ),
-        migrations.AddConstraint(
-            model_name='estagiodesenvolvimento',
-            constraint=models.UniqueConstraint(fields=('empresa', 'praga', 'tipo_estagio', 'ordem_ciclo'), name='unique_estagio_praga_empresa'),
-        ),
-        migrations.AddConstraint(
-            model_name='monitoramentomip',
-            constraint=models.UniqueConstraint(condition=models.Q(('status__in', ['COMPLETO', 'ANALISADO'])), fields=('talhao', 'data_monitoramento'), name='unique_monitoramento_talhao_data'),
-        ),
-        migrations.AddConstraint(
-            model_name='pontomonitoramento',
-            constraint=models.UniqueConstraint(fields=('praga_monitoramento', 'numero_ponto'), name='unique_ponto_por_praga_monitoramento'),
-        ),
-        migrations.AddConstraint(
-            model_name='praganomonitoramento',
-            constraint=models.UniqueConstraint(fields=('monitoramento', 'praga'), name='unique_praga_por_monitoramento'),
+        # Todos estes índices/constraints já foram criados de fato pelo RunSQL
+        # idempotente (CREATE INDEX IF NOT EXISTS / DO $$ ... IF NOT EXISTS) em
+        # mip/migrations/0002 — aqui é só bookkeeping de estado, sem tocar no
+        # banco, para não colidir com o que já existe.
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
+                    model_name='estagiodesenvolvimento',
+                    index=models.Index(fields=['empresa', 'praga'], name='cadastros_e_empresa_3bfe3b_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='estagiodesenvolvimento',
+                    index=models.Index(fields=['tipo_estagio'], name='cadastros_e_tipo_es_d0d4b8_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='monitoramentomip',
+                    index=models.Index(fields=['empresa', 'data_monitoramento'], name='cadastros_m_empresa_ca989d_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='monitoramentomip',
+                    index=models.Index(fields=['talhao', 'data_monitoramento'], name='cadastros_m_talhao__cc5e2f_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='monitoramentomip',
+                    index=models.Index(fields=['status'], name='cadastros_m_status_f63faa_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='pontomonitoramento',
+                    index=models.Index(fields=['praga_monitoramento', 'numero_ponto'], name='cadastros_p_praga_m_bbad29_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='praganomonitoramento',
+                    index=models.Index(fields=['monitoramento', 'ned_atingido'], name='cadastros_p_monitor_ea22f5_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='praganomonitoramento',
+                    index=models.Index(fields=['resultado_acao'], name='cadastros_p_resulta_376ced_idx'),
+                ),
+                migrations.AddConstraint(
+                    model_name='estagiodesenvolvimento',
+                    constraint=models.UniqueConstraint(fields=('empresa', 'praga', 'tipo_estagio', 'ordem_ciclo'), name='unique_estagio_praga_empresa'),
+                ),
+                migrations.AddConstraint(
+                    model_name='monitoramentomip',
+                    constraint=models.UniqueConstraint(condition=models.Q(('status__in', ['COMPLETO', 'ANALISADO'])), fields=('talhao', 'data_monitoramento'), name='unique_monitoramento_talhao_data'),
+                ),
+                migrations.AddConstraint(
+                    model_name='pontomonitoramento',
+                    constraint=models.UniqueConstraint(fields=('praga_monitoramento', 'numero_ponto'), name='unique_ponto_por_praga_monitoramento'),
+                ),
+                migrations.AddConstraint(
+                    model_name='praganomonitoramento',
+                    constraint=models.UniqueConstraint(fields=('monitoramento', 'praga'), name='unique_praga_por_monitoramento'),
+                ),
+            ],
         ),
     ]

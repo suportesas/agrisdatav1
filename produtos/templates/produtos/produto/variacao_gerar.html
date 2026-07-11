@@ -3,20 +3,20 @@
 
 {% block extra_css %}
 <style>
-:root { --violet: #7c3aed; --violet-light: #ede9fe; }
+:root { --violet: #1a7a3c; --violet-light: #d1fae5; }
 
-.page-header { background: linear-gradient(135deg, var(--violet) 0%, #5b21b6 100%); border-radius: 16px; color: #fff; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
+.page-header { background: linear-gradient(135deg, var(--violet) 0%, #0f5c2a 100%); border-radius: 16px; color: #fff; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
 .page-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
 .page-header p  { margin: .25rem 0 0; opacity: .85; font-size: .9rem; }
 
-.section-card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(124,58,237,.08); margin-bottom: 1.25rem; }
-.section-card .card-header { background: var(--violet-light); border-bottom: 2px solid #ddd6fe; border-radius: 14px 14px 0 0; padding: .75rem 1.25rem; font-weight: 600; color: var(--violet); }
+.section-card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(26,122,60,.08); margin-bottom: 1.25rem; }
+.section-card .card-header { background: var(--violet-light); border-bottom: 2px solid #a7f3d0; border-radius: 14px 14px 0 0; padding: .75rem 1.25rem; font-weight: 600; color: var(--violet); }
 
 /* Dimensão row */
-.dim-row { background: #faf9ff; border: 1px solid #e9d5ff; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: .75rem; }
-.dim-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #7c3aed; margin-bottom: .3rem; }
-.dim-name-input { font-weight: 600; border: 1.5px solid #c4b5fd; background: #fff; border-radius: 8px; padding: .35rem .65rem; width: 100%; color: #1e1b4b; font-size: .9rem; }
-.dim-name-input:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 2px rgba(124,58,237,.15); }
+.dim-row { background: #f7faf8; border: 1px solid #a7f3d0; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: .75rem; }
+.dim-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #1a7a3c; margin-bottom: .3rem; }
+.dim-name-input { font-weight: 600; border: 1.5px solid #6ee7b7; background: #fff; border-radius: 8px; padding: .35rem .65rem; width: 100%; color: #1e1b1b; font-size: .9rem; }
+.dim-name-input:focus { outline: none; border-color: #1a7a3c; box-shadow: 0 0 0 2px rgba(26,122,60,.15); }
 
 /* Chips */
 .chips-area { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; min-height: 36px; background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: .3rem .5rem; cursor: text; }
@@ -29,11 +29,11 @@
 .preview-table th { background: var(--violet-light); color: var(--violet); font-size: .8rem; }
 .preview-table td { vertical-align: middle; }
 .nome-input { border: 1px solid #e5e7eb; border-radius: 6px; padding: .2rem .5rem; font-size: .85rem; width: 100%; }
-.nome-input:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 2px rgba(124,58,237,.15); }
+.nome-input:focus { outline: none; border-color: var(--violet); box-shadow: 0 0 0 2px rgba(26,122,60,.15); }
 
 /* Buttons */
 .btn-violet  { background: var(--violet); color: #fff; border: none; }
-.btn-violet:hover { background: #5b21b6; color: #fff; }
+.btn-violet:hover { background: #0f5c2a; color: #fff; }
 .btn-violet-outline { border: 2px solid var(--violet); color: var(--violet); background: transparent; }
 .btn-violet-outline:hover { background: var(--violet-light); }
 
@@ -66,7 +66,7 @@
   <i class="bi bi-check-circle-fill fs-5"></i>
   <div>
     <strong>Dados herdados do produto base.</strong>
-    Categoria, NCM, unidades, tipo e origem já estão preenchidos — defina apenas as dimensões de variação.
+    Categoria, NCM, CEST, unidades, tipo, origem e as tributações por CFOP já estão preenchidos — defina apenas as dimensões de variação.
   </div>
 </div>
 {% endif %}
@@ -104,6 +104,11 @@
             <div id="ncmDropdown" class="position-absolute w-100 bg-white border rounded shadow-sm" style="z-index:1000;max-height:220px;overflow-y:auto;display:none;top:100%;left:0;"></div>
           </div>
           <div id="ncmBadge" class="mt-1" style="display:none;"></div>
+        </div>
+
+        <div class="col-6 col-md-2">
+          <label class="form-label fw-semibold">CEST</label>
+          <input type="text" id="cest" class="form-control" placeholder="Ex: 1700700" maxlength="7">
         </div>
 
         <div class="col-6 col-md-4">
@@ -262,6 +267,9 @@ function preencherDoOrigem(p) {
     badge.style.display = 'block';
     badge.innerHTML = `<span class="badge rounded-pill text-bg-light border" style="font-size:.78rem;">${p.ncm_codigo} – ${(p.ncm_descricao||'').substring(0,60)}${(p.ncm_descricao||'').length>60?'…':''}</span>`;
   }
+
+  // CEST
+  document.getElementById('cest').value = p.cest || '';
 
   // Unidades
   const setSelect = (id, val) => {
@@ -514,7 +522,7 @@ document.getElementById('previewBtn').addEventListener('click', () => {
     tr.innerHTML = `
       <td><input type="checkbox" class="form-check-input row-check" checked></td>
       <td><input type="text" class="nome-input" value="${escHtml(nomeGerado)}" data-idx="${idx}"></td>
-      ${combo.map(v => `<td><span class="badge rounded-pill" style="background:#ede9fe;color:#7c3aed;">${escHtml(v)}</span></td>`).join('')}`;
+      ${combo.map(v => `<td><span class="badge rounded-pill" style="background:#d1fae5;color:#047857;">${escHtml(v)}</span></td>`).join('')}`;
     tr.querySelector('.row-check').addEventListener('change', updateCreateBtn);
     previewBody.appendChild(tr);
   });
@@ -564,6 +572,7 @@ createBtn.addEventListener('click', async () => {
     base_nome: document.getElementById('baseNome').value.trim(),
     categoria_id: parseInt(document.getElementById('categoriaId').value),
     ncm_id: parseInt(document.getElementById('ncmId').value),
+    cest: document.getElementById('cest').value.trim(),
     unidade_medida_id: parseInt(document.getElementById('unidadeMedidaId').value),
     unidade_compra_id: parseInt(document.getElementById('unidadeCompraId').value),
     unidade_venda_id: parseInt(document.getElementById('unidadeVendaId').value),

@@ -14,7 +14,7 @@ class RestrictProdutorMiddleware:
         # Só processa se o usuário estiver autenticado
         if request.user.is_authenticated:
             # Se for do grupo PRODUTOR
-            if request.user.groups.filter(name='PRODUTOR').exists():
+            if 'PRODUTOR' in request.user.get_grupos_nomes():
                 # Permitir URLs do portal do produtor e /logout/
                 if not (request.path.startswith('/portal/produtor/') or request.path == '/logout/'):
                     messages.warning(request, 'Acesso restrito ao Portal do Produtor.')

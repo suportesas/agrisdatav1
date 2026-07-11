@@ -3,14 +3,7 @@
 
 {% block content %}
 <div class="container py-4">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:porto_list' %}">Portos</a></li>
-      <li class="breadcrumb-item active">Excluir</li>
-    </ol>
-  </nav>
+  {% breadcrumb "Dashboard:dashboard:index" "Portos:cadastros:porto_list" "Excluir" %}
 
   <div class="card">
     <div class="card-body">

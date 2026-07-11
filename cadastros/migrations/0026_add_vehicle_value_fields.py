@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                 ('tipo', models.CharField(max_length=3)),
                 ('data_aplicacao', models.DateTimeField(auto_now_add=True)),
                 ('aplicado_por', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='usuarios.usuario')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='value_history', to='frota.vehicle')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='value_history', to='cadastros.vehicle')),
             ],
             options={
                 'ordering': ['-data_aplicacao'],

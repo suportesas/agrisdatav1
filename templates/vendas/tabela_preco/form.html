@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% if tabela %}{% url 'vendas:tabela_preco_detail' tabela.pk %}{% else %}{% url 'vendas:tabela_preco_list' %}{% endif %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">{{ title }}</h3>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.produto.label }} *</label>
+                {{ form.produto }}
+                {% if form.produto.errors %}<div class="text-danger small mt-1">{{ form.produto.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.cliente.label }}</label>
+                {{ form.cliente }}
+                <small class="text-muted">{{ form.cliente.help_text }}</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">{{ form.porto_destino.label }}</label>
+                {{ form.porto_destino }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">{{ form.moeda.label }}</label>
+                {{ form.moeda }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">{{ form.preco_unitario.label }} *</label>
+                {{ form.preco_unitario }}
+                {% if form.preco_unitario.errors %}<div class="text-danger small mt-1">{{ form.preco_unitario.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.vigencia_inicio.label }} *</label>
+                {{ form.vigencia_inicio }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">{{ form.vigencia_fim.label }}</label>
+                {{ form.vigencia_fim }}
+                {% if form.vigencia_fim.errors %}<div class="text-danger small mt-1">{{ form.vigencia_fim.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check">
+                  {{ form.ativo }}
+                  <label class="form-check-label fw-semibold">{{ form.ativo.label }}</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">{{ form.observacoes.label }}</label>
+                {{ form.observacoes }}
+              </div>
+              {% if form.non_field_errors %}{% endif %}
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Salvar
+              </button>
+              <a href="{% url 'vendas:tabela_preco_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

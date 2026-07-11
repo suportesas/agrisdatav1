@@ -56,6 +56,7 @@ from .models import (
     Area, Talhao, Cultura, Praga, HistoricoTalhao, Safra,
     Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto, NCM, EmpresaNCM, CFOP,
     Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao,
+    AgenteExportacao,
 )
 from rh.models import CategoriaRiscoAmbiental, RiscoAmbientalCatalogo
 
@@ -66,6 +67,7 @@ from .forms import (
     ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
     
     AreaForm, TalhaoForm, CulturaForm, PragaForm, HistoricoTalhaoForm, SafraForm, SafraPlanForm, PortoForm, NCMForm, EmpresaNCMForm, CFOPForm,
+    AgenteExportacaoForm,
 
     # Cliente-related forms
     ClienteForm, EnderecoClienteForm, ContatoClienteForm, ContaBancariaClienteForm, DocumentoClienteForm,
@@ -1226,6 +1228,94 @@ def porto_delete(request, pk):
         return redirect('cadastros:porto_list')
 
     return render(request, 'cadastros/porto/porto_confirm_delete.html', {'porto': porto})
+
+
+# ==================== AGENTES DE EXPORTAÇÃO ====================
+
+@login_required
+def agente_exportacao_list(request):
+    if not request.user.empresa:
+        messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa. Entre em contato com o administrador.')
+        return redirect('dashboard:index')
+
+    agentes_qs = AgenteExportacao.objects.filter(empresa=request.user.empresa)
+
+    q = request.GET.get('q', '').strip()
+    tipo_atual = request.GET.get('tipo', '')
+
+    if q:
+        agentes_qs = agentes_qs.filter(Q(nome__icontains=q) | Q(pais__icontains=q) | Q(cidade__icontains=q))
+    if tipo_atual:
+        agentes_qs = agentes_qs.filter(tipo=tipo_atual)
+
+    paginator = Paginator(agentes_qs, 25)
+    agentes = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'cadastros/agente_exportacao/list.html', {
+        'agentes': agentes,
+        'q': q,
+        'tipo_atual': tipo_atual,
+        'tipo_choices': AgenteExportacao.TIPO_CHOICES,
+        'total_agentes': agentes_qs.count(),
+    })
+
+
+@login_required
+def agente_exportacao_detail(request, pk):
+    agente = get_object_or_404(AgenteExportacao, pk=pk, empresa=request.user.empresa)
+    return render(request, 'cadastros/agente_exportacao/detail.html', {'agente': agente})
+
+
+@login_required
+def agente_exportacao_create(request):
+    if not request.user.empresa:
+        messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa. Entre em contato com o administrador.')
+        return redirect('dashboard:index')
+
+    if request.method == 'POST':
+        form = AgenteExportacaoForm(request.POST, empresa=request.user.empresa)
+        if form.is_valid():
+            agente = form.save()
+            messages.success(request, f'✅ Agente "{agente.nome}" cadastrado com sucesso!')
+            return redirect('cadastros:agente_exportacao_detail', pk=agente.pk)
+        else:
+            messages.error(request, '❌ Corrija os erros no formulário abaixo.')
+    else:
+        form = AgenteExportacaoForm(empresa=request.user.empresa)
+
+    return render(request, 'cadastros/agente_exportacao/form.html', {'form': form, 'action': 'Cadastrar'})
+
+
+@login_required
+def agente_exportacao_update(request, pk):
+    agente = get_object_or_404(AgenteExportacao, pk=pk, empresa=request.user.empresa)
+
+    if request.method == 'POST':
+        form = AgenteExportacaoForm(request.POST, instance=agente, empresa=request.user.empresa)
+        if form.is_valid():
+            agente = form.save()
+            messages.success(request, f'✅ Agente "{agente.nome}" atualizado!')
+            return redirect('cadastros:agente_exportacao_detail', pk=agente.pk)
+    else:
+        form = AgenteExportacaoForm(instance=agente, empresa=request.user.empresa)
+
+    return render(request, 'cadastros/agente_exportacao/form.html', {
+        'form': form, 'agente': agente, 'action': 'Editar',
+    })
+
+
+@login_required
+def agente_exportacao_delete(request, pk):
+    """Desativa (soft-delete) o agente — não remove fisicamente."""
+    agente = get_object_or_404(AgenteExportacao, pk=pk, empresa=request.user.empresa)
+
+    if request.method == 'POST':
+        agente.ativo = False
+        agente.save(update_fields=['ativo'])
+        messages.success(request, f'Agente "{agente.nome}" desativado.')
+        return redirect('cadastros:agente_exportacao_list')
+
+    return render(request, 'cadastros/agente_exportacao/confirm_delete.html', {'agente': agente})
 
 
 # ==================== API EXTERNA - CNPJ ====================

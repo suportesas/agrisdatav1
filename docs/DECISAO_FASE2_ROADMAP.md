@@ -279,7 +279,7 @@ Pelos dados acima:
 - Celery + Redis: Background job orchestration
 
 **Opção 2 Resources:**
-- RF-059 Detalhes: [ANALISE_STATUS_PRD.md](../ANALISE_STATUS_PRD.md#rf-059-ranking-e-avaliação-de-fornecedores)
+- RF-059 Detalhes: [ANALISE_STATUS_PRD.md](archive/diversos/ANALISE_STATUS_PRD.md#rf-059-ranking-e-avaliação-de-fornecedores) (documento histórico, desatualizado — ver nota em `docs/archive/diversos/README.md`)
 - Chart.js / Plotly for Dashboard
 - Django ORM Aggregation (group_by, Sum, Avg, Count)
 

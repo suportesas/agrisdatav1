@@ -2026,8 +2026,11 @@ def relatorio_rh(request):
     for func in funcionarios:
         # Calcular idade
         hoje = date.today()
-        idade = (hoje.year - func.data_nascimento.year - 
-                ((hoje.month, hoje.day) < (func.data_nascimento.month, func.data_nascimento.day)))
+        if func.data_nascimento:
+            idade = (hoje.year - func.data_nascimento.year -
+                    ((hoje.month, hoje.day) < (func.data_nascimento.month, func.data_nascimento.day)))
+        else:
+            idade = None
         
         # Férias agendadas
         ferias_agendadas = FeriasFuncionario.objects.filter(

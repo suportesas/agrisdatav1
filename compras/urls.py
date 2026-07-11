@@ -3,13 +3,9 @@ URLs para o módulo de Compras
 """
 from django.urls import path
 from . import views
-from .views_cotacao import (
-    cotacao_list, cotacao_create_step1, cotacao_create_step2,
-    cotacao_detail, proposta_create, proposta_selecionar, historico_precos,
-    historico_precos_list
-)
 from .views_dashboard import dashboard_compras
 from . import views_simples
+from . import views_alertas
 from .views_forma_pagamento import (
     forma_pagamento_list, forma_pagamento_create, forma_pagamento_edit,
     forma_pagamento_delete
@@ -29,18 +25,9 @@ app_name = 'compras'
 
 urlpatterns = [
     # ========================================
-    # 🚀 MODO SIMPLES - Compras Rápidas
+    # 📋 FLUXO DE COMPRAS
     # ========================================
-    path('compra-rapida/', views_simples.compra_rapida, name='compra_rapida'),
-    path('pedidos/<int:pk>/editar/', views_simples.pedido_edit, name='pedido_edit'),
-    path('recebimento-rapido/', views_simples.recebimento_rapido, name='recebimento_rapido'),
-    path('recebimento-rapido/<int:pedido_pk>/', views_simples.recebimento_rapido, name='recebimento_rapido_pedido'),
-    path('escolher-modo/', views_simples.escolher_modo_compra, name='escolher_modo_compra'),
-    
-    # ========================================
-    # 📋 MODO FORMAL - Fluxo Completo
-    # ========================================
-    
+
     # Solicitações de Compra
     path('solicitacoes/', views.solicitacao_list, name='solicitacao_list'),
     path('solicitacoes/nova/', views.solicitacao_create, name='solicitacao_create'),
@@ -61,10 +48,14 @@ urlpatterns = [
     path('propostas/<int:proposta_pk>/selecionar/', views.selecionar_fornecedor, name='selecionar_fornecedor'),
     path('propostas/<int:proposta_pk>/remover/', views.remover_proposta, name='remover_proposta'),
     
+    # Geração de Solicitação de Compra em lote a partir do Relatório de Alertas de Estoque
+    path('alertas-estoque-minimo/gerar-solicitacao/', views_alertas.central_alertas_gerar_solicitacao, name='central_alertas_gerar_solicitacao'),
+
     # Pedidos de Compra
     path('pedidos/', views.pedido_list, name='pedido_list'),
     path('pedidos/<int:pk>/', views.pedido_detail, name='pedido_detail'),
     path('pedidos/gerar/<int:cotacao_pk>/', views.pedido_gerar, name='pedido_gerar'),
+    path('pedidos/direto/', views.pedido_direto_create, name='pedido_direto_create'),
     path('pedidos/<int:pk>/enviar/', views.pedido_enviar, name='pedido_enviar'),
     path('pedidos/<int:pk>/cancelar/', views.pedido_cancelar, name='pedido_cancelar'),
     path('pedidos/<int:pk>/pdf/', views.pedido_pdf, name='pedido_pdf'),
@@ -88,17 +79,7 @@ urlpatterns = [
     path('recebimentos/<int:pk>/devolucao/', views.devolucao_compra_create, name='devolucao_compra'),
     path('mde/', views.mde_list, name='mde_list'),
     path('recebimentos/<int:recebimento_pk>/faturar/', views_simples.faturar_recebimento, name='faturar_recebimento'),
-    
-    # Cotações Inteligentes (busca automática de fornecedores)
-    path('cotacoes-inteligentes/', cotacao_list, name='cotacao_inteligente_list'),
-    path('cotacoes-inteligentes/nova/passo-1/', cotacao_create_step1, name='cotacao_create_step1'),
-    path('cotacoes-inteligentes/nova/passo-2/', cotacao_create_step2, name='cotacao_create_step2'),
-    path('cotacoes-inteligentes/<int:pk>/', cotacao_detail, name='cotacao_inteligente_detail'),
-    path('cotacoes-inteligentes/<int:cotacao_pk>/item/<int:item_pk>/proposta/', proposta_create, name='proposta_inteligente_create'),
-    path('cotacoes-inteligentes/proposta/<int:proposta_pk>/selecionar/', proposta_selecionar, name='proposta_inteligente_selecionar'),
-    path('produtos/<int:produto_pk>/historico-precos/', historico_precos, name='historico_precos'),
-    path('historico-precos/', historico_precos_list, name='historico_precos_list'),
-    
+
     # Formas de Pagamento CRUD
     path('formas-pagamento/', forma_pagamento_list, name='forma_pagamento_list'),
     path('formas-pagamento/nova/', forma_pagamento_create, name='forma_pagamento_create'),

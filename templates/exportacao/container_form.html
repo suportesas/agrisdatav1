@@ -181,6 +181,37 @@
             <label class="form-label fw-semibold">{{ form.lacre_terminal.label }}</label>
             {{ form.lacre_terminal }}
           </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">{{ form.lacre_g7.label }}</label>
+            {{ form.lacre_g7 }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parâmetros de Reefer -->
+    <div class="card border-0 shadow-sm mb-4" id="bloco-reefer">
+      <div class="card-header bg-white border-bottom fw-semibold">
+        <i class="bi bi-thermometer-snow me-2 text-primary"></i>Parâmetros de Reefer
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">{{ form.temperatura_setpoint_c.label }}</label>
+            {{ form.temperatura_setpoint_c }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">{{ form.ventilacao_air_exchange.label }}</label>
+            {{ form.ventilacao_air_exchange }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">{{ form.umidade_setpoint_pct.label }}</label>
+            {{ form.umidade_setpoint_pct }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">{{ form.drain_position.label }}</label>
+            {{ form.drain_position }}
+          </div>
         </div>
       </div>
     </div>
@@ -354,6 +385,20 @@
       .then(function(r) { return r.json(); })
       .then(function(d) { renderOrdens(d.ordens || []); })
       .catch(function() {});
+  }
+
+  /* ── Mostra o bloco de Reefer só quando o tipo de contêiner for REEFER ── */
+  function toggleBlocoReefer() {
+    var tipoSelect = document.getElementById('id_tipo_container');
+    var bloco = document.getElementById('bloco-reefer');
+    if (tipoSelect && bloco) {
+      bloco.style.display = (tipoSelect.value === 'REEFER') ? '' : 'none';
+    }
+  }
+  var tipoContainerSelect = document.getElementById('id_tipo_container');
+  if (tipoContainerSelect) {
+    tipoContainerSelect.addEventListener('change', toggleBlocoReefer);
+    toggleBlocoReefer();
   }
 
   /* ── Event listener no select de booking ────────────── */

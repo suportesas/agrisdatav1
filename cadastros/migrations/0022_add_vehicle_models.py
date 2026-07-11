@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
                 ('vigencia_inicio', models.DateField()),
                 ('vigencia_fim', models.DateField(null=True, blank=True)),
                 ('atual', models.BooleanField(default=False)),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='plates', to='frota.vehicle')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='plates', to='cadastros.vehicle')),
             ],
             options={
                 'ordering': ['-vigencia_inicio'],
@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
                 ('data_fim', models.DateTimeField(null=True, blank=True)),
                 ('motivo', models.CharField(max_length=200, blank=True)),
                 ('motorista', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='veiculos_atribuidos', to='cadastros.funcionario')),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='assignments', to='frota.vehicle')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='assignments', to='cadastros.vehicle')),
             ],
             options={
                 'ordering': ['-data_inicio'],
@@ -88,7 +88,7 @@ class Migration(migrations.Migration):
                 ('data_emissao', models.DateField(null=True, blank=True)),
                 ('data_validade', models.DateField(null=True, blank=True)),
                 ('arquivo', models.FileField(upload_to='vehicle_docs/', null=True, blank=True)),
-                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documents', to='frota.vehicle')),
+                ('vehicle', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documents', to='cadastros.vehicle')),
             ],
             options={
                 'verbose_name': 'Documento do Veículo',

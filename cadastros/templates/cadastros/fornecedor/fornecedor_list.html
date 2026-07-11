@@ -6,13 +6,8 @@
 {% block extra_css %}
 <style>
 .sort-link { color: #6b7280; text-decoration: none; font-size: .82rem; white-space: nowrap; }
-.sort-link:hover, .sort-link.active { color: #7c3aed; }
+.sort-link:hover, .sort-link.active { color: #1a7a3c; }
 .sort-link .bi { font-size: .72rem; }
-tbody tr:hover td { background: #faf5ff; }
-.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
-.action-icon:hover { color: #7c3aed; }
-.action-icon.danger:hover { color: #dc2626; }
-.action-icon.edit:hover { color: #0d6efd; }
 </style>
 {% endblock %}
 
@@ -167,14 +162,14 @@ tbody tr:hover td { background: #faf5ff; }
         <tbody>
           {% for fornecedor in fornecedores %}
             <tr>
-              <td class="text-muted small">{{ fornecedor.pk|stringformat:"05d" }}</td>
+              <td class="text-muted small text-mono">{{ fornecedor.pk|stringformat:"05d" }}</td>
               <td>
                 <strong>{{ fornecedor.get_nome_exibicao }}</strong>
                 {% if fornecedor.nome_fantasia %}
                   <br><span class="text-muted small">{{ fornecedor.nome }}</span>
                 {% endif %}
               </td>
-              <td class="text-muted small">{{ fornecedor.get_cnpj_cpf_formatado }}</td>
+              <td class="text-muted small text-mono">{{ fornecedor.get_cnpj_cpf_formatado }}</td>
               <td>
                 {% if fornecedor.is_exportador %}
                   <span class="badge bg-primary">Internacional</span>
@@ -226,46 +221,8 @@ tbody tr:hover td { background: #faf5ff; }
     </div>
 
     <!-- Paginação -->
-    <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-muted">
-        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
-        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
-      </small>
-      <ul class="pagination pagination-sm mb-0">
-
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-          {% if page_obj.has_previous %}
-            <a class="page-link" href="?q={{ q }}&status={{ status_atual }}&categoria={{ categoria_atual }}&tipo={{ tipo_atual }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ page_obj.previous_page_number }}">
-              <i class="bi bi-chevron-left"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-          {% endif %}
-        </li>
-
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-            <li class="page-item">
-              <a class="page-link" href="?q={{ q }}&status={{ status_atual }}&categoria={{ categoria_atual }}&tipo={{ tipo_atual }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ num }}">{{ num }}</a>
-            </li>
-          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-          {% endif %}
-        {% endfor %}
-
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-          {% if page_obj.has_next %}
-            <a class="page-link" href="?q={{ q }}&status={{ status_atual }}&categoria={{ categoria_atual }}&tipo={{ tipo_atual }}&per_page={{ per_page }}&sort={{ sort_by }}&page={{ page_obj.next_page_number }}">
-              <i class="bi bi-chevron-right"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-          {% endif %}
-        </li>
-
-      </ul>
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
     </div>
 
   </div>

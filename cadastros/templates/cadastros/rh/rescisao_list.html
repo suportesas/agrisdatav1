@@ -4,26 +4,10 @@
 {% block title %}Rescisões | ERP Agrícola{% endblock %}
 {% block page_title %}Rescisões{% endblock %}
 
-{% block extra_css %}
-<style>
-.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
-.action-icon:hover { color: #7c3aed; }
-.action-icon.edit:hover { color: #0d6efd; }
-tbody tr:hover td { background: #faf5ff; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
-      <li class="breadcrumb-item active">Rescisões</li>
-    </ol>
-  </nav>
+  {% breadcrumb "Dashboard:dashboard:index" "RH:rh:rh_dashboard" "Rescisões" %}
 
   <!-- Cabeçalho -->
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -172,46 +156,8 @@ tbody tr:hover td { background: #faf5ff; }
     </div>
 
     <!-- Paginação -->
-    <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-muted">
-        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
-        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
-      </small>
-      <ul class="pagination pagination-sm mb-0">
-
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-          {% if page_obj.has_previous %}
-            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
-              <i class="bi bi-chevron-left"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-          {% endif %}
-        </li>
-
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-            <li class="page-item">
-              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
-            </li>
-          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-          {% endif %}
-        {% endfor %}
-
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-          {% if page_obj.has_next %}
-            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
-              <i class="bi bi-chevron-right"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-          {% endif %}
-        </li>
-
-      </ul>
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
     </div>
 
   </div>

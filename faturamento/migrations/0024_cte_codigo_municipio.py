@@ -12,6 +12,11 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('faturamento', '0023_cte_globalizado'),
+        # As colunas assumidas como já existentes aqui são criadas de fato por
+        # esta migration de um branch paralelo (unificado só em 0025) — sem essa
+        # dependência explícita, um install do zero pode aplicar 0024 antes de
+        # 0020 e o ALTER COLUMN falha porque a coluna ainda não existe.
+        ('faturamento', '0020_cte_codigo_municipio_inicio_fim'),
     ]
 
     operations = [

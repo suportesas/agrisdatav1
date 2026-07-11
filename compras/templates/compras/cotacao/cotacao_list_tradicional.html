@@ -76,8 +76,8 @@
                                 </a>
                             </td>
                             <td>{{ cotacao.comprador.get_full_name }}</td>
-                            <td>{{ cotacao.data_cotacao|date:"d/m/Y" }}</td>
-                            <td>
+                            <td class="text-mono">{{ cotacao.data_cotacao|date:"d/m/Y" }}</td>
+                            <td class="text-mono">
                                 {% if cotacao.data_limite_resposta %}
                                 {{ cotacao.data_limite_resposta|date:"d/m/Y" }}
                                 {% else %}
@@ -111,29 +111,7 @@
             </div>
             
             <!-- Paginação -->
-            {% if cotacoes.has_other_pages %}
-            <nav>
-                <ul class="pagination justify-content-center">
-                    {% if cotacoes.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ cotacoes.previous_page_number }}">Anterior</a>
-                    </li>
-                    {% endif %}
-                    
-                    {% for num in cotacoes.paginator.page_range %}
-                    <li class="page-item {% if cotacoes.number == num %}active{% endif %}">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                    {% endfor %}
-                    
-                    {% if cotacoes.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ cotacoes.next_page_number }}">Próxima</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+            {% include 'partials/pagination.html' with page_obj=cotacoes %}
         </div>
     </div>
 </div>

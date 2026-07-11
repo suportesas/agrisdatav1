@@ -92,6 +92,9 @@ class BookingForm(ExportacaoBaseForm):
             'deadline_carga',
             'etd',
             'eta',
+            'notify_party',
+            'freight_forwarder',
+            'despachante_aduaneiro',
             'status',
             'valor_fob',
             'observacoes',
@@ -109,6 +112,9 @@ class BookingForm(ExportacaoBaseForm):
             'deadline_carga': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'etd': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'eta': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'notify_party': forms.Select(attrs={'class': 'form-select'}),
+            'freight_forwarder': forms.Select(attrs={'class': 'form-select'}),
+            'despachante_aduaneiro': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'valor_fob': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -117,9 +123,19 @@ class BookingForm(ExportacaoBaseForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.empresa:
+            from cadastros.models import AgenteExportacao
             self.fields['solicitacao'].queryset = SolicitacaoBooking.objects.filter(empresa=self.empresa).order_by('-data_solicitacao')
             self.fields['porto_origem'].queryset = Porto.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
             self.fields['porto_destino'].queryset = Porto.objects.filter(empresa=self.empresa, ativo=True).order_by('nome')
+            self.fields['notify_party'].queryset = AgenteExportacao.objects.filter(empresa=self.empresa, tipo='NOTIFY', ativo=True).order_by('nome')
+            self.fields['freight_forwarder'].queryset = AgenteExportacao.objects.filter(empresa=self.empresa, tipo='FORWARDER', ativo=True).order_by('nome')
+            self.fields['despachante_aduaneiro'].queryset = AgenteExportacao.objects.filter(empresa=self.empresa, tipo='DESPACHANTE_ADUANEIRO', ativo=True).order_by('nome')
+        if self.instance.pk:
+            # Transições de status só acontecem pelas ações guardadas
+            # (booking_confirmar/booking_embarcar) — a edição livre do dropdown
+            # bypassava validação e não deixava histórico (BookingHistory).
+            self.fields['status'].disabled = True
+            self.fields['status'].help_text = 'Use as ações "Confirmar"/"Embarcar" para mudar o status.'
 
 
 class BookingContainerForm(ExportacaoBaseForm):
@@ -132,7 +148,8 @@ class BookingContainerForm(ExportacaoBaseForm):
             'armador', 'transportadora', 'motorista',
             'placa_principal', 'placa_reboque',
             'peso_bruto_kg', 'tara_container', 'numero_genset',
-            'lacre_armador', 'lacre_fiscal', 'lacre_terminal',
+            'lacre_armador', 'lacre_fiscal', 'lacre_terminal', 'lacre_g7',
+            'temperatura_setpoint_c', 'ventilacao_air_exchange', 'umidade_setpoint_pct', 'drain_position',
             'data_coleta_realizada', 'hora_coleta_realizada',
             'observacoes',
         ]
@@ -158,6 +175,11 @@ class BookingContainerForm(ExportacaoBaseForm):
             'lacre_armador':   forms.TextInput(attrs={'class': 'form-control'}),
             'lacre_fiscal':    forms.TextInput(attrs={'class': 'form-control'}),
             'lacre_terminal':  forms.TextInput(attrs={'class': 'form-control'}),
+            'lacre_g7':        forms.TextInput(attrs={'class': 'form-control'}),
+            'temperatura_setpoint_c':  forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Ex: 9.0'}),
+            'ventilacao_air_exchange': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 20 cbm/hour, Closed, Auto'}),
+            'umidade_setpoint_pct':    forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Ex: 75'}),
+            'drain_position':          forms.Select(attrs={'class': 'form-select'}),
             'observacoes':     forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -233,6 +255,7 @@ class OrdemColetaForm(ExportacaoBaseForm):
             'lacre_armador',
             'lacre_fiscal',
             'lacre_terminal',
+            'lacre_g7',
             'transportadora',
             'motorista',
             'numero',
@@ -249,6 +272,7 @@ class OrdemColetaForm(ExportacaoBaseForm):
             'lacre_armador': forms.TextInput(attrs={'class': 'form-control'}),
             'lacre_fiscal': forms.TextInput(attrs={'class': 'form-control'}),
             'lacre_terminal': forms.TextInput(attrs={'class': 'form-control'}),
+            'lacre_g7': forms.TextInput(attrs={'class': 'form-control'}),
             'transportadora': forms.Select(attrs={'class': 'form-select'}),
             'motorista': forms.Select(attrs={'class': 'form-select'}),
             'numero': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),

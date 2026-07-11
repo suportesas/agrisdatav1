@@ -7,8 +7,8 @@
 <style>
     .item-row td { vertical-align: middle; }
     .qtd-input { width: 110px; }
-    .card-origem { border-left: 4px solid #7c3aed; background: #faf5ff; }
-    .badge-devolucao { background-color: #7c3aed; }
+    .card-origem { border-left: 4px solid #1a7a3c; background: #f7faf8; }
+    .badge-devolucao { background-color: #1a7a3c; }
     .aviso-devolvido { font-size: 0.8rem; color: #6c757d; }
     .item-esgotado td { opacity: 0.5; }
 </style>
@@ -63,7 +63,7 @@
             <div class="row g-3">
                 <div class="col-sm-4">
                     <small class="text-muted d-block">Fornecedor</small>
-                    <strong>{{ fornecedor.nome }}</strong>
+                    <strong>{{ fornecedor.get_nome_exibicao }}</strong>
                     {% if fornecedor.cnpj_cpf %}
                     <span class="text-muted ms-1 small">{{ fornecedor.cnpj_cpf }}</span>
                     {% endif %}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Tabelas de Preço{% endblock %}
+{% block page_title %}Tabelas de Preço{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Tabelas de Preço</h3>
+    <a href="{% url 'vendas:tabela_preco_create' %}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Nova Tabela de Preço
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-2">
+        <div class="col-md-4">
+          <input type="text" name="q" class="form-control" placeholder="Produto ou cliente" value="{{ filtros.q }}">
+        </div>
+        <div class="col-md-2">
+          <select name="ativo" class="form-select">
+            <option value="">Todos</option>
+            <option value="1" {% if filtros.ativo == '1' %}selected{% endif %}>Ativos</option>
+            <option value="0" {% if filtros.ativo == '0' %}selected{% endif %}>Inativos</option>
+          </select>
+        </div>
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-outline-secondary w-100"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Produto</th>
+              <th>Cliente</th>
+              <th>Porto Destino</th>
+              <th class="text-end">Preço</th>
+              <th>Vigência</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in page_obj %}
+            <tr>
+              <td><a href="{% url 'vendas:tabela_preco_detail' t.pk %}"><strong>{{ t.produto }}</strong></a></td>
+              <td>{{ t.cliente.razao_social|default:"Padrão (qualquer cliente)" }}</td>
+              <td>{{ t.porto_destino|default:"—" }}</td>
+              <td class="text-end fw-bold">{{ t.moeda }} {{ t.preco_unitario|floatformat:4 }}</td>
+              <td><small>{{ t.vigencia_inicio|date:"d/m/Y" }} — {{ t.vigencia_fim|date:"d/m/Y"|default:"em aberto" }}</small></td>
+              <td>
+                {% if t.ativo %}<span class="badge bg-success">Ativa</span>
+                {% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}
+              </td>
+              <td>
+                <a href="{% url 'vendas:tabela_preco_update' t.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma tabela de preço cadastrada.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% include 'partials/pagination.html' with page_obj=page_obj %}
+</div>
+{% endblock %}

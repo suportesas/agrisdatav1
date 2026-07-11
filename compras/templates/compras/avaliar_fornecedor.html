@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Avaliar Fornecedor - {{ fornecedor.nome }}{% endblock %}
+{% block title %}Avaliar Fornecedor - {{ fornecedor.get_nome_exibicao }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -63,7 +63,7 @@
                 Avaliar Fornecedor
             </h2>
             <p class="text-muted mb-0">
-                Fornecedor: <strong>{{ fornecedor.nome }}</strong>
+                Fornecedor: <strong>{{ fornecedor.get_nome_exibicao }}</strong>
             </p>
             <p class="text-muted mb-0">
                 Recebimento: {{ recebimento.numero }} | NF-e: {{ recebimento.nota_fiscal }}

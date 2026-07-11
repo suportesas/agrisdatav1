@@ -55,6 +55,7 @@ from .forms import (
     CondutorMDFeFormSet,
     ContratanteMDFeFormSet,
     ConhecimentoTransporteForm,
+    DevolucaoVendaForm,
     DocumentoVinculadoCTeFormSet,
     DocumentoVinculadoMDFeFormSet,
     DuplicataNFFormSet,
@@ -106,8 +107,7 @@ def _registrar_baixa_devolucao(nf):
     """
     if nf.finalidade_nfe != '4':
         return
-    from estoque.models import MovimentacaoEstoque, Lote
-    from django.db.models import Sum
+    from estoque.services import criar_movimentacao
     for item_nf in nf.itens.select_related(
         'item_recebimento_origem__lote',
         'item_recebimento_origem__local_estoque',
@@ -117,27 +117,46 @@ def _registrar_baixa_devolucao(nf):
         if not item_rec or not item_nf.produto:
             continue
         lote = item_rec.lote
-        local = item_rec.local_estoque
-        MovimentacaoEstoque.objects.create(
+        criar_movimentacao(
             empresa=nf.empresa,
-            produto=item_nf.produto,
-            lote=lote,
             tipo='SAIDA',
             origem='DEVOLUCAO_FORNECEDOR',
             quantidade=item_nf.quantidade,
+            usuario=nf.atualizado_por or nf.criado_por,
+            lote=lote,
+            produto=item_nf.produto,
             documento=str(nf.numero or ''),
             observacao=f'Devolução NF-e {nf.numero}/{nf.serie} — chave {nf.chave_acesso}',
-            status='EXECUTADO',
         )
-        if lote:
-            total = (
-                Lote.objects.filter(
-                    produto=item_nf.produto,
-                    status='DISPONIVEL',
-                ).aggregate(total=Sum('quantidade_disponivel'))['total'] or 0
-            )
-            item_nf.produto.estoque_atual = total
-            item_nf.produto.save(update_fields=['estoque_atual'])
+
+
+def _registrar_entrada_devolucao_venda(nf):
+    """Cria MovimentacaoEstoque de entrada para NF-e de devolução de venda.
+
+    A NF de devolução de venda é criada por `nota_fiscal_devolucao` (clona a NF de
+    saída original com finalidade_nfe='4' e tipo_operacao='DEVOLUCAO'). Diferente de
+    `_registrar_baixa_devolucao` (devolução de COMPRA — saída de estoque via
+    item_recebimento_origem), aqui a mercadoria volta ao nosso estoque: usa o
+    produto (e o lote, quando o item carregar essa rastreabilidade) do próprio item
+    clonado da nota original.
+    """
+    if nf.finalidade_nfe != '4' or nf.tipo_operacao != 'DEVOLUCAO':
+        return
+    from estoque.services import criar_movimentacao
+    for item_nf in nf.itens.select_related('produto', 'lote'):
+        if not item_nf.produto:
+            continue
+        criar_movimentacao(
+            empresa=nf.empresa,
+            tipo='ENTRADA',
+            origem='DEVOLUCAO_VENDA',
+            quantidade=item_nf.quantidade,
+            usuario=nf.atualizado_por or nf.criado_por,
+            lote=item_nf.lote,
+            produto=item_nf.produto,
+            documento=str(nf.numero or ''),
+            observacao=f'Devolução de venda — NF-e {nf.numero}/{nf.serie} — chave {nf.chave_acesso}',
+        )
 
 
 def _processar_autorizacao_agrupamento(nf):
@@ -153,6 +172,23 @@ def _processar_autorizacao_agrupamento(nf):
         logging.getLogger(__name__).error(
             'Erro ao processar agrupamento pós-autorização NF %s: %s', nf.pk, exc
         )
+
+
+def _sync_pedido_de_documento(nf=None, invoice=None):
+    """Sincroniza o status do PedidoVenda vinculado após NF-e/Invoice mudar de status.
+
+    A FK é de PedidoVenda para o documento (não o inverso), então é preciso buscar
+    o pedido pelo documento antes de sincronizar.
+    """
+    from vendas.models import PedidoVenda
+    from vendas.services import sincronizar_status_pedido
+    pedido = None
+    if nf is not None:
+        pedido = PedidoVenda.objects.filter(nota_fiscal=nf).first()
+    elif invoice is not None:
+        pedido = PedidoVenda.objects.filter(invoice=invoice).first()
+    if pedido:
+        sincronizar_status_pedido(pedido)
 
 
 def _get_empresa(request):
@@ -469,9 +505,26 @@ def nota_fiscal_danfe_preview(request, pk):
 
 @login_required
 def nota_fiscal_detail(request, pk):
+    from drawback import services as drawback_services
+
     empresa = _get_empresa(request)
     nf = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
-    return render(request, 'faturamento/nota_fiscal/detail.html', {'nf': nf})
+
+    sugestoes_drawback = {}
+    if nf.status == 'EMITIDA':
+        for item in nf.itens.all():
+            if not item.produto_id or not (item.cfop or '').startswith('7'):
+                continue
+            if hasattr(item, 'drawback_saida'):
+                continue
+            sugestao = drawback_services.sugerir_vinculo_saida(item, empresa)
+            if sugestao:
+                sugestoes_drawback[item.pk] = sugestao
+
+    return render(request, 'faturamento/nota_fiscal/detail.html', {
+        'nf': nf,
+        'sugestoes_drawback': sugestoes_drawback,
+    })
 
 
 @login_required
@@ -886,7 +939,9 @@ def nota_fiscal_emitir_ajax(request, pk):
                         _extra2 = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml2, pdf2)
                         nf.save(update_fields=list(dict.fromkeys(_base_f + _extra2)))
                         _registrar_baixa_devolucao(nf)
+                        _registrar_entrada_devolucao_venda(nf)
                         _processar_autorizacao_agrupamento(nf)
+                        _sync_pedido_de_documento(nf=nf)
                         steps.append({'status': 'authorized', 'label': 'NF-e Autorizada (recuperada) ✓',
                                       'protocolo': protocolo2, 'chave': chave_5008})
                         return JsonResponse({
@@ -970,7 +1025,9 @@ def nota_fiscal_emitir_ajax(request, pk):
     _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
     nf.save(update_fields=list(dict.fromkeys(_base_fields + _extra)))
     _registrar_baixa_devolucao(nf)
+    _registrar_entrada_devolucao_venda(nf)
     _processar_autorizacao_agrupamento(nf)
+    _sync_pedido_de_documento(nf=nf)
     steps.append({'status': 'authorized', 'label': 'NF-e Autorizada pela SEFAZ ✓',
                   'protocolo': protocolo, 'chave': chave})
     return JsonResponse({
@@ -1040,6 +1097,7 @@ def nota_fiscal_emitir(request, pk):
             nf.data_hora_emissao = timezone.now()
             nf.atualizado_por = request.user
             nf.save(update_fields=['chave_acesso', 'status', 'data_hora_emissao', 'atualizado_por'])
+            _sync_pedido_de_documento(nf=nf)
             messages.info(request, f'NF {nf.numero}/{nf.serie} enviada à SEFAZ — aguardando autorização. Chave: {chave}')
         else:
             # Authorized immediately (codigo == 100)
@@ -1055,7 +1113,9 @@ def nota_fiscal_emitir(request, pk):
             _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml_b64, pdf_b64)
             nf.save(update_fields=list(dict.fromkeys(_base + _extra)))
             _registrar_baixa_devolucao(nf)
+            _registrar_entrada_devolucao_venda(nf)
             _processar_autorizacao_agrupamento(nf)
+            _sync_pedido_de_documento(nf=nf)
             messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada! Chave: {chave}')
 
     except IntegranNotasError as exc:
@@ -1082,6 +1142,9 @@ def nota_fiscal_emitir(request, pk):
                                  'pdf_danfe', 'status', 'data_hora_emissao', 'atualizado_por']
                         _extra = _upload_fiscal_docs(nf, nf.empresa_id, 'nfe', nf.numero, nf.serie, xml2, pdf2)
                         nf.save(update_fields=list(dict.fromkeys(_base + _extra)))
+                        _registrar_baixa_devolucao(nf)
+                        _registrar_entrada_devolucao_venda(nf)
+                        _sync_pedido_de_documento(nf=nf)
                         messages.success(request, f'NF {nf.numero}/{nf.serie} autorizada (recuperada)! Chave: {chave_5008}')
                         return redirect('faturamento:nota_fiscal_detail', pk=pk)
                     elif data2.get('codigo') == 5023:
@@ -1172,6 +1235,7 @@ def nota_fiscal_cancelar(request, pk):
             nf.data_cancelamento = timezone.now()
             nf.atualizado_por = request.user
             nf.save(update_fields=['status', 'motivo_cancelamento', 'data_cancelamento', 'atualizado_por'])
+            _sync_pedido_de_documento(nf=nf)
             messages.success(request, f'NF {nf.numero}/{nf.serie} cancelada.')
             return redirect('faturamento:nota_fiscal_detail', pk=pk)
     else:
@@ -2222,6 +2286,7 @@ def invoice_emitir(request, pk):
     invoice.status = 'EMITIDA'
     invoice.atualizado_por = request.user
     invoice.save(update_fields=['status', 'atualizado_por'])
+    _sync_pedido_de_documento(invoice=invoice)
     messages.success(request, f'{invoice.numero} emitida com sucesso.')
     return redirect('faturamento:invoice_detail', pk=pk)
 
@@ -2239,8 +2304,53 @@ def invoice_cancelar(request, pk):
     invoice.status = 'CANCELADA'
     invoice.atualizado_por = request.user
     invoice.save(update_fields=['status', 'atualizado_por'])
+    _sync_pedido_de_documento(invoice=invoice)
     messages.success(request, f'{invoice.numero} cancelada.')
     return redirect('faturamento:invoice_detail', pk=pk)
+
+
+@login_required
+def invoice_devolucao_registrar(request, pk):
+    """Registra devolução de venda (entrada de estoque) para uma Invoice de exportação emitida.
+
+    Para NF-e de mercado interno já existe um fluxo fiscal completo de devolução
+    (`nota_fiscal_devolucao`, que gera uma NF-e reversa de verdade — ver
+    `_registrar_entrada_devolucao_venda` para a baixa de estoque correspondente).
+    Para Invoice de exportação não existe documento fiscal equivalente, então esta
+    view registra só a entrada de estoque. `ItemInvoice` não referencia
+    `produtos.Produto` diretamente, então a devolução fica aberta a qualquer
+    produto da empresa (não há como restringir pelos itens da invoice).
+    """
+    empresa = _get_empresa(request)
+    invoice = get_object_or_404(InvoiceExportacao, pk=pk, empresa=empresa)
+
+    if invoice.status != 'EMITIDA':
+        messages.error(request, 'Só é possível registrar devolução de invoices EMITIDAS.')
+        return redirect('faturamento:invoice_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = DevolucaoVendaForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            from estoque.services import criar_movimentacao
+            criar_movimentacao(
+                empresa=empresa,
+                tipo='ENTRADA',
+                origem='DEVOLUCAO_VENDA',
+                quantidade=form.cleaned_data['quantidade'],
+                usuario=request.user,
+                lote=form.cleaned_data.get('lote'),
+                produto=form.cleaned_data['produto'],
+                documento=str(invoice.numero or ''),
+                observacao=form.cleaned_data['justificativa'],
+            )
+            messages.success(request, 'Devolução registrada e estoque atualizado.')
+            return redirect('faturamento:invoice_detail', pk=pk)
+    else:
+        form = DevolucaoVendaForm(empresa=empresa)
+
+    return render(request, 'faturamento/devolucao_venda/form.html', {
+        'form': form, 'documento': invoice,
+    })
 
 
 @login_required
@@ -4946,7 +5056,7 @@ def remessas_pendentes(request):
         qs = qs.filter(data_emissao__lte=data_ate)
 
     from cadastros.models import Cliente
-    clientes = Cliente.objects.filter(empresa=empresa, ativo=True).order_by('razao_social')
+    clientes = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
 
     return render(request, 'faturamento/remessas_pendentes.html', {
         'notas': qs,

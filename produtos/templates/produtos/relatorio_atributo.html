@@ -5,15 +5,15 @@
 
 {% block extra_css %}
 <style>
-.page-header { background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); border-radius: 16px; color: #fff; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
+.page-header { background: linear-gradient(135deg, #1a7a3c 0%, #0f5c2a 100%); border-radius: 16px; color: #fff; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
 .page-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
-.filter-card { border: none; border-radius: 14px; box-shadow: 0 2px 10px rgba(124,58,237,.08); }
+.filter-card { border: none; border-radius: 14px; box-shadow: 0 2px 10px rgba(26,122,60,.08); }
 .kpi-box { border-radius: 12px; padding: 1rem 1.25rem; }
-.kpi-box.fat { background: linear-gradient(135deg, #ede9fe, #ddd6fe); }
+.kpi-box.fat { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
 .kpi-box.compra { background: linear-gradient(135deg, #e0f2fe, #bae6fd); }
-.kpi-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #5b21b6; }
-.kpi-value { font-size: 1.6rem; font-weight: 800; color: #1e1b4b; }
-.result-table th { background: #f5f3ff; color: #5b21b6; font-size: .82rem; }
+.kpi-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #0f5c2a; }
+.kpi-value { font-size: 1.6rem; font-weight: 800; color: #1e1b1b; }
+.result-table th { background: #eaf5ec; color: #0f5c2a; font-size: .82rem; }
 .result-table td { font-size: .84rem; vertical-align: middle; }
 </style>
 {% endblock %}
@@ -99,7 +99,7 @@
 <!-- KPIs -->
 <div class="row g-3 mb-4">
   <div class="col-12">
-    <h5 class="fw-bold" style="color:#7c3aed;">
+    <h5 class="fw-bold" style="color:#1a7a3c;">
       <i class="bi bi-layers me-1"></i>{{ resultados.dimensao.nome }}: <strong>{{ resultados.valor }}</strong>
     </h5>
   </div>
@@ -131,8 +131,8 @@
 
 <!-- Faturamento -->
 {% if resultados.faturamento_itens %}
-<div class="card mb-4" style="border:none;border-radius:14px;box-shadow:0 2px 10px rgba(124,58,237,.08);">
-  <div class="card-header" style="background:#f5f3ff;border-radius:14px 14px 0 0;color:#5b21b6;font-weight:700;border-bottom:2px solid #ddd6fe;">
+<div class="card mb-4" style="border:none;border-radius:14px;box-shadow:0 2px 10px rgba(26,122,60,.08);">
+  <div class="card-header" style="background:#eaf5ec;border-radius:14px 14px 0 0;color:#0f5c2a;font-weight:700;border-bottom:2px solid #a7f3d0;">
     <i class="bi bi-receipt me-1"></i>Faturamento (últimos 50 registros)
   </div>
   <div class="card-body p-0">

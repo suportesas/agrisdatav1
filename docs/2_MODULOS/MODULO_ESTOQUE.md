@@ -2,7 +2,7 @@
 
 Owner: Time estoque
 Status: In Review
-Last Updated: 2026-07-01
+Last Updated: 2026-07-10
 Scope: estoque
 
 ## Visao geral
@@ -68,3 +68,5 @@ Rotas de referencia (amostra): entrada-rapida/; saida-rapida/; ajuste-rapido/; e
 - estoque/models.py
 - estoque/urls.py
 - docs/TEMPLATES/TEMPLATE_MODULO.md
+- Estratégia de atualização de estoque (dois fluxos: com lote / entrada rápida sem lote), código-chave e debugging: `docs/4_TECNICO/ESTRATEGIA_ESTOQUE.md`
+- Fluxogramas detalhados de entrada/saída: `docs/4_TECNICO/FLUXOGRAMAS_ESTOQUE.md`

@@ -1,93 +1,80 @@
-# Fluxo Compra ate Financeiro
-
 Owner: Processos
-Status: Draft
-Last Updated: 2026-07-01
+Status: Approved
+Last Updated: 2026-07-10
 Scope: Compras, recebimento e contas a pagar
 
-## Objetivo
-Documentar o fluxo ponta a ponta desde a compra ate a liquidacao financeira.
+# Fluxo Compra até Financeiro
 
-## Escopo
-Fonte consolidada:
-- FLUXO_COMPRA_FINANCEIRO.md
-- GUIA_COMPRA_RAPIDA_ATE_PAGAMENTO.md
+Fluxo ponta a ponta desde a criação da compra até a liquidação financeira da conta a pagar gerada.
 
-## Visao do fluxo
-1. Compra rapida
-2. Recebimento e entrada em estoque
-3. Registro da nota fiscal
-4. Criacao automatica de conta a pagar
-5. Aprovacao financeira
-6. Pagamento e compensacao
+```
+COMPRA ➜ RECEBIMENTO ➜ NOTA FISCAL ➜ CONTA A PAGAR ➜ APROVAÇÃO ➜ PAGAMENTO
+ PEDIDO    ESTOQUE      NF na compra   Parcelas         —          Liquidação
+```
 
-## Etapa 1 - Compra rapida
-Entrada:
-- Fornecedor
-- Itens, quantidades e precos
+## Etapa 1 — Compra rápida
+`compras/views_simples.py` (`/compras/compra-rapida/`)
 
-Saida:
-- Pedido criado com status pendente de recebimento
+Entrada: fornecedor, produtos/quantidades/preços, data de entrega prevista.
+Cria `PedidoCompra` com `status='PENDENTE_RECEBIMENTO'`, sem cotação nem proposta de fornecedor vinculada (modo simples — para o fluxo com cotação/proposta, ver `docs/2_MODULOS/MODULO_COMPRAS.md`).
 
-## Etapa 2 - Recebimento
-Entrada:
-- Conferencia de quantidade recebida
-- Armazem/local de estoque
+## Etapa 2 — Recebimento e entrada em estoque
+`/compras/pedido/<id>/receber/`
 
-Regras:
-- Pode haver recebimento parcial
-- Entrada gera lote e atualiza saldo
+Entrada: quantidade recebida (aceita recebimento parcial), local de estoque, número de lote.
+Cria `RecebimentoCompra` (`status='PENDENTE_NOTA'`) e, por item, `ItemRecebimento` + `Lote` no estoque com a quantidade recebida.
 
-Saida:
-- Recebimento com status aguardando nota fiscal
+## Etapa 3 — Registro da nota fiscal
+`/compras/recebimento/<id>/fatura/`
 
-## Etapa 3 - Faturamento de recebimento
-Entrada:
-- Numero/série NF
-- Data emissao
-- Valor total
-- Condicao de pagamento
+Entrada: número/série da NF, data de emissão, CFOP, valor total, condição de pagamento.
+`RecebimentoCompra` muda para `status='FINALIZADO'`.
 
-Saida:
-- Recebimento finalizado
+## Etapa 4 — Criação automática da conta a pagar
+Quando o recebimento é finalizado **com NF**, o sistema cria automaticamente:
+- `ContaPagar` (`financeiro/models.py`), vinculada ao fornecedor do pedido, valor = valor da NF, `requer_aprovacao=True` por padrão
+- `ParcelaContaPagar` para cada parcela da condição de pagamento do pedido (ex: "3x 30 dias" → 3 parcelas com vencimentos escalonados)
 
-## Etapa 4 - Integracao financeira automatica
-Regra:
-- Recebimento finalizado com NF deve gerar ContaPagar
+Recebimento finalizado **sem NF** não gera conta a pagar.
 
-Saida:
-- ContaPagar criada
-- Parcelas criadas conforme condicao de pagamento
+## Etapa 5 — Aprovação
+`/financeiro/contas/<id>/aprovar/`
 
-## Etapa 5 - Aprovacao
-Regra:
-- Se a conta requer aprovacao, bloqueia pagamento ate aprovacao
+Se a conta requer aprovação, o pagamento fica bloqueado até um usuário com permissão aprovar (`ContaPagar.status`: `ABERTA` → `APROVADA`).
 
-Saida:
-- Conta em estado apto para pagamento
+## Etapa 6 — Juros e multa em atraso
+`ParcelaContaPagar.save()` recalcula, a cada acesso, os dias de atraso e aplica juros/multa conforme a configuração de juros/multa da empresa (`/configuracao/juros-multa/`: taxa de juros mensal, tipo de multa `PERCENTUAL` ou `POR_DIA`, dias de tolerância) quando a parcela passa do vencimento (`status` vira `VENCIDA`).
 
-## Etapa 6 - Pagamento
-Entrada:
-- Forma de pagamento
-- Documento/comprovante
-- Data de compensacao quando aplicavel
+## Etapa 7 — Pagamento e compensação
+`/financeiro/parcelas/<id>/pagar/`
 
-Saida:
-- Pagamento registrado e parcela liquidada
+Entrada: valor a pagar, forma de pagamento (dinheiro, boleto, TED, cartão, cheque, PIX), documento, banco, comprovante.
+Cria `PagamentoContaPagar` (`status='PENDENTE'` até compensação bancária). Ao compensar, parcela vira `PAGA`; quando todas as parcelas da conta estão pagas, `ContaPagar.status` vira `PAGA`.
 
-## Tabela de decisao resumida
-| Condicao | Comportamento |
+## Tabela de decisão
+| Condição | Comportamento |
 |---|---|
-| Recebimento finalizado sem NF | Nao cria conta a pagar |
-| Recebimento finalizado com NF | Cria conta e parcelas |
-| Conta requer aprovacao e nao aprovada | Impede pagamento |
-| Parcela paga com compensacao | Atualiza status de liquidacao |
+| Recebimento finalizado sem NF | Não cria conta a pagar |
+| Recebimento finalizado com NF | Cria `ContaPagar` + `ParcelaContaPagar` |
+| Conta requer aprovação e não aprovada | Impede pagamento |
+| Parcela vence sem pagamento | Recalcula juros/multa e marca `VENCIDA` |
+| Todas as parcelas de uma conta pagas | `ContaPagar.status = PAGA` |
 
-## Evidencias esperadas
+## Relatórios relacionados (`/financeiro/`)
+- Dashboard financeiro: KPIs de total a pagar, pago, juros/multas acumuladas, alertas de vencimento
+- Contas a vencer / contas vencidas (com dias de atraso e juros/multa acumulados)
+- Fluxo de caixa: previsto vs. pago, por mês e por fornecedor
+
+## Evidências esperadas em auditoria
 - Pedido e recebimento vinculados
-- Conta e parcelas com referencia da NF
-- Registro de pagamento com comprovante
+- Conta e parcelas com referência da NF
+- Registro de pagamento com comprovante anexado
 
-## Referencias legadas
-- FLUXO_COMPRA_FINANCEIRO.md
-- GUIA_COMPRA_RAPIDA_ATE_PAGAMENTO.md
+## Pendências conhecidas (backlog, não implementado)
+- Integração com API bancária para compensação automática
+- Geração automática de boleto
+- Renegociação de parcelas com novo contrato
+- Notificações automáticas por e-mail/WhatsApp antes do vencimento
+
+## Fontes
+Consolidado a partir de `FLUXO_COMPRA_FINANCEIRO.md` e `GUIA_COMPRA_RAPIDA_ATE_PAGAMENTO.md` (originais, ver `docs/6_OPERACIONAL/GUIA_COMPRA_RAPIDA_ATE_PAGAMENTO.md`), verificado contra `compras/views_simples.py` e `financeiro/models.py` (`ContaPagar`, `ParcelaContaPagar`, `PagamentoContaPagar`).

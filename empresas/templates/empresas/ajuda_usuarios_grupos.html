@@ -8,12 +8,7 @@
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-3">
-                    <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Ajuda</li>
-                </ol>
-            </nav>
+            {% breadcrumb "Dashboard:dashboard:index" "Ajuda" %}
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h1 class="mb-0"><i class="fas fa-users-cog"></i> Usuários e Grupos Corporativos</h1>

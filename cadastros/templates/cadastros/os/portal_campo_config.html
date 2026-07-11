@@ -4,21 +4,15 @@
 {% block content %}
 <div class="container-fluid px-4">
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'operacoes_campo:os_list' %}">Ordens de Serviço</a></li>
-      <li class="breadcrumb-item active">Configurações do Portal</li>
-    </ol>
-  </nav>
+  {% breadcrumb "Ordens de Serviço:operacoes_campo:os_list" "Configurações do Portal" %}
 
   <div class="row justify-content-center">
     <div class="col-12 col-lg-7">
 
       <!-- Cabeçalho -->
       <div class="d-flex align-items-center gap-3 mb-4">
-        <div class="rounded-3 p-3" style="background:#ede9fe;">
-          <i class="bi bi-phone-fill fs-4 text-purple" style="color:#7c3aed;"></i>
+        <div class="rounded-3 p-3" style="background:#d1fae5;">
+          <i class="bi bi-phone-fill fs-4 text-purple" style="color:#1a7a3c;"></i>
         </div>
         <div>
           <h4 class="mb-0 fw-bold">Configurações do Portal do Campo</h4>
@@ -33,7 +27,7 @@
         <div class="card border-0 shadow-sm mb-4" style="border-radius:1rem;">
           <div class="card-body p-4">
             <h6 class="fw-bold mb-1">
-              <i class="bi bi-people-fill me-2 text-purple" style="color:#7c3aed;"></i>
+              <i class="bi bi-people-fill me-2 text-purple" style="color:#1a7a3c;"></i>
               Registro de mão de obra
             </h6>
             <p class="text-muted small mb-3">
@@ -45,7 +39,7 @@
               <!-- Opção AUTO -->
               <label class="d-flex align-items-start gap-3 p-3 rounded-3 border cursor-pointer option-card
                 {% if config.horario_trabalhadores == 'AUTO' %}border-purple bg-purple-soft{% endif %}"
-                style="cursor:pointer;{% if config.horario_trabalhadores == 'AUTO' %}border-color:#7c3aed!important;background:#f5f3ff;{% endif %}">
+                style="cursor:pointer;{% if config.horario_trabalhadores == 'AUTO' %}border-color:#1a7a3c!important;background:#eaf5ec;{% endif %}">
                 <input type="radio" name="horario_trabalhadores" value="AUTO" class="form-check-input mt-1 flex-shrink-0"
                   {% if config.horario_trabalhadores == 'AUTO' %}checked{% endif %}>
                 <div>
@@ -55,7 +49,7 @@
                     O admin pode ajustar antes de confirmar.
                   </div>
                   <div class="mt-2">
-                    <span class="badge rounded-pill" style="background:#ede9fe;color:#7c3aed;font-size:.72rem;">
+                    <span class="badge rounded-pill" style="background:#d1fae5;color:#1a7a3c;font-size:.72rem;">
                       <i class="bi bi-star-fill me-1"></i>Recomendado
                     </span>
                   </div>
@@ -86,7 +80,7 @@
         <div class="card border-0 shadow-sm mb-4" style="border-radius:1rem;">
           <div class="card-body p-4">
             <h6 class="fw-bold mb-1">
-              <i class="bi bi-cash-coin me-2" style="color:#7c3aed;"></i>
+              <i class="bi bi-cash-coin me-2" style="color:#1a7a3c;"></i>
               Encargos Trabalhistas
             </h6>
             <p class="text-muted small mb-3">

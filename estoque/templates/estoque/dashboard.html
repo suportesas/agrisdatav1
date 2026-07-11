@@ -31,53 +31,12 @@
     margin: .15rem 0 0;
   }
 
-  /* ── KPI cards ── */
+  /* ── KPI row: usa .kpi-card global (base.css) — só o grid de 4 colunas fica local ── */
   .kpi-row {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: .85rem;
     margin-bottom: 1rem;
-  }
-  .kpi {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: .9rem 1rem;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,.04);
-  }
-  .kpi::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 4px;
-    background: var(--kc, #7c3aed);
-  }
-  .kpi .kpi-icon {
-    position: absolute;
-    right: .9rem; top: .75rem;
-    font-size: 2rem;
-    opacity: .08;
-    color: var(--kc, #7c3aed);
-  }
-  .kpi h6 {
-    margin: 0;
-    font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    color: #6b7280;
-  }
-  .kpi .val {
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: #111827;
-    line-height: 1.1;
-    margin: .3rem 0 .2rem;
-  }
-  .kpi .meta {
-    font-size: .78rem;
-    color: #6b7280;
   }
 
   /* ── status pills ── */
@@ -170,7 +129,7 @@
   .bdg-yellow { background:#fef3c7; color:#92400e; }
   .bdg-orange { background:#ffedd5; color:#9a3412; }
   .bdg-gray   { background:#f1f5f9; color:#475569; }
-  .bdg-purple { background:#ede9fe; color:#5b21b6; }
+  .bdg-purple { background:#f3f4f6; color:#4b5563; }
 
   /* ── urgency bar for days-to-expire ── */
   .days-bar {
@@ -246,15 +205,15 @@
   .qa-btn.c-green:hover  { background: #10b981; }
   .qa-btn.c-red:hover    { background: #ef4444; }
   .qa-btn.c-blue:hover   { background: #3b82f6; }
-  .qa-btn.c-violet:hover { background: #7c3aed; }
+  .qa-btn.c-violet:hover { background: #6366f1; }
   .qa-btn.c-slate:hover  { background: #475569; }
-  .qa-btn.c-cyan:hover   { background: #06b6d4; }
+  .qa-btn.c-cyan:hover   { background: #2563eb; }
   .qa-btn.c-green  i { color: #10b981; }
   .qa-btn.c-red    i { color: #ef4444; }
   .qa-btn.c-blue   i { color: #3b82f6; }
-  .qa-btn.c-violet i { color: #7c3aed; }
+  .qa-btn.c-violet i { color: #6366f1; }
   .qa-btn.c-slate  i { color: #475569; }
-  .qa-btn.c-cyan   i { color: #06b6d4; }
+  .qa-btn.c-cyan   i { color: #2563eb; }
   .qa-btn:hover i { color: #fff; }
 
   /* ── reports section ── */
@@ -279,9 +238,9 @@
     transition: all .15s;
   }
   .rpt-link:hover {
-    background: #7c3aed;
+    background: #1a7a3c;
     color: #fff;
-    border-color: #7c3aed;
+    border-color: #1a7a3c;
     text-decoration: none;
   }
   .rpt-link i { font-size: .95rem; }
@@ -322,7 +281,7 @@
   {# ── cabeçalho ── #}
   <div class="es-head">
     <div>
-      <h1><i class="bi bi-box-seam me-2" style="color:#7c3aed;"></i>Estoque</h1>
+      <h1><i class="bi bi-box-seam me-2" style="color:#1a7a3c;"></i>Estoque</h1>
       <p class="sub">Visão geral, alertas e acesso rápido às operações</p>
     </div>
     <div class="d-flex gap-2">
@@ -357,35 +316,43 @@
 
   {# ── KPIs principais ── #}
   <div class="kpi-row">
-    <div class="kpi" style="--kc:#7c3aed;">
-      <i class="bi bi-currency-dollar kpi-icon"></i>
-      <h6>Valor em Estoque</h6>
-      <p class="val">R$ {{ valor_total_estoque|floatformat:2 }}</p>
-      <p class="meta">Lotes disponíveis</p>
+    <div class="kpi-card">
+      <div class="kpi-icon green"><i class="bi bi-currency-dollar"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Valor em Estoque</div>
+        <div class="kpi-value">R$ {{ valor_total_estoque|floatformat:2 }}</div>
+        <div class="kpi-sub">Lotes disponíveis</div>
+      </div>
     </div>
-    <div class="kpi" style="--kc:#06b6d4;">
-      <i class="bi bi-box2 kpi-icon"></i>
-      <h6>Lotes Ativos</h6>
-      <p class="val">{{ total_lotes }}</p>
-      <p class="meta">{{ total_armazens }} armazém{{ total_armazens|pluralize:"éns" }} · {{ total_locais }} local{{ total_locais|pluralize:"is" }}</p>
+    <div class="kpi-card">
+      <div class="kpi-icon blue"><i class="bi bi-box2"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Lotes Ativos</div>
+        <div class="kpi-value">{{ total_lotes }}</div>
+        <div class="kpi-sub">{{ total_armazens }} armazém{{ total_armazens|pluralize:"éns" }} · {{ total_locais }} local{{ total_locais|pluralize:"is" }}</div>
+      </div>
     </div>
-    <div class="kpi" style="--kc:#10b981;">
-      <i class="bi bi-arrow-left-right kpi-icon"></i>
-      <h6>Movimentações (mês)</h6>
-      <p class="val">{{ movimentacoes_mes }}</p>
-      <p class="meta">{{ entradas_mes }} entrada{{ entradas_mes|pluralize }} · {{ saidas_mes }} saída{{ saidas_mes|pluralize }}</p>
+    <div class="kpi-card">
+      <div class="kpi-icon green"><i class="bi bi-arrow-left-right"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Movimentações (mês)</div>
+        <div class="kpi-value">{{ movimentacoes_mes }}</div>
+        <div class="kpi-sub">{{ entradas_mes }} entrada{{ entradas_mes|pluralize }} · {{ saidas_mes }} saída{{ saidas_mes|pluralize }}</div>
+      </div>
     </div>
-    <div class="kpi" style="--kc:{% if lotes_vencendo_7d > 0 %}#ef4444{% else %}#f59e0b{% endif %};">
-      <i class="bi bi-clock-history kpi-icon"></i>
-      <h6>Vencendo (30 dias)</h6>
-      <p class="val">{{ lotes_vencendo }}</p>
-      <p class="meta">
-        {% if lotes_vencendo_7d > 0 %}
-          <span style="color:#ef4444;font-weight:700;">{{ lotes_vencendo_7d }} vence{{ lotes_vencendo_7d|pluralize:"m" }} em 7 dias</span>
-        {% else %}
-          Nenhum crítico nos próximos 7 dias
-        {% endif %}
-      </p>
+    <div class="kpi-card">
+      <div class="kpi-icon {% if lotes_vencendo_7d > 0 %}red{% else %}orange{% endif %}"><i class="bi bi-clock-history"></i></div>
+      <div class="kpi-body">
+        <div class="kpi-label">Vencendo (30 dias)</div>
+        <div class="kpi-value">{{ lotes_vencendo }}</div>
+        <div class="kpi-sub">
+          {% if lotes_vencendo_7d > 0 %}
+            <strong class="text-danger">{{ lotes_vencendo_7d }} vence{{ lotes_vencendo_7d|pluralize:"m" }} em 7 dias</strong>
+          {% else %}
+            Nenhum crítico nos próximos 7 dias
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
 
@@ -539,7 +506,7 @@
   {# ── relatórios ── #}
   <div class="panel">
     <div class="panel-hd">
-      <h3><i class="bi bi-graph-up me-1" style="color:#7c3aed;"></i>Relatórios</h3>
+      <h3><i class="bi bi-graph-up me-1" style="color:#1a7a3c;"></i>Relatórios</h3>
     </div>
     <div class="rpt-grid">
       <a href="{% url 'estoque:relatorio_estoque' %}" class="rpt-link">

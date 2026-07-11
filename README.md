@@ -19,7 +19,8 @@ Sistema de gestão agrícola com arquitetura **multi-tenant** (multiempresa), de
 8. [Deploy Contínuo com GitHub](#deploy-contínuo-com-github)
 9. [Pós-Deploy — Dados Iniciais](#pós-deploy--dados-iniciais)
 10. [Comandos de Manutenção](#comandos-de-manutenção)
-10. [Checklist de Segurança para Produção](#checklist-de-segurança-para-produção)
+11. [Checklist de Segurança para Produção](#checklist-de-segurança-para-produção)
+12. [Documentação](#documentação)
 
 ---
 
@@ -49,6 +50,8 @@ O sistema isola dados por empresa: cada `Fazenda`, `OS`, `NF-e`, `Funcionário`,
 
 ## Módulos do Sistema
 
+27 apps Django. Documentação funcional detalhada de cada um em [`docs/2_MODULOS/`](docs/2_MODULOS/) (ver `MAPA_COBERTURA_MODULOS.md` para o status de cada documento).
+
 | App | Prefixo URL | Descrição |
 |-----|------------|-----------|
 | `cadastros` | `/cadastros/` | Clientes, fornecedores, produtores, transportadoras, CFOP, NCM |
@@ -56,14 +59,30 @@ O sistema isola dados por empresa: cada `Fazenda`, `OS`, `NF-e`, `Funcionário`,
 | `plano_contas` | `/plano-contas/` | Plano de contas contábeis hierárquico |
 | `bancario` | `/bancario/` | Contas bancárias, extrato, conciliação OFX/CNAB |
 | `faturamento` | `/faturamento/` | NF-e, CT-e, MDF-e, Invoice de exportação |
-| `compras` | `/compras/` | Pedidos, cotações, recebimentos, importação XML NF-e |
-| `estoque` | `/estoque/` | Movimentações, requisições, inventário |
+| `compras` | `/compras/` | Solicitações, cotações, pedidos, recebimentos, importação XML NF-e |
+| `estoque` | `/estoque/` | Movimentações, lotes, armazéns, inventário cíclico |
+| `produtos` | `/produtos/` | Catálogo, categorias/subcategorias, tributação |
 | `vendas` | `/vendas/` | Pedidos de venda |
 | `operacoes_campo` | `/campo/` | Ordens de Serviço, portal do campo (PWA), horímetros |
 | `frota` | `/frota/` | Veículos e máquinas |
-| `rh` | `/rh/` | Funcionários, salários |
+| `rh` | `/rh/` | Funcionários, funções, riscos ambientais, documentos |
 | `exportacao` | `/exportacao/` | Bookings, armadores, ordens de coleta |
 | `embalagem` | `/embalagem/` | Ordens de embalagem, pallets, romaneios |
+| `etiquetas_avulsas` | `/etiquetas-avulsas/` | Lotes de etiquetas avulsas e reimpressão |
+| `patrimonio` | `/patrimonio/` | Bens patrimoniais, depreciação, auditoria física |
+| `drawback` | `/drawback/` | Regime aduaneiro de Drawback (Atos Concessórios) |
+| `estufas` | `/estufas/` | Lotes de mudas, transplantio, monitoramento em estufa |
+| `mip` | `/mip/` | Manejo Integrado de Pragas — monitoramento fitossanitário |
+| `energia` | `/energia/` | Gestão de energia |
+| `emprestimos` | `/emprestimos/` | Empréstimos e extratos |
+| `adiantamentos` | `/adiantamentos/` | Adiantamentos |
+| `dashboard` | `/dashboard/` | Dashboard operacional |
+| `metricas` | `/dashboard-executivo/` | Dashboard executivo / métricas |
+| `usuarios` | `/usuarios/` | Usuários, tipos de acesso, autenticação Supabase |
+| `empresas` | `/empresas/` | Cadastro de empresas (tenants) e planos |
+| `portal` | `/portal/cliente/` | Portal do cliente (login, financeiro, documentos) |
+
+Além destes, `compras`, `cadastros`, `frota` expõem portais de usuário restrito adicionais em `/portal/fornecedor/`, `/portal/produtor/`, `/portal/motorista/` e `/portal/campo/` (ver `docs/2_MODULOS/MODULO_PORTAL.md`).
 
 ---
 
@@ -927,37 +946,55 @@ Antes de colocar o sistema em produção, confirme cada item:
 ## Estrutura de Pastas
 
 ```
-erp_agricola/
-├── erp_agricola/        # Configurações do projeto (settings, urls, wsgi)
-├── core/                # Middleware, feature flags, utilitários globais
+agrisdatav2/
+├── core/                # Settings, urls raiz, middleware, feature flags
 ├── templates/           # Templates base (base.html, sidebar.html)
-├── static/              # CSS, JS, imagens do projeto
-├── staticfiles/         # Destino do collectstatic (não versionar)
-├── media/               # Uploads locais (fallback do Supabase)
+├── static/               # CSS, JS, imagens do projeto
+├── staticfiles/          # Destino do collectstatic (não versionar)
+├── media/                # Uploads locais (fallback do Supabase)
+├── docs/                 # Documentação do projeto — ver seção "Documentação" abaixo
 │
-├── empresas/            # Gestão de empresas e planos de assinatura
-├── usuarios/            # Autenticação e perfis de usuário
-├── cadastros/           # Fazendas, clientes, fornecedores, CFOP, NCM
-├── financeiro/          # Contas a pagar/receber, fluxo de caixa
-├── plano_contas/        # Plano de contas contábil hierárquico
-├── bancario/            # Contas bancárias, conciliação OFX/CNAB
-├── faturamento/         # NF-e, CT-e, MDF-e, Invoice exportação
-├── compras/             # Pedidos, cotações, XML NF-e
-├── estoque/             # Movimentações, inventário
-├── vendas/              # Pedidos de venda
-├── produtos/            # Cadastro de produtos, NCM, tributação
-├── operacoes_campo/     # Ordens de Serviço, portal do campo PWA
-├── frota/               # Veículos e máquinas
-├── rh/                  # Funcionários, cargos
-├── exportacao/          # Bookings, armadores, ordens de coleta
-├── embalagem/           # Ordens de embalagem, pallets
+├── empresas/, usuarios/  # Tenants, autenticação e perfis de usuário
+├── cadastros/, produtos/ # Fazendas, clientes, fornecedores, catálogo, CFOP, NCM
+├── financeiro/, plano_contas/, bancario/  # Contas a pagar/receber, contabilidade, bancos
+├── faturamento/, exportacao/, drawback/   # NF-e/CT-e/MDF-e, exportação, regime aduaneiro
+├── compras/, estoque/, embalagem/, etiquetas_avulsas/  # Suprimentos e expedição
+├── vendas/, portal/      # Pedidos de venda, portal do cliente
+├── operacoes_campo/, frota/, patrimonio/, energia/, estufas/, mip/  # Operação de campo e ativos
+├── rh/                   # Funcionários, funções, riscos ambientais
+├── emprestimos/, adiantamentos/  # Financeiro interno
+├── dashboard/, metricas/ # Dashboards operacional e executivo
 │
+├── e2e/, tests/          # Testes Playwright e Django
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt
-├── .env.example         # Template de variáveis de ambiente
+├── .env.example          # Template de variáveis de ambiente
 └── manage.py
 ```
+
+Lista completa e atualizada dos 27 apps (com prefixo de URL e descrição): ver seção [Módulos do Sistema](#módulos-do-sistema) acima.
+
+---
+
+## Documentação
+
+Documentação funcional, técnica e operacional completa em [`docs/`](docs/) — ver [`docs/README.md`](docs/README.md) para o índice geral e [`docs/NAVIGATION.md`](docs/NAVIGATION.md) para navegação por perfil (técnico / negócio / operação).
+
+| Pasta | Conteúdo |
+|---|---|
+| `docs/0_INICIO_RAPIDO/` | Setup local, onboarding |
+| `docs/1_ARQUITETURA/` | Visão de alto nível, multi-tenancy, PRDs |
+| `docs/2_MODULOS/` | Um documento por app (ver `MAPA_COBERTURA_MODULOS.md` para status) |
+| `docs/3_FLUXOS_PROCESSOS/` | Fluxos de negócio ponta a ponta |
+| `docs/4_TECNICO/` | Cálculos, condicionais críticas, referência técnica |
+| `docs/5_DESENVOLVIMENTO/` | Padrões de código, testes, backlog técnico |
+| `docs/6_OPERACIONAL/` | Guias de uso por área |
+| `docs/7_RUNBOOKS/` | Resposta a incidentes |
+| `docs/8_DADOS/` | Seed, migração e qualidade de dados |
+| `docs/9_DEPLOYMENT/` | Deploy (Railway, Supabase, e-mail) |
+| `docs/10_FASES_ROADMAP/` | Changelog, status do projeto e roadmap por fase |
+| `docs/archive/` | Documentação histórica de features já concluídas (consolidada por tema) |
 
 ---
 

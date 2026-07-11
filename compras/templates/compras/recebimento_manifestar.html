@@ -13,7 +13,7 @@
       <h4 class="mb-0 fw-bold"><i class="bi bi-chat-square-check text-secondary me-2"></i>Manifestação do Destinatário (MD-e)</h4>
       <small class="text-muted">
         Recebimento {{ recebimento.numero }}
-        {% if recebimento.fornecedor %} — {{ recebimento.fornecedor.nome }}{% endif %}
+        {% if recebimento.fornecedor %} — {{ recebimento.fornecedor.get_nome_exibicao }}{% endif %}
         &nbsp;·&nbsp; NF {{ recebimento.nota_fiscal }}/{{ recebimento.serie_nota }}
       </small>
     </div>
@@ -35,7 +35,7 @@
         <dd class="col-sm-8">{{ recebimento.nota_fiscal }} / {{ recebimento.serie_nota }}</dd>
         {% if recebimento.fornecedor %}
         <dt class="col-sm-4">Fornecedor</dt>
-        <dd class="col-sm-8">{{ recebimento.fornecedor.nome }}</dd>
+        <dd class="col-sm-8">{{ recebimento.fornecedor.get_nome_exibicao }}</dd>
         {% endif %}
         <dt class="col-sm-4">Data Emissão</dt>
         <dd class="col-sm-8">{{ recebimento.data_emissao_nf|date:"d/m/Y" }}</dd>

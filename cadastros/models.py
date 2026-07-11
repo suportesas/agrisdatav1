@@ -2,6 +2,7 @@
 Módulo de Cadastro de Fazendas - ERP Agrícola
 Sistema completo com endereços, contatos, bancos e documentos
 """
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.core.validators import MinValueValidator, FileExtensionValidator
 from django.core.exceptions import ValidationError
@@ -182,7 +183,14 @@ class Fazenda(models.Model):
         blank=True,
         help_text='Economic Operators Registration and Identification (para exportação)'
     )
-    
+
+    ggn_numero = models.CharField(
+        'Número GGN (GLOBALG.A.P.)',
+        max_length=20,
+        blank=True,
+        help_text='Número de certificação GLOBALG.A.P. da propriedade, usado na rastreabilidade do Packing List.'
+    )
+
     regime_tributario = models.CharField(
         'Regime Tributário',
         max_length=20,
@@ -1052,7 +1060,13 @@ class Cliente(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['empresa','cnpj_cpf'], name='unique_cnpj_cpf_por_empresa_cliente')
         ]
-        indexes = [models.Index(fields=['empresa', 'codigo']), models.Index(fields=['cnpj_cpf'])]
+        indexes = [
+            models.Index(fields=['empresa', 'codigo']),
+            models.Index(fields=['cnpj_cpf']),
+            GinIndex(fields=['razao_social'], name='cad_cli_razsoc_trgm', opclasses=['gin_trgm_ops']),
+            GinIndex(fields=['nome_comercial'], name='cad_cli_nomecom_trgm', opclasses=['gin_trgm_ops']),
+            GinIndex(fields=['cnpj_cpf'], name='cad_cli_cnpj_trgm', opclasses=['gin_trgm_ops']),
+        ]
 
     def __str__(self):
         return f"{self.codigo or ''} {self.razao_social}"
@@ -4077,6 +4091,8 @@ class Fornecedor(models.Model):
         indexes = [
             models.Index(fields=['empresa', 'ativa']),
             models.Index(fields=['cnpj_cpf']),
+            GinIndex(fields=['nome'], name='cad_forn_nome_trgm', opclasses=['gin_trgm_ops']),
+            GinIndex(fields=['nome_fantasia'], name='cad_forn_nomefan_trgm', opclasses=['gin_trgm_ops']),
         ]
         constraints = [
             models.UniqueConstraint(fields=['empresa', 'cnpj_cpf'], name='unique_fornecedor_por_empresa')
@@ -4088,6 +4104,15 @@ class Fornecedor(models.Model):
     def get_nome_exibicao(self):
         """Retorna nome de exibição: prefere `nome_fantasia` se disponível"""
         return self.nome_fantasia or self.nome
+
+    def get_nome_exibicao_com_documento(self):
+        """Nome de exibição + CNPJ/CPF, para desambiguar fornecedores com o
+        mesmo nome (ex: filiais da mesma empresa, cada uma com CNPJ próprio)
+        em campos de seleção onde não há outra coluna visível."""
+        documento = self.get_cnpj_cpf_formatado()
+        if documento:
+            return f'{self.get_nome_exibicao()} — {documento}'
+        return self.get_nome_exibicao()
 
     def get_cnpj_cpf_formatado(self):
         """Formata CNPJ/CPF como na `Fazenda`"""
@@ -4733,6 +4758,57 @@ class Porto(models.Model):
 
     def __str__(self):
         return f"{self.nome} ({self.codigo})"
+
+
+class AgenteExportacao(models.Model):
+    """Agente de comércio exterior — Notify Party, Freight Forwarder, Despachante
+    Aduaneiro ou Armazém de Destino. Diferente de `Transportadora` (transporte
+    rodoviário nacional): representa um terceiro do lado internacional/destino
+    da exportação, reutilizável entre vários clientes/embarques.
+    """
+
+    TIPO_CHOICES = [
+        ('NOTIFY', 'Notify Party'),
+        ('FORWARDER', 'Freight Forwarder'),
+        ('DESPACHANTE_ADUANEIRO', 'Despachante Aduaneiro'),
+        ('ARMAZEM_DESTINO', 'Armazém de Destino'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='agentes_exportacao',
+        verbose_name='Empresa'
+    )
+
+    tipo = models.CharField('Tipo', max_length=25, choices=TIPO_CHOICES, default='NOTIFY')
+    nome = models.CharField('Nome', max_length=200)
+    pais = models.CharField('País', max_length=100)
+    cidade = models.CharField('Cidade', max_length=100, blank=True)
+    endereco = models.TextField('Endereço', blank=True)
+    contato_nome = models.CharField('Nome do Contato', max_length=150, blank=True)
+    contato_telefone = models.CharField('Telefone', max_length=30, blank=True)
+    contato_email = models.EmailField('E-mail', blank=True)
+    documento_fiscal = models.CharField('CNPJ / Tax ID / VAT', max_length=50, blank=True,
+        help_text='Identificador fiscal conforme o país do agente (CNPJ, VAT, Tax ID, etc.)')
+    ativo = models.BooleanField('Ativo', default=True)
+
+    data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Agente de Exportação'
+        verbose_name_plural = 'Agentes de Exportação'
+        ordering = ['tipo', 'nome']
+        indexes = [
+            models.Index(fields=['empresa', 'tipo', 'ativo']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'tipo', 'nome'], name='unique_agente_exportacao_por_empresa')
+        ]
+
+    def __str__(self):
+        return f"{self.nome} ({self.get_tipo_display()})"
 
 
 class SubcategoriaFornecedor(models.Model):

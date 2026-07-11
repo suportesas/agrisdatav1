@@ -15,7 +15,7 @@
         <div class="col-md-8">
             <h2><i class="bi bi-file-earmark-check me-2"></i> Pedido {{ pedido.numero }}</h2>
             <p class="text-muted mb-0">
-                Fornecedor: <strong>{{ pedido.fornecedor.nome }}</strong> | 
+                Fornecedor: <strong>{{ pedido.fornecedor.get_nome_exibicao }}</strong> |
                 Comprador: {{ pedido.comprador.get_full_name }}
             </p>
         </div>

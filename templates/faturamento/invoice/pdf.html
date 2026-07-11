@@ -156,10 +156,25 @@
   </tbody>
 </table>
 
-{% if invoice.banco_beneficiario %}
+{% if invoice.banco_beneficiario or invoice.banco_nome or invoice.banco_iban %}
 <div class="bank-box">
   <strong>Banking Details / Dados Bancários:</strong><br>
-  {{ invoice.banco_beneficiario }}
+  {% if invoice.banco_beneficiario_nome %}Beneficiary / Beneficiário: {{ invoice.banco_beneficiario_nome }}<br>{% endif %}
+  {% if invoice.banco_nome %}Bank / Banco: {{ invoice.banco_nome }}<br>{% endif %}
+  {% if invoice.banco_endereco %}Address / Endereço: {{ invoice.banco_endereco }}<br>{% endif %}
+  {% if invoice.banco_swift %}SWIFT/BIC: {{ invoice.banco_swift }}<br>{% endif %}
+  {% if invoice.banco_iban %}IBAN: {{ invoice.banco_iban }}<br>{% endif %}
+  {% if invoice.banco_numero_conta %}Account / Conta: {{ invoice.banco_numero_conta }}<br>{% endif %}
+  {% if invoice.banco_correspondente_nome %}Intermediary Bank / Banco Correspondente: {{ invoice.banco_correspondente_nome }} ({{ invoice.banco_correspondente_swift }})<br>{% endif %}
+  {% if invoice.banco_beneficiario %}{{ invoice.banco_beneficiario }}{% endif %}
+</div>
+{% endif %}
+
+{% if invoice.regime_drawback != 'NENHUM' %}
+<div class="bank-box">
+  <strong>Drawback:</strong> {{ invoice.get_regime_drawback_display }}
+  {% if invoice.ato_concessorio_numero %} — Ato Concessório nº {{ invoice.ato_concessorio_numero }}{% endif %}
+  {% if invoice.ato_concessorio_validade %} (válido até {{ invoice.ato_concessorio_validade|date:"d/m/Y" }}){% endif %}
 </div>
 {% endif %}
 

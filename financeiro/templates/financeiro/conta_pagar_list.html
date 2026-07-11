@@ -188,8 +188,8 @@
                     <tr>
                         <td><strong>{{ conta.numero }}</strong></td>
                         <td>{{ conta.fornecedor.nome }}</td>
-                        <td>R$ {{ conta.valor_total|floatformat:2 }}</td>
-                        <td>{{ conta.data_emissao|date:'d/m/Y' }}</td>
+                        <td class="text-mono">R$ {{ conta.valor_total|floatformat:2 }}</td>
+                        <td class="text-mono">{{ conta.data_emissao|date:'d/m/Y' }}</td>
                         <td>
                             {% if conta.total_parcelas %}
                             <div class="fw-semibold">{{ conta.parcelas_pagas }}/{{ conta.total_parcelas }} pagas</div>
@@ -226,41 +226,8 @@
         </div>
     </div>
 
-    {% if page_obj.has_other_pages %}
-    {# macro-like snippet para preservar todos os filtros na paginação #}
-    {% with qs_extra=""|add:"" %}
-    <nav class="mt-4" aria-label="Paginação">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page=1{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Primeira</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Anterior</a>
-            </li>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ num }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">{{ num }}</a>
-            </li>
-            {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Próxima</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if periodo %}&periodo={{ periodo }}{% endif %}{% if semana_iso and periodo == 'semana' %}&semana_iso={{ semana_iso }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if fornecedor_filter %}&fornecedor={{ fornecedor_filter }}{% endif %}{% if data_ini %}&data_ini={{ data_ini }}{% endif %}{% if data_fim %}&data_fim={{ data_fim }}{% endif %}">Última</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endwith %}
-    {% endif %}
+    <div class="mt-4">
+        {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
 </div>
 {% endblock %}

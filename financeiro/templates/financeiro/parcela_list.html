@@ -110,7 +110,7 @@
                             <strong>{{ parcela.numero_parcela }}/{{ parcela.total_parcelas_conta }}</strong>
                             <br><small class="text-muted">{{ parcela.parcelas_pagas_conta }}/{{ parcela.total_parcelas_conta }} pagas</small>
                         </td>
-                        <td>
+                        <td class="text-mono">
                             <strong>{{ parcela.data_vencimento|date:'d/m/Y' }}</strong>
                             {% if parcela.status == 'VENCIDA' %}
                             <br><small class="text-danger">
@@ -120,10 +120,10 @@
                             </small>
                             {% endif %}
                         </td>
-                        <td>R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
-                        <td>{% if parcela.juros_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
-                        <td>{% if parcela.multa_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
-                        <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                        <td class="text-mono">R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
+                        <td class="text-mono">{% if parcela.juros_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
+                        <td class="text-mono">{% if parcela.multa_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
+                        <td class="text-mono"><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
                         <td>
                             {% if parcela.dias_atraso > 0 %}
                             <span class="badge bg-danger">{{ parcela.dias_atraso }}d</span>
@@ -160,35 +160,9 @@
             </table>
         </div>
 
-        {% if is_paginated %}
-        <nav aria-label="Page navigation" class="border-top p-3">
-            <ul class="pagination mb-0">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Primeira</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Anterior</a>
-                </li>
-                {% endif %}
-
-                {% for num in page_obj.paginator.page_range %}
-                <li class="page-item {% if page_obj.number == num %}active{% endif %}">
-                    <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">{{ num }}</a>
-                </li>
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Próxima</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if vencimento_filter and vencimento_filter != 'todas' %}&tipo_vencimento={{ vencimento_filter }}{% endif %}">Última</a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
+        <div class="border-top p-3">
+          {% include 'partials/pagination.html' with page_obj=page_obj %}
+        </div>
     </div>
 </div>
 {% endblock %}

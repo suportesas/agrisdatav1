@@ -75,6 +75,7 @@
                     </div>
                 </div>
                 <!-- Compra Emergencial -->
+                {% if perms.compras.criar_solicitacao_emergencial or user.is_admin_empresa %}
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="alert alert-warning border-warning">
@@ -82,7 +83,7 @@
                                 <i class="bi bi-info-circle"></i> Sobre Compras Emergenciais
                             </h6>
                             <p class="mb-2">
-                                <strong>Use apenas para situações reais de emergência.</strong> 
+                                <strong>Use apenas para situações reais de emergência.</strong>
                                 Compras emergenciais são aprovadas automaticamente e pulam o processo formal de aprovação.
                             </p>
                             <hr>
@@ -94,13 +95,8 @@
                                 <strong>Perda:</strong> R$ 45.000 se perder a janela de plantio.<br>
                                 <strong>Justificativa:</strong> Necessário peça urgente para reparo amanhã. Não pode aguardar aprovação formal (48h).
                             </div>
-                            <hr class="my-2">
-                            <p class="mb-0 small text-muted">
-                                <i class="bi bi-lock"></i> <strong>Nota:</strong> Esta funcionalidade será restrita por permissões no futuro.
-                                Apenas usuários autorizados poderão criar compras emergenciais.
-                            </p>
                         </div>
-                        
+
                         <div class="form-check form-switch">
                             {{ form.emergencial }}
                             <label class="form-check-label" for="id_emergencial">
@@ -114,7 +110,8 @@
                         </div>
                     </div>
                 </div>
-                
+                {% endif %}
+
                 <div class="row mt-3" id="justificativa-emergencial-field" style="display: none;">
                     <div class="col-12">
                         {{ form.justificativa_emergencial.label_tag }}
@@ -857,15 +854,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const panel = document.createElement('div');
     panel.id = panelId;
     panel.className = 'variante-panel mt-1 p-2 rounded border border-purple-200';
-    panel.style.cssText = 'background:#f5f3ff;border-color:#c4b5fd!important;font-size:.82rem;';
+    panel.style.cssText = 'background:#eaf5ec;border-color:#6ee7b7!important;font-size:.82rem;';
     panel.innerHTML = `
-      <div class="d-flex align-items-center gap-1 mb-1" style="color:#7c3aed;font-weight:600;">
+      <div class="d-flex align-items-center gap-1 mb-1" style="color:#1a7a3c;font-weight:600;">
         <i class="bi bi-layers"></i> Selecione os atributos da variante:
       </div>
       <div class="row g-1">
         ${data.dimensoes.map(d => `
           <div class="col">
-            <label style="font-size:.75rem;font-weight:600;color:#5b21b6;">${escHtml(d.nome)}</label>
+            <label style="font-size:.75rem;font-weight:600;color:#0f5c2a;">${escHtml(d.nome)}</label>
             <select class="form-select form-select-sm variante-dim-sel" data-dim-id="${d.id}" data-produto-base-id="${produtoId}">
               <option value="">-- selecione --</option>
               ${d.valores.map(v => `<option value="${escHtml(v)}">${escHtml(v)}</option>`).join('')}

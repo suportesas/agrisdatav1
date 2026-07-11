@@ -22,7 +22,7 @@ class Command(BaseCommand):
             # Calcula estoque total dos lotes disponíveis
             estoque_lotes = Lote.objects.filter(
                 produto=produto,
-                status='DISPONIVEL'
+                status__in=['DISPONIVEL', 'BLOQUEADO']
             ).aggregate(
                 total=Sum('quantidade_atual')
             )['total'] or 0

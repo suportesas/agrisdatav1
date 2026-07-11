@@ -1,70 +1,38 @@
-# Modulo produtos
-
 Owner: Time produtos
-Status: In Review
-Last Updated: 2026-07-01
-Scope: produtos
+Status: Approved
+Last Updated: 2026-07-10
+Scope: produtos (`/produtos/`)
 
-## Visao geral
-Modulo produtos mapeado a partir de models e urls do codigo atual.
+# Módulo Produtos
 
-## Objetivo de negocio
-Disponibilizar as funcionalidades de produtos com isolamento por empresa quando aplicavel e rastreabilidade de operacoes.
+## Visão geral
+Catálogo de produtos com hierarquia Categoria → Subcategoria, unidades de medida, tributação e vínculo com fornecedores/defensivos por cultura.
 
 ## Entidades principais
-| Entidade | Papel | Campos criticos |
-|---|---|---|
-| TipoProduto | Entidade de dominio do modulo | A validar por campo |
-| UnidadeMedida | Entidade de dominio do modulo | A validar por campo |
-| Categoria | Entidade de dominio do modulo | A validar por campo |
-| SubCategoria | Entidade de dominio do modulo | A validar por campo |
-| NaturezaOperacao | Entidade de dominio do modulo | A validar por campo |
-| Produto | Entidade de dominio do modulo | A validar por campo |
-| ProdutoFornecedor | Entidade de dominio do modulo | A validar por campo |
-| ProdutoTributacao | Entidade de dominio do modulo | A validar por campo |
+| Entidade | Papel |
+|---|---|
+| `TipoProduto`, `UnidadeMedida` | Classificação e unidade base |
+| `Categoria` → `SubCategoria` (FK `categoria`) | Hierarquia de classificação (ex: Fertilizante → Químico/Orgânico/Foliar/Mineral; Defensivo → Herbicida/Inseticida/Fungicida/Acaricida) |
+| `Produto` | Entidade central; liga a categoria/subcategoria, unidade, NCM |
+| `ProdutoFornecedor` | Vínculo produto ↔ fornecedor |
+| `ProdutoTributacao` | Dados fiscais do produto |
+| `ProdutoDefensivoCultura` | Vínculo defensivo ↔ cultura (usado por `mip`/receituário agronômico) |
+| `ProdutoDocumento` | Anexos do produto |
+| `DimensaoVariante`, `ProdutoAtributo` | Variantes/atributos do produto |
 
-Resumo de entidades: TipoProduto, UnidadeMedida, Categoria, SubCategoria, NaturezaOperacao, Produto, ProdutoFornecedor, ProdutoTributacao, ProdutoDefensivoCultura, ProdutoDocumento, DimensaoVariante, ProdutoAtributo
+### Hierarquia Categoria → Subcategoria
+No formulário de produto, selecionar uma Categoria filtra dinamicamente (via JavaScript, usando atributo `data-categoria-id` no widget customizado `SubCategoriaSelect`) as opções de Subcategoria para mostrar só as pertencentes àquela categoria. Criar uma Subcategoria exige selecionar a categoria pai. Listagem em `/produtos/subcategorias/` mostra categoria, código, nome e status de cada subcategoria. `categoria.subcategorias.all()` retorna as subcategorias de uma categoria (related_name).
 
-## Funcionalidades
-| Funcionalidade | Entrada | Regra principal | Saida |
-|---|---|---|---|
-| Listagem e consulta | Filtros por tela | Respeitar escopo de empresa/permissao | Dados exibidos por perfil |
-| Cadastro e edicao | Formulario de negocio | Validacoes de dominio | Registro persistido |
-| Acao operacional | Evento de usuario | Regras de status e consistencia | Estado atualizado |
+## Rotas de referência (amostra)
+`dashboard/`, `tipos-produto/`, `tipos-produto/cadastrar/`, `tipos-produto/<id>/editar/`, `unidades/`, `unidades/cadastrar/`, `unidades/ajax/criar/`, `ncm/buscar/`.
 
-## Fluxos principais
-- Entrada via rotas do modulo e processamento em views.
-- Persistencia nas entidades de dominio listadas acima.
-- Integracao com outros modulos conforme regras de negocio.
+## Integrações
+- `cadastros.NCM` — vínculo fiscal do produto (ver `docs/2_MODULOS/MODULO_CADASTROS.md`).
+- `estoque` — `Produto.estoque_atual` calculado a partir de lotes/movimentações (ver `docs/4_TECNICO/ESTRATEGIA_ESTOQUE.md`).
+- `mip` — `ProdutoDefensivoCultura` alimenta recomendações de defensivo por cultura.
 
-Rotas de referencia (amostra): dashboard/; tipos-produto/; tipos-produto/cadastrar/; tipos-produto/<int:pk>/editar/; tipos-produto/<int:pk>/excluir/; tipos-produto/ajax/listar/; unidades/; unidades/cadastrar/; unidades/<int:pk>/editar/; unidades/<int:pk>/excluir/; unidades/ajax/criar/; ncm/buscar/
+## Permissões e isolamento
+Filtro por `empresa` obrigatório em toda consulta de produto/categoria/subcategoria.
 
-## Estados e transicoes
-| Estado atual | Evento | Proximo estado | Restricoes |
-|---|---|---|---|
-| Draft/Inicial | Criacao | Ativo/Em processamento | Validacoes obrigatorias |
-| Ativo | Acao de negocio | Concluido/Cancelado | Permissao e consistencia |
-
-## Calculos e condicionais vinculados
-- Consultar docs/4_TECNICO/CALCULOS_CENTRALIZADOS.md
-- Consultar docs/4_TECNICO/CONDICIONAIS_CRITICAS.md
-
-## Permissoes e isolamento
-- Aplicar filtro por empresa em consultas sensiveis de produtos.
-- Garantir autorizacao por perfil antes de alterar estado.
-
-## Integracoes
-- Integracao por URL include com core/urls.py.
-- Eventos podem alimentar financeiro, estoque, faturamento e relatorios conforme modulo.
-
-## Evidencias de teste
-| Regra | Teste existente | Gap |
-|---|---|---|
-| Escopo por empresa | A mapear por modulo | Sim |
-| Transicao de status | A mapear por modulo | Sim |
-| Fluxo principal | A mapear por modulo | Sim |
-
-## Referencias
-- produtos/models.py
-- produtos/urls.py
-- docs/TEMPLATES/TEMPLATE_MODULO.md
+## Referências
+- `produtos/models.py`, `produtos/urls.py`, `produtos/widgets.py` (`SubCategoriaSelect`)

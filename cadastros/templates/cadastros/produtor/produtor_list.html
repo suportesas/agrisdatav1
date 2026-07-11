@@ -3,16 +3,6 @@
 {% block title %}Produtores{% endblock %}
 {% block page_title %}Produtores{% endblock %}
 
-{% block extra_css %}
-<style>
-.action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
-.action-icon:hover { color: #7c3aed; }
-.action-icon.danger:hover { color: #dc2626; }
-.action-icon.edit:hover { color: #0d6efd; }
-tbody tr:hover td { background: #faf5ff; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -134,10 +124,10 @@ tbody tr:hover td { background: #faf5ff; }
         <tbody>
           {% for produtor in page_obj.object_list %}
           <tr>
-            <td class="text-muted small">{{ produtor.pk|stringformat:"05d" }}</td>
+            <td class="text-muted small text-mono">{{ produtor.pk|stringformat:"05d" }}</td>
             <td><strong>{{ produtor.razao_social }}</strong></td>
             <td>{{ produtor.nome_fantasia|default:'-' }}</td>
-            <td class="text-muted small">{{ produtor.get_cnpj_cpf_formatado }}</td>
+            <td class="text-muted small text-mono">{{ produtor.get_cnpj_cpf_formatado }}</td>
             <td>{{ produtor.cidade|default:'-' }}{% if produtor.uf %}/{{ produtor.uf }}{% endif %}</td>
             <td>
               {% if produtor.status == 'ATIVO' %}
@@ -179,46 +169,8 @@ tbody tr:hover td { background: #faf5ff; }
     </div>
 
     <!-- Paginação -->
-    <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-muted">
-        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
-        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
-      </small>
-      <ul class="pagination pagination-sm mb-0">
-
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-          {% if page_obj.has_previous %}
-            <a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ page_obj.previous_page_number }}">
-              <i class="bi bi-chevron-left"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-          {% endif %}
-        </li>
-
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-            <li class="page-item">
-              <a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ num }}">{{ num }}</a>
-            </li>
-          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-          {% endif %}
-        {% endfor %}
-
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-          {% if page_obj.has_next %}
-            <a class="page-link" href="?q={{ q }}&status={{ status }}&page={{ page_obj.next_page_number }}">
-              <i class="bi bi-chevron-right"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-          {% endif %}
-        </li>
-
-      </ul>
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
     </div>
 
   </div>

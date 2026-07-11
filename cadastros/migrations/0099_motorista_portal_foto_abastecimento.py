@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
                 ('foto_odometro', models.ImageField(blank=True, help_text='Foto do painel mostrando odômetro ou horímetro', upload_to='frota/fotos/odometro/', verbose_name='Foto do Hodômetro/Horímetro')),
                 ('data_envio', models.DateTimeField(auto_now_add=True)),
                 ('abastecimento', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='foto', to='cadastros.abastecimentoveiculo', verbose_name='Abastecimento')),
-                ('enviada_por', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fotos_abastecimento', to='frota.motorista', verbose_name='Motorista')),
+                ('enviada_por', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='fotos_abastecimento', to='cadastros.motorista', verbose_name='Motorista')),
             ],
             options={
                 'verbose_name': 'Foto de Abastecimento',

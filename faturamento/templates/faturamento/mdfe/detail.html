@@ -149,6 +149,9 @@
             <tr><th>Valor da Carga</th><td><strong>R$ {{ mdfe.valor_carga|floatformat:2 }}</strong></td></tr>
             <tr><th>Peso Bruto</th><td>{{ mdfe.peso_bruto_kg|floatformat:3 }} kg</td></tr>
             <tr><th>Documentos</th><td>{{ mdfe.documentos_vinculados.count }}</td></tr>
+            {% if mdfe.booking %}
+            <tr><th>Booking</th><td><a href="{% url 'exportacao:booking_detail' mdfe.booking.pk %}">{{ mdfe.booking.codigo }}</a></td></tr>
+            {% endif %}
           </table>
         </div>
       </div>

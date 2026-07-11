@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Desativar Tabela de Preço{% endblock %}
+{% block page_title %}Desativar Tabela de Preço{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold text-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>Confirmar Desativação
+        </div>
+        <div class="card-body">
+          <p>Desativar a tabela de preço de <strong>{{ tabela.produto }}</strong>
+          ({{ tabela.cliente.razao_social|default:"Padrão" }})?</p>
+          <p class="text-muted small">A tabela não será excluída, apenas marcada como inativa e deixará de ser considerada nas buscas de preço vigente.</p>
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-danger">
+                <i class="bi bi-x-circle me-1"></i>Confirmar Desativação
+              </button>
+              <a href="{% url 'vendas:tabela_preco_detail' tabela.pk %}" class="btn btn-outline-secondary">Voltar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

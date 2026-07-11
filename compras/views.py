@@ -108,6 +108,7 @@ def cotacao_item_comparativo(request, pk):
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from .permissions import atalho_compras_required, usuario_tem_atalho
 from django.contrib import messages
 from django.db import transaction
 from django.core.paginator import Paginator
@@ -153,7 +154,7 @@ def solicitacao_list(request):
     """Lista todas as solicitações de compra"""
     solicitacoes = SolicitacaoCompra.objects.filter(
         empresa=request.user.empresa
-    ).select_related('solicitante', 'aprovador').prefetch_related('itens__produto')
+    ).select_related('solicitante', 'aprovador').prefetch_related('itens__produto', 'mensagens')
 
     # Filtros
     status = request.GET.get('status')
@@ -192,9 +193,14 @@ def solicitacao_create(request):
         
         if form.is_valid() and formset.is_valid():
             solicitacao = form.save(commit=False)
+
+            if solicitacao.emergencial and not usuario_tem_atalho(request.user, 'criar_solicitacao_emergencial'):
+                messages.error(request, 'Você não tem permissão para criar compras emergenciais.')
+                return redirect('compras:solicitacao_create')
+
             solicitacao.empresa = request.user.empresa
             solicitacao.solicitante = request.user
-            
+
             # Define status inicial baseado em emergencial
             if solicitacao.emergencial:
                 solicitacao.status = 'APROVADA'
@@ -660,6 +666,18 @@ def adicionar_proposta(request, cotacao_pk, item_pk):
                     proposta.selecionado = True
         for proposta in propostas:
             proposta.save()
+            if proposta.preco_unitario > 0:
+                from .models import HistoricoPrecoFornecedor
+                HistoricoPrecoFornecedor.objects.create(
+                    produto=item.produto,
+                    fornecedor=proposta.fornecedor,
+                    preco_unitario=proposta.preco_unitario,
+                    quantidade=item.quantidade,
+                    data_cotacao=timezone.now().date(),
+                    documento_referencia=cotacao.numero,
+                    prazo_entrega=proposta.prazo_entrega,
+                    condicao_pagamento=proposta.condicao_pagamento or '',
+                )
         messages.success(request, 'Propostas e seleção salvas com sucesso!')
         return redirect('compras:cotacao_item_comparativo', pk=cotacao_pk)
 
@@ -861,7 +879,7 @@ def pedido_list(request):
     
     pedidos = PedidoCompra.objects.filter(
         empresa=request.user.empresa
-    ).select_related('fornecedor', 'comprador', 'cotacao')
+    ).select_related('fornecedor', 'comprador', 'cotacao').prefetch_related('itens')
     
     # Filtros
     status = request.GET.get('status')
@@ -880,8 +898,8 @@ def pedido_list(request):
     # Calcula status de recebimento para cada pedido na página
     pedidos_recebimento = []
     for pedido in pedidos_page:
-        itens = pedido.itens.all()
-        todos_recebidos = all(
+        itens = list(pedido.itens.all())
+        todos_recebidos = bool(itens) and all(
             item.quantidade_recebida >= item.quantidade_pedida
             for item in itens
         )
@@ -966,9 +984,8 @@ def pedido_gerar(request, cotacao_pk):
     Gera Pedido de Compra a partir de uma cotação concluída
     Agrupa itens por fornecedor selecionado
     """
-    from .models import PedidoCompra, ItemPedidoCompra
-    from datetime import timedelta
-    
+    from .services import gerar_pedidos_de_cotacao
+
     cotacao = get_object_or_404(
         Cotacao,
         pk=cotacao_pk,
@@ -991,96 +1008,15 @@ def pedido_gerar(request, cotacao_pk):
             )
             return redirect('compras:cotacao_item_comparativo', pk=cotacao_pk)
 
-    # Evita gerar pedidos duplicados para a mesma cotação
-    if PedidoCompra.objects.filter(cotacao=cotacao).exists():
-        messages.warning(request, 'Pedidos já foram gerados para esta cotação.')
+    try:
+        pedidos_criados, avisos_credito = gerar_pedidos_de_cotacao(cotacao, request.user)
+    except ValueError as e:
+        messages.error(request, str(e))
         return redirect('compras:cotacao_item_comparativo', pk=cotacao_pk)
-    
-    # Busca propostas vencedoras
-    propostas_vencedoras = FornecedorCotacao.objects.filter(
-        item_cotacao__cotacao=cotacao,
-        selecionado=True
-    ).select_related('fornecedor', 'item_cotacao__item_solicitacao')
-    
-    if not propostas_vencedoras.exists():
-        messages.error(request, 'Nenhum fornecedor foi selecionado na cotação.')
-        return redirect('compras:cotacao_detail', pk=cotacao_pk)
-    
-    # Agrupa por fornecedor
-    pedidos_por_fornecedor = {}
-    for proposta in propostas_vencedoras:
-        fornecedor_id = proposta.fornecedor.id
-        if fornecedor_id not in pedidos_por_fornecedor:
-            pedidos_por_fornecedor[fornecedor_id] = {
-                'fornecedor': proposta.fornecedor,
-                'propostas': [],
-                'prazo': proposta.prazo_entrega or 0,
-                'forma_pagamento': proposta.forma_pagamento or '',
-                'condicao_pagamento': proposta.condicao_pagamento or '',
-            }
-        pedidos_por_fornecedor[fornecedor_id]['propostas'].append(proposta)
-    
-    # Cria um pedido para cada fornecedor
-    pedidos_criados = []
-    for fornecedor_id, dados in pedidos_por_fornecedor.items():
-        # Cria o pedido
-        pedido = PedidoCompra.objects.create(
-            empresa=request.user.empresa,
-            cotacao=cotacao,
-            fornecedor=dados['fornecedor'],
-            comprador=request.user,
-            status='PENDENTE',
-            prazo_entrega_dias=dados['prazo'],
-            forma_pagamento=dados['forma_pagamento'],
-            condicao_pagamento=dados['condicao_pagamento'],
-            data_entrega_prevista=timezone.now().date() + timedelta(days=dados['prazo'])
-        )
-        
-        # Cria os itens do pedido
-        for proposta in dados['propostas']:
-            item_solicitacao = proposta.item_cotacao.item_solicitacao
-            ItemPedidoCompra.objects.create(
-                pedido=pedido,
-                proposta_fornecedor=proposta,
-                produto=item_solicitacao.produto,
-                quantidade_pedida=proposta.item_cotacao.quantidade,
-                unidade_medida=item_solicitacao.unidade_medida,
-                preco_unitario=proposta.preco_unitario,
-                preco_total=proposta.preco_unitario * proposta.item_cotacao.quantidade,
-                especificacao=proposta.item_cotacao.especificacao or '',
-                marca=proposta.marca or '',
-            )
-        
-        # Calcula o total do pedido
-        total_pedido = pedido.calcular_total()
 
-        limite_credito = dados['fornecedor'].limite_credito or 0
-        if limite_credito and total_pedido > limite_credito:
-            messages.warning(
-                request,
-                (
-                    f'⚠️ Alerta de crédito: o pedido {pedido.numero} para "{dados["fornecedor"].nome}" '
-                    f'(R$ {total_pedido:,.2f}) ultrapassa o limite aprovado '
-                    f'de R$ {limite_credito:,.2f}.'
-                )
-            )
+    for aviso in avisos_credito:
+        messages.warning(request, f'⚠️ {aviso}')
 
-        pedidos_criados.append(pedido)
-    
-    # Atualiza status dos itens da solicitação para APROVADO apenas se enviados no pedido
-    itens_enviados_ids = set()
-    for dados in pedidos_por_fornecedor.values():
-        for proposta in dados['propostas']:
-            if hasattr(proposta, 'item_cotacao') and hasattr(proposta.item_cotacao, 'item_solicitacao'):
-                itens_enviados_ids.add(proposta.item_cotacao.item_solicitacao.id)
-    for item in cotacao.solicitacao.itens.all():
-        if item.id in itens_enviados_ids:
-            item.status_item = 'APROVADO'
-            item.save(update_fields=['status_item'])
-    # Atualiza status da solicitação para EM_COMPRA
-    cotacao.solicitacao.status = 'EM_COMPRA'
-    cotacao.solicitacao.save()
-    
     if len(pedidos_criados) == 1:
         messages.success(
             request,
@@ -1093,6 +1029,143 @@ def pedido_gerar(request, cotacao_pk):
             f'{len(pedidos_criados)} pedidos gerados com sucesso!'
         )
         return redirect('compras:pedido_list')
+
+
+@atalho_compras_required('criar_pedido_direto_fornecedor_unico')
+@transaction.atomic
+def pedido_direto_create(request):
+    """
+    Pedido Direto — atalho para fornecedor único / preço já conhecido.
+    Monta, numa transação só, a cadeia completa (Solicitação já aprovada +
+    Cotação já concluída com uma única proposta por item, marcada como
+    vencedora) e reaproveita gerar_pedidos_de_cotacao para criar o pedido,
+    preservando a mesma rastreabilidade do fluxo formal.
+    """
+    from datetime import timedelta
+    from decimal import Decimal, InvalidOperation
+    from .services import gerar_pedidos_de_cotacao
+
+    empresa = request.user.empresa
+    fornecedores = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+    produtos = Produto.objects.filter(categoria__empresa=empresa, ativo=True).select_related('unidade_medida').order_by('nome')
+
+    if request.method != 'POST':
+        from produtos.models import ProdutoFornecedor
+        produtos_por_fornecedor = {}
+        relacoes = ProdutoFornecedor.objects.filter(
+            fornecedor__empresa=empresa, fornecedor__ativa=True, ativo=True,
+            produto__categoria__empresa=empresa, produto__ativo=True,
+        ).select_related('produto', 'produto__unidade_medida').order_by('produto__nome')
+        for rel in relacoes:
+            produtos_por_fornecedor.setdefault(rel.fornecedor_id, []).append({
+                'id': rel.produto_id,
+                'nome': f'{rel.produto.nome} ({rel.produto.unidade_medida.sigla})',
+                'preco': str(rel.preco_compra or rel.produto.preco_custo or 0),
+            })
+        todos_produtos = [
+            {
+                'id': p.id,
+                'nome': f'{p.nome} ({p.unidade_medida.sigla})',
+                'preco': str(p.preco_custo or 0),
+            }
+            for p in produtos
+        ]
+
+    if request.method == 'POST':
+        fornecedor_id = request.POST.get('fornecedor')
+        prazo_entrega = request.POST.get('prazo_entrega') or 0
+        produtos_ids = request.POST.getlist('produto_id[]')
+        quantidades = request.POST.getlist('quantidade[]')
+        precos = request.POST.getlist('preco[]')
+
+        try:
+            prazo_entrega = int(prazo_entrega)
+        except (TypeError, ValueError):
+            prazo_entrega = 0
+
+        fornecedor = Fornecedor.objects.filter(pk=fornecedor_id, empresa=empresa).first()
+        if not fornecedor:
+            messages.error(request, 'Selecione um fornecedor válido.')
+            return redirect('compras:pedido_direto_create')
+
+        linhas = []
+        for produto_id, qtd_raw, preco_raw in zip(produtos_ids, quantidades, precos):
+            if not all([produto_id, qtd_raw, preco_raw]):
+                continue
+            try:
+                quantidade = Decimal(qtd_raw)
+                preco = Decimal(preco_raw)
+            except InvalidOperation:
+                continue
+            if quantidade <= 0 or preco <= 0:
+                continue
+            linhas.append((produto_id, quantidade, preco))
+
+        if not linhas:
+            messages.error(request, 'Informe ao menos um produto com quantidade e preço válidos.')
+            return redirect('compras:pedido_direto_create')
+
+        solicitacao = SolicitacaoCompra.objects.create(
+            empresa=empresa,
+            solicitante=request.user,
+            status='APROVADA',
+            aprovador=request.user,
+            data_aprovacao=timezone.now(),
+            data_necessidade=timezone.now().date() + timedelta(days=prazo_entrega or 1),
+            justificativa=f'Pedido direto — fornecedor único ({fornecedor.nome}).',
+            origem='FORNECEDOR_UNICO',
+        )
+        cotacao = Cotacao.objects.create(
+            empresa=empresa,
+            solicitacao=solicitacao,
+            comprador=request.user,
+            status='CONCLUIDA',
+        )
+
+        for produto_id, quantidade, preco in linhas:
+            produto = Produto.objects.get(pk=produto_id, categoria__empresa=empresa)
+            item_sol = ItemSolicitacaoCompra.objects.create(
+                solicitacao=solicitacao,
+                produto=produto,
+                quantidade=quantidade,
+                unidade_medida=produto.unidade_medida,
+                status_item='COTADO',
+            )
+            item_cot = ItemCotacao.objects.create(
+                cotacao=cotacao,
+                item_solicitacao=item_sol,
+                produto=produto,
+                quantidade=quantidade,
+                unidade_medida=produto.unidade_medida,
+            )
+            FornecedorCotacao.objects.create(
+                item_cotacao=item_cot,
+                fornecedor=fornecedor,
+                preco_unitario=preco,
+                preco_total=preco * quantidade,
+                prazo_entrega=prazo_entrega,
+                selecionado=True,
+            )
+
+        try:
+            pedidos_criados, avisos_credito = gerar_pedidos_de_cotacao(cotacao, request.user)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('compras:pedido_direto_create')
+
+        for aviso in avisos_credito:
+            messages.warning(request, f'⚠️ {aviso}')
+
+        messages.success(request, f'Pedido {pedidos_criados[0].numero} gerado com sucesso!')
+        return redirect('compras:pedido_detail', pk=pedidos_criados[0].pk)
+
+    context = {
+        'fornecedores': fornecedores,
+        'produtos': produtos,
+        'produtos_por_fornecedor': produtos_por_fornecedor,
+        'todos_produtos': todos_produtos,
+    }
+    return render(request, 'compras/pedido_direto_form.html', context)
 
 
 @login_required
@@ -2094,6 +2167,32 @@ def entrada_direta_nf(request):
     produtos = Produto.objects.filter(ativo=True, categoria__empresa=empresa).order_by('nome')
     unidades = UnidadeMedida.objects.all().order_by('sigla')
     locais_estoque = LocalEstocagem.objects.filter(armazem__empresa=empresa, ativo=True).order_by('armazem__nome')
+    pedidos_disponiveis = PedidoCompra.objects.filter(
+        empresa=empresa, status__in=['ENVIADO', 'PARCIALMENTE_RECEBIDO']
+    ).select_related('fornecedor').order_by('-data_pedido')
+
+    from produtos.models import ProdutoFornecedor
+    produtos_por_fornecedor = {}
+    relacoes_pf = ProdutoFornecedor.objects.filter(
+        fornecedor__empresa=empresa, fornecedor__ativa=True, ativo=True,
+        produto__categoria__empresa=empresa, produto__ativo=True,
+    ).select_related('produto', 'produto__unidade_medida').order_by('produto__nome')
+    for rel in relacoes_pf:
+        produtos_por_fornecedor.setdefault(rel.fornecedor_id, []).append({
+            'id': rel.produto_id,
+            'nome': f'{rel.produto.nome}{" — " + rel.produto.codigo if rel.produto.codigo else ""}',
+            'unidade_id': rel.produto.unidade_medida_id,
+            'unidade_sigla': rel.produto.unidade_medida.sigla,
+        })
+    todos_produtos_form = [
+        {
+            'id': p.id,
+            'nome': f'{p.nome}{" — " + p.codigo if p.codigo else ""}',
+            'unidade_id': p.unidade_medida_id,
+            'unidade_sigla': p.unidade_medida.sigla,
+        }
+        for p in produtos.select_related('unidade_medida')
+    ]
 
     xml_data = {}
     xml_upload_form = XMLNFeUploadForm()
@@ -2220,6 +2319,9 @@ def entrada_direta_nf(request):
                 'produtos': produtos,
                 'unidades': unidades,
                 'locais_estoque': locais_estoque,
+                'pedidos_disponiveis': pedidos_disponiveis,
+                'produtos_por_fornecedor': produtos_por_fornecedor,
+                'todos_produtos_form': todos_produtos_form,
                 'xml_data': xml_data,
                 'xml_upload_form': xml_upload_form,
                 'xml_import_enabled': xml_import_enabled,
@@ -2275,7 +2377,7 @@ def entrada_direta_nf(request):
                     )
 
                 itens_count = int(request.POST.get('itens_count', 1))
-                itens = []
+                linhas_validas = []
                 linhas_ignoradas = []
                 for i in range(itens_count):
                     produto_id = request.POST.get(f'produto_{i}')
@@ -2310,25 +2412,69 @@ def entrada_direta_nf(request):
                             linhas_ignoradas.append(f'Linha {i + 1} (faltou: {", ".join(faltantes)})')
                         continue
 
-                    item = ItemRecebimento.objects.create(
-                        recebimento=recebimento,
-                        produto_id=produto_id,
-                        unidade_medida_id=unidade_id,
-                        quantidade_recebida=Decimal(quantidade),
-                        preco_unitario=Decimal(preco_unitario or '0'),
-                        valor_desconto=Decimal(valor_desc),
-                        local_estoque_id=local_estoque_id,
-                        data_fabricacao=data_fabricacao,
-                        data_validade=data_validade,
-                        observacoes=observacoes_item,
-                    )
-                    itens.append(item)
+                    linhas_validas.append({
+                        'produto_id': int(produto_id),
+                        'unidade_id': unidade_id,
+                        'quantidade': Decimal(quantidade),
+                        'preco_unitario': Decimal(preco_unitario or '0'),
+                        'valor_desc': Decimal(valor_desc),
+                        'local_estoque_id': local_estoque_id,
+                        'data_fabricacao': data_fabricacao,
+                        'data_validade': data_validade,
+                        'observacoes_item': observacoes_item,
+                    })
 
-                if not itens:
+                if not linhas_validas:
                     raise ValueError(
                         'Nenhum item válido foi informado. Preencha produto, quantidade e '
                         'local de estoque para pelo menos um item antes de registrar a entrada.'
                     )
+
+                # Regularização posterior: religa a entrada a um pedido (existente ou
+                # retroativo) para manter a rastreabilidade da cadeia formal, em vez de
+                # deixar o RecebimentoCompra órfão.
+                from .services import resolver_ou_criar_pedido_para_entrada_direta
+
+                pedido_vinculado_id = request.POST.get('pedido_vinculado') or None
+                justificativa_regularizacao = request.POST.get('justificativa_regularizacao') or ''
+                fornecedor = Fornecedor.objects.get(pk=fornecedor_id, empresa=empresa)
+
+                itens_nf = [
+                    {
+                        'produto_id': linha['produto_id'],
+                        'quantidade': linha['quantidade'],
+                        'preco_unitario': linha['preco_unitario'],
+                        'unidade_medida_id': linha['unidade_id'],
+                    }
+                    for linha in linhas_validas
+                ]
+                pedido, mapa_item_pedido = resolver_ou_criar_pedido_para_entrada_direta(
+                    empresa=empresa,
+                    usuario=request.user,
+                    fornecedor=fornecedor,
+                    pedido_id=pedido_vinculado_id,
+                    itens_nf=itens_nf,
+                    justificativa=justificativa_regularizacao,
+                )
+                recebimento.pedido = pedido
+                recebimento.save(update_fields=['pedido'])
+
+                itens = []
+                for linha in linhas_validas:
+                    item = ItemRecebimento.objects.create(
+                        recebimento=recebimento,
+                        item_pedido=mapa_item_pedido.get(linha['produto_id']),
+                        produto_id=linha['produto_id'],
+                        unidade_medida_id=linha['unidade_id'],
+                        quantidade_recebida=linha['quantidade'],
+                        preco_unitario=linha['preco_unitario'],
+                        valor_desconto=linha['valor_desc'],
+                        local_estoque_id=linha['local_estoque_id'],
+                        data_fabricacao=linha['data_fabricacao'],
+                        data_validade=linha['data_validade'],
+                        observacoes=linha['observacoes_item'],
+                    )
+                    itens.append(item)
 
                 for item in itens:
                     item.registrar_movimento_estoque()
@@ -2355,6 +2501,9 @@ def entrada_direta_nf(request):
         'produtos': produtos,
         'unidades': unidades,
         'locais_estoque': locais_estoque,
+        'pedidos_disponiveis': pedidos_disponiveis,
+        'produtos_por_fornecedor': produtos_por_fornecedor,
+        'todos_produtos_form': todos_produtos_form,
         'xml_data': xml_data,
         'xml_upload_form': xml_upload_form,
         'xml_import_enabled': xml_import_enabled,
@@ -2588,17 +2737,27 @@ def recebimento_list(request):
 def recebimento_detail(request, pk):
     """Exibe detalhes do recebimento"""
     from .models import RecebimentoCompra
-    
+    from drawback import services as drawback_services
+
     recebimento = get_object_or_404(
         RecebimentoCompra,
         pk=pk,
         empresa=request.user.empresa
     )
-    
+
+    sugestoes_drawback = {}
+    for item in recebimento.itens.all():
+        if hasattr(item, 'drawback_entrada'):
+            continue
+        sugestao = drawback_services.sugerir_vinculo_entrada(item, request.user.empresa)
+        if sugestao:
+            sugestoes_drawback[item.pk] = sugestao
+
     context = {
         'recebimento': recebimento,
+        'sugestoes_drawback': sugestoes_drawback,
     }
-    
+
     return render(request, 'compras/recebimento_detail.html', context)
 
 

@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 ('safra', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cadastros.safra')),
                 ('solicitante', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='requisicoes_solicitadas', to=settings.AUTH_USER_MODEL, verbose_name='Solicitante')),
                 ('talhao', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='cadastros.talhao')),
-                ('veiculo', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='requisicoes_abastecimento', to='frota.vehicle', verbose_name='Veiculo')),
+                ('veiculo', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='requisicoes_abastecimento', to='cadastros.vehicle', verbose_name='Veiculo')),
             ],
             options={
                 'verbose_name': 'Requisicao',

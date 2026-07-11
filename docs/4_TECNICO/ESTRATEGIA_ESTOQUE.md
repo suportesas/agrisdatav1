@@ -1,3 +1,8 @@
+Owner: Estoque
+Status: Approved
+Last Updated: 2026-07-10
+Scope: Movimentação e cálculo de estoque
+
 # Estratégia de Atualização de Estoque
 
 ## Visão Geral

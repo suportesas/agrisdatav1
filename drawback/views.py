@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -814,105 +815,148 @@ def relatorio_xlsx(request, ac_pk):
 
 @login_required
 def vincular_entrada_erp(request, item_recebimento_id):
-    empresa = _empresa(request)
     from compras.models import ItemRecebimento
+    from . import services
+
+    empresa = _empresa(request)
     item = get_object_or_404(ItemRecebimento, pk=item_recebimento_id,
                              recebimento__empresa=empresa)
 
-    # Verifica se já tem vínculo
     if hasattr(item, 'drawback_entrada'):
         messages.warning(request, 'Este item já está vinculado ao Drawback.')
-        return redirect(request.META.get('HTTP_REFERER', '/'))
+        return redirect('compras:recebimento_detail', pk=item.recebimento_id)
 
-    acs = AtoConcessorio.objects.filter(empresa=empresa, status='ATIVO')
+    produto = services.produto_do_recebimento(item)
+    sugestao = services.sugerir_vinculo_entrada(item, empresa) if produto else None
+
+    ac_id = request.POST.get('ac_id') or request.GET.get('ac_id')
+    if ac_id:
+        ac = get_object_or_404(AtoConcessorio, pk=ac_id, empresa=empresa, status='ATIVO')
+    elif sugestao:
+        ac = sugestao.ato_concessorio
+    else:
+        ac = None
+
+    acs_candidatos = AtoConcessorio.objects.filter(
+        empresa=empresa, status='ATIVO', produtos__produto=produto,
+        produtos__tipo_produto__in=['IMPORTACAO', 'MERCADO_INTERNO'],
+    ).distinct() if produto else AtoConcessorio.objects.none()
+
+    if ac is None:
+        # Sem sugestão automática: usuário escolhe o AC manualmente.
+        return render(request, 'drawback/vincular_entrada_erp.html', {
+            'item': item,
+            'acs': AtoConcessorio.objects.filter(empresa=empresa, status='ATIVO'),
+            'acs_candidatos': acs_candidatos,
+            'sem_sugestao': True,
+        })
+
+    fornecedor = item.recebimento.fornecedor or (
+        item.recebimento.pedido.fornecedor if item.recebimento.pedido_id else None
+    )
+    initial = {
+        'drawback_produto': sugestao.pk if sugestao and sugestao.ato_concessorio_id == ac.pk else None,
+        'fornecedor': fornecedor.pk if fornecedor else None,
+        'numero_nf': item.recebimento.nota_fiscal,
+        'serie_nf': item.recebimento.serie_nota,
+        'data_nf': item.recebimento.data_emissao_nf,
+        'data_recebimento': item.recebimento.data_recebimento,
+        'quantidade': min(item.quantidade_recebida, sugestao.saldo_compra) if sugestao else item.quantidade_recebida,
+    }
 
     if request.method == 'POST':
-        ac_id = request.POST.get('ac_id')
-        produto_ac_id = request.POST.get('produto_ac_id')
-        quantidade = request.POST.get('quantidade')
-        tipo_compra = request.POST.get('tipo_compra', 'MERCADO_INTERNO')
-
-        try:
-            ac = AtoConcessorio.objects.get(pk=ac_id, empresa=empresa)
-            produto_ac = DrawbackProdutoAC.objects.get(pk=produto_ac_id, ato_concessorio=ac)
-            qtd = Decimal(quantidade)
-            EntradaDrawback.objects.create(
-                ato_concessorio=ac,
-                drawback_produto=produto_ac,
-                item_recebimento=item,
-                fornecedor=item.recebimento.fornecedor or (item.recebimento.pedido.fornecedor if item.recebimento.pedido else None),
-                numero_nf=item.recebimento.nota_fiscal,
-                serie_nf=item.recebimento.serie_nota,
-                data_nf=item.recebimento.data_emissao_nf,
-                data_recebimento=item.recebimento.data_recebimento,
-                quantidade=qtd,
-                tipo_compra=tipo_compra,
-                origem='ERP',
-                retroativo=False,
-                registrado_por=request.user,
+        form = EntradaDrawbackForm(request.POST, ato_concessorio=ac, empresa=empresa)
+        if form.is_valid():
+            entrada = form.save(commit=False)
+            entrada.ato_concessorio = ac
+            entrada.item_recebimento = item
+            entrada.origem = 'ERP'
+            entrada.retroativo = False
+            entrada.registrado_por = request.user
+            entrada.tipo_compra = (
+                'IMPORTACAO' if entrada.drawback_produto.tipo_produto == 'IMPORTACAO' else 'MERCADO_INTERNO'
             )
+            entrada.save()
             messages.success(request, 'Item vinculado ao Drawback com sucesso.')
-        except Exception as e:
-            messages.error(request, f'Erro ao vincular: {e}')
-
-        return redirect(request.META.get('HTTP_REFERER', '/'))
+            return redirect('compras:recebimento_detail', pk=item.recebimento_id)
+    else:
+        form = EntradaDrawbackForm(ato_concessorio=ac, empresa=empresa, initial=initial)
 
     return render(request, 'drawback/vincular_entrada_erp.html', {
+        'form': form,
         'item': item,
-        'acs': acs,
+        'ac': ac,
+        'sugestao': sugestao,
+        'acs_candidatos': acs_candidatos,
     })
 
 
 @login_required
 def vincular_saida_erp(request, item_nfe_id):
-    empresa = _empresa(request)
     from faturamento.models import ItemNotaFiscal
+    from . import services
+
+    empresa = _empresa(request)
     item_nfe = get_object_or_404(ItemNotaFiscal, pk=item_nfe_id, nota_fiscal__empresa=empresa)
 
     if hasattr(item_nfe, 'drawback_saida'):
         messages.warning(request, 'Este item já está vinculado ao Drawback.')
-        return redirect(request.META.get('HTTP_REFERER', '/'))
+        return redirect('faturamento:nota_fiscal_detail', pk=item_nfe.nota_fiscal_id)
 
-    acs = AtoConcessorio.objects.filter(empresa=empresa, status='ATIVO')
+    sugestao = services.sugerir_vinculo_saida(item_nfe, empresa)
+
+    ac_id = request.POST.get('ac_id') or request.GET.get('ac_id')
+    if ac_id:
+        ac = get_object_or_404(AtoConcessorio, pk=ac_id, empresa=empresa, status='ATIVO')
+    elif sugestao:
+        ac = sugestao.ato_concessorio
+    else:
+        ac = None
+
+    acs_candidatos = AtoConcessorio.objects.filter(
+        empresa=empresa, status='ATIVO', produtos__produto_id=item_nfe.produto_id,
+        produtos__tipo_produto='EXPORTACAO',
+    ).distinct() if item_nfe.produto_id else AtoConcessorio.objects.none()
+
+    if ac is None:
+        return render(request, 'drawback/vincular_saida_erp.html', {
+            'item_nfe': item_nfe,
+            'acs': AtoConcessorio.objects.filter(empresa=empresa, status='ATIVO'),
+            'acs_candidatos': acs_candidatos,
+            'sem_sugestao': True,
+        })
+
+    initial = {
+        'drawback_produto': sugestao.pk if sugestao and sugestao.ato_concessorio_id == ac.pk else None,
+        'cliente': item_nfe.nota_fiscal.cliente_id,
+        'numero_nfe': item_nfe.nota_fiscal.numero,
+        'data_embarque': timezone.now().date(),
+        'quantidade': min(item_nfe.quantidade, sugestao.saldo_exportacao) if sugestao else item_nfe.quantidade,
+    }
 
     if request.method == 'POST':
-        ac_id = request.POST.get('ac_id')
-        produto_ac_id = request.POST.get('produto_ac_id')
-        quantidade = request.POST.get('quantidade')
-        numero_re = request.POST.get('numero_re', '')
-        numero_due = request.POST.get('numero_due', '')
-        valor_fob = request.POST.get('valor_fob_usd', '')
-        data_embarque = request.POST.get('data_embarque')
-
-        try:
-            ac = AtoConcessorio.objects.get(pk=ac_id, empresa=empresa)
-            produto_ac = DrawbackProdutoAC.objects.get(pk=produto_ac_id, ato_concessorio=ac)
-            from datetime import date as date_type
-            from django.utils.dateparse import parse_date
-            emb = parse_date(data_embarque) if data_embarque else None
-            SaidaDrawback.objects.create(
-                ato_concessorio=ac,
-                drawback_produto=produto_ac,
-                item_nfe=item_nfe,
-                numero_nfe=getattr(item_nfe.nfe, 'numero', ''),
-                numero_re=numero_re,
-                numero_due=numero_due,
-                data_embarque=emb or date_type.today(),
-                quantidade=Decimal(quantidade),
-                valor_fob_usd=Decimal(valor_fob) if valor_fob else None,
-                origem='ERP',
-                retroativo=False,
-                registrado_por=request.user,
-            )
+        form = SaidaDrawbackForm(request.POST, ato_concessorio=ac, empresa=empresa)
+        if form.is_valid():
+            saida = form.save(commit=False)
+            saida.ato_concessorio = ac
+            saida.item_nfe = item_nfe
+            saida.origem = 'ERP'
+            saida.retroativo = False
+            saida.registrado_por = request.user
+            if not saida.numero_nfe:
+                saida.numero_nfe = item_nfe.nota_fiscal.numero
+            saida.save()
             messages.success(request, 'NF-e vinculada ao Drawback com sucesso.')
-        except Exception as e:
-            messages.error(request, f'Erro ao vincular: {e}')
-
-        return redirect(request.META.get('HTTP_REFERER', '/'))
+            return redirect('faturamento:nota_fiscal_detail', pk=item_nfe.nota_fiscal_id)
+    else:
+        form = SaidaDrawbackForm(ato_concessorio=ac, empresa=empresa, initial=initial)
 
     return render(request, 'drawback/vincular_saida_erp.html', {
+        'form': form,
         'item_nfe': item_nfe,
-        'acs': acs,
+        'ac': ac,
+        'sugestao': sugestao,
+        'acs_candidatos': acs_candidatos,
     })
 
 

@@ -10,8 +10,8 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 from decimal import Decimal
 
-from .models import PedidoVenda, ItemPedidoVenda
-from .forms import PedidoVendaForm, ItemPedidoVendaFormSet
+from .models import PedidoVenda, ItemPedidoVenda, TabelaPreco
+from .forms import PedidoVendaForm, ItemPedidoVendaFormSet, TabelaPrecoForm
 
 
 # ============================================
@@ -157,8 +157,16 @@ def pedido_emitir_documento(request, pk):
         return redirect('vendas:pedido_detail', pk=pk)
 
     with transaction.atomic():
+        # Se o pedido já está vinculado a um Romaneio de Venda que por sua vez já
+        # gerou NF-e/Invoice (fluxo embalagem-primeiro), reaproveita esse documento
+        # em vez de criar um segundo — evita faturar a mesma carga duas vezes.
+        romaneio = getattr(pedido, 'romaneio_venda', None)
+
         # --- Gerar NF-e (Mercado Interno) ---
-        if pedido.gerar_nota_fiscal and pedido.tipo_venda == 'MERCADO_INTERNO' and not pedido.nota_fiscal_id:
+        if pedido.gerar_nota_fiscal and pedido.tipo_venda == 'MERCADO_INTERNO' and not pedido.nota_fiscal_id and romaneio and romaneio.nota_fiscal_id:
+            pedido.nota_fiscal = romaneio.nota_fiscal
+            messages.info(request, f'Romaneio {romaneio.numero} já possui NF-e {romaneio.nota_fiscal.numero} — reaproveitada.')
+        elif pedido.gerar_nota_fiscal and pedido.tipo_venda == 'MERCADO_INTERNO' and not pedido.nota_fiscal_id:
             from faturamento.models import NotaFiscal, ItemNotaFiscal, ConfiguracaoFiscal
             cfg = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
             from django.db.models import Max as _Max
@@ -202,7 +210,10 @@ def pedido_emitir_documento(request, pk):
             messages.info(request, f'NF-e {nf.numero} criada como rascunho.')
 
         # --- Gerar Invoice (Exportação) ---
-        if pedido.gerar_nota_fiscal and pedido.tipo_venda == 'EXPORTACAO' and not pedido.invoice_id:
+        if pedido.gerar_nota_fiscal and pedido.tipo_venda == 'EXPORTACAO' and not pedido.invoice_id and romaneio and romaneio.invoice_exportacao_id:
+            pedido.invoice = romaneio.invoice_exportacao
+            messages.info(request, f'Romaneio {romaneio.numero} já possui Invoice {romaneio.invoice_exportacao.numero} — reaproveitada.')
+        elif pedido.gerar_nota_fiscal and pedido.tipo_venda == 'EXPORTACAO' and not pedido.invoice_id:
             from faturamento.models import InvoiceExportacao, ItemInvoice
             from faturamento.views import _gerar_numero_invoice
             inv = InvoiceExportacao.objects.create(
@@ -220,6 +231,12 @@ def pedido_emitir_documento(request, pk):
                 valor_frete=pedido.valor_frete,
                 valor_seguro=Decimal('0.00'),
                 valor_total=pedido.valor_total,
+                banco_nome=empresa.banco_nome,
+                banco_endereco=empresa.banco_endereco,
+                banco_swift=empresa.banco_swift,
+                banco_iban=empresa.banco_iban,
+                banco_numero_conta=empresa.banco_numero_conta,
+                banco_beneficiario_nome=empresa.banco_beneficiario_nome,
                 criado_por=request.user,
                 atualizado_por=request.user,
             )
@@ -272,9 +289,13 @@ def pedido_emitir_documento(request, pk):
             pedido.conta_receber = cr
             messages.info(request, f'Conta a Receber {cr.numero} criada.')
 
-        pedido.status = 'CONCLUIDO'
+        pedido.status = 'CONFIRMADO'
         pedido.save()
-        messages.success(request, f'Pedido {pedido.numero} concluído.')
+        messages.success(
+            request,
+            f'Pedido {pedido.numero} confirmado. Ele será concluído automaticamente '
+            'quando a NF-e/Invoice vinculada for emitida.'
+        )
 
     return redirect('vendas:pedido_detail', pk=pk)
 
@@ -285,9 +306,92 @@ def pedido_cancelar(request, pk):
         empresa = request.user.empresa
         pedido = get_object_or_404(PedidoVenda, pk=pk, empresa=empresa)
         if pedido.status == 'CONCLUIDO':
-            messages.error(request, 'Pedidos concluídos não podem ser cancelados.')
+            messages.error(
+                request,
+                'Pedido com documento fiscal emitido não pode ser cancelado diretamente. '
+                'Cancele/estorne a NF-e/Invoice primeiro.'
+            )
         else:
             pedido.status = 'CANCELADO'
             pedido.save()
             messages.success(request, f'Pedido {pedido.numero} cancelado.')
     return redirect('vendas:pedido_detail', pk=pk)
+
+
+# ============================================
+# TABELA DE PREÇO
+# ============================================
+
+@login_required
+def tabela_preco_list(request):
+    empresa = request.user.empresa
+    qs = TabelaPreco.objects.filter(empresa=empresa).select_related('cliente', 'produto', 'porto_destino')
+
+    q = request.GET.get('q', '')
+    ativo_f = request.GET.get('ativo', '')
+    if q:
+        qs = qs.filter(Q(produto__nome__icontains=q) | Q(cliente__razao_social__icontains=q))
+    if ativo_f in ('1', '0'):
+        qs = qs.filter(ativo=(ativo_f == '1'))
+
+    paginator = Paginator(qs.order_by('-vigencia_inicio'), 25)
+    page = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'vendas/tabela_preco/list.html', {
+        'page_obj': page,
+        'filtros': {'q': q, 'ativo': ativo_f},
+    })
+
+
+@login_required
+def tabela_preco_detail(request, pk):
+    empresa = request.user.empresa
+    tabela = get_object_or_404(TabelaPreco, pk=pk, empresa=empresa)
+    return render(request, 'vendas/tabela_preco/detail.html', {'tabela': tabela})
+
+
+@login_required
+def tabela_preco_create(request):
+    empresa = request.user.empresa
+    if request.method == 'POST':
+        form = TabelaPrecoForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            tabela = form.save(commit=False)
+            tabela.empresa = empresa
+            tabela.criado_por = request.user
+            tabela.save()
+            messages.success(request, 'Tabela de preço criada.')
+            return redirect('vendas:tabela_preco_detail', pk=tabela.pk)
+    else:
+        form = TabelaPrecoForm(empresa=empresa)
+    return render(request, 'vendas/tabela_preco/form.html', {'form': form, 'title': 'Nova Tabela de Preço'})
+
+
+@login_required
+def tabela_preco_update(request, pk):
+    empresa = request.user.empresa
+    tabela = get_object_or_404(TabelaPreco, pk=pk, empresa=empresa)
+    if request.method == 'POST':
+        form = TabelaPrecoForm(request.POST, instance=tabela, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Tabela de preço atualizada.')
+            return redirect('vendas:tabela_preco_detail', pk=tabela.pk)
+    else:
+        form = TabelaPrecoForm(instance=tabela, empresa=empresa)
+    return render(request, 'vendas/tabela_preco/form.html', {
+        'form': form, 'title': 'Editar Tabela de Preço', 'tabela': tabela,
+    })
+
+
+@login_required
+def tabela_preco_delete(request, pk):
+    """Desativa (soft-delete) a tabela de preço — não remove fisicamente."""
+    empresa = request.user.empresa
+    tabela = get_object_or_404(TabelaPreco, pk=pk, empresa=empresa)
+    if request.method == 'POST':
+        tabela.ativo = False
+        tabela.save(update_fields=['ativo'])
+        messages.success(request, 'Tabela de preço desativada.')
+        return redirect('vendas:tabela_preco_list')
+    return render(request, 'vendas/tabela_preco/confirm_delete.html', {'tabela': tabela})

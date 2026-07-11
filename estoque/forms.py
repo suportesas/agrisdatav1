@@ -311,14 +311,18 @@ class MovimentacaoEstoqueForm(forms.ModelForm):
         if 'tipo' in self.fields:
             self.fields['tipo'].initial = tipo_mov
         
-        # Popular querysets de produto e unidade_medida
-        if 'produto' in self.fields:
-            self.fields['produto'].queryset = Produto.objects.filter(ativo=True).order_by('nome')
-        
-        if 'unidade_medida' in self.fields:
-            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.all().order_by('sigla')
-        
         if self.empresa:
+            # Popular querysets de produto e unidade_medida filtrados por empresa
+            if 'produto' in self.fields:
+                self.fields['produto'].queryset = Produto.objects.filter(
+                    categoria__empresa=self.empresa, ativo=True
+                ).order_by('nome')
+
+            if 'unidade_medida' in self.fields:
+                self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(
+                    empresa=self.empresa
+                ).order_by('sigla')
+
             # Filtrar lotes da empresa
             if tipo_mov == 'ENTRADA':
                 self.fields['lote'].queryset = Lote.objects.filter(
@@ -347,6 +351,11 @@ class MovimentacaoEstoqueForm(forms.ModelForm):
                 self.fields['local_destino'].queryset = LocalEstocagem.objects.filter(
                     armazem__empresa=self.empresa, ativo=True, bloqueado=False
                 )
+        else:
+            if 'produto' in self.fields:
+                self.fields['produto'].queryset = Produto.objects.none()
+            if 'unidade_medida' in self.fields:
+                self.fields['unidade_medida'].queryset = UnidadeMedida.objects.none()
         # Ajustar campos baseado no tipo de movimentação
         if 'armazem_destino' in self.fields and tipo_mov in ['ENTRADA', 'SAIDA', 'AJUSTE', 'DEVOLUCAO']:
             self.fields['armazem_destino'].required = False

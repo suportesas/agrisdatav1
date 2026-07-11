@@ -64,6 +64,12 @@ class EmpresaFiscalForm(forms.ModelForm):
             'uf',
             'cep',
             'codigo_municipio',
+            'banco_nome',
+            'banco_endereco',
+            'banco_swift',
+            'banco_iban',
+            'banco_numero_conta',
+            'banco_beneficiario_nome',
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Razão Social completa'}),
@@ -77,6 +83,12 @@ class EmpresaFiscalForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 2}),
             'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000', 'id': 'id_empresa_cep'}),
             'codigo_municipio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '7 dígitos — ex: 3550308', 'maxlength': 7}),
+            'banco_nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Banco Cooperativo SICREDI'}),
+            'banco_endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Cidade — UF/País'}),
+            'banco_swift': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: BCSIBRRS'}),
+            'banco_iban': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: BR3801181521022070000636754C1'}),
+            'banco_numero_conta': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ag. 0000 C/C 00000-0'}),
+            'banco_beneficiario_nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Razão Social / CNPJ do beneficiário'}),
         }
 
 

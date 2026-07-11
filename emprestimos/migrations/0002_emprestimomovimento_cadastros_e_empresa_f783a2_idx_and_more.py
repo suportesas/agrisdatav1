@@ -10,13 +10,22 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddIndex(
-            model_name='emprestimomovimento',
-            index=models.Index(fields=['empresa', 'data_movimento'], name='cadastros_e_empresa_f783a2_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='emprestimomovimento',
-            index=models.Index(fields=['tipo_movimento'], name='cadastros_e_tipo_mo_2b6dd4_idx'),
+        # Estes dois índices de EmprestimoMovimento já foram criados fisicamente
+        # em cadastros/migrations/0087 (quando o model ainda vivia em cadastros)
+        # e nunca foram removidos — por isso aqui é só bookkeeping de estado,
+        # sem tocar no banco, para não colidir com o índice já existente.
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
+                    model_name='emprestimomovimento',
+                    index=models.Index(fields=['empresa', 'data_movimento'], name='cadastros_e_empresa_f783a2_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='emprestimomovimento',
+                    index=models.Index(fields=['tipo_movimento'], name='cadastros_e_tipo_mo_2b6dd4_idx'),
+                ),
+            ],
         ),
         migrations.AddIndex(
             model_name='emprestimoprodutor',

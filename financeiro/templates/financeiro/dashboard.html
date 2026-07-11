@@ -5,35 +5,6 @@
 
 {% block extra_css %}
 <style>
-    .metric-card {
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        background: white;
-    }
-
-    .metric-card .metric-label {
-        font-size: 12px;
-        color: #666;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 10px;
-    }
-
-    .metric-card .metric-value {
-        font-size: 28px;
-        font-weight: bold;
-        color: #333;
-    }
-
-    .metric-card .metric-icon {
-        float: right;
-        font-size: 40px;
-        opacity: 0.1;
-        margin-top: -10px;
-    }
-
     .alert-warning-badge {
         display: inline-block;
         background: #fff3cd;
@@ -177,73 +148,75 @@
     <!-- KPIs PRINCIPAIS -->
     <div class="info-grid">
         <!-- Total de Contas -->
-        <div class="metric-card">
-            <div class="metric-icon"><i class="bi bi-file-earmark-check"></i></div>
-            <div class="metric-label">Total de Contas</div>
-            <div class="metric-value">{{ stats.total_contas }}</div>
-            <div style="font-size: 13px; color: #888; margin-top: 10px;">
-                <i class="bi bi-unlock"></i> {{ stats.contas_abertas }} abertas |
-                <i class="bi bi-check-circle"></i> {{ stats.contas_pagas }} pagas
+        <div class="kpi-card">
+            <div class="kpi-icon green"><i class="bi bi-file-earmark-check"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Total de Contas</div>
+                <div class="kpi-value">{{ stats.total_contas }}</div>
+                <div class="kpi-sub">
+                    <i class="bi bi-unlock"></i> {{ stats.contas_abertas }} abertas |
+                    <i class="bi bi-check-circle"></i> {{ stats.contas_pagas }} pagas
+                </div>
             </div>
         </div>
 
         <!-- Valor Total -->
-        <div class="metric-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-            <div class="metric-icon" style="opacity: 0.2; color: white;"><i class="bi bi-cash-coin"></i></div>
-            <div class="metric-label" style="color: rgba(255,255,255,0.8);">Valor Total a Pagar</div>
-            <div class="metric-value" style="color: white;">R$ {{ valores.ajustado|floatformat:2 }}</div>
-            <div style="font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 10px;">
-                Original: R$ {{ valores.total|floatformat:2 }}
+        <div class="kpi-card">
+            <div class="kpi-icon blue"><i class="bi bi-cash-coin"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Valor Total a Pagar</div>
+                <div class="kpi-value">R$ {{ valores.ajustado|floatformat:2 }}</div>
+                <div class="kpi-sub">Original: R$ {{ valores.total|floatformat:2 }}</div>
             </div>
         </div>
 
         <!-- Juros + Multas Acumuladas -->
-        <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
-            <div class="metric-icon" style="opacity: 0.2; color: white;"><i class="bi bi-exclamation-circle"></i></div>
-            <div class="metric-label" style="color: rgba(255,255,255,0.8);">Juros + Multas Acumuladas</div>
-            <div class="metric-value" style="color: white;">R$ {{ juros_e_multas|floatformat:2 }}</div>
-            <div style="font-size: 13px; color: rgba(255,255,255,0.8); margin-top: 10px;">
-                Juros: R$ {{ valores.juros|floatformat:2 }} | Multas: R$ {{ valores.multa|floatformat:2 }}
+        <div class="kpi-card">
+            <div class="kpi-icon red"><i class="bi bi-exclamation-circle"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Juros + Multas Acumuladas</div>
+                <div class="kpi-value">R$ {{ juros_e_multas|floatformat:2 }}</div>
+                <div class="kpi-sub">Juros: R$ {{ valores.juros|floatformat:2 }} | Multas: R$ {{ valores.multa|floatformat:2 }}</div>
             </div>
         </div>
 
         <!-- Fluxo do Mês -->
-        <div class="metric-card">
-            <div class="metric-icon"><i class="bi bi-graph-up"></i></div>
-            <div class="metric-label">Pago Neste Mês</div>
-            <div class="metric-value">R$ {{ fluxo.total_pago_mes|floatformat:2 }}</div>
-            <div style="font-size: 13px; color: #888; margin-top: 10px;">
-                Próx. 30 dias: R$ {{ fluxo.valor_vencer_30d|floatformat:2 }}
+        <div class="kpi-card">
+            <div class="kpi-icon green"><i class="bi bi-graph-up"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Pago Neste Mês</div>
+                <div class="kpi-value">R$ {{ fluxo.total_pago_mes|floatformat:2 }}</div>
+                <div class="kpi-sub">Próx. 30 dias: R$ {{ fluxo.valor_vencer_30d|floatformat:2 }}</div>
             </div>
         </div>
     </div>
 
     <!-- ── CONTAS A RECEBER + POSIÇÃO LÍQUIDA ── -->
     <div class="info-grid" style="margin-bottom:20px;">
-        <div class="metric-card" style="background:linear-gradient(135deg,#0891b2 0%,#06b6d4 100%);color:white;">
-            <div class="metric-icon" style="opacity:.2;color:white;"><i class="bi bi-cash-coin"></i></div>
-            <div class="metric-label" style="color:rgba(255,255,255,.8);">A Receber (em aberto)</div>
-            <div class="metric-value" style="color:white;">{{ cr_abertas_count }}</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.8);margin-top:10px;">
-                R$ {{ valor_a_receber|floatformat:2 }}
+        <div class="kpi-card">
+            <div class="kpi-icon blue"><i class="bi bi-cash-coin"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">A Receber (em aberto)</div>
+                <div class="kpi-value">{{ cr_abertas_count }}</div>
+                <div class="kpi-sub">R$ {{ valor_a_receber|floatformat:2 }}</div>
             </div>
         </div>
-        <div class="metric-card" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:white;">
-            <div class="metric-icon" style="opacity:.2;color:white;"><i class="bi bi-check2-circle"></i></div>
-            <div class="metric-label" style="color:rgba(255,255,255,.8);">Recebido este mês</div>
-            <div class="metric-value" style="color:white;">R$ {{ cr_recebimentos_mes|floatformat:2 }}</div>
-            <div style="font-size:13px;color:rgba(255,255,255,.8);margin-top:10px;">
-                <a href="{% url 'financeiro:conta_receber_list' %}" style="color:rgba(255,255,255,.8);">Ver contas a receber →</a>
+        <div class="kpi-card">
+            <div class="kpi-icon green"><i class="bi bi-check2-circle"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Recebido este mês</div>
+                <div class="kpi-value">R$ {{ cr_recebimentos_mes|floatformat:2 }}</div>
+                <div class="kpi-sub"><a href="{% url 'financeiro:conta_receber_list' %}">Ver contas a receber →</a></div>
             </div>
         </div>
-        <div class="metric-card" style="border-left:4px solid {% if posicao_liquida >= 0 %}#10b981{% else %}#ef4444{% endif %};">
-            <div class="metric-icon"><i class="bi bi-arrow-left-right"></i></div>
-            <div class="metric-label">Posição Líquida</div>
-            <div class="metric-value" style="color:{% if posicao_liquida >= 0 %}#059669{% else %}#dc2626{% endif %};">
-                R$ {{ posicao_liquida|floatformat:2 }}
-            </div>
-            <div style="font-size:12px;color:#888;margin-top:10px;">
-                A Receber R$ {{ valor_a_receber|floatformat:2 }} &minus; Vencido R$ {{ alertas.valor_vencido|floatformat:2 }}
+        <div class="kpi-card">
+            <div class="kpi-icon {% if posicao_liquida >= 0 %}green{% else %}red{% endif %}"><i class="bi bi-arrow-left-right"></i></div>
+            <div class="kpi-body">
+                <div class="kpi-label">Posição Líquida</div>
+                <div class="kpi-value" style="color:{% if posicao_liquida >= 0 %}var(--pastel-green-text){% else %}var(--pastel-red-text){% endif %};">
+                    R$ {{ posicao_liquida|floatformat:2 }}
+                </div>
+                <div class="kpi-sub">A Receber R$ {{ valor_a_receber|floatformat:2 }} &minus; Vencido R$ {{ alertas.valor_vencido|floatformat:2 }}</div>
             </div>
         </div>
     </div>

@@ -89,7 +89,7 @@
                       <strong>{{ mov.numero }}</strong>
                     </a>
                   </td>
-                  <td>{{ mov.data_movimentacao|date:"d/m/Y H:i" }}</td>
+                  <td class="text-mono">{{ mov.data_movimentacao|date:"d/m/Y H:i" }}</td>
                   <td>
                     {% if mov.tipo == 'ENTRADA' %}
                       <span class="badge bg-success">{{ mov.get_tipo_display }}</span>
@@ -107,7 +107,7 @@
                     <div>{{ mov.lote.produto.nome }}</div>
                     <small class="text-muted">Lote: {{ mov.lote.numero_lote }}</small>
                   </td>
-                  <td>
+                  <td class="text-mono">
                     <strong>{{ mov.quantidade }}</strong>
                     <small class="text-muted">{{ mov.lote.unidade_medida.sigla }}</small>
                   </td>
@@ -145,6 +145,9 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="border-top p-3">
+          {% include 'partials/pagination.html' with page_obj=page_obj %}
         </div>
       {% else %}
         <div class="text-center py-5">

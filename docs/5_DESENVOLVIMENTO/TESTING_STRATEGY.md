@@ -26,3 +26,8 @@ Garantir confiabilidade das regras de negocio e evitar regressao.
 
 ## Meta inicial
 - Cobertura funcional critica com rastreabilidade doc -> teste
+
+## Referencias
+- Testes E2E (Playwright): `e2e/README.md` — comandos: `pytest tests/e2e/`
+- Testes unitarios (Django): `python manage.py test <app>`
+- Casos especificos de estoque: `docs/5_DESENVOLVIMENTO/TESTES_ESTOQUE.md`, `docs/5_DESENVOLVIMENTO/TESTES_E2E_ESTOQUE.md`

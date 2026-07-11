@@ -10,56 +10,65 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddIndex(
-            model_name='abastecimentoveiculo',
-            index=models.Index(fields=['empresa', 'vehicle', 'data'], name='cadastros_a_empresa_1a3b6c_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='abastecimentoveiculo',
-            index=models.Index(fields=['empresa', 'data'], name='cadastros_a_empresa_f1d2a3_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='manutencaoveiculo',
-            index=models.Index(fields=['empresa', 'vehicle', 'status'], name='cadastros_m_empresa_bea955_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='motorista',
-            index=models.Index(fields=['empresa', 'ativo'], name='cadastros_m_empresa_8ea6bf_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='motorista',
-            index=models.Index(fields=['cpf'], name='cadastros_m_cpf_1e28a5_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='motorista',
-            index=models.Index(fields=['cnh'], name='cadastros_m_cnh_5dc04f_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='motoristavinculoplaca',
-            index=models.Index(fields=['empresa', 'motorista'], name='cadastros_m_empresa_118cce_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='motoristavinculoplaca',
-            index=models.Index(fields=['empresa', 'data_inicio'], name='cadastros_m_empresa_d18cc9_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='pedagioveiculo',
-            index=models.Index(fields=['empresa', 'vehicle', 'data'], name='cadastros_p_empresa_69e441_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='pedagioveiculo',
-            index=models.Index(fields=['empresa', 'viagem'], name='cadastros_p_empresa_dd3f46_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='telemetriaveiculo',
-            index=models.Index(fields=['empresa', 'vehicle', 'data_hora'], name='cadastros_t_empresa_59784d_idx'),
-        ),
-        migrations.AddIndex(
-            model_name='vehicle',
-            index=models.Index(fields=['empresa', 'ativo'], name='cadastros_v_empresa_9a1464_idx'),
-        ),
-        migrations.AddConstraint(
-            model_name='motorista',
-            constraint=models.CheckConstraint(condition=models.Q(models.Q(('tipo__in', ['TERCEIRO', 'AGREGADO']), _negated=True), ('transportadora__isnull', False), _connector='OR'), name='motorista_terceiro_agregado_requer_transportadora'),
+        # Todos estes índices/constraint já foram criados de fato pelo RunSQL
+        # idempotente (CREATE INDEX IF NOT EXISTS / checagem via pg_constraint)
+        # em frota/migrations/0004 — aqui é só bookkeeping de estado, sem tocar
+        # no banco, para não colidir com o que já existe.
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddIndex(
+                    model_name='abastecimentoveiculo',
+                    index=models.Index(fields=['empresa', 'vehicle', 'data'], name='cadastros_a_empresa_1a3b6c_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='abastecimentoveiculo',
+                    index=models.Index(fields=['empresa', 'data'], name='cadastros_a_empresa_f1d2a3_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='manutencaoveiculo',
+                    index=models.Index(fields=['empresa', 'vehicle', 'status'], name='cadastros_m_empresa_bea955_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='motorista',
+                    index=models.Index(fields=['empresa', 'ativo'], name='cadastros_m_empresa_8ea6bf_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='motorista',
+                    index=models.Index(fields=['cpf'], name='cadastros_m_cpf_1e28a5_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='motorista',
+                    index=models.Index(fields=['cnh'], name='cadastros_m_cnh_5dc04f_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='motoristavinculoplaca',
+                    index=models.Index(fields=['empresa', 'motorista'], name='cadastros_m_empresa_118cce_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='motoristavinculoplaca',
+                    index=models.Index(fields=['empresa', 'data_inicio'], name='cadastros_m_empresa_d18cc9_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='pedagioveiculo',
+                    index=models.Index(fields=['empresa', 'vehicle', 'data'], name='cadastros_p_empresa_69e441_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='pedagioveiculo',
+                    index=models.Index(fields=['empresa', 'viagem'], name='cadastros_p_empresa_dd3f46_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='telemetriaveiculo',
+                    index=models.Index(fields=['empresa', 'vehicle', 'data_hora'], name='cadastros_t_empresa_59784d_idx'),
+                ),
+                migrations.AddIndex(
+                    model_name='vehicle',
+                    index=models.Index(fields=['empresa', 'ativo'], name='cadastros_v_empresa_9a1464_idx'),
+                ),
+                migrations.AddConstraint(
+                    model_name='motorista',
+                    constraint=models.CheckConstraint(condition=models.Q(models.Q(('tipo__in', ['TERCEIRO', 'AGREGADO']), _negated=True), ('transportadora__isnull', False), _connector='OR'), name='motorista_terceiro_agregado_requer_transportadora'),
+                ),
+            ],
         ),
     ]

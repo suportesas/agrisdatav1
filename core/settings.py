@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.postgres',
     # Apps de terceiros
     'rest_framework',
     'rest_framework_simplejwt',
@@ -322,6 +323,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # AUTENTICAÇÃO E USUÁRIOS
 # ============================================
 AUTH_USER_MODEL = 'usuarios.Usuario'
+
+# Carrega request.user já com select_related('empresa') para evitar lazy-load
+# da FK empresa em todo middleware/view que acessa user.empresa.
+AUTHENTICATION_BACKENDS = [
+    'usuarios.auth_backends.UsuarioComEmpresaBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/login/'

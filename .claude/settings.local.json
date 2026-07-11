@@ -152,7 +152,9 @@
       "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\check_all_sidebar_icons.py\")",
       "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\find_alternatives.py\")",
       "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\render_check.py\")",
-      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\render_check2.py\")"
+      "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\render_check2.py\")",
+      "Bash(powershell -NoProfile -Command \"Start-Sleep -Seconds 2\")",
+      "Bash(xxd)"
     ],
     "additionalDirectories": [
       "\\tmp"

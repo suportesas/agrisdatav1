@@ -102,12 +102,12 @@ class ProdutoVarianteSelector {
       this.dropdown.innerHTML = results.map(r => `
         <div class="pvs-option p-2 border-bottom" style="cursor:pointer;" data-id="${r.id}" data-text="${this._esc(r.text)}" data-tem-variantes="${r.tem_variantes ? '1' : '0'}">
           ${this._esc(r.text)}
-          ${r.tem_variantes ? '<span class="badge ms-1" style="background:#ede9fe;color:#7c3aed;font-size:.65rem;"><i class="bi bi-layers"></i> variantes</span>' : ''}
+          ${r.tem_variantes ? '<span class="badge ms-1" style="background:#d1fae5;color:#047857;font-size:.65rem;"><i class="bi bi-layers"></i> variantes</span>' : ''}
         </div>
       `).join('');
       this.dropdown.querySelectorAll('.pvs-option').forEach(el => {
         el.addEventListener('mousedown', () => this._selecionarBase(el));
-        el.addEventListener('mouseover', () => el.style.background = '#f5f3ff');
+        el.addEventListener('mouseover', () => el.style.background = '#eaf5ec');
         el.addEventListener('mouseout', () => el.style.background = '');
       });
     }

@@ -170,7 +170,7 @@
                     <select name="fornecedor" class="form-select">
                         <option value="">Todos</option>
                         {% for fornecedor in fornecedores %}
-                        <option value="{{ fornecedor.pk }}" {% if request.GET.fornecedor == fornecedor.pk|stringformat:'s' %}selected{% endif %}>{{ fornecedor.nome }}</option>
+                        <option value="{{ fornecedor.pk }}" {% if request.GET.fornecedor == fornecedor.pk|stringformat:'s' %}selected{% endif %}>{{ fornecedor.get_nome_exibicao_com_documento }}</option>
                         {% endfor %}
                     </select>
                 </div>

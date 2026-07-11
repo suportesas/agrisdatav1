@@ -121,6 +121,11 @@
             {{ form.lacre_terminal }}
             {% if form.lacre_terminal.errors %}<div class="text-danger small mt-1">{{ form.lacre_terminal.errors }}</div>{% endif %}
           </div>
+          <div class="col-md-4">
+            <label for="{{ form.lacre_g7.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_g7.label }}</label>
+            {{ form.lacre_g7 }}
+            {% if form.lacre_g7.errors %}<div class="text-danger small mt-1">{{ form.lacre_g7.errors }}</div>{% endif %}
+          </div>
         </div>
 
         <hr class="my-3">

@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Devolução de Venda{% endblock %}
+{% block page_title %}Registrar Devolução de Venda{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'faturamento:invoice_detail' documento.pk %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <div>
+      <h3 class="mb-0">Devolução de Venda — Invoice {{ documento.numero|default:"S/N" }}</h3>
+      <small class="text-muted">{{ documento.cliente.razao_social }} — {{ documento.data_emissao|date:"d/m/Y" }}</small>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-7">
+
+      <div class="alert alert-info mb-3">
+        <i class="bi bi-info-circle me-2"></i>
+        Esta invoice não tem um documento fiscal de devolução equivalente ao da NF-e —
+        esta ação registra só a entrada de estoque do produto devolvido.
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">
+          <i class="bi bi-arrow-return-left me-2"></i>Itens da Devolução
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ form.produto.label }}</label>
+              {{ form.produto }}
+              {% if form.produto.errors %}
+              <div class="text-danger small mt-1">{{ form.produto.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ form.lote.label }}</label>
+              {{ form.lote }}
+              <small class="text-muted">{{ form.lote.help_text }}</small>
+              {% if form.lote.errors %}
+              <div class="text-danger small mt-1">{{ form.lote.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ form.quantidade.label }}</label>
+              {{ form.quantidade }}
+              {% if form.quantidade.errors %}
+              <div class="text-danger small mt-1">{{ form.quantidade.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">{{ form.justificativa.label }}</label>
+              {{ form.justificativa }}
+              <small class="text-muted">Mínimo 15 caracteres.</small>
+              {% if form.justificativa.errors %}
+              <div class="text-danger small mt-1">{{ form.justificativa.errors }}</div>
+              {% endif %}
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Registrar Devolução
+              </button>
+              <a href="{% url 'faturamento:invoice_detail' documento.pk %}" class="btn btn-outline-secondary">Voltar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}

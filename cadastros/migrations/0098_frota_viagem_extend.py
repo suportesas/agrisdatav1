@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='viagem',
             name='motorista',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='viagens', to='frota.motorista', verbose_name='Motorista'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='viagens', to='cadastros.motorista', verbose_name='Motorista'),
         ),
         migrations.AddField(
             model_name='viagem',
@@ -34,6 +34,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='viagem',
             name='vehicle',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='viagens', to='frota.vehicle', verbose_name='Veículo'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='viagens', to='cadastros.vehicle', verbose_name='Veículo'),
         ),
     ]

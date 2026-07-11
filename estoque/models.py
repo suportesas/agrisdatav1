@@ -785,7 +785,6 @@ class MovimentacaoEstoque(models.Model):
     numero = models.CharField(
         'Número',
         max_length=30,
-        unique=True,
         blank=True,
         null=True
     )
@@ -979,7 +978,13 @@ class MovimentacaoEstoque(models.Model):
             models.Index(fields=['numero']),
             models.Index(fields=['data_movimentacao']),
         ]
-    
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'numero'],
+                name='uniq_movimentacao_numero_por_empresa'
+            ),
+        ]
+
     def __str__(self):
         return f"{self.numero} - {self.get_tipo_display()} - {self.lote.produto.nome}"
     
@@ -1101,9 +1106,11 @@ class MovimentacaoEstoque(models.Model):
                 self.produto.estoque_atual = Decimal(entrada) - Decimal(saida)
                 self.produto.save(update_fields=['estoque_atual'])
             return
-        
+
+        # Trava a linha do lote para evitar lost update em execuções concorrentes
+        self.lote = Lote.objects.select_for_update().get(pk=self.lote.pk)
         produto = self.lote.produto
-        
+
         # ENTRADA
         if self.tipo == 'ENTRADA':
             self.lote.quantidade_atual += self.quantidade
@@ -1126,7 +1133,7 @@ class MovimentacaoEstoque(models.Model):
             
             # Busca ou cria lote destino
             try:
-                lote_destino = Lote.objects.get(
+                lote_destino = Lote.objects.select_for_update().get(
                     empresa=self.empresa,
                     produto=self.lote.produto,
                     armazem=self.armazem_destino,
@@ -1392,7 +1399,7 @@ class InventarioCiclicoItem(models.Model):
             origem=tipo_movimento,
             quantidade=abs(self.quantidade_diferenca),
             armazem_origem=self.inventario.armazem,
-            motivo=f'Ajuste de inventário cíclico {self.inventario.numero}',
+            observacao=f'Ajuste de inventário cíclico {self.inventario.numero}',
             status='PENDENTE',
             executado_por=self.inventario.responsavel,
         )

@@ -279,7 +279,7 @@ def processar_autorizacao_remessa(nota_filha):
     if nota_filha.tipo_operacao != 'REMESSA':
         return
 
-    from estoque.models import MovimentacaoEstoque
+    from estoque.services import criar_movimentacao
 
     try:
         config = nota_filha.empresa.configuracao_fiscal
@@ -302,13 +302,14 @@ def processar_autorizacao_remessa(nota_filha):
 
         armazem = item.lote.armazem if item.lote else None
 
-        MovimentacaoEstoque.objects.create(
+        criar_movimentacao(
             empresa=nota_filha.empresa,
-            produto=item.produto,
-            lote=item.lote,
             tipo='SAIDA',
             origem='REMESSA_FATURAMENTO',
             quantidade=item.quantidade,
+            usuario=nota_filha.atualizado_por or nota_filha.criado_por,
+            lote=item.lote,
+            produto=item.produto,
             armazem_origem=armazem,
             documento=f'NF-e {nota_filha.numero}/{nota_filha.serie}',
             observacao=(
@@ -316,8 +317,6 @@ def processar_autorizacao_remessa(nota_filha):
                 f'Cliente: {nota_filha.cliente} — '
                 f'Chave: {nota_filha.chave_acesso}'
             ),
-            status='EXECUTADO',
-            criado_por=nota_filha.criado_por,
         )
 
     nota_filha.status_faturamento = 'PENDENTE'
@@ -375,7 +374,7 @@ def registrar_estorno_remessa(nota_filha):
     if nota_filha.tipo_operacao != 'REMESSA' or nota_filha.status_faturamento != 'PENDENTE':
         return
 
-    from estoque.models import MovimentacaoEstoque
+    from estoque.services import criar_movimentacao
 
     for item in nota_filha.itens.select_related('produto', 'lote', 'lote__armazem'):
         if not item.produto:
@@ -383,18 +382,17 @@ def registrar_estorno_remessa(nota_filha):
 
         armazem = item.lote.armazem if item.lote else None
 
-        MovimentacaoEstoque.objects.create(
+        criar_movimentacao(
             empresa=nota_filha.empresa,
-            produto=item.produto,
-            lote=item.lote,
             tipo='ENTRADA',
             origem='CANCELAMENTO_REMESSA',
             quantidade=item.quantidade,
+            usuario=nota_filha.atualizado_por or nota_filha.criado_por,
+            lote=item.lote,
+            produto=item.produto,
             armazem_origem=armazem,
             documento=f'Estorno NF-e {nota_filha.numero}/{nota_filha.serie}',
             observacao=f'Estorno por cancelamento de remessa — Chave: {nota_filha.chave_acesso}',
-            status='EXECUTADO',
-            criado_por=nota_filha.criado_por,
         )
 
     nota_filha.status_faturamento = 'NAO_APLICA'

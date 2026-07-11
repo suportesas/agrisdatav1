@@ -8,34 +8,38 @@
   <!-- KPIs -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center">
-        <div class="card-body py-3">
-          <small class="text-muted d-block">Veículos Ativos</small>
-          <h3 class="mb-0 text-primary">{{ total_veiculos }}</h3>
+      <div class="kpi-card">
+        <div class="kpi-icon green"><i class="bi bi-truck"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Veículos Ativos</div>
+          <div class="kpi-value">{{ total_veiculos }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center {% if manutencoes_abertas > 0 %}bg-warning bg-opacity-10{% endif %}">
-        <div class="card-body py-3">
-          <small class="text-muted d-block">Manutenções Abertas</small>
-          <h3 class="mb-0 {% if manutencoes_abertas > 0 %}text-warning{% endif %}">{{ manutencoes_abertas }}</h3>
+      <div class="kpi-card">
+        <div class="kpi-icon {% if manutencoes_abertas > 0 %}orange{% else %}gray{% endif %}"><i class="bi bi-wrench"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Manutenções Abertas</div>
+          <div class="kpi-value">{{ manutencoes_abertas }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center {% if alertas|length > 0 %}bg-danger bg-opacity-10{% endif %}">
-        <div class="card-body py-3">
-          <small class="text-muted d-block">Alertas Pendentes</small>
-          <h3 class="mb-0 {% if alertas|length > 0 %}text-danger{% endif %}">{{ alertas|length }}</h3>
+      <div class="kpi-card">
+        <div class="kpi-icon {% if alertas|length > 0 %}red{% else %}gray{% endif %}"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Alertas Pendentes</div>
+          <div class="kpi-value">{{ alertas|length }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center">
-        <div class="card-body py-3">
-          <small class="text-muted d-block">Combustível (mês)</small>
-          <h3 class="mb-0">R$ {{ gasto_combustivel_mes|floatformat:2 }}</h3>
+      <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="bi bi-fuel-pump"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Combustível (mês)</div>
+          <div class="kpi-value">R$ {{ gasto_combustivel_mes|floatformat:2 }}</div>
         </div>
       </div>
     </div>

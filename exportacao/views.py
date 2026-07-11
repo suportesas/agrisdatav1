@@ -3,17 +3,19 @@ import io
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import get_template
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from xhtml2pdf import pisa
 
 from cadastros.models import Cultura, Transportadora
 from frota.models import Motorista, MotoristaVinculoPlaca
 from .forms import BookingContainerForm, BookingForm, ContainerTransferenciaForm, OrdemColetaForm, SolicitacaoBookingForm
-from .models import Booking, BookingContainer, BookingContainerHistory, OrdemColeta, SolicitacaoBooking
+from .models import Booking, BookingContainer, BookingContainerHistory, BookingHistory, OrdemColeta, SolicitacaoBooking
 
 
 @login_required
@@ -199,6 +201,83 @@ def booking_update(request, pk):
         'action': 'Editar Booking',
         'request': request
     })
+
+
+@login_required
+@require_POST
+def booking_confirmar(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, empresa=request.user.empresa)
+    if booking.status != 'ABERTO':
+        messages.error(request, 'Só é possível confirmar bookings com status ABERTO.')
+        return redirect('exportacao:booking_detail', pk=pk)
+
+    with transaction.atomic():
+        status_anterior = booking.status
+        booking.status = 'CONFIRMADO'
+        booking.atualizado_por = request.user
+        booking.save(update_fields=['status', 'atualizado_por', 'atualizado_em'])
+        BookingHistory.objects.create(
+            empresa=booking.empresa,
+            booking=booking,
+            usuario=request.user,
+            status_from=status_anterior,
+            status_to='CONFIRMADO',
+        )
+    messages.success(request, f'✅ Booking "{booking.codigo or booking.pk}" confirmado.')
+    return redirect('exportacao:booking_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def booking_embarcar(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, empresa=request.user.empresa)
+    if booking.status != 'CONFIRMADO':
+        messages.error(request, 'Só é possível embarcar bookings com status CONFIRMADO.')
+        return redirect('exportacao:booking_detail', pk=pk)
+
+    with transaction.atomic():
+        status_anterior = booking.status
+        booking.status = 'EMBARCADO'
+        if not booking.data_embarque_realizado:
+            booking.data_embarque_realizado = timezone.now().date()
+        booking.atualizado_por = request.user
+        booking.save(update_fields=['status', 'data_embarque_realizado', 'atualizado_por', 'atualizado_em'])
+        BookingHistory.objects.create(
+            empresa=booking.empresa,
+            booking=booking,
+            usuario=request.user,
+            status_from=status_anterior,
+            status_to='EMBARCADO',
+        )
+
+        # Cascateia para os containers que ainda não foram explicitamente
+        # embarcados/deslocados/devolvidos — um booking não fica "embarcado"
+        # com containers ainda PENDENTE/CONFIRMADO.
+        containers_pendentes = booking.containers.filter(status__in=['PENDENTE', 'CONFIRMADO'])
+        n_containers = containers_pendentes.count()
+        for container in containers_pendentes:
+            status_from_ct = container.status
+            container.status = 'EMBARCADO'
+            container.atualizado_por = request.user
+            container.save(update_fields=['status', 'atualizado_por', 'atualizado_em'])
+            BookingContainerHistory.objects.create(
+                empresa=container.empresa,
+                container=container,
+                usuario=request.user,
+                status_from=status_from_ct,
+                status_to='EMBARCADO',
+                observacoes='Embarque cascateado a partir da confirmação de embarque do Booking.',
+            )
+
+    if n_containers:
+        messages.success(
+            request,
+            f'✅ Booking "{booking.codigo or booking.pk}" embarcado — '
+            f'{n_containers} contêiner(es) atualizado(s) para EMBARCADO.'
+        )
+    else:
+        messages.success(request, f'✅ Booking "{booking.codigo or booking.pk}" embarcado.')
+    return redirect('exportacao:booking_detail', pk=pk)
 
 
 @login_required
@@ -390,7 +469,7 @@ def _sync_lacres_container(ordem):
     if ordem.segregado and ordem.container:
         ct = ordem.container
         changed = False
-        for field in ('lacre_armador', 'lacre_fiscal', 'lacre_terminal'):
+        for field in ('lacre_armador', 'lacre_fiscal', 'lacre_terminal', 'lacre_g7'):
             val = getattr(ordem, field)
             if val:
                 setattr(ct, field, val)

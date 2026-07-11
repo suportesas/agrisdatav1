@@ -362,6 +362,57 @@ class NotaFiscal(FaturamentoBaseModel):
     entrega_nome_municipio = models.CharField('Município', max_length=60, blank=True)
     entrega_uf = models.CharField('UF', max_length=2, blank=True)
 
+    # ── Local de Retirada (grupo F da NF-e — retirada diferente do destinatário) ──
+    retirada_ativo = models.BooleanField(
+        'Usar endereço de retirada diferente', default=False,
+        help_text='Marque quando a mercadoria for retirada em endereço diferente do destinatário (ex: armazém, silo).',
+    )
+    retirada_cnpj_cpf = models.CharField('CNPJ/CPF do Local de Retirada', max_length=14, blank=True,
+        help_text='Somente dígitos. CNPJ (14) ou CPF (11) do local de retirada.')
+    retirada_logradouro = models.CharField('Logradouro', max_length=60, blank=True)
+    retirada_numero = models.CharField('Número', max_length=10, blank=True)
+    retirada_complemento = models.CharField('Complemento', max_length=60, blank=True)
+    retirada_bairro = models.CharField('Bairro', max_length=60, blank=True)
+    retirada_codigo_municipio = models.CharField('Código IBGE do Município', max_length=7, blank=True,
+        help_text='7 dígitos — código IBGE do município de retirada.')
+    retirada_nome_municipio = models.CharField('Município', max_length=60, blank=True)
+    retirada_uf = models.CharField('UF', max_length=2, blank=True)
+
+    # ── Nota de Produtor Rural (documento de origem referenciado) ────────────────
+    PRODUTOR_RURAL_MODELO_CHOICES = [
+        ('04', '04 - Nota Fiscal de Produtor'),
+        ('01', '01 - Nota Fiscal modelo 1'),
+    ]
+    produtor_rural_uf = models.CharField('UF do Emitente', max_length=2, blank=True)
+    produtor_rural_anomes = models.CharField('Ano/Mês de Emissão (AAMM)', max_length=4, blank=True)
+    produtor_rural_cnpj = models.CharField('CNPJ do Emitente', max_length=14, blank=True)
+    produtor_rural_cpf = models.CharField('CPF do Emitente', max_length=11, blank=True)
+    produtor_rural_ie = models.CharField('Inscrição Estadual do Emitente', max_length=14, blank=True)
+    produtor_rural_modelo = models.CharField('Modelo', max_length=2, blank=True,
+        choices=PRODUTOR_RURAL_MODELO_CHOICES)
+    produtor_rural_serie = models.CharField('Série', max_length=3, blank=True)
+    produtor_rural_numero = models.CharField('Número', max_length=9, blank=True)
+
+    # ── Agropecuário — Guia de Trânsito Animal (GTA/TTA/DTA/ATV/PTV/Guia Florestal) ──
+    GTA_TIPO_CHOICES = [
+        ('1', '1 - GTA'),
+        ('2', '2 - TTA'),
+        ('3', '3 - DTA'),
+        ('4', '4 - ATV'),
+        ('5', '5 - PTV'),
+        ('6', '6 - GTV'),
+        ('7', '7 - Guia Florestal (DOF, SisFlora - PA e MT, SIAM - MG)'),
+    ]
+    gta_tipo = models.CharField('Tipo da Guia', max_length=1, blank=True, choices=GTA_TIPO_CHOICES)
+    gta_uf = models.CharField('UF de Emissão', max_length=2, blank=True)
+    gta_serie = models.CharField('Série da Guia', max_length=9, blank=True)
+    gta_numero = models.CharField('Número da Guia', max_length=9, blank=True)
+
+    # ── Agropecuário — Defensivo Agrícola (receituário) ──────────────────────────
+    defensivo_numero_receituario = models.CharField('Nº Receituário/Receita do Defensivo', max_length=30, blank=True,
+        help_text='Obrigatório em vendas/transferências de agrotóxicos e defensivos agrícolas.')
+    defensivo_cpf_responsavel = models.CharField('CPF do Responsável Técnico', max_length=11, blank=True)
+
     class Meta:
         verbose_name = 'Nota Fiscal'
         verbose_name_plural = 'Notas Fiscais'
@@ -534,6 +585,17 @@ class ItemNotaFiscal(models.Model):
                                    choices=MOTIVO_DESONERACAO_CHOICES)
     icms_valor_desoneracao   = models.DecimalField('Valor Desoneração ICMS', max_digits=14, decimal_places=2, default=0)
 
+    # ── Crédito Presumido de ICMS (item) ─────────────────────────────────────
+    credito_presumido_codigo_beneficio = models.CharField('Cód. Benefício Fiscal (cCredPresumido)', max_length=10, blank=True,
+        help_text='Código do benefício fiscal de crédito presumido de ICMS aplicado ao item.')
+    credito_presumido_percentual = models.DecimalField('Percentual de Crédito Presumido (%)', max_digits=7, decimal_places=4, default=0)
+    credito_presumido_valor = models.DecimalField('Valor de Crédito Presumido', max_digits=14, decimal_places=2, default=0)
+
+    # ── Exportação Indireta (via trading — Registro de Exportação) ──────────
+    exportacao_indireta_numero_re = models.CharField('Nº Registro de Exportação (RE)', max_length=12, blank=True)
+    exportacao_indireta_chave_nfe = models.CharField('Chave da NF-e recebida para exportação', max_length=44, blank=True)
+    exportacao_indireta_quantidade = models.DecimalField('Quantidade Exportada', max_digits=15, decimal_places=4, default=0)
+
     # ── FCP — Fundo de Combate à Pobreza ─────────────────────────────────────
     fcp_base_calculo   = models.DecimalField('Base Cálculo FCP', max_digits=14, decimal_places=2, default=0)
     fcp_aliquota       = models.DecimalField('Alíq. FCP (%)', max_digits=5, decimal_places=2, default=0)
@@ -567,6 +629,49 @@ class ItemNotaFiscal(models.Model):
         blank=True,
         help_text='Item do recebimento de compra que originou este item na NF-e de devolução.',
     )
+
+    # ── Reforma Tributária — IBS/CBS (itens.imposto.ibs_cbs da IntegraNotas) ──
+    # Núcleo do grupo IBSCBS: CST + cClassTrib + alíquotas/valores de IBS-UF,
+    # IBS-Município e CBS. Grupos especiais (monofásico, crédito presumido,
+    # transferência/estorno de crédito, ZFM, compra governamental) ficam fora
+    # deste escopo inicial.
+    IBS_CBS_CST_CHOICES = [
+        ('',    '--- Não informado ---'),
+        ('000', '000 - Tributação integral'),
+        ('010', '010 - Tributação com alíquotas uniformes'),
+        ('011', '011 - Tributação com alíquotas uniformes reduzidas'),
+        ('200', '200 - Alíquota reduzida'),
+        ('210', '210 - Redução de alíquota com redutor de base de cálculo'),
+        ('220', '220 - Alíquota fixa'),
+        ('221', '221 - Alíquota fixa rateada'),
+        ('222', '222 - Redução de Base de Cálculo'),
+        ('400', '400 - Isenção'),
+        ('410', '410 - Imunidade e não incidência'),
+        ('510', '510 - Diferimento'),
+        ('515', '515 - Diferimento com redução de alíquota'),
+        ('550', '550 - Suspensão'),
+        ('620', '620 - Tributação Monofásica'),
+        ('800', '800 - Transferência de crédito'),
+        ('810', '810 - Ajustes de IBS na ZFM'),
+        ('811', '811 - Ajustes'),
+        ('820', '820 - Tributação em declaração de regime específico'),
+        ('830', '830 - Exclusão da Base de Cálculo'),
+    ]
+    ibs_cbs_situacao_tributaria = models.CharField(
+        'CST IBS/CBS', max_length=3, blank=True, choices=IBS_CBS_CST_CHOICES,
+        help_text='Código de Situação Tributária do IBS/CBS (CST da Reforma Tributária).',
+    )
+    ibs_cbs_classificacao_tributaria = models.CharField(
+        'cClassTrib', max_length=6, blank=True,
+        help_text='Código de Classificação Tributária do IBS e da CBS — 6 dígitos.',
+    )
+    ibs_cbs_base_calculo = models.DecimalField('BC IBS/CBS', max_digits=14, decimal_places=2, default=0)
+    ibs_cbs_aliquota_uf = models.DecimalField('Alíq. IBS Estadual (%)', max_digits=6, decimal_places=4, default=0)
+    ibs_cbs_valor_uf = models.DecimalField('Valor IBS Estadual', max_digits=14, decimal_places=2, default=0)
+    ibs_cbs_aliquota_municipal = models.DecimalField('Alíq. IBS Municipal (%)', max_digits=6, decimal_places=4, default=0)
+    ibs_cbs_valor_municipal = models.DecimalField('Valor IBS Municipal', max_digits=14, decimal_places=2, default=0)
+    ibs_cbs_aliquota_cbs = models.DecimalField('Alíq. CBS (%)', max_digits=6, decimal_places=4, default=0)
+    ibs_cbs_valor_cbs = models.DecimalField('Valor CBS', max_digits=14, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = 'Item da Nota Fiscal'
@@ -640,6 +745,18 @@ class ItemNotaFiscal(models.Model):
             self.icms_valor_desoneracao = self.valor_total * d(self.aliquota_icms) / _100
         elif not self.icms_motivo_desoneracao:
             self.icms_valor_desoneracao = _0
+
+        # IBS/CBS — Reforma Tributária (grupo_ibs_cbs: BC comum + alíquotas por ente)
+        if self.ibs_cbs_situacao_tributaria:
+            self.ibs_cbs_base_calculo = self.valor_total
+            self.ibs_cbs_valor_uf = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_uf) / _100
+            self.ibs_cbs_valor_municipal = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_municipal) / _100
+            self.ibs_cbs_valor_cbs = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_cbs) / _100
+        else:
+            self.ibs_cbs_base_calculo = _0
+            self.ibs_cbs_valor_uf = _0
+            self.ibs_cbs_valor_municipal = _0
+            self.ibs_cbs_valor_cbs = _0
 
         super().save(*args, **kwargs)
 
@@ -838,6 +955,29 @@ class InvoiceExportacao(FaturamentoBaseModel):
     porto_destino = models.CharField('Porto de Destino', max_length=100, blank=True)
     condicao_pagamento = models.CharField('Condição de Pagamento', max_length=100, blank=True, default='30 days from BL date')
     banco_beneficiario = models.TextField('Dados Bancários do Beneficiário', blank=True)
+
+    # ── Dados bancários estruturados (snapshot de empresas.Empresa na criação) ──
+    banco_nome = models.CharField('Nome do Banco', max_length=150, blank=True)
+    banco_endereco = models.CharField('Endereço do Banco', max_length=250, blank=True)
+    banco_swift = models.CharField('SWIFT/BIC', max_length=11, blank=True)
+    banco_iban = models.CharField('IBAN', max_length=34, blank=True)
+    banco_numero_conta = models.CharField('Número da Conta', max_length=40, blank=True)
+    banco_beneficiario_nome = models.CharField('Nome do Beneficiário', max_length=200, blank=True)
+    banco_correspondente_nome = models.CharField('Banco Correspondente', max_length=150, blank=True)
+    banco_correspondente_swift = models.CharField('SWIFT Banco Correspondente', max_length=11, blank=True)
+
+    # ── Drawback / Ato Concessório (regime especial de exportação) ──────────
+    REGIME_DRAWBACK = [
+        ('NENHUM', 'Não aplicável'),
+        ('SUSPENSAO', 'Suspensão'),
+        ('ISENCAO', 'Isenção'),
+        ('RESTITUICAO', 'Restituição'),
+    ]
+    regime_drawback = models.CharField('Regime de Drawback', max_length=20, choices=REGIME_DRAWBACK, default='NENHUM', blank=True)
+    ato_concessorio_numero = models.CharField('Nº do Ato Concessório', max_length=30, blank=True)
+    ato_concessorio_data = models.DateField('Data do Ato Concessório', blank=True, null=True)
+    ato_concessorio_validade = models.DateField('Validade do Ato Concessório', blank=True, null=True)
+
     observacoes = models.TextField('Observações', blank=True)
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     valor_mercadoria = models.DecimalField('Valor da Mercadoria', max_digits=14, decimal_places=2, default=0)
@@ -930,6 +1070,10 @@ class PackingList(FaturamentoBaseModel):
     numero = models.CharField('Número Packing List', max_length=30, blank=True)
     data_emissao = models.DateField('Data de Emissão', default=timezone.now)
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
+    numero_fitossanitario = models.CharField(
+        'Nº do Certificado Fitossanitário', max_length=50, blank=True,
+        help_text='Nº do certificado emitido pelo MAPA para este embarque — entrada manual, não há fonte automática.',
+    )
     observacoes = models.TextField('Observações', blank=True)
 
     class Meta:
@@ -1001,6 +1145,15 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     referencia_despacho = models.CharField(
         'Referência ao Despacho', max_length=20, blank=True,
         help_text='Número do manifesto/despacho que agrupa as NF-e (obrigatório no modo globalizado)',
+    )
+    romaneio_venda = models.ForeignKey(
+        'embalagem.RomaneioVenda',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='ctes',
+        verbose_name='Romaneio de Venda',
+        help_text='Embarque de origem — um romaneio pode gerar mais de um CT-e ao longo do transporte.',
     )
 
     # Partes envolvidas
@@ -1275,6 +1428,15 @@ class ManifestoDocumentoFiscal(FaturamentoBaseModel):
     numero          = models.PositiveIntegerField('Número MDF-e', null=True, blank=True)
     serie           = models.CharField('Série', max_length=3, default='1')
     data_emissao    = models.DateField('Data de Emissão', default=timezone.now)
+    booking         = models.ForeignKey(
+        'exportacao.Booking',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name='mdfes',
+        verbose_name='Booking',
+        help_text='Embarque de exportação coberto por esta viagem/MDF-e, quando aplicável.',
+    )
 
     # Modal
     motorista       = models.ForeignKey(
@@ -1619,6 +1781,14 @@ class ItemPackingList(models.Model):
     volume_m3 = models.DecimalField('Volume (m³)', max_digits=10, decimal_places=3, blank=True, null=True)
     marks_numbers = models.CharField('Marks & Numbers', max_length=200, blank=True)
     ordem = models.PositiveIntegerField('Ordem', default=1)
+
+    # ── Rastreabilidade agrícola (populados a partir de operacoes_campo.LoteProducao,
+    # via embalagem.OrdemEmbalagem.lote_producao, na geração do Packing List) ──
+    farm_nome = models.CharField('Fazenda', max_length=200, blank=True)
+    variedade = models.CharField('Variedade', max_length=150, blank=True)
+    data_colheita_inicio = models.DateField('Início da Colheita', blank=True, null=True)
+    data_colheita_fim = models.DateField('Fim da Colheita', blank=True, null=True)
+    ggn_numero = models.CharField('Nº GGN (GLOBALG.A.P.)', max_length=20, blank=True)
 
     class Meta:
         verbose_name = 'Item do Packing List'

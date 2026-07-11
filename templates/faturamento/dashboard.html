@@ -20,17 +20,11 @@
   <!-- KPI Cards -->
   <div class="row g-3 mb-4">
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-2">
-            <div class="bg-primary bg-opacity-10 rounded p-2 me-3">
-              <i class="bi bi-file-earmark-text fs-4 text-primary"></i>
-            </div>
-            <div>
-              <div class="text-muted small">Notas Fiscais</div>
-              <div class="fw-bold fs-4">{{ nf_stats.total|default:0 }}</div>
-            </div>
-          </div>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon blue"><i class="bi bi-file-earmark-text"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Notas Fiscais</div>
+          <div class="kpi-value">{{ nf_stats.total|default:0 }}</div>
           <div class="row text-center mt-2">
             <div class="col">
               <div class="text-success small fw-semibold">{{ nf_stats.emitidas|default:0 }}</div>
@@ -45,25 +39,17 @@
               <div class="text-muted" style="font-size:.75rem">Este mês</div>
             </div>
           </div>
-        </div>
-        <div class="card-footer bg-transparent">
-          <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-sm btn-outline-primary w-100">Ver NF-e</a>
+          <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-sm btn-outline-primary w-100 mt-3">Ver NF-e</a>
         </div>
       </div>
     </div>
 
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-2">
-            <div class="bg-success bg-opacity-10 rounded p-2 me-3">
-              <i class="bi bi-globe fs-4 text-success"></i>
-            </div>
-            <div>
-              <div class="text-muted small">Invoices de Exportação</div>
-              <div class="fw-bold fs-4">{{ invoice_stats.total|default:0 }}</div>
-            </div>
-          </div>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="bi bi-globe"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Invoices de Exportação</div>
+          <div class="kpi-value">{{ invoice_stats.total|default:0 }}</div>
           <div class="row text-center mt-2">
             <div class="col">
               <div class="text-success small fw-semibold">{{ invoice_stats.emitidas|default:0 }}</div>
@@ -74,34 +60,24 @@
               <div class="text-muted" style="font-size:.75rem">Valor FOB Total</div>
             </div>
           </div>
-        </div>
-        <div class="card-footer bg-transparent">
-          <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-sm btn-outline-success w-100">Ver Invoices</a>
+          <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-sm btn-outline-success w-100 mt-3">Ver Invoices</a>
         </div>
       </div>
     </div>
 
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center mb-2">
-            <div class="bg-warning bg-opacity-10 rounded p-2 me-3">
-              <i class="bi bi-box-seam fs-4 text-warning"></i>
-            </div>
-            <div>
-              <div class="text-muted small">Packing Lists</div>
-              <div class="fw-bold fs-4">{{ pl_stats.total|default:0 }}</div>
-            </div>
-          </div>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon orange"><i class="bi bi-box-seam"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Packing Lists</div>
+          <div class="kpi-value">{{ pl_stats.total|default:0 }}</div>
           <div class="row text-center mt-2">
             <div class="col">
               <div class="text-warning small fw-semibold">{{ pl_stats.emitidos|default:0 }}</div>
               <div class="text-muted" style="font-size:.75rem">Emitidos</div>
             </div>
           </div>
-        </div>
-        <div class="card-footer bg-transparent">
-          <a href="{% url 'faturamento:packing_list_list' %}" class="btn btn-sm btn-outline-warning w-100">Ver Packing Lists</a>
+          <a href="{% url 'faturamento:packing_list_list' %}" class="btn btn-sm btn-outline-warning w-100 mt-3">Ver Packing Lists</a>
         </div>
       </div>
     </div>

@@ -45,12 +45,12 @@
       <tbody>
         {% for ct in page_obj %}
         <tr>
-          <td><strong>{{ ct.numero|default:"S/N" }}/{{ ct.serie }}</strong></td>
-          <td>{{ ct.data_emissao|date:"d/m/Y" }}</td>
+          <td class="text-mono"><strong>{{ ct.numero|default:"S/N" }}/{{ ct.serie }}</strong></td>
+          <td class="text-mono">{{ ct.data_emissao|date:"d/m/Y" }}</td>
           <td>{{ ct.remetente.razao_social }}</td>
           <td>{{ ct.destinatario.razao_social }}</td>
           <td><span class="badge bg-secondary">{{ ct.uf_inicio }}</span> → <span class="badge bg-secondary">{{ ct.uf_fim }}</span></td>
-          <td class="text-end">R$ {{ ct.valor_servico|floatformat:2 }}</td>
+          <td class="text-end text-mono">R$ {{ ct.valor_servico|floatformat:2 }}</td>
           <td>
             {% if ct.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
             {% elif ct.status == 'CANCELADO' %}<span class="badge bg-danger">Cancelado</span>
@@ -69,12 +69,6 @@
     </table>
   </div>
 
-  {% if page_obj.has_other_pages %}
-  <nav><ul class="pagination pagination-sm justify-content-center">
-    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filtro }}&q={{ q }}">«</a></li>{% endif %}
-    <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
-    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filtro }}&q={{ q }}">»</a></li>{% endif %}
-  </ul></nav>
-  {% endif %}
+  {% include 'partials/pagination.html' with page_obj=page_obj %}
 </div>
 {% endblock %}

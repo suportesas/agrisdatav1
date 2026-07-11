@@ -3,48 +3,18 @@
 
 {% block extra_css %}
 <style>
-  .stat-card-vehicle {
-    border-radius: 12px;
-    padding: 0.9rem 1.1rem;
-    color: white;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    display: flex;
-    gap: .75rem;
-    align-items: center;
-    text-decoration: none;
+  .kpi-vehicle-type {
     flex: 1 1 160px;
     min-width: 150px;
     max-width: 260px;
   }
-  .stat-card-vehicle:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
-  .stat-icon { font-size: 1.4rem; opacity: 0.9 }
-  .stat-meta { font-size: .85rem; opacity: .9 }
-  .stat-count { font-size: 1.4rem; font-weight:700 }
-  .bg-LEVE { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
-  .bg-MEDIO { background: linear-gradient(135deg, #60a5fa 0%, #7c3aed 100%); }
-  .bg-PESADO { background: linear-gradient(135deg, #f97316 0%, #f43f5e 100%); }
-  .bg-REBOQUE { background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); }
-  .bg-IMPLEMENTO { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
-
-  .action-icon { color: #6b7280; text-decoration: none; font-size: 1.05rem; transition: color .15s; }
-  .action-icon:hover { color: #7c3aed; }
-  .action-icon.danger:hover { color: #dc2626; }
-  .action-icon.edit:hover { color: #0d6efd; }
-  tbody tr:hover td { background: #faf5ff; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item active">Veículos</li>
-    </ol>
-  </nav>
+  {% breadcrumb "Dashboard:dashboard:index" "Veículos" %}
 
   <!-- Cabeçalho -->
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -75,11 +45,11 @@
   <!-- Cards por tipo -->
   <div class="d-flex flex-wrap gap-3 mb-3 justify-content-center">
     {% for t in tipo_counts %}
-      <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}tipo={{ t.key }}" class="stat-card-vehicle bg-{{ t.key }}" title="Filtrar por {{ t.label }}">
-        <div class="stat-icon"><i class="bi bi-truck"></i></div>
-        <div>
-          <div class="stat-meta">{{ t.label }}</div>
-          <div class="stat-count">{{ t.count }}</div>
+      <a href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}tipo={{ t.key }}" class="kpi-card kpi-vehicle-type" title="Filtrar por {{ t.label }}">
+        <div class="kpi-icon {% if t.key == 'LEVE' %}green{% elif t.key == 'MEDIO' %}blue{% elif t.key == 'PESADO' %}orange{% elif t.key == 'REBOQUE' %}gray{% else %}red{% endif %}"><i class="bi bi-truck"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">{{ t.label }}</div>
+          <div class="kpi-value">{{ t.count }}</div>
         </div>
       </a>
     {% endfor %}
@@ -181,7 +151,7 @@
                   {% if v.consumo_medio %} · {{ v.consumo_medio }} {% if v.consumo_unidade == 'L_KM' %}L/km{% else %}L/h{% endif %}{% endif %}
                 </span>
               </td>
-              <td class="text-muted small">
+              <td class="text-muted small text-mono">
                 {% if v.get_current_plate %}
                   {{ v.get_current_plate }}
                 {% else %}
@@ -231,46 +201,8 @@
     </div>
 
     <!-- Paginação -->
-    <div class="card-footer d-flex align-items-center justify-content-between">
-      <small class="text-muted">
-        Página <strong>{{ page_obj.number }}</strong> de <strong>{{ page_obj.paginator.num_pages }}</strong>
-        &mdash; {{ page_obj.paginator.count }} registro{{ page_obj.paginator.count|pluralize }}
-      </small>
-      <ul class="pagination pagination-sm mb-0">
-
-        <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
-          {% if page_obj.has_previous %}
-            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">
-              <i class="bi bi-chevron-left"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-          {% endif %}
-        </li>
-
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-          {% elif num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
-            <li class="page-item">
-              <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
-            </li>
-          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
-            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-          {% endif %}
-        {% endfor %}
-
-        <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
-          {% if page_obj.has_next %}
-            <a class="page-link" href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">
-              <i class="bi bi-chevron-right"></i>
-            </a>
-          {% else %}
-            <span class="page-link"><i class="bi bi-chevron-right"></i></span>
-          {% endif %}
-        </li>
-
-      </ul>
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
     </div>
 
   </div>

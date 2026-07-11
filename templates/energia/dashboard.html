@@ -12,29 +12,39 @@
   <!-- Cards de resumo -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-      <div class="card text-center p-3 h-100">
-        <div class="text-muted small mb-1">Usinas Ativas</div>
-        <div class="fs-2 fw-bold text-primary">{{ total_usinas }}</div>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Usinas Ativas</div>
+          <div class="kpi-value">{{ total_usinas }}</div>
+        </div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card text-center p-3 h-100">
-        <div class="text-muted small mb-1">Geração (mês atual)</div>
-        <div class="fs-2 fw-bold text-success">{{ totais_mes.geracao|default:0|floatformat:0 }}</div>
-        <div class="text-muted small">kWh</div>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="bi bi-sun-fill"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Geração (mês atual)</div>
+          <div class="kpi-value">{{ totais_mes.geracao|default:0|floatformat:0 }}</div>
+          <div class="kpi-sub">kWh</div>
+        </div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card text-center p-3 h-100">
-        <div class="text-muted small mb-1">Economia (mês atual)</div>
-        <div class="fs-2 fw-bold text-success">R$ {{ totais_mes.economia|default:0|floatformat:2 }}</div>
+      <div class="kpi-card h-100">
+        <div class="kpi-icon green"><i class="bi bi-cash-coin"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Economia (mês atual)</div>
+          <div class="kpi-value">R$ {{ totais_mes.economia|default:0|floatformat:2 }}</div>
+        </div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card text-center p-3 h-100">
-        <div class="text-muted small mb-1">Desempenho Médio</div>
-        <div class="fs-2 fw-bold {% if totais_mes.desempenho >= 90 %}text-success{% elif totais_mes.desempenho >= 75 %}text-warning{% else %}text-danger{% endif %}">
-          {{ totais_mes.desempenho|default:0|floatformat:1 }}%
+      <div class="kpi-card h-100">
+        <div class="kpi-icon {% if totais_mes.desempenho >= 90 %}green{% elif totais_mes.desempenho >= 75 %}orange{% else %}red{% endif %}"><i class="bi bi-speedometer2"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Desempenho Médio</div>
+          <div class="kpi-value">{{ totais_mes.desempenho|default:0|floatformat:1 }}%</div>
         </div>
       </div>
     </div>
@@ -176,8 +186,8 @@
           label: 'Economia (R$)',
           data: meses.map(m => m.economia),
           type: 'line',
-          borderColor: '#7c3aed',
-          backgroundColor: 'rgba(124,58,237,0.1)',
+          borderColor: '#1a7a3c',
+          backgroundColor: 'rgba(26,122,60,0.1)',
           tension: 0.3,
           yAxisID: 'y2',
         },

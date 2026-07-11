@@ -74,8 +74,8 @@
                                 {% endif %}
                             </td>
                             <td>{{ solicitacao.solicitante.get_full_name }}</td>
-                            <td>{{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</td>
-                            <td>{{ solicitacao.data_necessidade|date:"d/m/Y" }}</td>
+                            <td class="text-mono">{{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</td>
+                            <td class="text-mono">{{ solicitacao.data_necessidade|date:"d/m/Y" }}</td>
                             <td>
                                 {% if solicitacao.status == 'TOTALMENTE_COTADA' %}
                                     <span class="badge bg-primary">Totalmente Cotado</span>
@@ -130,29 +130,7 @@
             </div>
             
             <!-- Paginação -->
-            {% if solicitacoes.has_other_pages %}
-            <nav>
-                <ul class="pagination justify-content-center">
-                    {% if solicitacoes.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ solicitacoes.previous_page_number }}">Anterior</a>
-                    </li>
-                    {% endif %}
-                    
-                    {% for num in solicitacoes.paginator.page_range %}
-                    <li class="page-item {% if solicitacoes.number == num %}active{% endif %}">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                    {% endfor %}
-                    
-                    {% if solicitacoes.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ solicitacoes.next_page_number }}">Próxima</a>
-                    </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+            {% include 'partials/pagination.html' with page_obj=solicitacoes %}
         </div>
     </div>
 </div>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfe>
+  <infNFe Id="NFe35260402035088122662990551234567890123456789a">
+    <ide>
+      <cUF>35</cUF>
+      <natOp>COMPRA DE MATERIA PRIMA PARA PROCESSAMENTO</natOp>
+      <model>55</model>
+      <serie>2</serie>
+      <nNF>888888</nNF>
+      <dhEmi>2026-04-02T10:30:00</dhEmi>
+      <tpNF>0</tpNF>
+      <idDest>1</idDest>
+      <cMunFG>3500105</cMunFG>
+      <tpImp>1</tpImp>
+      <tpEmis>1</tpEmis>
+    </ide>
+    <emit>
+      <CNPJ>35088122662099</CNPJ>
+      <xNome>TRANSPORTADORA ABC LTDA</xNome>
+      <xFant>ABC TRANSPORT</xFant>
+    </emit>
+    <dest>
+      <CNPJ>11222333000181</CNPJ>
+      <xNome>EMPRESA TESTE LTDA</xNome>
+    </dest>
+    <total>
+      <ICMSTot>
+        <vNF>150000.00</vNF>
+      </ICMSTot>
+    </total>
+    <transp>
+      <modFrete>1</modFrete>
+    </transp>

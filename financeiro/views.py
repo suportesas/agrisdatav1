@@ -712,17 +712,22 @@ def parcela_list(request):
     paginator = Paginator(parcelas, 30)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    base_parcelas = ParcelaContaPagar.objects.filter(conta_pagar__empresa=empresa)
-    
+    agregados = ParcelaContaPagar.objects.filter(conta_pagar__empresa=empresa).aggregate(
+        total=Count('id'),
+        abertas=Count('id', filter=Q(status='ABERTA')),
+        vencidas=Count('id', filter=Q(status='VENCIDA')),
+        pagas=Count('id', filter=Q(status='PAGA')),
+    )
+
     context = {
         'page_obj': page_obj,
         'parcelas': page_obj.object_list,
         'status_filter': status,
         'vencimento_filter': vencimento,
-        'total_parcelas': base_parcelas.count(),
-        'parcelas_abertas': base_parcelas.filter(status='ABERTA').count(),
-        'parcelas_vencidas': base_parcelas.filter(status='VENCIDA').count(),
-        'parcelas_pagas': base_parcelas.filter(status='PAGA').count(),
+        'total_parcelas': agregados['total'],
+        'parcelas_abertas': agregados['abertas'],
+        'parcelas_vencidas': agregados['vencidas'],
+        'parcelas_pagas': agregados['pagas'],
         'is_paginated': page_obj.has_other_pages(),
     }
     

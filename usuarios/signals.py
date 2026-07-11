@@ -1,9 +1,10 @@
-from django.db.models.signals import m2m_changed, post_save
+from django.core.cache import cache
+from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 
-from .models import Usuario
+from .models import TipoUsuario, Usuario
 
 
 @receiver(post_save, sender=Usuario)
@@ -82,3 +83,10 @@ def sync_roles_to_groups(sender, instance, action, pk_set, **kwargs):
     elif action == 'post_clear':
         # All roles removed
         RoleAudit.objects.create(role=None, actor=None, usuario=instance, action='role_removed', details={'cleared': True})
+
+
+@receiver(post_save, sender=TipoUsuario)
+@receiver(post_delete, sender=TipoUsuario)
+def invalidate_tipo_usuario_cache(sender, instance, **kwargs):
+    """Invalida o cache de get_tipo_config() quando a configuração de um tipo muda."""
+    cache.delete(f'tipo_usuario:{instance.codigo}')

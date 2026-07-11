@@ -1,4 +1,13 @@
-# models_cotacao.py - Sistema de Cotações Inteligentes
+# models_cotacao.py - Sistema de Cotações Inteligentes (LEGADO)
+#
+# Estas tabelas ficaram sem tela ativa após a unificação do fluxo de compras
+# (Solicitação -> Cotação -> Pedido -> Recebimento sempre íntegro, com atalhos
+# permissionados substituindo esta tela paralela). Mantidas no banco apenas
+# para preservar o histórico de cotações que já tenham sido feitas por aqui —
+# nenhum código novo cria registros nestes models.
+#
+# HistoricoPrecoFornecedor foi movido para compras/models.py: continua em uso
+# ativo, agora alimentado por compras.views.adicionar_proposta.
 from django.db import models
 from django.core.validators import MinValueValidator
 from decimal import Decimal
@@ -208,40 +217,7 @@ class CotacaoInteligenteProposta(models.Model):
             cotacao=self.cotacao,
             item=self.item
         ).order_by('preco_unitario')
-        
+
         if propostas_item.exists():
             return propostas_item.first().id == self.id
         return False
-
-
-class HistoricoPrecoFornecedor(models.Model):
-    """Histórico de preços praticados por fornecedores"""
-    produto = models.ForeignKey('produtos.Produto', on_delete=models.CASCADE, related_name='historico_precos')
-    fornecedor = models.ForeignKey('cadastros.Fornecedor', on_delete=models.CASCADE)
-    
-    # Dados do preço
-    preco_unitario = models.DecimalField(max_digits=15, decimal_places=2)
-    quantidade = models.DecimalField(max_digits=15, decimal_places=3)
-    data_cotacao = models.DateField()
-    
-    # Origem
-    cotacao = models.ForeignKey(CotacaoInteligente, on_delete=models.SET_NULL, null=True, blank=True)
-    documento_referencia = models.CharField(max_length=100, blank=True, help_text='NF, Pedido, etc')
-    
-    # Condições
-    prazo_entrega = models.IntegerField(blank=True, null=True)
-    condicao_pagamento = models.CharField(max_length=200, blank=True)
-    
-    criado_em = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        db_table = 'compras_historico_preco_fornecedor'
-        verbose_name = 'Histórico de Preço'
-        verbose_name_plural = 'Histórico de Preços'
-        ordering = ['-data_cotacao']
-        indexes = [
-            models.Index(fields=['produto', 'fornecedor', '-data_cotacao']),
-        ]
-    
-    def __str__(self):
-        return f"{self.produto.nome} - {self.fornecedor.nome} - R$ {self.preco_unitario} ({self.data_cotacao})"

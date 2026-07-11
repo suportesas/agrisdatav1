@@ -12,6 +12,7 @@ class Migration(migrations.Migration):
         ('cadastros', '0107_integranotas_nfe_fields'),
         ('empresas', '0023_integranotas_nfe_fields'),
         ('faturamento', '0004_numero_nfe_inicial'),
+        ('frota', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

@@ -1,9 +1,0 @@
-<li class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ d.pk }}">
-  <div>
-    <strong>{{ d.get_tipo_display }}</strong> — {{ d.titulo }} {% if d.esta_vencido %}<span class="badge bg-danger">Vencido</span>{% endif %}
-  </div>
-  <div>
-    <a href="{% url 'cadastros:cliente_documento_update' d.cliente.pk d.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
-    <a href="{% url 'cadastros:cliente_documento_delete' d.cliente.pk d.pk %}" class="btn btn-sm btn-outline-danger">Excluir</a>
-  </div>
-</li>

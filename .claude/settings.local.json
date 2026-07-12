@@ -154,7 +154,11 @@
       "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\render_check.py\")",
       "PowerShell(python \"C:\\\\Users\\\\PAULOA~1\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\f--projetos-agrisdatav1\\\\10813bf1-35c6-416c-8c81-d9cf3f6b76e2\\\\scratchpad\\\\render_check2.py\")",
       "Bash(powershell -NoProfile -Command \"Start-Sleep -Seconds 2\")",
-      "Bash(xxd)"
+      "Bash(xxd)",
+      "Bash(xargs -I{} echo {})",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'c:\\\\erp_agricola\\\\faturamento\\\\templates\\\\faturamento' -Recurse -Filter '*.html' | Select-String -Pattern 'item' -List | Select-Object Path\")",
+      "Bash(powershell -Command \"Get-ChildItem -Path 'c:\\\\erp_agricola\\\\faturamento\\\\templates' -Recurse -Directory | Select-Object FullName\")",
+      "Bash(powershell -Command \"\\(Get-Content 'c:\\\\erp_agricola\\\\faturamento\\\\templates\\\\faturamento\\\\nota_fiscal\\\\form.html' | Measure-Object -Line\\).Lines\")"
     ],
     "additionalDirectories": [
       "\\tmp"

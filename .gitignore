@@ -33,6 +33,7 @@ db.sqlite3-journal
 /media
 /staticfiles
 /static_root
+/logs
 
 # Migrations (opcional - descomentar se quiser versionar)
 # */migrations/*.py
@@ -42,6 +43,7 @@ db.sqlite3-journal
 # SEGURANÇA - NUNCA COMMITAR!
 # ==============================================================================
 .env
+.env.docker
 .env.local
 .env.*.local
 secrets.json

@@ -43,7 +43,7 @@ MODULE_PERMISSIONS = {
     '/estufas/':       'estufas.view_estufa',
     '/rh/':            'rh.view_funcionario',
     '/campo/':         'operacoes_campo.view_ordemservico',
-    '/energia/':       'energia.view_usina',
+    '/energia/':       'energia.view_usinafotovoltaica',
 }
 
 # Prefixos que NUNCA são bloqueados (independente de permissões)

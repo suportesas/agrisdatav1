@@ -7,87 +7,148 @@
 {% block content %}
 <div class="container-fluid mt-4">
 
-  <div class="row mb-4">
-    <div class="col d-flex gap-2">
-      <a href="{% url 'estufas:estufa_create' %}" class="btn btn-success">
-        <i class="bi bi-plus-circle"></i> Nova Estufa
-      </a>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-house-door"></i></span>
+      <h2>Estufas</h2>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.fazenda %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.fazenda %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
       <a href="{% url 'estufas:lote_muda_list' %}" class="btn btn-outline-primary">
         <i class="bi bi-grid-3x3-gap"></i> Lotes de Mudas
       </a>
       <a href="{% url 'estufas:dashboard_estufas' %}" class="btn btn-outline-info">
         <i class="bi bi-bar-chart-line"></i> Dashboard
       </a>
+      <a href="{% url 'estufas:estufa_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nova Estufa
+      </a>
     </div>
   </div>
 
-  <!-- Filtro por fazenda -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-4">
-          <label class="form-label small fw-semibold">Fazenda</label>
-          <select class="form-select form-select-sm" name="fazenda">
-            <option value="">Todas as fazendas</option>
-            {% for f in fazendas %}
-              <option value="{{ f.id }}" {% if fazenda_selecionada|stringformat:"s" == f.id|stringformat:"s" %}selected{% endif %}>{{ f.nome }}</option>
+  <!-- Filtro por fazenda (colapsável) -->
+  <div class="collapse {% if request.GET.fazenda %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Fazenda</label>
+        <select class="form-select" name="fazenda">
+          <option value="">Todas as fazendas</option>
+          {% for f in fazendas %}
+            <option value="{{ f.id }}" {% if fazenda_selecionada|stringformat:"s" == f.id|stringformat:"s" %}selected{% endif %}>{{ f.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'estufas:estufa_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if estufas.paginator %}
+        Exibindo <strong>{{ estufas.start_index }}–{{ estufas.end_index }}</strong>
+        de <strong>{{ estufas.paginator.count }}</strong> estufa{{ estufas.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela de Estufas -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Nome</th>
+              <th>Fazenda</th>
+              <th>Código / Tipo</th>
+              <th class="text-end">Área</th>
+              <th class="text-end">Capacidade</th>
+              <th class="text-center">Lotes Ativos</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in estufas %}
+            {% with lotes_ativos=e.get_lotes_ativos %}
+            <tr>
+              <td class="ps-4">
+                <a href="{% url 'estufas:estufa_detail' e.pk %}" class="text-decoration-none">
+                  <i class="bi bi-house-door text-success"></i> <strong>{{ e.nome }}</strong>
+                </a>
+              </td>
+              <td>{{ e.fazenda.nome }}</td>
+              <td class="small text-muted">{{ e.codigo }} · {{ e.get_tipo_display }}</td>
+              <td class="text-end">{% if e.area_m2 %}{{ e.area_m2 }} m²{% else %}—{% endif %}</td>
+              <td class="text-end">{% if e.capacidade_bandejas %}{{ e.capacidade_bandejas }} bandejas{% else %}—{% endif %}</td>
+              <td class="text-center">
+                <span class="badge bg-info">{{ lotes_ativos.count }}</span>
+              </td>
+              <td class="text-center">
+                {% if e.ativo %}
+                  <span class="badge bg-success">Ativa</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativa</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon" href="{% url 'estufas:estufa_detail' e.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="action-icon edit" href="{% url 'estufas:estufa_update' e.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="action-icon danger" href="{% url 'estufas:estufa_delete' e.pk %}" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="bi bi-house-x display-4 d-block mb-3"></i>
+                Nenhuma estufa cadastrada.
+                <br>
+                <a href="{% url 'estufas:estufa_create' %}" class="btn btn-success mt-3">
+                  <i class="bi bi-plus-circle"></i> Cadastrar Estufa
+                </a>
+              </td>
+            </tr>
             {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
-        </div>
-        <div class="col-md-1">
-          <a href="{% url 'estufas:estufa_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  {% if estufas %}
-  <div class="row g-4">
-    {% for e in estufas %}
-    <div class="col-md-4">
-      <div class="card shadow-sm border-0 rounded-4 h-100">
-        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between">
-          <h6 class="fw-bold mb-0">
-            <i class="bi bi-house-door text-success"></i> {{ e.nome }}
-          </h6>
-          <span class="badge {% if e.ativo %}bg-success{% else %}bg-secondary{% endif %}">
-            {% if e.ativo %}Ativa{% else %}Inativa{% endif %}
-          </span>
-        </div>
-        <div class="card-body">
-          <p class="text-muted small mb-1"><i class="bi bi-geo-alt"></i> {{ e.fazenda.nome }}</p>
-          <p class="text-muted small mb-1"><i class="bi bi-tag"></i> {{ e.codigo }} | {{ e.get_tipo_display }}</p>
-          {% if e.area_m2 %}<p class="text-muted small mb-1"><i class="bi bi-rulers"></i> {{ e.area_m2 }} m²</p>{% endif %}
-          {% if e.capacidade_bandejas %}<p class="text-muted small mb-2"><i class="bi bi-grid"></i> {{ e.capacidade_bandejas }} bandejas</p>{% endif %}
-
-          {% with lotes_ativos=e.get_lotes_ativos %}
-          <div class="d-flex justify-content-between align-items-center mt-2">
-            <span class="badge bg-primary">{{ lotes_ativos.count }} lote(s) ativo(s)</span>
-            <div class="btn-group btn-group-sm">
-              <a href="{% url 'estufas:estufa_detail' e.pk %}" class="btn btn-outline-info"><i class="bi bi-eye"></i></a>
-              <a href="{% url 'estufas:estufa_update' e.pk %}" class="btn btn-outline-primary"><i class="bi bi-pencil"></i></a>
-              <a href="{% url 'estufas:estufa_delete' e.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash"></i></a>
-            </div>
-          </div>
-          {% endwith %}
-        </div>
+          </tbody>
+        </table>
       </div>
     </div>
-    {% endfor %}
+    {% if estufas.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=estufas %}
+    </div>
+    {% endif %}
   </div>
-  {% else %}
-  <div class="text-center py-5 text-muted">
-    <i class="bi bi-house-x fs-1 d-block mb-2"></i>
-    Nenhuma estufa cadastrada.
-    <br>
-    <a href="{% url 'estufas:estufa_create' %}" class="btn btn-success btn-sm mt-3">
-      <i class="bi bi-plus"></i> Cadastrar Estufa
-    </a>
-  </div>
-  {% endif %}
 
 </div>
 {% endblock %}

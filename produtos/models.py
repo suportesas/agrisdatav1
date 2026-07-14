@@ -826,7 +826,11 @@ class ProdutoTributacao(models.Model):
     icms_aliquota = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Alíquota ICMS (%)')
     icms_reducao_base = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Redução Base ICMS (%)')
     icms_base_calculo = models.DecimalField(max_digits=5, decimal_places=2, default=100, verbose_name='Base de Cálculo ICMS (%)')
-    
+    icms_percentual_diferimento = models.DecimalField(
+        max_digits=5, decimal_places=2, default=100, verbose_name='% Diferimento ICMS',
+        help_text='pDif — CST 51. Use 100 para diferimento total.',
+    )
+
     # ICMS ST
     icms_st_aliquota = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='Alíquota ICMS ST (%)')
     icms_st_mva = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name='MVA ST (%)')
@@ -855,6 +859,83 @@ class ProdutoTributacao(models.Model):
         help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99 (ex: 116).',
     )
     
+    # ── Reforma Tributária — IBS/CBS (mesmo escopo de faturamento.ItemNotaFiscal) ──
+    # Restrito aos 5 CSTs confirmados para o escopo desta fazenda.
+    IBS_CBS_CST_CHOICES = [
+        ('',    '--- Não informado ---'),
+        ('000', '000 - Tributação integral'),
+        ('200', '200 - Alíquota reduzida'),
+        ('410', '410 - Imunidade e não incidência'),
+        ('515', '515 - Diferimento com redução de alíquota'),
+        ('550', '550 - Suspensão'),
+    ]
+    # cClassTrib restrito aos pares CST/código confirmados para o escopo desta
+    # fazenda — mesma fonte de verdade usada em faturamento.ItemNotaFiscal.
+    IBS_CBS_CST_CCLASSTRIB_MAP = {
+        '000': [
+            ('000001', '000001 - Tributação integral (padrão)'),
+        ],
+        '200': [
+            ('200003', '200003 - Alíquota reduzida (insumo agropecuário específico)'),
+            ('200034', '200034 - Alimentação humana / cesta básica (redução 60%)'),
+            ('200036', '200036 - Produtos agropecuários in natura (redução 60%)'),
+            ('200038', '200038 - Insumos agropecuários/aquícolas Anexo IX (redução 60%)'),
+        ],
+        '410': [
+            ('410004', '410004 - Não incidência'),
+            ('410014', '410014 - Fornecimento por produtor rural não contribuinte (Art. 164 LC 214/2025)'),
+            ('410030', '410030 - Perecimento/deterioração/roubo/furto/extravio (Art. 47 §6º)'),
+        ],
+        '515': [
+            ('515001', '515001 - Diferimento de insumos agropecuários (Art. 138 §2º)'),
+        ],
+        '550': [
+            ('550001', '550001 - Suspensão / exportação indireta via trading'),
+        ],
+    }
+    IBS_CBS_CCLASSTRIB_CHOICES = [('', '--- Não informado ---')] + [
+        par for pares in IBS_CBS_CST_CCLASSTRIB_MAP.values() for par in pares
+    ]
+    IBS_CBS_CREDPRES_CHOICES = [
+        ('', '--- Não informado ---'),
+        ('1', '1 - Aquisição de Produtor Rural não contribuinte (Art. 164 LC 214/2025)'),
+    ]
+    ibs_cbs_situacao_tributaria = models.CharField(
+        max_length=3, blank=True, choices=IBS_CBS_CST_CHOICES, verbose_name='CST IBS/CBS',
+        help_text='Código de Situação Tributária do IBS/CBS (CST da Reforma Tributária).',
+    )
+    ibs_cbs_classificacao_tributaria = models.CharField(
+        max_length=6, blank=True, choices=IBS_CBS_CCLASSTRIB_CHOICES, verbose_name='cClassTrib',
+        help_text='Código de Classificação Tributária do IBS e da CBS — 6 dígitos.',
+    )
+    ibs_cbs_aliquota_uf = models.DecimalField(max_digits=6, decimal_places=4, default=0, verbose_name='Alíq. IBS Estadual (%)')
+    ibs_cbs_aliquota_municipal = models.DecimalField(max_digits=6, decimal_places=4, default=0, verbose_name='Alíq. IBS Municipal (%)')
+    ibs_cbs_aliquota_cbs = models.DecimalField(max_digits=6, decimal_places=4, default=0, verbose_name='Alíq. CBS (%)')
+    # Redução e diferimento independentes para IBS e CBS (mesma divisão de
+    # faturamento.ItemNotaFiscal — cada tributo pode ter seu próprio percentual).
+    ibs_percentual_reducao = models.DecimalField(
+        max_digits=7, decimal_places=4, default=0, verbose_name='% Redução IBS',
+        help_text='pRedAliq — CST 200/515.',
+    )
+    ibs_percentual_diferimento = models.DecimalField(
+        max_digits=7, decimal_places=4, default=0, verbose_name='% Diferimento IBS',
+        help_text='pDif — CST 515. Use 100 para diferimento total.',
+    )
+    cbs_percentual_reducao = models.DecimalField(
+        max_digits=7, decimal_places=4, default=0, verbose_name='% Redução CBS',
+        help_text='pRedAliq — CST 200/515.',
+    )
+    cbs_percentual_diferimento = models.DecimalField(
+        max_digits=7, decimal_places=4, default=0, verbose_name='% Diferimento CBS',
+        help_text='pDif — CST 515. Use 100 para diferimento total.',
+    )
+    ibs_cbs_credito_presumido_codigo = models.CharField(
+        max_length=2, blank=True, choices=IBS_CBS_CREDPRES_CHOICES, verbose_name='Código Crédito Presumido (cCredPres)',
+        help_text='gCredPresOper — código do tipo de crédito presumido do IBS/CBS.',
+    )
+    ibs_cbs_credito_presumido_percentual = models.DecimalField(
+        max_digits=7, decimal_places=4, default=0, verbose_name='% Crédito Presumido IBS/CBS')
+
     # Benefícios Fiscais
     beneficio_fiscal = models.CharField(max_length=10, blank=True, verbose_name='Código Benefício Fiscal')
     

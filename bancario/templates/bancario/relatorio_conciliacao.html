@@ -5,127 +5,130 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h1><i class="bi bi-file-earmark-check"></i> Relatório de Conciliação</h1>
-          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
-        </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-secondary" onclick="window.print()">
-            <i class="bi bi-printer"></i> Imprimir
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-file-earmark-check"></i></span>
+          <div>
+              <h2>Relatório de Conciliação</h2>
+              <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.data_inicio or request.GET.data_fim or request.GET.conta %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.data_inicio or request.GET.data_fim or request.GET.conta %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <button class="btn btn-outline-secondary d-print-none" onclick="window.print()">
+              <i class="bi bi-printer"></i> Imprimir
           </button>
           <a href="{% url 'bancario:conta_bancaria_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-bank"></i> Contas
+              <i class="bi bi-bank"></i> Contas
           </a>
-        </div>
       </div>
-    </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card mb-4 d-print-none">
-    <div class="card-body">
-      <form method="get" class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label">Data Início</label>
-          <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Data Fim</label>
-          <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Conta Bancária</label>
-          <select name="conta" class="form-select">
-            <option value="">Todas as contas</option>
-            {% for c in contas %}
-            <option value="{{ c.pk }}" {% if filtros.conta_id == c.pk|stringformat:"s" %}selected{% endif %}>
-              {{ c.banco }} — Ag {{ c.agencia }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3 d-flex gap-2">
-          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filtrar</button>
-          <a href="{% url 'bancario:relatorio_conciliacao' %}" class="btn btn-outline-secondary">Limpar</a>
-        </div>
-      </form>
-    </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.data_inicio or request.GET.data_fim or request.GET.conta %}show{% endif %} mb-4 d-print-none" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Data Início</label>
+        <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Data Fim</label>
+        <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Conta Bancária</label>
+        <select name="conta" class="form-select">
+          <option value="">Todas as contas</option>
+          {% for c in contas %}
+          <option value="{{ c.pk }}" {% if filtros.conta_id == c.pk|stringformat:"s" %}selected{% endif %}>
+            {{ c.banco }} — Ag {{ c.agencia }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filtrar</button>
+          <a href="{% url 'bancario:relatorio_conciliacao' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
   </div>
 
   <!-- Cards de totais -->
   <div class="row g-3 mb-4">
     <div class="col-md-2 col-sm-4">
-      <div class="card text-center border-success">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Conciliados</p>
-          <h4 class="text-success mb-0">{{ stats.qtd_conciliados }}</h4>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Conciliados</div>
+        <div class="stat-value text-success">{{ stats.qtd_conciliados }}</div>
       </div>
     </div>
     <div class="col-md-2 col-sm-4">
-      <div class="card text-center border-warning">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Pendentes</p>
-          <h4 class="text-warning mb-0">{{ stats.qtd_pendentes }}</h4>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Pendentes</div>
+        <div class="stat-value text-warning">{{ stats.qtd_pendentes }}</div>
       </div>
     </div>
     <div class="col-md-2 col-sm-4">
-      <div class="card text-center">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Ignorados</p>
-          <h4 class="text-secondary mb-0">{{ stats.qtd_ignorados }}</h4>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Ignorados</div>
+        <div class="stat-value text-secondary">{{ stats.qtd_ignorados }}</div>
       </div>
     </div>
     <div class="col-md-3 col-sm-6">
-      <div class="card text-center">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Débitos Conciliados</p>
-          <h5 class="text-danger mb-0">R$ {{ stats.debito_conciliado|floatformat:2 }}</h5>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Débitos Conciliados</div>
+        <div class="fw-bold text-danger">R$ {{ stats.debito_conciliado|floatformat:2 }}</div>
       </div>
     </div>
     <div class="col-md-3 col-sm-6">
-      <div class="card text-center">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Créditos Conciliados</p>
-          <h5 class="text-success mb-0">R$ {{ stats.credito_conciliado|floatformat:2 }}</h5>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Créditos Conciliados</div>
+        <div class="fw-bold text-success">R$ {{ stats.credito_conciliado|floatformat:2 }}</div>
       </div>
     </div>
   </div>
 
   <!-- Lançamentos Conciliados -->
   {% if conciliados %}
-  <div class="card mb-4">
-    <div class="card-header bg-success text-white">
-      <strong><i class="bi bi-check-circle-fill"></i> Lançamentos Conciliados ({{ stats.qtd_conciliados }})</strong>
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-header bg-white border-bottom">
+      <strong class="text-success"><i class="bi bi-check-circle-fill"></i> Lançamentos Conciliados ({{ stats.qtd_conciliados }})</strong>
     </div>
     <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0">
-        <thead class="table-light">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
           <tr>
-            <th>Data</th>
+            <th class="ps-4">Data</th>
             <th>Conta</th>
-            <th>Tipo</th>
+            <th class="text-center">Tipo</th>
             <th>Descrição</th>
             <th class="text-end">Valor</th>
             <th>Vinculado a</th>
-            <th>Score</th>
+            <th class="text-center">Score</th>
           </tr>
         </thead>
         <tbody>
           {% for lanc in conciliados %}
           <tr>
-            <td class="text-nowrap">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
+            <td class="ps-4 text-mono">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
             <td class="small">{{ lanc.conta_bancaria.banco }}</td>
-            <td><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
+            <td class="text-center"><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
             <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
-            <td class="text-end text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+            <td class="text-end text-mono text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
               R$ {{ lanc.valor|floatformat:2 }}
             </td>
             <td class="small">
@@ -136,7 +139,7 @@
               {% endif %}
               {% endif %}
             </td>
-            <td>
+            <td class="text-center">
               {% if lanc.conciliacao %}
               <span class="badge bg-{% if lanc.conciliacao.score_matching >= 80 %}success{% elif lanc.conciliacao.score_matching >= 50 %}warning{% else %}secondary{% endif %}">
                 {{ lanc.conciliacao.score_matching }}
@@ -148,40 +151,55 @@
         </tbody>
       </table>
     </div>
+    {% if conciliados.paginator and conciliados.paginator.num_pages > 1 %}
+    <div class="card-footer d-print-none">
+      <nav class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Página {{ conciliados.number }} de {{ conciliados.paginator.num_pages }}</small>
+        <div class="btn-group btn-group-sm">
+          {% if conciliados.has_previous %}
+          <a class="btn btn-outline-secondary" href="?conciliados_page={{ conciliados.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'conciliados_page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Anterior</a>
+          {% endif %}
+          {% if conciliados.has_next %}
+          <a class="btn btn-outline-secondary" href="?conciliados_page={{ conciliados.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'conciliados_page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Próxima</a>
+          {% endif %}
+        </div>
+      </nav>
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 
   <!-- Pendentes -->
   {% if pendentes %}
-  <div class="card">
-    <div class="card-header bg-warning">
-      <strong><i class="bi bi-clock"></i> Pendentes de Conciliação ({{ stats.qtd_pendentes }})</strong>
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-header bg-white border-bottom">
+      <strong class="text-warning"><i class="bi bi-clock"></i> Pendentes de Conciliação ({{ stats.qtd_pendentes }})</strong>
     </div>
     <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0">
-        <thead class="table-light">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
           <tr>
-            <th>Data</th>
+            <th class="ps-4">Data</th>
             <th>Conta</th>
-            <th>Tipo</th>
+            <th class="text-center">Tipo</th>
             <th>Descrição</th>
             <th class="text-end">Valor</th>
-            <th>Ação</th>
+            <th class="text-center">Ação</th>
           </tr>
         </thead>
         <tbody>
           {% for lanc in pendentes %}
           <tr>
-            <td class="text-nowrap">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
+            <td class="ps-4 text-mono">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
             <td class="small">{{ lanc.conta_bancaria.banco }}</td>
-            <td><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
+            <td class="text-center"><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
             <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
-            <td class="text-end text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+            <td class="text-end text-mono text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
               R$ {{ lanc.valor|floatformat:2 }}
             </td>
-            <td>
-              <a href="{% url 'bancario:conciliacao_workspace' lanc.importacao_id %}" class="btn btn-xs btn-outline-primary btn-sm py-0">
-                <i class="bi bi-check2-all"></i> Conciliar
+            <td class="text-center">
+              <a class="action-icon" href="{% url 'bancario:conciliacao_workspace' lanc.importacao_id %}" title="Conciliar">
+                <i class="bi bi-check2-all"></i>
               </a>
             </td>
           </tr>
@@ -189,19 +207,93 @@
         </tbody>
       </table>
     </div>
+    {% if pendentes.paginator and pendentes.paginator.num_pages > 1 %}
+    <div class="card-footer d-print-none">
+      <nav class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Página {{ pendentes.number }} de {{ pendentes.paginator.num_pages }}</small>
+        <div class="btn-group btn-group-sm">
+          {% if pendentes.has_previous %}
+          <a class="btn btn-outline-secondary" href="?pendentes_page={{ pendentes.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'pendentes_page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Anterior</a>
+          {% endif %}
+          {% if pendentes.has_next %}
+          <a class="btn btn-outline-secondary" href="?pendentes_page={{ pendentes.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'pendentes_page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Próxima</a>
+          {% endif %}
+        </div>
+      </nav>
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 
-  {% if not conciliados and not pendentes %}
-  <div class="card">
-    <div class="card-body text-center py-5 text-muted">
-      <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+  <!-- Ignorados -->
+  {% if ignorados %}
+  <div class="card shadow-sm border-0 rounded-4 mb-4">
+    <div class="card-header bg-white border-bottom">
+      <strong class="text-secondary"><i class="bi bi-slash-circle"></i> Ignorados ({{ stats.qtd_ignorados }})</strong>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4">Data</th>
+            <th>Conta</th>
+            <th class="text-center">Tipo</th>
+            <th>Descrição</th>
+            <th class="text-end">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for lanc in ignorados %}
+          <tr>
+            <td class="ps-4 text-mono">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
+            <td class="small">{{ lanc.conta_bancaria.banco }}</td>
+            <td class="text-center"><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
+            <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
+            <td class="text-end text-mono text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+              R$ {{ lanc.valor|floatformat:2 }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if ignorados.paginator and ignorados.paginator.num_pages > 1 %}
+    <div class="card-footer d-print-none">
+      <nav class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">Página {{ ignorados.number }} de {{ ignorados.paginator.num_pages }}</small>
+        <div class="btn-group btn-group-sm">
+          {% if ignorados.has_previous %}
+          <a class="btn btn-outline-secondary" href="?ignorados_page={{ ignorados.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'ignorados_page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Anterior</a>
+          {% endif %}
+          {% if ignorados.has_next %}
+          <a class="btn btn-outline-secondary" href="?ignorados_page={{ ignorados.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'ignorados_page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Próxima</a>
+          {% endif %}
+        </div>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if not conciliados and not pendentes and not ignorados %}
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-inbox display-4 d-block mb-3"></i>
       Nenhum lançamento encontrado para os filtros selecionados.
     </div>
   </div>
   {% endif %}
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 
 <style>
 @media print {

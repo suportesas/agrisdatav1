@@ -6,12 +6,13 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="fw-bold text-secondary mb-0">
-      <i class="bi bi-gear text-success"></i> Custo/Hora de Máquinas
-    </h4>
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-gear"></i></span>
+      <h2>Custo/Hora de Máquinas</h2>
+    </div>
     <a href="{% url 'operacoes_campo:custo_maquina_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-circle me-1"></i> Nova Configuração
+      <i class="bi bi-plus-circle"></i> Nova Configuração
     </a>
   </div>
 
@@ -19,27 +20,27 @@
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+          <thead class="bg-light">
             <tr>
-              <th>Veículo/Máquina</th>
+              <th class="ps-4">Veículo/Máquina</th>
               <th>Data Referência</th>
               <th class="text-end">Preço Combustível</th>
               <th class="text-end">Reserva Manutenção/h</th>
               <th class="text-end">Horas Anuais</th>
               <th class="text-end">Custo/Hora Calculado</th>
               <th class="text-center">Ativo</th>
-              <th class="text-end">Ações</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for cfg in configs %}
             <tr>
-              <td class="fw-semibold">{{ cfg.veiculo }}</td>
-              <td>{{ cfg.data_referencia|date:"d/m/Y" }}</td>
-              <td class="text-end">R$ {{ cfg.preco_combustivel|floatformat:3 }}/L</td>
-              <td class="text-end">R$ {{ cfg.reserva_manutencao_hora|floatformat:2 }}/h</td>
-              <td class="text-end">{{ cfg.horas_anuais_trabalho|floatformat:0 }}h</td>
-              <td class="text-end fw-bold text-success">R$ {{ cfg.custo_hora_calculado|floatformat:2 }}/h</td>
+              <td class="ps-4 fw-semibold">{{ cfg.veiculo }}</td>
+              <td class="text-mono">{{ cfg.data_referencia|date:"d/m/Y" }}</td>
+              <td class="text-end text-mono">R$ {{ cfg.preco_combustivel|floatformat:3 }}/L</td>
+              <td class="text-end text-mono">R$ {{ cfg.reserva_manutencao_hora|floatformat:2 }}/h</td>
+              <td class="text-end text-mono">{{ cfg.horas_anuais_trabalho|floatformat:0 }}h</td>
+              <td class="text-end text-mono fw-bold text-success">R$ {{ cfg.custo_hora_calculado|floatformat:2 }}/h</td>
               <td class="text-center">
                 {% if cfg.ativo %}
                   <span class="badge bg-success">Ativo</span>
@@ -47,17 +48,17 @@
                   <span class="badge bg-secondary">Inativo</span>
                 {% endif %}
               </td>
-              <td class="text-end">
-                <a href="{% url 'operacoes_campo:custo_maquina_update' cfg.pk %}" class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-pencil"></i>
+              <td class="text-center">
+                <a class="action-icon edit" href="{% url 'operacoes_campo:custo_maquina_update' cfg.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
                 </a>
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="8" class="text-center text-muted py-4">
-                <i class="bi bi-gear fs-2 d-block mb-2"></i>
-                Nenhuma configuração cadastrada.
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhuma configuração cadastrada
                 <a href="{% url 'operacoes_campo:custo_maquina_create' %}" class="d-block mt-2">Configurar primeira máquina</a>
               </td>
             </tr>

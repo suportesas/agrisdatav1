@@ -4,87 +4,120 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1><i class="bi bi-calendar-check"></i> Agenda de Pagamentos</h1>
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-calendar-check"></i></span>
+            <h2>Agenda de Pagamentos</h2>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if request.GET.status or request.GET.vencimento or request.GET.tipo_vencimento %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if request.GET.status or request.GET.vencimento or request.GET.tipo_vencimento %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label for="status" class="form-label">Status</label>
-                    <select name="status" id="status" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="ABERTA" {% if status_filter == 'ABERTA' %}selected{% endif %}>Abertas</option>
-                        <option value="VENCIDA" {% if status_filter == 'VENCIDA' %}selected{% endif %}>Vencidas</option>
-                        <option value="PAGA" {% if status_filter == 'PAGA' %}selected{% endif %}>Pagas</option>
-                        <option value="RENEGOCIADA" {% if status_filter == 'RENEGOCIADA' %}selected{% endif %}>Renegociadas</option>
-                    </select>
-                </div>
-
-                <div class="col-md-4">
-                    <label for="tipo_vencimento" class="form-label">Período</label>
-                    <select name="tipo_vencimento" id="tipo_vencimento" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="vencidas" {% if vencimento_filter == 'vencidas' %}selected{% endif %}>Vencidas</option>
-                        <option value="proximas_7" {% if vencimento_filter == 'proximas_7' or vencimento_filter == 'proximas' %}selected{% endif %}>Próximos 7 dias</option>
-                        <option value="proximas_30" {% if vencimento_filter == 'proximas_30' or vencimento_filter == '30dias' %}selected{% endif %}>Próximos 30 dias</option>
-                    </select>
-                </div>
-
-                <div class="col-md-4">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-funnel"></i> Filtrar
-                    </button>
-                </div>
-            </form>
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-list-ul"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Total de Parcelas</div>
+              <div class="stat-value">{{ total_parcelas }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Abertas</div>
+              <div class="stat-value">{{ parcelas_abertas }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-red mb-0"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Vencidas</div>
+              <div class="stat-value">{{ parcelas_vencidas }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Pagas</div>
+              <div class="stat-value">{{ parcelas_pagas }}</div>
+            </div>
+          </div>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted small">Total de Parcelas</div>
-                    <div class="fs-5 fw-bold">{{ total_parcelas }}</div>
-                </div>
-            </div>
+    <!-- Filtros (colapsável) -->
+    <div class="collapse {% if request.GET.status or request.GET.vencimento or request.GET.tipo_vencimento %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <div class="filter-field">
+          <label for="status" class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+          <select name="status" id="status" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="ABERTA" {% if status_filter == 'ABERTA' %}selected{% endif %}>Abertas</option>
+              <option value="VENCIDA" {% if status_filter == 'VENCIDA' %}selected{% endif %}>Vencidas</option>
+              <option value="PAGA" {% if status_filter == 'PAGA' %}selected{% endif %}>Pagas</option>
+              <option value="RENEGOCIADA" {% if status_filter == 'RENEGOCIADA' %}selected{% endif %}>Renegociadas</option>
+          </select>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted small">Abertas</div>
-                    <div class="fs-5 fw-bold text-warning">{{ parcelas_abertas }}</div>
-                </div>
-            </div>
+
+        <div class="filter-field">
+          <label for="tipo_vencimento" class="form-label form-label-sm mb-0 fw-semibold small">Período</label>
+          <select name="tipo_vencimento" id="tipo_vencimento" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="vencidas" {% if vencimento_filter == 'vencidas' %}selected{% endif %}>Vencidas</option>
+              <option value="proximas_7" {% if vencimento_filter == 'proximas_7' or vencimento_filter == 'proximas' %}selected{% endif %}>Próximos 7 dias</option>
+              <option value="proximas_30" {% if vencimento_filter == 'proximas_30' or vencimento_filter == '30dias' %}selected{% endif %}>Próximos 30 dias</option>
+          </select>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted small">Vencidas</div>
-                    <div class="fs-5 fw-bold text-danger">{{ parcelas_vencidas }}</div>
-                </div>
-            </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'financeiro:parcela_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted small">Pagas</div>
-                    <div class="fs-5 fw-bold text-success">{{ parcelas_pagas }}</div>
-                </div>
-            </div>
-        </div>
+      </form>
     </div>
 
-    <div class="card">
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if page_obj.paginator %}
+          Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+          de <strong>{{ page_obj.paginator.count }}</strong> parcela{{ page_obj.paginator.count|pluralize }}
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
                     <tr>
-                        <th>Conta</th>
+                        <th class="ps-4">Conta</th>
                         <th>Fornecedor</th>
                         <th>Parcela</th>
                         <th>Vencimento</th>
@@ -92,15 +125,15 @@
                         <th>Juros</th>
                         <th>Multa</th>
                         <th>Total</th>
-                        <th>Dias Atraso</th>
-                        <th>Status</th>
-                        <th>Ação</th>
+                        <th class="text-center">Dias Atraso</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Ação</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for parcela in parcelas %}
                     <tr>
-                        <td>
+                        <td class="ps-4">
                             <a href="{% url 'financeiro:conta_pagar_detail' parcela.conta_pagar.id %}">
                                 {{ parcela.conta_pagar.numero }}
                             </a>
@@ -124,19 +157,19 @@
                         <td class="text-mono">{% if parcela.juros_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
                         <td class="text-mono">{% if parcela.multa_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
                         <td class="text-mono"><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
-                        <td>
+                        <td class="text-center">
                             {% if parcela.dias_atraso > 0 %}
                             <span class="badge bg-danger">{{ parcela.dias_atraso }}d</span>
                             {% else %}
                             <span class="badge bg-light text-dark">-</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span class="badge bg-{% if parcela.status == 'PAGA' %}success{% elif parcela.status == 'VENCIDA' %}danger{% elif parcela.status == 'ABERTA' %}warning{% else %}secondary{% endif %}">
                                 {{ parcela.get_status_display }}
                             </span>
                         </td>
-                        <td>
+                        <td class="text-center">
                             {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}
                             <a href="{% url 'financeiro:parcela_pagar' parcela.id %}" class="btn btn-sm btn-primary">
                                 Pagar
@@ -148,9 +181,9 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="11" class="text-center py-4">
+                        <td colspan="11" class="text-center py-5">
                             <div class="text-muted">
-                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
                                 <p>Nenhuma parcela encontrada</p>
                             </div>
                         </td>
@@ -160,9 +193,11 @@
             </table>
         </div>
 
-        <div class="border-top p-3">
+        {% if page_obj.paginator %}
+        <div class="card-footer">
           {% include 'partials/pagination.html' with page_obj=page_obj %}
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

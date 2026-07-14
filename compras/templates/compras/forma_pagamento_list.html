@@ -1,36 +1,89 @@
 {% extends 'base.html' %}
+
+{% block title %}Formas de Pagamento{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2>Formas de Pagamento</h2>
-    <a href="{% url 'compras:forma_pagamento_create' %}" class="btn btn-success mb-3">Nova Forma de Pagamento</a>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>Ativo</th>
-                <th>Ordem</th>
-                <th>Dias Proc.</th>
-                <th>Taxa Adm.</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for forma in formas %}
-            <tr>
-                <td>{{ forma.nome }}</td>
-                <td>{{ forma.ativo|yesno:"Sim,Não" }}</td>
-                <td>{{ forma.ordem_exibicao }}</td>
-                <td>{{ forma.dias_processamento }}</td>
-                <td>{{ forma.taxa_administrativa }}</td>
-                <td>
-                    <a href="{% url 'compras:forma_pagamento_edit' forma.pk %}" class="btn btn-sm btn-primary">Editar</a>
-                    <a href="{% url 'compras:forma_pagamento_delete' forma.pk %}" class="btn btn-sm btn-danger">Excluir</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="6">Nenhuma forma cadastrada.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon gray"><i class="bi bi-credit-card"></i></span>
+            <h2>Formas de Pagamento</h2>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <a href="{% url 'compras:forma_pagamento_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nova Forma de Pagamento
+            </a>
+        </div>
+    </div>
+
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if formas.paginator %}
+          Exibindo <strong>{{ formas.start_index }}–{{ formas.end_index }}</strong>
+          de <strong>{{ formas.paginator.count }}</strong> forma{{ formas.paginator.count|pluralize }} de pagamento
+        {% endif %}
+      </span>
+    </div>
+
+    <!-- Lista -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Nome</th>
+                            <th class="text-center">Ativo</th>
+                            <th>Ordem</th>
+                            <th>Dias Proc.</th>
+                            <th>Taxa Adm.</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for forma in formas %}
+                        <tr>
+                            <td class="ps-4"><strong>{{ forma.nome }}</strong></td>
+                            <td class="text-center">
+                                {% if forma.ativo %}
+                                <span class="badge bg-success">Sim</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Não</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ forma.ordem_exibicao }}</td>
+                            <td>{{ forma.dias_processamento }}</td>
+                            <td>{{ forma.taxa_administrativa }}</td>
+                            <td class="text-center">
+                                <div class="d-flex gap-3 justify-content-center">
+                                    <a class="action-icon edit" href="{% url 'compras:forma_pagamento_edit' forma.pk %}" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a class="action-icon danger" href="{% url 'compras:forma_pagamento_delete' forma.pk %}" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                Nenhuma forma de pagamento cadastrada
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if formas.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=formas %}
+        </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

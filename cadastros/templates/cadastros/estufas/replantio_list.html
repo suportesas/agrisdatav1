@@ -6,52 +6,81 @@
 {% block content %}
 <div class="container-fluid mt-4">
 
-  <div class="row mb-4">
-    <div class="col">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon orange"><i class="bi bi-arrow-repeat"></i></span>
+      <h2>Replantios</h2>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.talhao or request.GET.safra or request.GET.motivo %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.talhao or request.GET.safra or request.GET.motivo %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
       <a href="{% url 'estufas:replantio_create' %}" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Novo Replantio
       </a>
     </div>
   </div>
 
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold">Talhão</label>
-          <select class="form-select form-select-sm" name="talhao">
-            <option value="">Todos</option>
-            {% for t in talhoes %}
-              <option value="{{ t.id }}" {% if talhao_selecionado|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Safra</label>
-          <select class="form-select form-select-sm" name="safra">
-            <option value="">Todas</option>
-            {% for s in safras %}
-              <option value="{{ s.id }}" {% if safra_selecionada|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>{{ s }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold">Motivo</label>
-          <select class="form-select form-select-sm" name="motivo">
-            <option value="">Todos</option>
-            {% for val, lbl in motivo_choices %}
-              <option value="{{ val }}" {% if motivo_selecionado == val %}selected{% endif %}>{{ lbl }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> Filtrar</button>
-        </div>
-        <div class="col-md-1">
-          <a href="{% url 'estufas:replantio_list' %}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-x"></i></a>
-        </div>
-      </form>
-    </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.talhao or request.GET.safra or request.GET.motivo %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Talhão</label>
+        <select class="form-select" name="talhao">
+          <option value="">Todos</option>
+          {% for t in talhoes %}
+            <option value="{{ t.id }}" {% if talhao_selecionado|stringformat:"s" == t.id|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Safra</label>
+        <select class="form-select" name="safra">
+          <option value="">Todas</option>
+          {% for s in safras %}
+            <option value="{{ s.id }}" {% if safra_selecionada|stringformat:"s" == s.id|stringformat:"s" %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Motivo</label>
+        <select class="form-select" name="motivo">
+          <option value="">Todos</option>
+          {% for val, lbl in motivo_choices %}
+            <option value="{{ val }}" {% if motivo_selecionado == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'estufas:replantio_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if replantios.paginator %}
+        Exibindo <strong>{{ replantios.start_index }}–{{ replantios.end_index }}</strong>
+        de <strong>{{ replantios.paginator.count }}</strong> replantio{{ replantios.paginator.count|pluralize }}
+      {% endif %}
+    </span>
   </div>
 
   <div class="card shadow-sm border-0 rounded-4">
@@ -96,6 +125,11 @@
         </tbody>
       </table>
     </div>
+    {% if replantios.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=replantios %}
+    </div>
+    {% endif %}
   </div>
 
 </div>

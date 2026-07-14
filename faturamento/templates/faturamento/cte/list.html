@@ -1,74 +1,133 @@
 {% extends 'base.html' %}
 {% block page_title %}CT-e — Conhecimentos de Transporte{% endblock %}
 {% block content %}
-<div class="container-fluid mt-3 px-3 px-xl-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="mb-0">CT-e — Conhecimentos de Transporte</h1>
-    <a href="{% url 'faturamento:cte_create' %}" class="btn btn-primary btn-sm">
-      <i class="bi bi-plus-circle me-1"></i> Novo CT-e
-    </a>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-truck"></i></span>
+          <h2>CT-e — Conhecimentos de Transporte</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q or request.GET.status %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q or request.GET.status %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'faturamento:cte_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Novo CT-e
+          </a>
+      </div>
   </div>
 
-  <!-- Filtros -->
-  <form method="get" class="row g-2 mb-3">
-    <div class="col-md-5">
-      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm" placeholder="Buscar por remetente, destinatário ou chave...">
-    </div>
-    <div class="col-md-3">
-      <select name="status" class="form-select form-select-sm">
-        <option value="">Todos os status</option>
-        {% for val, label in status_choices %}
-          <option value="{{ val }}" {% if status_filtro == val %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-auto">
-      <button type="submit" class="btn btn-secondary btn-sm">Filtrar</button>
-      <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary btn-sm">Limpar</a>
-    </div>
-  </form>
-
-  <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th>Número</th>
-          <th>Emissão</th>
-          <th>Remetente</th>
-          <th>Destinatário</th>
-          <th>Percurso</th>
-          <th class="text-end">Valor Frete</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for ct in page_obj %}
-        <tr>
-          <td class="text-mono"><strong>{{ ct.numero|default:"S/N" }}/{{ ct.serie }}</strong></td>
-          <td class="text-mono">{{ ct.data_emissao|date:"d/m/Y" }}</td>
-          <td>{{ ct.remetente.razao_social }}</td>
-          <td>{{ ct.destinatario.razao_social }}</td>
-          <td><span class="badge bg-secondary">{{ ct.uf_inicio }}</span> → <span class="badge bg-secondary">{{ ct.uf_fim }}</span></td>
-          <td class="text-end text-mono">R$ {{ ct.valor_servico|floatformat:2 }}</td>
-          <td>
-            {% if ct.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
-            {% elif ct.status == 'CANCELADO' %}<span class="badge bg-danger">Cancelado</span>
-            {% else %}<span class="badge bg-warning text-dark">Rascunho</span>{% endif %}
-          </td>
-          <td>
-            <a href="{% url 'faturamento:cte_detail' ct.pk %}" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-eye"></i>
-            </a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="8" class="text-center text-muted py-4">Nenhum CT-e encontrado.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Remetente, destinatário ou chave...">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos os status</option>
+          {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if status_filtro == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
   </div>
 
-  {% include 'partials/pagination.html' with page_obj=page_obj %}
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> CT-e{{ page_obj.paginator.count|pluralize:",s" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Número</th>
+              <th>Emissão</th>
+              <th>Remetente</th>
+              <th>Destinatário</th>
+              <th>Percurso</th>
+              <th class="text-end">Valor Frete</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ct in page_obj %}
+            <tr>
+              <td class="ps-4 text-mono"><strong>{{ ct.numero|default:"S/N" }}/{{ ct.serie }}</strong></td>
+              <td class="text-mono">{{ ct.data_emissao|date:"d/m/Y" }}</td>
+              <td>{{ ct.remetente.razao_social }}</td>
+              <td>{{ ct.destinatario.razao_social }}</td>
+              <td><span class="badge bg-secondary">{{ ct.uf_inicio }}</span> → <span class="badge bg-secondary">{{ ct.uf_fim }}</span></td>
+              <td class="text-end text-mono">R$ {{ ct.valor_servico|floatformat:2 }}</td>
+              <td class="text-center">
+                {% if ct.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
+                {% elif ct.status == 'CANCELADO' %}<span class="badge bg-danger">Cancelado</span>
+                {% else %}<span class="badge bg-warning text-dark">Rascunho</span>{% endif %}
+              </td>
+              <td class="text-center">
+                <a class="action-icon" href="{% url 'faturamento:cte_detail' ct.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum CT-e encontrado
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

@@ -73,13 +73,27 @@
     </div>
   </div>
 
-  <!-- Ações e Filtros -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="fw-bold text-secondary mb-0">
-      <i class="bi bi-grid-3x3-gap text-success"></i> Talhões Cadastrados
-    </h4>
-    <div>
-      <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-grid-3x3-gap"></i></span>
+      <h2>Talhões Cadastrados</h2>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q or request.GET.fazenda or request.GET.area or request.GET.status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.q or request.GET.fazenda or request.GET.area or request.GET.status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
         <i class="bi bi-question-circle"></i> Como Fazer?
       </button>
       <a href="{% url 'cadastros:talhao_create' %}" class="btn btn-success">
@@ -88,70 +102,68 @@
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <!-- Busca -->
-        <div class="col-md-4">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-end-0">
-              <i class="bi bi-search"></i>
-            </span>
-            <input 
-              type="text" 
-              name="q" 
-              class="form-control border-start-0" 
-              placeholder="Buscar por código, nome ou fazenda..."
-              value="{{ request.GET.q }}"
-            >
-          </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.fazenda or request.GET.area or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field" style="min-width:240px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control border-start-0" placeholder="Código, nome ou fazenda…" value="{{ request.GET.q }}">
         </div>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Fazenda</label>
+        <select name="fazenda" class="form-select">
+          <option value="">-- Todas as Fazendas --</option>
+          {% for fazenda in fazendas %}
+          <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>
+            {{ fazenda.nome }} - {{ fazenda.cnpj_cpf }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Área</label>
+        <select name="area" class="form-select">
+          <option value="">-- Todas as Áreas --</option>
+          {% for area in areas %}
+          <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
+            {{ area.nome }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">-- Todos os Status --</option>
+          <option value="DISPONIVEL" {% if request.GET.status == "DISPONIVEL" %}selected{% endif %}>Disponível</option>
+          <option value="PREPARACAO" {% if request.GET.status == "PREPARACAO" %}selected{% endif %}>Preparação</option>
+          <option value="PLANTADO" {% if request.GET.status == "PLANTADO" %}selected{% endif %}>Plantado</option>
+          <option value="COLHEITA" {% if request.GET.status == "COLHEITA" %}selected{% endif %}>Colheita</option>
+          <option value="DESCANSO" {% if request.GET.status == "DESCANSO" %}selected{% endif %}>Descanso</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'cadastros:talhao_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+    </form>
+  </div>
 
-        <!-- Fazenda -->
-        <div class="col-md-3">
-          <select name="fazenda" class="form-select">
-            <option value="">-- Todas as Fazendas --</option>
-            {% for fazenda in fazendas %}
-            <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>
-              {{ fazenda.nome }} - {{ fazenda.cnpj_cpf }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Área -->
-        <div class="col-md-2">
-          <select name="area" class="form-select">
-            <option value="">-- Todas as Áreas --</option>
-            {% for area in areas %}
-            <option value="{{ area.id }}" {% if request.GET.area == area.id|stringformat:"s" %}selected{% endif %}>
-              {{ area.nome }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Status -->
-        <div class="col-md-2">
-          <select name="status" class="form-select">
-            <option value="">-- Todos os Status --</option>
-            <option value="DISPONIVEL" {% if request.GET.status == "DISPONIVEL" %}selected{% endif %}>Disponível</option>
-            <option value="PREPARACAO" {% if request.GET.status == "PREPARACAO" %}selected{% endif %}>Preparação</option>
-            <option value="PLANTADO" {% if request.GET.status == "PLANTADO" %}selected{% endif %}>Plantado</option>
-            <option value="COLHEITA" {% if request.GET.status == "COLHEITA" %}selected{% endif %}>Colheita</option>
-            <option value="DESCANSO" {% if request.GET.status == "DESCANSO" %}selected{% endif %}>Descanso</option>
-          </select>
-        </div>
-
-        <!-- Botão -->
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-filter"></i>
-          </button>
-        </div>
-      </form>
-    </div>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if talhoes.paginator %}
+        Exibindo <strong>{{ talhoes.start_index }}–{{ talhoes.end_index }}</strong>
+        de <strong>{{ talhoes.paginator.count }}</strong> {% if talhoes.paginator.count == 1 %}talhão{% else %}talhões{% endif %}
+      {% endif %}
+    </span>
   </div>
 
   <!-- Tabela -->
@@ -298,6 +310,11 @@
         </table>
       </div>
     </div>
+    {% if talhoes.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=talhoes %}
+    </div>
+    {% endif %}
   </div>
 </div>
 

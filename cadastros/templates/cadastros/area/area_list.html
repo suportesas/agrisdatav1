@@ -7,17 +7,31 @@
 {% block content %}
 <div class="container-fluid mt-4">
   <!-- Cabeçalho com Ações -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="fw-bold text-secondary mb-1">
-        <i class="bi bi-map text-success"></i> Áreas Cadastradas
-      </h4>
-      <p class="text-muted small mb-0">
-        Total: <strong>{{ total_areas }}</strong> área{{ total_areas|pluralize }}
-      </p>
+  <div class="page-header mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-map"></i></span>
+      <div>
+        <h2>Áreas Cadastradas</h2>
+        <p class="text-muted mb-0">
+          Total: <strong>{{ total_areas }}</strong> área{{ total_areas|pluralize }}
+        </p>
+      </div>
     </div>
-    <div>
-      <button type="button" class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q or request.GET.fazenda or request.GET.tipo or request.GET.status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.q or request.GET.fazenda or request.GET.tipo or request.GET.status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
         <i class="bi bi-question-circle"></i> Como Fazer?
       </button>
       <a href="{% url 'cadastros:area_create' %}" class="btn btn-success">
@@ -26,70 +40,80 @@
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <!-- Busca -->
-        <div class="col-md-4">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-end-0">
-              <i class="bi bi-search"></i>
-            </span>
-            <input 
-              type="text" 
-              name="q" 
-              class="form-control border-start-0" 
-              placeholder="Buscar por nome, código ou fazenda..."
-              value="{{ request.GET.q }}"
-            >
-          </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.fazenda or request.GET.tipo or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field" style="min-width:240px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0">
+            <i class="bi bi-search"></i>
+          </span>
+          <input
+            type="text"
+            name="q"
+            class="form-control border-start-0"
+            placeholder="Nome, código ou fazenda…"
+            value="{{ request.GET.q }}"
+          >
         </div>
+      </div>
 
-        <!-- Fazenda -->
-        <div class="col-md-3">
-          <select name="fazenda" class="form-select">
-            <option value="">-- Todas as Fazendas --</option>
-            {% for fazenda in fazendas %}
-            <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>
-              {{ fazenda.nome }} - {{ fazenda.cnpj_cpf }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Fazenda</label>
+        <select name="fazenda" class="form-select">
+          <option value="">-- Todas as Fazendas --</option>
+          {% for fazenda in fazendas %}
+          <option value="{{ fazenda.id }}" {% if request.GET.fazenda == fazenda.id|stringformat:"s" %}selected{% endif %}>
+            {{ fazenda.nome }} - {{ fazenda.cnpj_cpf }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
 
-        <!-- Tipo -->
-        <div class="col-md-2">
-          <select name="tipo" class="form-select">
-            <option value="">-- Todos os Tipos --</option>
-            <option value="AGRICOLA" {% if request.GET.tipo == "AGRICOLA" %}selected{% endif %}>Agrícola</option>
-            <option value="PASTAGEM" {% if request.GET.tipo == "PASTAGEM" %}selected{% endif %}>Pastagem</option>
-            <option value="RESERVA" {% if request.GET.tipo == "RESERVA" %}selected{% endif %}>Reserva</option>
-            <option value="APP" {% if request.GET.tipo == "APP" %}selected{% endif %}>APP</option>
-            <option value="INFRAESTRUTURA" {% if request.GET.tipo == "INFRAESTRUTURA" %}selected{% endif %}>Infraestrutura</option>
-          </select>
-        </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo</label>
+        <select name="tipo" class="form-select">
+          <option value="">-- Todos os Tipos --</option>
+          <option value="AGRICOLA" {% if request.GET.tipo == "AGRICOLA" %}selected{% endif %}>Agrícola</option>
+          <option value="PASTAGEM" {% if request.GET.tipo == "PASTAGEM" %}selected{% endif %}>Pastagem</option>
+          <option value="RESERVA" {% if request.GET.tipo == "RESERVA" %}selected{% endif %}>Reserva</option>
+          <option value="APP" {% if request.GET.tipo == "APP" %}selected{% endif %}>APP</option>
+          <option value="INFRAESTRUTURA" {% if request.GET.tipo == "INFRAESTRUTURA" %}selected{% endif %}>Infraestrutura</option>
+        </select>
+      </div>
 
-        <!-- Status -->
-        <div class="col-md-2">
-          <select name="status" class="form-select">
-            <option value="">-- Todos os Status --</option>
-            <option value="DISPONIVEL" {% if request.GET.status == "DISPONIVEL" %}selected{% endif %}>Disponível</option>
-            <option value="EM_USO" {% if request.GET.status == "EM_USO" %}selected{% endif %}>Em Uso</option>
-            <option value="DESCANSO" {% if request.GET.status == "DESCANSO" %}selected{% endif %}>Descanso</option>
-            <option value="PREPARACAO" {% if request.GET.status == "PREPARACAO" %}selected{% endif %}>Preparação</option>
-            <option value="INATIVA" {% if request.GET.status == "INATIVA" %}selected{% endif %}>Inativa</option>
-          </select>
-        </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">-- Todos os Status --</option>
+          <option value="DISPONIVEL" {% if request.GET.status == "DISPONIVEL" %}selected{% endif %}>Disponível</option>
+          <option value="EM_USO" {% if request.GET.status == "EM_USO" %}selected{% endif %}>Em Uso</option>
+          <option value="DESCANSO" {% if request.GET.status == "DESCANSO" %}selected{% endif %}>Descanso</option>
+          <option value="PREPARACAO" {% if request.GET.status == "PREPARACAO" %}selected{% endif %}>Preparação</option>
+          <option value="INATIVA" {% if request.GET.status == "INATIVA" %}selected{% endif %}>Inativa</option>
+        </select>
+      </div>
 
-        <!-- Botão -->
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-filter"></i>
-          </button>
-        </div>
-      </form>
-    </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'cadastros:area_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if areas.paginator %}
+        Exibindo <strong>{{ areas.start_index }}–{{ areas.end_index }}</strong>
+        de <strong>{{ areas.paginator.count }}</strong> área{{ areas.paginator.count|pluralize }}
+      {% endif %}
+    </span>
   </div>
 
   <!-- Tabela de Áreas -->
@@ -234,6 +258,11 @@
         </table>
       </div>
     </div>
+    {% if areas.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=areas %}
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -401,7 +430,7 @@
                       <li><strong>Status:</strong> Disponível, Em Uso, Descanso, etc.</li>
                     </ul>
                   </li>
-                  <li>Clique em <button class="btn btn-sm btn-primary" disabled><i class="bi bi-filter"></i></button> para aplicar os filtros</li>
+                  <li>Clique em <button class="btn btn-sm btn-outline-secondary" disabled><i class="bi bi-funnel"></i> Filtros</button> no cabeçalho para exibir os campos de busca, depois em <strong>Filtrar</strong> para aplicar</li>
                 </ul>
               </div>
             </div>
@@ -446,6 +475,15 @@
 
 {% block extra_js %}
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+  var filterForm = document.getElementById('filterForm');
+  if (filterForm) {
+    filterForm.querySelectorAll('select').forEach(function (sel) {
+      sel.addEventListener('change', function () { filterForm.submit(); });
+    });
+  }
+});
+
 // Posiciona menu do dropdown como fixed ao ser aberto para evitar recorte por containers com overflow
 // e garante reposicionamento correto ao fechar.
 document.addEventListener('DOMContentLoaded', function(){

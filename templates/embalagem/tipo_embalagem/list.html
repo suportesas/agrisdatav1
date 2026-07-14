@@ -3,21 +3,69 @@
 {% block page_title %}Tipos de Embalagem{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="mb-0">Tipos de Embalagem</h3>
-    <a href="{% url 'embalagem:tipo_embalagem_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Novo Tipo
-    </a>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-tags"></i></span>
+          <h2>Tipos de Embalagem</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'embalagem:tipo_embalagem_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Novo Tipo
+          </a>
+      </div>
   </div>
 
-  <div class="card border-0 shadow-sm">
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" class="form-control" placeholder="Nome do tipo..." value="{{ q }}">
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if tipos.paginator %}
+        Exibindo <strong>{{ tipos.start_index }}–{{ tipos.end_index }}</strong>
+        de <strong>{{ tipos.paginator.count }}</strong> tipo{{ tipos.paginator.count|pluralize }} de embalagem
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
             <tr>
-              <th>Nome</th>
+              <th class="ps-4">Nome</th>
               <th>Cultura / Produto / Subcategoria</th>
               <th>Variedade</th>
               <th>Marca</th>
@@ -25,38 +73,48 @@
               <th class="text-end">Kg/Cx (líq.)</th>
               <th class="text-end">Cx/Pallet</th>
               <th class="text-end">Kg líq./Pallet</th>
-              <th>Ativo</th>
-              <th></th>
+              <th class="text-center">Ativo</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for t in tipos %}
             <tr>
-              <td><strong>{{ t.nome }}</strong></td>
+              <td class="ps-4"><strong>{{ t.nome }}</strong></td>
               <td>{{ t.cultura|default:t.produto|default:t.subcategoria|default:"—" }}</td>
               <td>{{ t.variedade|default:"—" }}</td>
               <td>{{ t.marca|default:"—" }}</td>
               <td>{{ t.tipo_calibre|default:"—" }}</td>
-              <td class="text-end">{{ t.peso_liquido_cx|floatformat:3 }}</td>
-              <td class="text-end">{{ t.caixas_por_pallet }}</td>
-              <td class="text-end">{{ t.peso_liquido_pallet|floatformat:3 }}</td>
-              <td>
+              <td class="text-end text-mono">{{ t.peso_liquido_cx|floatformat:3 }}</td>
+              <td class="text-end text-mono">{{ t.caixas_por_pallet }}</td>
+              <td class="text-end text-mono">{{ t.peso_liquido_pallet|floatformat:3 }}</td>
+              <td class="text-center">
                 {% if t.ativo %}<span class="badge bg-success">Ativo</span>
                 {% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}
               </td>
-              <td>
-                <a href="{% url 'embalagem:tipo_embalagem_update' t.pk %}" class="btn btn-sm btn-outline-secondary">
-                  <i class="bi bi-pencil"></i>
+              <td class="text-center">
+                <a class="action-icon edit" href="{% url 'embalagem:tipo_embalagem_update' t.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
                 </a>
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="10" class="text-center text-muted py-4">Nenhum tipo de embalagem cadastrado.</td></tr>
+            <tr>
+              <td colspan="10" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum tipo de embalagem cadastrado
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+    {% if tipos.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=tipos %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

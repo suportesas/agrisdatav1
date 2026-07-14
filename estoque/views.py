@@ -118,7 +118,9 @@ def get_produto_unidade(request, produto_id):
 @login_required
 def armazem_list(request):
     """Lista de armazéns"""
-    armazens = Armazem.objects.filter(empresa=request.user.empresa).order_by('nome')
+    armazens_qs = Armazem.objects.filter(empresa=request.user.empresa).order_by('nome')
+    paginator = Paginator(armazens_qs, 20)
+    armazens = paginator.get_page(request.GET.get('page'))
     return render(request, 'estoque/armazem_list.html', {'armazens': armazens})
 
 
@@ -193,7 +195,9 @@ def armazem_delete(request, pk):
 @login_required
 def local_list(request):
     """Lista de locais"""
-    locais = LocalEstocagem.objects.filter(armazem__empresa=request.user.empresa).select_related('armazem').order_by('armazem__nome', 'codigo')
+    locais_qs = LocalEstocagem.objects.filter(armazem__empresa=request.user.empresa).select_related('armazem').order_by('armazem__nome', 'codigo')
+    paginator = Paginator(locais_qs, 20)
+    locais = paginator.get_page(request.GET.get('page'))
     return render(request, 'estoque/local_list.html', {'locais': locais})
 
 
@@ -284,10 +288,37 @@ def local_desbloquear(request, pk):
 @login_required
 def lote_list(request):
     """Lista de lotes"""
-    lotes = Lote.objects.filter(empresa=request.user.empresa).select_related(
+    lotes_qs = Lote.objects.filter(empresa=request.user.empresa).select_related(
         'produto', 'armazem', 'local_estocagem', 'unidade_medida'
     ).order_by('-data_entrada')
-    return render(request, 'estoque/lote_list.html', {'lotes': lotes})
+
+    produto_id = request.GET.get('produto', '')
+    status_filtro = request.GET.get('status', '')
+    armazem_id = request.GET.get('armazem', '')
+    if produto_id:
+        lotes_qs = lotes_qs.filter(produto_id=produto_id)
+    if status_filtro:
+        lotes_qs = lotes_qs.filter(status=status_filtro)
+    if armazem_id:
+        lotes_qs = lotes_qs.filter(armazem_id=armazem_id)
+
+    paginator = Paginator(lotes_qs, 30)
+    lotes = paginator.get_page(request.GET.get('page'))
+
+    armazens = Armazem.objects.filter(empresa=request.user.empresa).order_by('nome')
+    produto_filtrado = None
+    if produto_id:
+        produto_filtrado = Produto.objects.filter(pk=produto_id).first()
+
+    return render(request, 'estoque/lote_list.html', {
+        'lotes': lotes,
+        'armazens': armazens,
+        'status_choices': Lote.STATUS_CHOICES,
+        'produto_id': produto_id,
+        'produto_filtrado': produto_filtrado,
+        'status_filtro': status_filtro,
+        'armazem_id': armazem_id,
+    })
 
 
 @login_required
@@ -1307,17 +1338,17 @@ def relatorio_auditoria(request):
     
     if data_fim:
         movimentacoes = movimentacoes.filter(data_movimentacao__date__lte=data_fim)
-    
-    # Paginação manual (primeiras 100)
-    movimentacoes = movimentacoes[:100]
-    
+
+    paginator = Paginator(movimentacoes, 50)
+    movimentacoes_page = paginator.get_page(request.GET.get('page'))
+
     context = {
-        'movimentacoes': movimentacoes,
+        'movimentacoes': movimentacoes_page,
         'tipos_movimento': MovimentacaoEstoque.TIPO_CHOICES,
         'title': 'Auditoria de Transações',
         'filtros_ativos': bool(tipo or usuario or data_inicio or data_fim),
     }
-    
+
     return render(request, 'estoque/relatorio_auditoria.html', context)
 
 
@@ -1495,11 +1526,14 @@ def relatorio_validacao_disponibilidade(request):
                 'diferenca': diferenca,
             })
 
+    paginator = Paginator(divergencias, 30)
+    divergencias_page = paginator.get_page(request.GET.get('page'))
+
     context = {
         'title': 'Validação de Disponibilidade',
         'busca': busca,
         'show_all': show_all,
-        'divergencias': divergencias,
+        'divergencias': divergencias_page,
         'total_produtos': produtos.count(),
         'total_divergencias': len(divergencias),
     }
@@ -1803,15 +1837,19 @@ def exportar_alertas_pdf(empresa, alertas_criticos, alertas_excesso):
 def inventario_ciclico_list(request):
     """Lista inventários cíclicos"""
     empresa = request.user.empresa
-    inventarios = InventarioCiclico.objects.filter(empresa=empresa).select_related('armazem', 'responsavel')
-    
+    inventarios_qs = InventarioCiclico.objects.filter(empresa=empresa).select_related('armazem', 'responsavel').order_by('-data_contagem')
+
+    paginator = Paginator(inventarios_qs, 20)
+    inventarios = paginator.get_page(request.GET.get('page'))
+
     context = {
         'inventarios': inventarios,
-        'total_planejados': inventarios.filter(status='PLANEJADO').count(),
-        'total_em_contagem': inventarios.filter(status='EM_CONTAGEM').count(),
-        'total_finalizados': inventarios.filter(status='FINALIZADO').count(),
+        'total_planejados': inventarios_qs.filter(status='PLANEJADO').count(),
+        'total_em_contagem': inventarios_qs.filter(status='EM_CONTAGEM').count(),
+        'total_finalizados': inventarios_qs.filter(status='FINALIZADO').count(),
+        'total_inventarios': inventarios_qs.count(),
     }
-    
+
     return render(request, 'estoque/inventario_ciclico_list.html', context)
 
 

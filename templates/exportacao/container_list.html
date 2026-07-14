@@ -4,46 +4,81 @@
 {% block page_title %}Contêineres de Booking{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h2>Contêineres de Booking</h2>
-      {% if booking %}<p class="mb-0">Booking: {{ booking.codigo }}</p>{% endif %}
-    </div>
-    {% if booking %}
-      <a class="btn btn-primary" href="{% url 'exportacao:booking_container_create' booking.pk %}">Novo Contêiner</a>
-    {% endif %}
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-box-seam"></i></span>
+          <div>
+              <h2>Contêineres de Booking</h2>
+              {% if booking %}<p class="text-muted mb-0">Booking: {{ booking.codigo }}</p>{% endif %}
+          </div>
+      </div>
+      {% if booking %}
+      <div class="d-flex gap-2 align-items-center">
+          <a class="btn btn-success" href="{% url 'exportacao:booking_container_create' booking.pk %}">
+              <i class="bi bi-plus-circle"></i> Novo Contêiner
+          </a>
+      </div>
+      {% endif %}
   </div>
 
-  <div class="table-responsive">
-    <table class="table table-bordered table-hover">
-      <thead>
-        <tr>
-          <th>Booking</th>
-          <th>Número do Contêiner</th>
-          <th>Status</th>
-          <th>Porto Origem</th>
-          <th>Porto Destino</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for container in containers %}
-          <tr>
-            <td>{{ container.booking.codigo }}</td>
-            <td>{{ container.numero_container }}</td>
-            <td>{{ container.get_status_display }}</td>
-            <td>{{ container.porto_origem }}</td>
-            <td>{{ container.porto_destino }}</td>
-            <td>
-              <a class="btn btn-sm btn-outline-secondary" href="{% url 'exportacao:container_update' container.pk %}">Editar</a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="6" class="text-center">Nenhum contêiner encontrado.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if containers.paginator %}
+        Exibindo <strong>{{ containers.start_index }}–{{ containers.end_index }}</strong>
+        de <strong>{{ containers.paginator.count }}</strong> contêiner{{ containers.paginator.count|pluralize:",es" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Booking</th>
+              <th>Número do Contêiner</th>
+              <th class="text-center">Status</th>
+              <th>Porto Origem</th>
+              <th>Porto Destino</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for container in containers %}
+              <tr>
+                <td class="ps-4">{{ container.booking.codigo }}</td>
+                <td class="text-mono">{{ container.numero_container }}</td>
+                <td class="text-center">{{ container.get_status_display }}</td>
+                <td>{{ container.porto_origem }}</td>
+                <td>{{ container.porto_destino }}</td>
+                <td class="text-center">
+                  <a class="action-icon edit" href="{% url 'exportacao:container_update' container.pk %}" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                  Nenhum contêiner encontrado
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if containers.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=containers %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

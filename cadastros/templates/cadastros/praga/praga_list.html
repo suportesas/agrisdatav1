@@ -3,180 +3,36 @@
 
 {% block title %}Pragas | ERP Agrícola{% endblock %}
 
-{% block extra_css %}
-<style>
-  .view-toggle {
-    display: flex;
-    gap: 8px;
-    background: #f3f4f6;
-    padding: 6px;
-    border-radius: 8px;
-    width: fit-content;
-  }
-
-  .view-toggle .btn {
-    padding: 6px 12px;
-    font-size: 14px;
-    border: none;
-    background: transparent;
-    color: #6b7280;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.2s;
-  }
-
-  .view-toggle .btn.active {
-    background: white;
-    color: #1f2937;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    font-weight: 600;
-  }
-
-  .toggle-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-
-  .praga-card {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 20px;
-    transition: all 0.2s;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .praga-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    border-color: #d1d5db;
-  }
-
-  .praga-card-icon {
-    width: 48px;
-    height: 48px;
-    background: #fee2e2;
-    color: #dc2626;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    margin-bottom: 12px;
-  }
-
-  .praga-card-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 6px;
-    word-break: break-word;
-  }
-
-  .praga-card-scientific {
-    font-size: 13px;
-    color: #6b7280;
-    font-style: italic;
-    margin-bottom: 12px;
-    min-height: 20px;
-  }
-
-  .praga-card-info {
-    flex: 1;
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 12px;
-  }
-
-  .praga-card-footer {
-    display: flex;
-    gap: 8px;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 12px;
-    border-top: 1px solid #f3f4f6;
-  }
-
-  .praga-card-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .praga-card-actions {
-    display: flex;
-    gap: 4px;
-  }
-
-  .praga-card-actions a {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    color: #6b7280;
-    text-decoration: none;
-    transition: all 0.2s;
-    font-size: 14px;
-  }
-
-  .praga-card-actions a:hover {
-    background: #f3f4f6;
-    color: #1f2937;
-  }
-
-  #cardsView {
-    display: none;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-  }
-
-  #cardsView.active {
-    display: grid;
-  }
-
-  @media (max-width: 1200px) {
-    #cardsView {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 768px) {
-    #cardsView {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  #tableView {
-    display: block;
-  }
-
-  #tableView.hidden {
-    display: none;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
-  
-  <!-- Header -->
-  <div class="row mb-4">
-    <div class="col-md-8">
-      <h2 class="fw-bold text-dark mb-1">
-        <i class="bi bi-bug text-danger"></i> Gerenciamento de Pragas
-      </h2>
-      <p class="text-muted mb-0">Cadastro de pragas e doenças agrícolas</p>
+
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon red"><i class="bi bi-bug"></i></span>
+      <div>
+        <h2>Gerenciamento de Pragas</h2>
+        <p class="text-muted mb-0">Cadastro de pragas e doenças agrícolas</p>
+      </div>
     </div>
-    <div class="col-md-4 text-end d-flex justify-content-end gap-2 align-items-start">
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q or request.GET.status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.q or request.GET.status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
       <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
         <i class="bi bi-question-circle"></i> Como Fazer?
       </button>
-      <a href="{% url 'cadastros:praga_create' %}" class="btn btn-success btn-lg shadow-sm">
+      <a href="{% url 'cadastros:praga_create' %}" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Nova Praga
       </a>
     </div>
@@ -184,211 +40,134 @@
 
   <!-- Stats Card -->
   <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-3">
-              <i class="bi bi-bug fs-4"></i>
-            </div>
-            <div class="ms-3">
-              <h6 class="text-muted mb-1">Total de Pragas</h6>
-              <h3 class="mb-0 fw-bold">{{ total_pragas }}</h3>
-            </div>
-          </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-red mb-0"><i class="bi bi-bug"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total de Pragas</div>
+          <div class="stat-value">{{ total_pragas }}</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <div class="col-md-6">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-0">
-              <i class="bi bi-search"></i>
-            </span>
-            <input 
-              type="text" 
-              name="q" 
-              class="form-control border-0 bg-light" 
-              placeholder="Buscar por nome comum ou científico..."
-              value="{{ request.GET.q }}"
-            >
-          </div>
-        </div>
-        <div class="col-md-2">
-          <select name="status" class="form-select border-0 bg-light">
-            <option value="">Todos os Status</option>
-            <option value="ativas" {% if request.GET.status == 'ativas' %}selected{% endif %}>Ativas</option>
-            <option value="inativas" {% if request.GET.status == 'inativas' %}selected{% endif %}>Inativas</option>
-          </select>
-        </div>
-        <div class="col-md-2 d-flex gap-2">
-          <button type="submit" class="btn btn-primary flex-grow-1">
-            <i class="bi bi-funnel"></i> Filtrar
-          </button>
-        </div>
-        <div class="col-md-2 d-flex justify-content-end">
-          <div class="toggle-group">
-            <div class="view-toggle">
-              <button type="button" class="btn active" id="tableViewBtn" onclick="switchView('table')" title="Visualização em tabela">
-                <i class="bi bi-list-ul"></i>
-              </button>
-              <button type="button" class="btn" id="cardsViewBtn" onclick="switchView('cards')" title="Visualização em cards">
-                <i class="bi bi-grid-3x2-gap"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Lista de Pragas -->
-  {% if page_obj %}
-    <!-- TABLE VIEW -->
-    <div id="tableView" class="card border-0 shadow-sm">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th class="ps-4">Nome Comum</th>
-                <th>Nome Científico</th>
-                <th>Tipo</th>
-                <th class="text-center">Status</th>
-                <th class="text-center">Data Cadastro</th>
-                <th class="text-end pe-4">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for praga in page_obj %}
-                <tr class="{% if not praga.ativa %}text-muted{% endif %}">
-                  <td class="ps-4">
-                    <div class="d-flex align-items-center">
-                      <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 me-2">
-                        <i class="bi bi-bug"></i>
-                      </div>
-                      <a href="{% url 'cadastros:praga_detail' praga.pk %}" class="text-decoration-none fw-bold">
-                        {{ praga.nome_comum }}
-                      </a>
-                    </div>
-                  </td>
-                  <td>
-                    {% if praga.nome_cientifico %}
-                      <em class="text-muted">{{ praga.nome_cientifico }}</em>
-                    {% else %}
-                      <span class="text-muted">-</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    <span class="badge bg-light text-dark border">{{ praga.get_tipo_praga_display }}</span>
-                  </td>
-                  <td class="text-center">
-                    {% if praga.ativa %}
-                      <span class="badge bg-success">Ativa</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Inativa</span>
-                    {% endif %}
-                  </td>
-                  <td class="text-center">
-                    <small class="text-muted">{{ praga.data_cadastro|date:"d/m/Y" }}</small>
-                  </td>
-                  <td class="text-end pe-4">
-                    <div class="dropdown">
-                      <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-three-dots-vertical"></i>
-                      </button>
-                      <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{% url 'cadastros:praga_detail' praga.pk %}"><i class="bi bi-eye text-primary"></i> Visualizar</a></li>
-                        <li><a class="dropdown-item" href="{% url 'cadastros:praga_update' praga.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="{% url 'cadastros:praga_delete' praga.pk %}"><i class="bi bi-trash"></i> Excluir</a></li>
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field" style="min-width:260px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" name="q" class="form-control border-start-0" placeholder="Nome comum ou científico…" value="{{ request.GET.q }}">
         </div>
       </div>
-    </div>
-
-    <!-- CARDS VIEW -->
-    <div id="cardsView">
-      {% for praga in page_obj %}
-        <div class="praga-card-item">
-          <div class="praga-card {% if not praga.ativa %}opacity-50{% endif %}">
-            <div class="praga-card-icon">
-              <i class="bi bi-bug"></i>
-            </div>
-            <div class="praga-card-title">
-              <a href="{% url 'cadastros:praga_detail' praga.pk %}" class="text-decoration-none text-dark">
-                {{ praga.nome_comum }}
-              </a>
-            </div>
-            <div class="praga-card-scientific">
-              {% if praga.nome_cientifico %}
-                <em>{{ praga.nome_cientifico }}</em>
-              {% else %}
-                <span class="text-muted">-</span>
-              {% endif %}
-            </div>
-            <div class="praga-card-info">
-              <small class="d-block mb-1">
-                <i class="bi bi-tags text-muted"></i>
-                Tipo: <strong>{{ praga.get_tipo_praga_display }}</strong>
-              </small>
-              <small>
-                <i class="bi bi-calendar-event text-muted"></i>
-                Cadastrado em: {{ praga.data_cadastro|date:"d/m/Y" }}
-              </small>
-            </div>
-            <div class="praga-card-footer">
-              <div class="praga-card-status">
-                {% if praga.ativa %}
-                  <span class="badge bg-success">Ativa</span>
-                {% else %}
-                  <span class="badge bg-secondary">Inativa</span>
-                {% endif %}
-              </div>
-              <div class="praga-card-actions">
-                <a href="{% url 'cadastros:praga_detail' praga.pk %}" title="Visualizar" class="text-primary">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a href="{% url 'cadastros:praga_update' praga.pk %}" title="Editar" class="text-warning">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <a href="{% url 'cadastros:praga_delete' praga.pk %}" title="Excluir" class="text-danger">
-                  <i class="bi bi-trash"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-
-    <!-- Paginação -->
-    {% include 'partials/pagination.html' with page_obj=page_obj %}
-
-  {% else %}
-    <!-- Empty State -->
-    <div class="card border-0 shadow-sm">
-      <div class="card-body text-center py-5">
-        <i class="bi bi-bug text-muted" style="font-size: 5rem;"></i>
-        <h4 class="mt-3 mb-2">Nenhuma praga cadastrada</h4>
-        <p class="text-muted mb-4">Comece adicionando as pragas e doenças relevantes</p>
-        <a href="{% url 'cadastros:praga_create' %}" class="btn btn-success btn-lg">
-          <i class="bi bi-plus-circle"></i> Cadastrar Primeira Praga
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos os Status</option>
+          <option value="ativas" {% if request.GET.status == 'ativas' %}selected{% endif %}>Ativas</option>
+          <option value="inativas" {% if request.GET.status == 'inativas' %}selected{% endif %}>Inativas</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'cadastros:praga_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
         </a>
       </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> praga{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela de Pragas -->
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Nome Comum</th>
+              <th>Nome Científico</th>
+              <th>Tipo</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Data Cadastro</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for praga in page_obj %}
+              <tr class="{% if not praga.ativa %}text-muted{% endif %}">
+                <td class="ps-4">
+                  <a href="{% url 'cadastros:praga_detail' praga.pk %}" class="text-decoration-none">
+                    <i class="bi bi-bug text-danger"></i> <strong>{{ praga.nome_comum }}</strong>
+                  </a>
+                </td>
+                <td>
+                  {% if praga.nome_cientifico %}
+                    <em class="text-muted">{{ praga.nome_cientifico }}</em>
+                  {% else %}
+                    <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ praga.get_tipo_praga_display }}</span>
+                </td>
+                <td class="text-center">
+                  {% if praga.ativa %}
+                    <span class="badge bg-success">Ativa</span>
+                  {% else %}
+                    <span class="badge bg-secondary">Inativa</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <small class="text-muted">{{ praga.data_cadastro|date:"d/m/Y" }}</small>
+                </td>
+                <td class="text-center">
+                  <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon" href="{% url 'cadastros:praga_detail' praga.pk %}" title="Ver detalhes">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a class="action-icon edit" href="{% url 'cadastros:praga_update' praga.pk %}" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </a>
+                    <a class="action-icon danger" href="{% url 'cadastros:praga_delete' praga.pk %}" title="Excluir">
+                      <i class="bi bi-trash"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                  <i class="bi bi-bug display-4 d-block mb-3"></i>
+                  <p class="mb-0">Nenhuma praga cadastrada</p>
+                  <a href="{% url 'cadastros:praga_create' %}" class="btn btn-success mt-3">
+                    <i class="bi bi-plus-circle"></i> Cadastrar Primeira Praga
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-  {% endif %}
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
 
 </div>
 
@@ -618,37 +397,4 @@
     </div>
   </div>
 </div>
-
-<script>
-  function switchView(view) {
-    const tableView = document.getElementById('tableView');
-    const cardsView = document.getElementById('cardsView');
-    const tableViewBtn = document.getElementById('tableViewBtn');
-    const cardsViewBtn = document.getElementById('cardsViewBtn');
-
-    if (view === 'table') {
-      tableView.classList.remove('hidden');
-      cardsView.classList.remove('active');
-      tableViewBtn.classList.add('active');
-      cardsViewBtn.classList.remove('active');
-      localStorage.setItem('pragasView', 'table');
-    } else if (view === 'cards') {
-      tableView.classList.add('hidden');
-      cardsView.classList.add('active');
-      tableViewBtn.classList.remove('active');
-      cardsViewBtn.classList.add('active');
-      localStorage.setItem('pragasView', 'cards');
-    }
-  }
-
-  // Restaurar visualização anterior
-  document.addEventListener('DOMContentLoaded', function() {
-    const savedView = localStorage.getItem('pragasView') || 'table';
-    if (savedView === 'cards') {
-      switchView('cards');
-    } else {
-      switchView('table');
-    }
-  });
-</script>
 {% endblock %}

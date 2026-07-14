@@ -4,6 +4,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
+from django.core.paginator import Paginator
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 
@@ -39,8 +40,16 @@ def pluviometria_list(request):
     # Acumulado do período
     total_mm = qs.aggregate(t=Sum('mm_chuva'))['t'] or 0
 
+    # Paginação
+    paginator = Paginator(qs.order_by('-data'), 20)
+    page = request.GET.get('page', 1)
+    try:
+        registros_page = paginator.page(page)
+    except Exception:
+        registros_page = paginator.page(1)
+
     context = {
-        'registros': qs.order_by('-data')[:100],
+        'registros': registros_page,
         'fazendas': fazendas,
         'fazenda_selecionada': fazenda_id,
         'ano_selecionado': ano,

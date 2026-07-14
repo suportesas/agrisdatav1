@@ -2276,11 +2276,19 @@ def prazo_pagamento_list(request):
     elif status == 'inativos':
         prazos = prazos.filter(ativo=False)
     
+    total_prazos = prazos.count()
+    paginator = Paginator(prazos, 20)
+    page = request.GET.get('page', 1)
+    try:
+        prazos_page = paginator.page(page)
+    except Exception:
+        prazos_page = paginator.page(1)
+
     context = {
-        'prazos': prazos,
-        'total_prazos': prazos.count(),
+        'prazos': prazos_page,
+        'total_prazos': total_prazos,
     }
-    
+
     return render(request, 'cadastros/prazo_pagamento/prazo_pagamento_list.html', context)
 
 
@@ -2927,25 +2935,35 @@ def area_list(request):
     status = request.GET.get('status')
     if status:
         areas = areas.filter(status=status)
-    
-    # Adiciona estatísticas
-    for area in areas:
+
+    total_areas = areas.count()
+
+    # Paginação
+    paginator = Paginator(areas, 20)
+    page = request.GET.get('page', 1)
+    try:
+        areas_page = paginator.page(page)
+    except Exception:
+        areas_page = paginator.page(1)
+
+    # Adiciona estatísticas (apenas para os itens da página atual)
+    for area in areas_page:
         area.total_talhoes = area.talhoes.filter(ativo=True).count()
         area.area_disponivel = area.get_area_disponivel()
         area.percentual_uso = area.get_percentual_uso()
-    
+
     # 🔒 Fazendas da empresa para filtro
     fazendas = Fazenda.objects.filter(
-        empresa=empresa, 
+        empresa=empresa,
         ativa=True
     ).order_by('nome')
-    
+
     context = {
-        'areas': areas,
+        'areas': areas_page,
         'fazendas': fazendas,
-        'total_areas': areas.count(),
+        'total_areas': total_areas,
     }
-    
+
     return render(request, 'cadastros/area/area_list.html', context)
 
 
@@ -3132,17 +3150,24 @@ def talhao_list(request):
     if status:
         talhoes = talhoes.filter(status=status)
     
-    # Estatísticas
+    # Estatísticas (sobre o total filtrado, não apenas a página atual)
     stats = {
         'total': talhoes.count(),
         'plantados': talhoes.filter(status='PLANTADO').count(),
         'disponiveis': talhoes.filter(status='DISPONIVEL').count(),
         'area_total': talhoes.aggregate(Sum('area_hac'))['area_hac__sum'] or 0,
     }
-    
-    # 🔥 NOVO: Adiciona informação da safra ativa para cada talhão
-    talhoes_list = list(talhoes)  # Converte para lista para poder modificar
-    for talhao in talhoes_list:
+
+    # Paginação
+    paginator = Paginator(talhoes, 20)
+    page = request.GET.get('page', 1)
+    try:
+        talhoes_page = paginator.page(page)
+    except Exception:
+        talhoes_page = paginator.page(1)
+
+    # 🔥 NOVO: Adiciona informação da safra ativa para cada talhão (apenas da página atual)
+    for talhao in talhoes_page:
         # Busca safra ativa (não finalizada) associada ao talhão
         safra_ativa = talhao.safras.filter(
             status__in=['PLANEJADA', 'EM_ANDAMENTO']
@@ -3165,7 +3190,7 @@ def talhao_list(request):
         areas = Area.objects.filter(empresa=empresa, ativa=True).order_by('nome')
     
     context = {
-        'talhoes': talhoes_list,
+        'talhoes': talhoes_page,
         'fazendas': fazendas,
         'areas': areas,
         'stats': stats,
@@ -4066,6 +4091,15 @@ def cliente_list(request):
     # Lista de vendedores para filtro
     vendedores = Vendedor.objects.filter(empresa=empresa)
 
+    # Estatísticas gerais da empresa (não respeitam os filtros ativos — visão geral)
+    clientes_empresa = Cliente.objects.filter(empresa=empresa)
+    stats = {
+        'total': clientes_empresa.count(),
+        'ativos': clientes_empresa.filter(status='ATIVO').count(),
+        'inativos': clientes_empresa.filter(status='INATIVO').count(),
+        'estrangeiros': clientes_empresa.filter(tipo_cliente='IMPORTADOR').count(),
+    }
+
     context = {
         'clientes': clientes,
         'page_obj': clientes,
@@ -4074,6 +4108,7 @@ def cliente_list(request):
         'tipo_atual': tipo_atual,
         'vendedores': vendedores,
         'vendedor_atual': vendedor_atual,
+        'stats': stats,
     }
 
     return render(request, 'cadastros/cliente/cliente_list.html', context)
@@ -5470,14 +5505,21 @@ def comissao_list(request):
     total_pago = comissoes.filter(status='PAGA').aggregate(
         total=Sum('valor_comissao')
     )['total'] or 0
-    
+
+    paginator = Paginator(comissoes, 20)
+    page = request.GET.get('page', 1)
+    try:
+        comissoes_page = paginator.page(page)
+    except Exception:
+        comissoes_page = paginator.page(1)
+
     context = {
-        'comissoes': comissoes,
+        'comissoes': comissoes_page,
         'total_pendente': total_pendente,
         'total_pago': total_pago,
         'vendedores': Vendedor.objects.filter(empresa=empresa, status='ATIVO'),
     }
-    
+
     return render(request, 'cadastros/comissao/comissao_list.html', context)
 
 
@@ -5575,10 +5617,18 @@ def poco_list(request):
 
     fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
 
+    total = pocos.count()
+    paginator = Paginator(pocos.order_by('nome'), 20)
+    page = request.GET.get('page', 1)
+    try:
+        pocos_page = paginator.page(page)
+    except Exception:
+        pocos_page = paginator.page(1)
+
     return render(request, 'cadastros/poco/poco_list.html', {
-        'pocos': pocos,
+        'pocos': pocos_page,
         'fazendas': fazendas,
-        'total': pocos.count(),
+        'total': total,
     })
 
 

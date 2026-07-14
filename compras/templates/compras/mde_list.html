@@ -5,117 +5,140 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="mb-0"><i class="bi bi-chat-square-check me-2 text-secondary"></i>Manifestação do Destinatário</h2>
-      <small class="text-muted">NF-e recebidas de fornecedores — registre sua posição na SEFAZ</small>
-    </div>
-    <a href="{% url 'compras:recebimento_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-inbox me-1"></i>Ver Recebimentos
-    </a>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon gray"><i class="bi bi-chat-square-check"></i></span>
+          <div>
+              <h2>Manifestação do Destinatário</h2>
+              <p class="text-muted mb-0">NF-e recebidas de fornecedores — registre sua posição na SEFAZ</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if q or fornecedor_id or mde_status or data_ini or data_fim %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if q or fornecedor_id or mde_status or data_ini or data_fim %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'compras:recebimento_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-inbox"></i> Ver Recebimentos
+          </a>
+      </div>
   </div>
 
-  <!-- Cards de resumo -->
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center py-3">
-          <div class="fs-2 fw-bold text-dark">{{ total }}</div>
-          <div class="small text-muted">Total com chave NF-e</div>
-        </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if q or fornecedor_id or mde_status or data_ini or data_fim %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nº NF, chave ou fornecedor...">
       </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #f59e0b !important;">
-        <div class="card-body text-center py-3">
-          <div class="fs-2 fw-bold text-warning">{{ total_pendente }}</div>
-          <div class="small text-muted">Pendente MD-e</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #10b981 !important;">
-        <div class="card-body text-center py-3">
-          <div class="fs-2 fw-bold text-success">{{ total_confirmado }}</div>
-          <div class="small text-muted">Confirmados</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #2563eb !important;">
-        <div class="card-body text-center py-3">
-          <div class="fs-2 fw-bold" style="color:#2563eb">{{ total_ciencia }}</div>
-          <div class="small text-muted">Ciência da Operação</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filtros -->
-  <form method="get" class="card card-body border-0 shadow-sm mb-4">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Buscar</label>
-        <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
-               placeholder="Nº NF, chave ou fornecedor...">
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small mb-1">Fornecedor</label>
-        <select name="fornecedor" class="form-select form-select-sm">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Fornecedor</label>
+        <select name="fornecedor" class="form-select">
           <option value="">Todos</option>
           {% for f in fornecedores %}
           <option value="{{ f.pk }}" {% if fornecedor_id == f.pk|stringformat:"s" %}selected{% endif %}>{{ f.get_nome_exibicao_com_documento }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Status MD-e</label>
-        <select name="mde" class="form-select form-select-sm">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status MD-e</label>
+        <select name="mde" class="form-select">
           <option value="">Todos</option>
           {% for val, label in mde_status_choices %}
           <option value="{{ val }}" {% if mde_status == val %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Emissão de</label>
-        <input type="date" name="data_ini" value="{{ data_ini }}" class="form-control form-control-sm">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Emissão de</label>
+        <input type="date" name="data_ini" value="{{ data_ini }}" class="form-control">
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Até</label>
-        <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control form-control-sm">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Até</label>
+        <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control">
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'compras:mde_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cards de resumo -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-file-earmark-text"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total com chave NF-e</div>
+          <div class="stat-value">{{ total }}</div>
+        </div>
       </div>
     </div>
-    <div class="d-flex gap-2 mt-2">
-      <button type="submit" class="btn btn-sm btn-outline-primary">
-        <i class="bi bi-search me-1"></i>Filtrar
-      </button>
-      <a href="{% url 'compras:mde_list' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Pendente MD-e</div>
+          <div class="stat-value">{{ total_pendente }}</div>
+        </div>
+      </div>
     </div>
-  </form>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Confirmados</div>
+          <div class="stat-value">{{ total_confirmado }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-info-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Ciência da Operação</div>
+          <div class="stat-value">{{ total_ciencia }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Tabela -->
-  <div class="card border-0 shadow-sm">
+  <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+          <thead class="bg-light">
             <tr>
-              <th>NF / Série</th>
+              <th class="ps-4">NF / Série</th>
               <th>Fornecedor</th>
               <th>Emissão</th>
               <th>Recebimento</th>
               <th class="text-end">Valor</th>
-              <th>Status MD-e</th>
+              <th class="text-center">Status MD-e</th>
               <th class="text-nowrap">Protocolo MD-e</th>
-              <th>Ações</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for rec in page_obj %}
             <tr>
-              <td>
+              <td class="ps-4">
                 <a href="{% url 'compras:recebimento_detail' rec.pk %}" class="fw-semibold text-decoration-none">
                   {{ rec.nota_fiscal|default:"—" }}/{{ rec.serie_nota }}
                 </a>
@@ -132,10 +155,10 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-nowrap">{{ rec.data_emissao_nf|date:"d/m/Y" }}</td>
-              <td class="text-nowrap">{{ rec.data_recebimento|date:"d/m/Y" }}</td>
-              <td class="text-end text-nowrap">R$ {{ rec.valor_total_nf|floatformat:2 }}</td>
-              <td>
+              <td class="text-mono text-nowrap">{{ rec.data_emissao_nf|date:"d/m/Y" }}</td>
+              <td class="text-mono text-nowrap">{{ rec.data_recebimento|date:"d/m/Y" }}</td>
+              <td class="text-end text-mono text-nowrap">R$ {{ rec.valor_total_nf|floatformat:2 }}</td>
+              <td class="text-center">
                 {% if rec.manifestacao_tipo == 'confirmacao_operacao' %}
                   <span class="badge bg-success">Confirmada</span>
                 {% elif rec.manifestacao_tipo == 'ciencia_operacao' %}
@@ -158,21 +181,23 @@
                 <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="text-nowrap">
-                <a href="{% url 'compras:recebimento_detail' rec.pk %}" class="btn btn-sm btn-outline-primary" title="Detalhes">
-                  <i class="bi bi-eye"></i>
-                </a>
-                {% if not rec.manifestacao_tipo %}
-                <a href="{% url 'compras:recebimento_manifestar' rec.pk %}" class="btn btn-sm btn-outline-secondary" title="Registrar Manifestação MD-e">
-                  <i class="bi bi-chat-square-check"></i>
-                </a>
-                {% endif %}
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon" href="{% url 'compras:recebimento_detail' rec.pk %}" title="Detalhes">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    {% if not rec.manifestacao_tipo %}
+                    <a class="action-icon" href="{% url 'compras:recebimento_manifestar' rec.pk %}" title="Registrar Manifestação MD-e">
+                        <i class="bi bi-chat-square-check"></i>
+                    </a>
+                    {% endif %}
+                </div>
               </td>
             </tr>
             {% empty %}
             <tr>
               <td colspan="8" class="text-center text-muted py-5">
-                <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
                 Nenhuma NF-e recebida com chave de acesso encontrada.
                 <div class="small mt-1">Importe XMLs de fornecedores via <a href="{% url 'compras:entrada_direta_nf' %}">Entrada Direta NF-e</a>.</div>
               </td>
@@ -182,10 +207,21 @@
         </table>
       </div>
     </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
   </div>
 
-  <!-- Paginação -->
-  {% include 'partials/pagination.html' with page_obj=page_obj %}
-
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

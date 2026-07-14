@@ -5,49 +5,48 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- Header -->
-  <div class="row mb-3">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h1 class="mb-0"><i class="bi bi-check2-all"></i> Conciliação Bancária</h1>
-          <p class="text-muted mb-0">
-            {{ conta.banco }} — {{ conta.numero_formatado }}
-            {% if importacao.data_inicio_extrato %}
-            · {{ importacao.data_inicio_extrato|date:"d/m/Y" }} a {{ importacao.data_fim_extrato|date:"d/m/Y" }}
-            {% endif %}
-          </p>
-        </div>
-        <div class="d-flex gap-2">
-          <a href="{% url 'bancario:importacao_detail' importacao.pk %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-list-ul"></i> Ver Todos
-          </a>
-          <a href="{% url 'bancario:conta_bancaria_detail' conta.pk %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Voltar
-          </a>
-        </div>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-check2-all"></i></span>
+          <div>
+              <h2>Conciliação Bancária</h2>
+              <p class="text-muted mb-0">
+                {{ conta.banco }} — {{ conta.numero_formatado }}
+                {% if importacao.data_inicio_extrato %}
+                · {{ importacao.data_inicio_extrato|date:"d/m/Y" }} a {{ importacao.data_fim_extrato|date:"d/m/Y" }}
+                {% endif %}
+              </p>
+          </div>
       </div>
-    </div>
+      <div class="d-flex gap-2 align-items-center">
+          <a href="{% url 'bancario:importacao_detail' importacao.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-list-ul"></i> Ver Todos
+          </a>
+          <a href="{% url 'bancario:conta_bancaria_detail' conta.pk %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Voltar
+          </a>
+      </div>
   </div>
 
   <!-- Progresso -->
   <div class="row g-2 mb-3">
     <div class="col-4">
-      <div class="card text-center py-2 border-warning">
-        <div class="h5 mb-0 text-warning" id="cnt-pendentes">{{ stats.pendentes }}</div>
-        <small class="text-muted">Pendentes</small>
+      <div class="stat-card text-center">
+        <div class="stat-value text-warning" id="cnt-pendentes">{{ stats.pendentes }}</div>
+        <div class="stat-label text-uppercase">Pendentes</div>
       </div>
     </div>
     <div class="col-4">
-      <div class="card text-center py-2 border-success">
-        <div class="h5 mb-0 text-success" id="cnt-conciliados">{{ stats.conciliados }}</div>
-        <small class="text-muted">Conciliados</small>
+      <div class="stat-card text-center">
+        <div class="stat-value text-success" id="cnt-conciliados">{{ stats.conciliados }}</div>
+        <div class="stat-label text-uppercase">Conciliados</div>
       </div>
     </div>
     <div class="col-4">
-      <div class="card text-center py-2">
-        <div class="h5 mb-0 text-secondary" id="cnt-ignorados">{{ stats.ignorados }}</div>
-        <small class="text-muted">Ignorados</small>
+      <div class="stat-card text-center">
+        <div class="stat-value text-secondary" id="cnt-ignorados">{{ stats.ignorados }}</div>
+        <div class="stat-label text-uppercase">Ignorados</div>
       </div>
     </div>
   </div>

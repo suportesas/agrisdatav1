@@ -7,144 +7,155 @@
 <div class="container-fluid py-4">
 
   <!-- Cabeçalho -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0"><i class="bi bi-journal-text me-2"></i>Solicitações de Booking</h2>
-    <a class="btn btn-primary" href="{% url 'exportacao:solicitacao_booking_create' %}">
-      <i class="bi bi-plus-circle"></i> Nova Solicitação
-    </a>
-  </div>
-
-  <!-- Filtros -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3 align-items-end">
-
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Pesquisar</label>
-          <input type="text" name="search" class="form-control"
-                 value="{{ search }}"
-                 placeholder="Nome, cultura, armador ou navio…">
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Status</label>
-          <select name="status" class="form-select">
-            <option value="">— Todos —</option>
-            {% for value, label in status_choices %}
-              <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Embarque de</label>
-          <input type="date" name="embarque_de" class="form-control" value="{{ embarque_de }}">
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Embarque até</label>
-          <input type="date" name="embarque_ate" class="form-control" value="{{ embarque_ate }}">
-        </div>
-
-        <div class="col-md-2 d-flex gap-2">
-          <button type="submit" class="btn btn-outline-primary flex-fill">
-            <i class="bi bi-search"></i> Filtrar
-          </button>
-          <a href="{% url 'exportacao:solicitacao_booking_list' %}" class="btn btn-outline-secondary" title="Limpar filtros">
-            <i class="bi bi-x-lg"></i>
-          </a>
-        </div>
-
-      </form>
-    </div>
-  </div>
-
-  <!-- Contagem de resultados -->
-  <div class="mb-2 text-muted small">
-    {% with total=page_obj.paginator.count %}
-      {% if total == 0 %}
-        Nenhuma solicitação encontrada.
-      {% elif total == 1 %}
-        1 solicitação encontrada.
-      {% else %}
-        {{ total }} solicitações encontradas.
-      {% endif %}
-    {% endwith %}
-  </div>
-
-  <!-- Tabela -->
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-hover table-bordered align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th style="width:60px;">#</th>
-            <th>Nome</th>
-            <th>Cultura</th>
-            <th>Armador</th>
-            <th>Previsão Embarque</th>
-            <th style="width:110px;">Status</th>
-            <th class="text-center" style="width:110px;">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for solicitacao in solicitacoes %}
-            <tr>
-              <td class="text-muted small">{{ solicitacao.pk|stringformat:"05d" }}</td>
-              <td>{{ solicitacao.nome }}</td>
-              <td>{{ solicitacao.cultura|default:"—" }}</td>
-              <td>{{ solicitacao.armador|default:"—" }}</td>
-              <td>{{ solicitacao.data_prevista_embarque|date:'d/m/Y'|default:"—" }}</td>
-              <td>
-                {% with s=solicitacao.status %}
-                <span class="badge
-                  {% if s == 'ABERTO' %}bg-warning text-dark
-                  {% elif s == 'APROVADO' %}bg-success
-                  {% elif s == 'NEGADO' %}bg-danger
-                  {% else %}bg-secondary
-                  {% endif %}">
-                  {{ solicitacao.get_status_display }}
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-journal-text"></i></span>
+          <h2>Solicitações de Booking</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.search or request.GET.status or request.GET.embarque_de or request.GET.embarque_ate %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.search or request.GET.status or request.GET.embarque_de or request.GET.embarque_ate %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
                 </span>
-                {% endwith %}
-              </td>
-              <td class="text-center" style="white-space:nowrap;">
-                <a class="btn btn-sm btn-outline-primary"
-                   href="{% url 'exportacao:solicitacao_booking_detail' solicitacao.pk %}"
-                   title="Ver detalhes">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a class="btn btn-sm btn-outline-secondary"
-                   href="{% url 'exportacao:solicitacao_booking_update' solicitacao.pk %}"
-                   title="Editar">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <a class="btn btn-sm btn-outline-danger"
-                   href="{% url 'exportacao:solicitacao_booking_pdf' solicitacao.pk %}"
-                   target="_blank" title="Gerar PDF">
-                  <i class="bi bi-file-earmark-pdf"></i>
-                </a>
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="7" class="text-center text-muted py-5">
-                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                Nenhuma solicitação de booking encontrada.
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+              {% endif %}
+          </button>
+          <a class="btn btn-success" href="{% url 'exportacao:solicitacao_booking_create' %}">
+              <i class="bi bi-plus-circle"></i> Nova Solicitação
+          </a>
+      </div>
+  </div>
 
-    <!-- Paginação -->
-    {% if page_obj.has_other_pages %}
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.search or request.GET.status or request.GET.embarque_de or request.GET.embarque_ate %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Pesquisar</label>
+        <input type="text" name="search" class="form-control"
+               value="{{ search }}"
+               placeholder="Nome, cultura, armador ou navio…">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">— Todos —</option>
+          {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Embarque de</label>
+        <input type="date" name="embarque_de" class="form-control" value="{{ embarque_de }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Embarque até</label>
+        <input type="date" name="embarque_ate" class="form-control" value="{{ embarque_ate }}">
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'exportacao:solicitacao_booking_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> solicitaç{{ page_obj.paginator.count|pluralize:"ão,ões" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4" style="width:60px;">#</th>
+              <th>Nome</th>
+              <th>Cultura</th>
+              <th>Armador</th>
+              <th>Previsão Embarque</th>
+              <th class="text-center" style="width:110px;">Status</th>
+              <th class="text-center" style="width:110px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for solicitacao in solicitacoes %}
+              <tr>
+                <td class="ps-4 text-muted small">{{ solicitacao.pk|stringformat:"05d" }}</td>
+                <td>{{ solicitacao.nome }}</td>
+                <td>{{ solicitacao.cultura|default:"—" }}</td>
+                <td>{{ solicitacao.armador|default:"—" }}</td>
+                <td class="text-mono">{{ solicitacao.data_prevista_embarque|date:'d/m/Y'|default:"—" }}</td>
+                <td class="text-center">
+                  {% with s=solicitacao.status %}
+                  <span class="badge
+                    {% if s == 'ABERTO' %}bg-warning text-dark
+                    {% elif s == 'APROVADO' %}bg-success
+                    {% elif s == 'NEGADO' %}bg-danger
+                    {% else %}bg-secondary
+                    {% endif %}">
+                    {{ solicitacao.get_status_display }}
+                  </span>
+                  {% endwith %}
+                </td>
+                <td class="text-center">
+                  <div class="d-flex gap-3 justify-content-center">
+                      <a class="action-icon" href="{% url 'exportacao:solicitacao_booking_detail' solicitacao.pk %}" title="Ver detalhes">
+                          <i class="bi bi-eye"></i>
+                      </a>
+                      <a class="action-icon edit" href="{% url 'exportacao:solicitacao_booking_update' solicitacao.pk %}" title="Editar">
+                          <i class="bi bi-pencil"></i>
+                      </a>
+                      <a class="action-icon" href="{% url 'exportacao:solicitacao_booking_pdf' solicitacao.pk %}" target="_blank" title="Gerar PDF">
+                          <i class="bi bi-file-earmark-pdf"></i>
+                      </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                  Nenhuma solicitação de booking encontrada
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if page_obj.paginator %}
     <div class="card-footer">
-      {% include 'partials/pagination.html' %}
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
     </div>
     {% endif %}
-
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

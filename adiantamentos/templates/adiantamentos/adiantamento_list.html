@@ -5,136 +5,152 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h1 class="mb-0"><i class="bi bi-cash-coin"></i> Adiantamentos Internacionais</h1>
-          <p class="text-muted mb-0">Controle de advance payments por cliente e safra</p>
-        </div>
-        <div class="d-flex gap-2">
-          <a href="{% url 'adiantamentos:relatorio_adiantamentos' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-graph-up"></i> Relatório
-          </a>
-          <a href="{% url 'adiantamentos:adiantamento_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> Novo Adiantamento
-          </a>
-        </div>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-cash-coin"></i></span>
+          <div>
+              <h2>Adiantamentos Internacionais</h2>
+              <p class="text-muted mb-0">Controle de advance payments por cliente e safra</p>
+          </div>
       </div>
-    </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.cliente or request.GET.safra_referencia or request.GET.status or request.GET.moeda %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.cliente or request.GET.safra_referencia or request.GET.status or request.GET.moeda %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'adiantamentos:relatorio_adiantamentos' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-graph-up"></i> Relatório
+          </a>
+          <a href="{% url 'adiantamentos:adiantamento_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-lg"></i> Novo Adiantamento
+          </a>
+      </div>
   </div>
 
   <!-- Cards de resumo -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-      <div class="card text-center">
-        <div class="card-body py-3">
-          <p class="text-muted small mb-1">Total</p>
-          <h4>{{ stats.total }}</h4>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Total</div>
+        <div class="stat-value">{{ stats.total }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card text-center border-warning">
-        <div class="card-body py-3">
-          <p class="text-muted small mb-1">Ativos</p>
-          <h4 class="text-warning">{{ stats.ativos }}</h4>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Ativos</div>
+        <div class="stat-value text-warning">{{ stats.ativos }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card text-center border-success">
-        <div class="card-body py-3">
-          <p class="text-muted small mb-1">Quitados</p>
-          <h4 class="text-success">{{ stats.quitados }}</h4>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Quitados</div>
+        <div class="stat-value text-success">{{ stats.quitados }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="card text-center border-info">
-        <div class="card-body py-3">
-          <p class="text-muted small mb-1">Migrados</p>
-          <h4 class="text-info">{{ stats.migrados }}</h4>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Migrados</div>
+        <div class="stat-value text-info">{{ stats.migrados }}</div>
       </div>
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-sm-3">
-          <label class="form-label small mb-1">Cliente</label>
-          <select name="cliente" class="form-select form-select-sm">
-            <option value="">Todos</option>
-            {% for c in clientes %}
-            <option value="{{ c.pk }}" {% if filtros.cliente_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.razao_social }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-sm-2">
-          <label class="form-label small mb-1">Safra</label>
-          <input type="text" name="safra_referencia" class="form-control form-control-sm" value="{{ filtros.safra_referencia }}" placeholder="2025/2026">
-        </div>
-        <div class="col-sm-2">
-          <label class="form-label small mb-1">Status</label>
-          <select name="status" class="form-select form-select-sm">
-            <option value="">Todos</option>
-            {% for val, label in status_choices %}
-            <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-sm-2">
-          <label class="form-label small mb-1">Moeda</label>
-          <select name="moeda" class="form-select form-select-sm">
-            <option value="">Todas</option>
-            {% for val, label in moeda_choices %}
-            <option value="{{ val }}" {% if filtros.moeda == val %}selected{% endif %}>{{ val }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-sm-3">
-          <button type="submit" class="btn btn-sm btn-primary me-1"><i class="bi bi-search"></i> Filtrar</button>
-          <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
-        </div>
-      </form>
-    </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.cliente or request.GET.safra_referencia or request.GET.status or request.GET.moeda %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Cliente</label>
+        <select name="cliente" class="form-select">
+          <option value="">Todos</option>
+          {% for c in clientes %}
+          <option value="{{ c.pk }}" {% if filtros.cliente_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.razao_social }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Safra</label>
+        <input type="text" name="safra_referencia" class="form-control" value="{{ filtros.safra_referencia }}" placeholder="2025/2026">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Moeda</label>
+        <select name="moeda" class="form-select">
+          <option value="">Todas</option>
+          {% for val, label in moeda_choices %}
+          <option value="{{ val }}" {% if filtros.moeda == val %}selected{% endif %}>{{ val }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
   </div>
 
-  <!-- Tabela -->
-  <div class="card">
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if adiantamentos.paginator %}
+        Exibindo <strong>{{ adiantamentos.start_index }}–{{ adiantamentos.end_index }}</strong>
+        de <strong>{{ adiantamentos.paginator.count }}</strong> adiantamento{{ adiantamentos.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-0">
-      {% if adiantamentos %}
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
             <tr>
-              <th>Referência</th>
+              <th class="ps-4">Referência</th>
               <th>Cliente</th>
               <th>Safra</th>
               <th>Moeda</th>
               <th class="text-end">Valor Total</th>
               <th class="text-end">Saldo</th>
-              <th class="text-end">Quitado</th>
+              <th>Quitado</th>
               <th>Regra Desconto</th>
-              <th>Status</th>
-              <th></th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for a in adiantamentos %}
             <tr>
-              <td><a href="{% url 'adiantamentos:adiantamento_detail' a.pk %}" class="fw-semibold">{{ a.numero_referencia }}</a></td>
+              <td class="ps-4"><a href="{% url 'adiantamentos:adiantamento_detail' a.pk %}" class="fw-semibold">{{ a.numero_referencia }}</a></td>
               <td>{{ a.cliente.razao_social }}</td>
               <td><span class="badge bg-secondary">{{ a.safra_referencia }}</span></td>
               <td>{{ a.moeda }}</td>
-              <td class="text-end">{{ a.valor_estrangeiro|floatformat:2 }}</td>
-              <td class="text-end {% if a.saldo_estrangeiro > 0 %}text-warning fw-bold{% else %}text-success{% endif %}">
+              <td class="text-end text-mono">{{ a.valor_estrangeiro|floatformat:2 }}</td>
+              <td class="text-end text-mono {% if a.saldo_estrangeiro > 0 %}text-warning fw-bold{% else %}text-success{% endif %}">
                 {{ a.saldo_estrangeiro|floatformat:2 }}
               </td>
-              <td class="text-end">
+              <td>
                 <div class="progress" style="height:6px;min-width:60px">
                   <div class="progress-bar bg-success" style="width:{{ a.percentual_quitado|floatformat:0 }}%"></div>
                 </div>
@@ -147,28 +163,49 @@
                 <small>{{ a.percentual_desconto|floatformat:2 }}% da invoice</small>
                 {% endif %}
               </td>
-              <td>
+              <td class="text-center">
                 <span class="badge bg-{% if a.status == 'QUITADO' %}success{% elif a.status == 'MIGRADO' %}info{% elif a.status == 'CANCELADO' %}secondary{% elif a.status == 'PARCIALMENTE_QUITADO' %}warning{% else %}primary{% endif %}">
                   {{ a.get_status_display }}
                 </span>
               </td>
-              <td class="text-end">
-                <a href="{% url 'adiantamentos:adiantamento_detail' a.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
+              <td class="text-center">
+                <a class="action-icon" href="{% url 'adiantamentos:adiantamento_detail' a.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="10" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum adiantamento encontrado
+                <div class="mt-3">
+                  <a href="{% url 'adiantamentos:adiantamento_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Registrar Primeiro Adiantamento
+                  </a>
+                </div>
               </td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      {% else %}
-      <div class="text-center text-muted py-5">
-        <i class="bi bi-cash-coin fs-2 d-block mb-2"></i>
-        Nenhum adiantamento encontrado.
-        <br><a href="{% url 'adiantamentos:adiantamento_create' %}" class="btn btn-primary mt-3">Registrar Primeiro Adiantamento</a>
-      </div>
-      {% endif %}
     </div>
+    {% if adiantamentos.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=adiantamentos %}
+    </div>
+    {% endif %}
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

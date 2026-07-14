@@ -7,59 +7,58 @@
 {% block content %}
 <div class="container-fluid mt-4">
 
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon blue"><i class="bi bi-cloud-rain"></i></span>
+      <h2>Pluviometria</h2>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.fazenda or request.GET.ano or request.GET.mes %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.fazenda or request.GET.ano or request.GET.mes %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'operacoes_campo:pluviometria_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Registrar
+      </a>
+    </div>
+  </div>
+
   <!-- Cards de resumo -->
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-primary text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="opacity-75 mb-1">Total no Período</h6>
-              <h2 class="mb-0">{{ total_mm|floatformat:1 }} mm</h2>
-            </div>
-            <i class="bi bi-cloud-rain fs-1 opacity-50"></i>
-          </div>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-cloud-rain"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total no Período</div>
+          <div class="stat-value">{{ total_mm|floatformat:1 }} mm</div>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-info text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="opacity-75 mb-1">Registros</h6>
-              <h2 class="mb-0">{{ registros|length }}</h2>
-            </div>
-            <i class="bi bi-calendar-check fs-1 opacity-50"></i>
-          </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-calendar-check"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Registros</div>
+          <div class="stat-value">{{ registros.paginator.count }}</div>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-success text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="opacity-75 mb-1">Fazendas Cadastradas</h6>
-              <h2 class="mb-0">{{ fazendas|length }}</h2>
-            </div>
-            <i class="bi bi-tree fs-1 opacity-50"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-warning text-dark">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <h6 class="mb-1">Novo Registro</h6>
-              <a href="{% url 'operacoes_campo:pluviometria_create' %}" class="btn btn-dark btn-sm">
-                <i class="bi bi-plus-circle"></i> Registrar
-              </a>
-            </div>
-            <i class="bi bi-plus-square fs-1 opacity-50"></i>
-          </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-tree"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Fazendas Cadastradas</div>
+          <div class="stat-value">{{ fazendas|length }}</div>
         </div>
       </div>
     </div>
@@ -77,55 +76,61 @@
   </div>
   {% endif %}
 
-  <!-- Filtros -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold">Fazenda</label>
-          <select class="form-select" name="fazenda">
-            <option value="">Todas as fazendas</option>
-            {% for f in fazendas %}
-              <option value="{{ f.id }}" {% if fazenda_selecionada|stringformat:"s" == f.id|stringformat:"s" %}selected{% endif %}>
-                {{ f.nome }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Ano</label>
-          <input type="number" class="form-control" name="ano" value="{{ ano_selecionado }}" placeholder="Ex: 2026" min="2020" max="2030">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Mês</label>
-          <select class="form-select" name="mes">
-            <option value="">Todos</option>
-              <option value="1" {% if mes_selecionado == "1" %}selected{% endif %}>Janeiro</option>
-            <option value="2" {% if mes_selecionado == "2" %}selected{% endif %}>Fevereiro</option>
-            <option value="3" {% if mes_selecionado == "3" %}selected{% endif %}>Março</option>
-            <option value="4" {% if mes_selecionado == "4" %}selected{% endif %}>Abril</option>
-            <option value="5" {% if mes_selecionado == "5" %}selected{% endif %}>Maio</option>
-            <option value="6" {% if mes_selecionado == "6" %}selected{% endif %}>Junho</option>
-            <option value="7" {% if mes_selecionado == "7" %}selected{% endif %}>Julho</option>
-            <option value="8" {% if mes_selecionado == "8" %}selected{% endif %}>Agosto</option>
-            <option value="9" {% if mes_selecionado == "9" %}selected{% endif %}>Setembro</option>
-            <option value="10" {% if mes_selecionado == "10" %}selected{% endif %}>Outubro</option>
-            <option value="11" {% if mes_selecionado == "11" %}selected{% endif %}>Novembro</option>
-            <option value="12" {% if mes_selecionado == "12" %}selected{% endif %}>Dezembro</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-funnel"></i> Filtrar
-          </button>
-        </div>
-        <div class="col-md-1">
-          <a href="{% url 'operacoes_campo:pluviometria_list' %}" class="btn btn-outline-secondary w-100">
-            <i class="bi bi-x"></i>
-          </a>
-        </div>
-      </form>
-    </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.fazenda or request.GET.ano or request.GET.mes %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Fazenda</label>
+        <select class="form-select" name="fazenda">
+          <option value="">Todas as fazendas</option>
+          {% for f in fazendas %}
+            <option value="{{ f.id }}" {% if fazenda_selecionada|stringformat:"s" == f.id|stringformat:"s" %}selected{% endif %}>
+              {{ f.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field" style="max-width:120px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Ano</label>
+        <input type="number" class="form-control" name="ano" value="{{ ano_selecionado }}" placeholder="Ex: 2026" min="2020" max="2030">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Mês</label>
+        <select class="form-select" name="mes">
+          <option value="">Todos</option>
+            <option value="1" {% if mes_selecionado == "1" %}selected{% endif %}>Janeiro</option>
+          <option value="2" {% if mes_selecionado == "2" %}selected{% endif %}>Fevereiro</option>
+          <option value="3" {% if mes_selecionado == "3" %}selected{% endif %}>Março</option>
+          <option value="4" {% if mes_selecionado == "4" %}selected{% endif %}>Abril</option>
+          <option value="5" {% if mes_selecionado == "5" %}selected{% endif %}>Maio</option>
+          <option value="6" {% if mes_selecionado == "6" %}selected{% endif %}>Junho</option>
+          <option value="7" {% if mes_selecionado == "7" %}selected{% endif %}>Julho</option>
+          <option value="8" {% if mes_selecionado == "8" %}selected{% endif %}>Agosto</option>
+          <option value="9" {% if mes_selecionado == "9" %}selected{% endif %}>Setembro</option>
+          <option value="10" {% if mes_selecionado == "10" %}selected{% endif %}>Outubro</option>
+          <option value="11" {% if mes_selecionado == "11" %}selected{% endif %}>Novembro</option>
+          <option value="12" {% if mes_selecionado == "12" %}selected{% endif %}>Dezembro</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'operacoes_campo:pluviometria_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if registros.paginator %}
+        Exibindo <strong>{{ registros.start_index }}–{{ registros.end_index }}</strong>
+        de <strong>{{ registros.paginator.count }}</strong> registro{{ registros.paginator.count|pluralize }}
+      {% endif %}
+    </span>
   </div>
 
   <!-- Tabela -->
@@ -186,6 +191,11 @@
         </tbody>
       </table>
     </div>
+    {% if registros.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=registros %}
+    </div>
+    {% endif %}
   </div>
 
 </div>

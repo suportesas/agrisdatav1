@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import JsonResponse
@@ -50,8 +51,11 @@ def adiantamento_list(request):
         'migrados': qs.filter(status='MIGRADO').count(),
     }
 
+    paginator = Paginator(qs.order_by('-criado_em'), 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'adiantamentos/adiantamento_list.html', {
-        'adiantamentos': qs,
+        'adiantamentos': page_obj,
         'clientes': clientes,
         'filtros': {
             'cliente_id': cliente_id,
@@ -400,8 +404,11 @@ def relatorio_adiantamentos(request):
         total_brl=Sum('valor_brl'),
     )
 
+    paginator = Paginator(qs.order_by('-data_adiantamento'), 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'adiantamentos/relatorio_adiantamentos.html', {
-        'adiantamentos': qs,
+        'adiantamentos': page_obj,
         'clientes': clientes,
         'filtros': {
             'data_inicio': data_inicio,

@@ -6,6 +6,7 @@ mas pode gerar ambos via ação dedicada.
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db import transaction
 from django.http import JsonResponse
 
@@ -44,8 +45,11 @@ def planejamento_embalagem_list(request):
     from cadastros.models import Safra
     safras = Safra.objects.filter(fazenda__empresa=empresa).order_by('-ano', 'nome')
 
+    paginator = Paginator(qs.order_by('-criado_em'), 20)
+    planejamentos = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'compras/planejamento_embalagem_list.html', {
-        'planejamentos': qs,
+        'planejamentos': planejamentos,
         'safras': safras,
         'status_filtro': status_filtro,
         'safra_filtro': safra_filtro,

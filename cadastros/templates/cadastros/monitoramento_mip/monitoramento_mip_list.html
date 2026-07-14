@@ -13,131 +13,122 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-graph-up"></i></span>
+      <h2>Monitoramentos Realizados</h2>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.numero or request.GET.talhao or request.GET.status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.numero or request.GET.talhao or request.GET.status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'mip:monitoramento_mip_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Novo Monitoramento
+      </a>
+    </div>
+  </div>
+
   <!-- Cabeçalho com Estatísticas -->
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-primary text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="opacity-75">Total de Monitoramentos</h6>
-              <h2 class="mb-0">{{ monitoramentos.paginator.count }}</h2>
-            </div>
-            <div class="fs-1 opacity-50">
-              <i class="bi bi-graph-up"></i>
-            </div>
-          </div>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-graph-up"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total de Monitoramentos</div>
+          <div class="stat-value">{{ monitoramentos.paginator.count }}</div>
         </div>
       </div>
     </div>
-
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-success text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="opacity-75">Completos</h6>
-              <h2 class="mb-0">{{ completos_count }}</h2>
-            </div>
-            <div class="fs-1 opacity-50">
-              <i class="bi bi-check-circle"></i>
-            </div>
-          </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Completos</div>
+          <div class="stat-value">{{ completos_count }}</div>
         </div>
       </div>
     </div>
-
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-warning text-dark">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="opacity-75">Com Defensivos</h6>
-              <h2 class="mb-0">{{ com_defensivos_count }}</h2>
-            </div>
-            <div class="fs-1 opacity-50">
-              <i class="bi bi-exclamation-triangle"></i>
-            </div>
-          </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Com Defensivos</div>
+          <div class="stat-value">{{ com_defensivos_count }}</div>
         </div>
       </div>
     </div>
-
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-info text-white">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="opacity-75">Este Mês</h6>
-              <h2 class="mb-0">{{ este_mes_count }}</h2>
-            </div>
-            <div class="fs-1 opacity-50">
-              <i class="bi bi-calendar"></i>
-            </div>
-          </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-calendar3"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Este Mês</div>
+          <div class="stat-value">{{ este_mes_count }}</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Ações e Filtros -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="fw-bold text-secondary mb-0">
-      <i class="bi bi-graph-up text-success"></i> Monitoramentos Realizados
-    </h4>
-    <a href="{% url 'mip:monitoramento_mip_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-circle"></i> Novo Monitoramento
-    </a>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.numero or request.GET.talhao or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field" style="min-width:240px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control border-start-0" name="numero"
+                 placeholder="Nº MIP…" value="{{ request.GET.numero }}">
+        </div>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Talhão</label>
+        <select class="form-select" name="talhao">
+          <option value="">Todos os Talhões</option>
+          {% for talhao in talhoes %}
+            <option value="{{ talhao.id }}" {% if request.GET.talhao|stringformat:"s" == talhao.id|stringformat:"s" %}selected{% endif %}>
+              {{ talhao.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select class="form-select" name="status">
+          <option value="">Todos os Status</option>
+          <option value="RASCUNHO" {% if request.GET.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>
+          <option value="COMPLETO" {% if request.GET.status == "COMPLETO" %}selected{% endif %}>Completo</option>
+          <option value="ANALISADO" {% if request.GET.status == "ANALISADO" %}selected{% endif %}>Analisado</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'mip:monitoramento_mip_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+    </form>
   </div>
 
-  <!-- Filtros -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3">
-        <!-- Busca por Número -->
-        <div class="col-md-4">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-end-0">
-              <i class="bi bi-search"></i>
-            </span>
-            <input type="text" class="form-control border-start-0" name="numero" 
-                   placeholder="Buscar por Nº MIP..." value="{{ request.GET.numero }}">
-          </div>
-        </div>
-
-        <!-- Filtro Talhão -->
-        <div class="col-md-2">
-          <select class="form-select" name="talhao">
-            <option value="">Todos os Talhões</option>
-            {% for talhao in talhoes %}
-              <option value="{{ talhao.id }}" {% if request.GET.talhao|stringformat:"s" == talhao.id|stringformat:"s" %}selected{% endif %}>
-                {{ talhao.nome }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- Filtro Status -->
-        <div class="col-md-2">
-          <select class="form-select" name="status">
-            <option value="">Todos os Status</option>
-            <option value="RASCUNHO" {% if request.GET.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>
-            <option value="COMPLETO" {% if request.GET.status == "COMPLETO" %}selected{% endif %}>Completo</option>
-            <option value="ANALISADO" {% if request.GET.status == "ANALISADO" %}selected{% endif %}>Analisado</option>
-          </select>
-        </div>
-
-        <!-- Botão Filtrar -->
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-funnel"></i> Filtrar
-          </button>
-          <a href="{% url 'mip:monitoramento_mip_list' %}" class="btn btn-outline-secondary w-100 mt-2">
-            <i class="bi bi-x-circle"></i> Limpar
-          </a>
-        </div>
-      </form>
-    </div>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if monitoramentos.paginator %}
+        Exibindo <strong>{{ monitoramentos.start_index }}–{{ monitoramentos.end_index }}</strong>
+        de <strong>{{ monitoramentos.paginator.count }}</strong> monitoramento{{ monitoramentos.paginator.count|pluralize }}
+      {% endif %}
+    </span>
   </div>
 
   <!-- Tabela de Monitoramentos -->
@@ -214,8 +205,11 @@
       </table>
     </div>
 
-    <!-- Paginação -->
-    {% include 'partials/pagination.html' with page_obj=monitoramentos %}
+    {% if monitoramentos.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=monitoramentos %}
+    </div>
+    {% endif %}
   </div>
 </div>
 

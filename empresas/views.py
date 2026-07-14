@@ -7,6 +7,7 @@ from .forms import EmpresaLogoForm
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
+from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.contrib.auth.models import Permission
@@ -113,9 +114,13 @@ def empresa_list(request):
         html = render_to_string('empresas/_empresa_table.html', {'empresas': empresas}, request=request)
         return JsonResponse({'html': html})
 
+    paginator = Paginator(empresas.order_by('nome'), 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'empresas/empresa_list.html', {
-        'empresas': empresas,
+        'empresas': page_obj,
         'status': status,
+        'q': q,
     })
 
 
@@ -601,12 +606,15 @@ def role_clone(request, role_id):
 def plano_list(request):
     """Lista todos os planos"""
     planos = Plano.objects.filter(ativo=True).order_by('ordem')
-    
+
     # Adiciona informação de quantas empresas usam cada plano
     for plano in planos:
         plano.total_empresas_ativas = plano.empresas.filter(ativa=True).count()
-    
-    return render(request, 'empresas/plano_list.html', {'planos': planos})
+
+    paginator = Paginator(planos, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'empresas/plano_list.html', {'planos': page_obj})
 
 
 @login_required

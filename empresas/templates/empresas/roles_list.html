@@ -209,25 +209,27 @@
   {% breadcrumb "bi-house-door|Dashboard:dashboard:index" "Funções e Permissões" %}
 
   <!-- Cabeçalho -->
-  <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
-    <div>
-      <h2 class="fw-bold mb-1" style="color:#1a7a3c;">
-        <i class="bi bi-shield-lock me-2"></i>Funções e Permissões
-      </h2>
-      {% if request.user.empresa %}
-      <p class="text-muted mb-0 small">
-        <i class="bi bi-building me-1"></i><strong>{{ request.user.empresa.nome }}</strong>
-        — {{ total_roles }} função{{ total_roles|pluralize:",ões" }}
-        ({{ builtin_roles }} padrão, {{ custom_roles }} personalizada{{ custom_roles|pluralize }})
-      </p>
+  <div class="page-header mb-4">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon green"><i class="bi bi-shield-lock"></i></span>
+          <div>
+              <h2>Funções e Permissões</h2>
+              {% if request.user.empresa %}
+              <p class="text-muted mb-0 small">
+                <i class="bi bi-building me-1"></i><strong>{{ request.user.empresa.nome }}</strong>
+                — {{ total_roles }} função{{ total_roles|pluralize:",ões" }}
+                ({{ builtin_roles }} padrão, {{ custom_roles }} personalizada{{ custom_roles|pluralize }})
+              </p>
+              {% endif %}
+          </div>
+      </div>
+      {% if request.user.is_superuser or request.user.is_admin_empresa %}
+      <div class="d-flex gap-2 align-items-center">
+          <a href="{% url 'empresas:role_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Nova Função
+          </a>
+      </div>
       {% endif %}
-    </div>
-    {% if request.user.is_superuser or request.user.is_admin_empresa %}
-    <a href="{% url 'empresas:role_create' %}" class="btn btn-sm fw-semibold"
-       style="background:#1a7a3c;color:#fff;border-radius:10px;padding:.5rem 1.2rem;">
-      <i class="bi bi-plus-circle me-1"></i> Nova Função
-    </a>
-    {% endif %}
   </div>
 
   <div class="row g-4">

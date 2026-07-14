@@ -527,12 +527,15 @@
       {% endif %}
 
       <!-- Tributações Cadastradas -->
-      {% if produto.tributacoes.all %}
       <div class="card mb-3">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
           <strong><i class="bi bi-calculator me-2"></i>Tributações Cadastradas</strong>
+          <a href="{% url 'produtos:tributacao_create' produto.pk %}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Adicionar Tributação
+          </a>
         </div>
         <div class="card-body">
+          {% if produto.tributacoes.all %}
           <div class="table-responsive">
             <table class="table table-sm">
               <thead class="table-light">
@@ -556,13 +559,15 @@
             </table>
           </div>
           <div class="mt-2">
-            <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-sm btn-primary">
+            <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-pencil me-1"></i>Gerenciar Tributações
             </a>
           </div>
+          {% else %}
+          <p class="text-muted mb-0">Nenhuma tributação cadastrada ainda. Clique em "Adicionar Tributação" para começar.</p>
+          {% endif %}
         </div>
       </div>
-      {% endif %}
     </div>
     {% endif %}
   </div>

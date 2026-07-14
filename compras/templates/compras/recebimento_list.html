@@ -6,73 +6,117 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <h2>
-                <i class="bi bi-inbox-fill me-2"></i>
-                Recebimentos de Compras
-            </h2>
-            <p class="text-muted">Gerenciamento de recebimentos de mercadorias</p>
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-inbox-fill"></i></span>
+            <div>
+                <h2>Recebimentos de Compras</h2>
+                <p class="text-muted mb-0">Gerenciamento de recebimentos de mercadorias</p>
+            </div>
         </div>
-        <div class="col-auto">
-            <a href="{% url 'compras:pedido_list' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-2"></i>
-                Novo Recebimento (com Pedido)
-            </a>
-            {% if xml_import_enabled %}
-            <a href="{% url 'compras:entrada_direta_nf' %}" class="btn btn-outline-primary ms-2">
-                <i class="bi bi-file-earmark-xml me-2"></i>
-                Importar XML NF-e
-            </a>
-            {% endif %}
-            <button type="button" class="btn btn-outline-secondary ms-2" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Legenda: 🟡 Pedido parcialmente recebido | ✅ Pedido recebido totalmente | — Sem recebimento parcial">
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if request.GET.fornecedor or request.GET.nota_fiscal %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if request.GET.fornecedor or request.GET.nota_fiscal %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Legenda: 🟡 Pedido parcialmente recebido | ✅ Pedido recebido totalmente | — Sem recebimento parcial">
                 <i class="bi bi-question-circle"></i> Ajuda
             </button>
+            {% if xml_import_enabled %}
+            <a href="{% url 'compras:entrada_direta_nf' %}" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-xml"></i> Importar XML NF-e
+            </a>
+            {% endif %}
+            <a href="{% url 'compras:pedido_list' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Novo Recebimento
+            </a>
         </div>
     </div>
 
-    <!-- Cards de status -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card text-bg-warning h-100">
-                <div class="card-body text-center">
-                    <div class="fs-2 fw-bold">{{ total_pendente }}</div>
-                    <div>Pendente de Conferência</div>
-                </div>
-            </div>
+    <!-- Filtros (colapsável) -->
+    <div class="collapse {% if request.GET.fornecedor or request.GET.nota_fiscal %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <input type="hidden" name="tab" value="{{ active_tab }}">
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Fornecedor</label>
+          <select name="fornecedor" class="form-select">
+              <option value="">Todos</option>
+              {% for fornecedor in fornecedores %}
+              <option value="{{ fornecedor.pk }}" {% if request.GET.fornecedor == fornecedor.pk|stringformat:'s' %}selected{% endif %}>{{ fornecedor.get_nome_exibicao_com_documento }}</option>
+              {% endfor %}
+          </select>
         </div>
-        <div class="col-md-2">
-            <div class="card text-bg-success h-100">
-                <div class="card-body text-center">
-                    <div class="fs-2 fw-bold">{{ total_conferido }}</div>
-                    <div>Conferido</div>
-                </div>
-            </div>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Nota Fiscal</label>
+          <input type="text" name="nota_fiscal" class="form-control" value="{{ request.GET.nota_fiscal }}" placeholder="Número da NF">
         </div>
-        <div class="col-md-2">
-            <div class="card text-bg-danger h-100">
-                <div class="card-body text-center">
-                    <div class="fs-2 fw-bold">{{ total_divergente }}</div>
-                    <div>Com Divergência</div>
-                </div>
-            </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'compras:recebimento_list' %}?tab={{ active_tab }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
         </div>
-        <div class="col-md-2">
-            <div class="card text-bg-primary h-100">
-                <div class="card-body text-center">
-                    <div class="fs-2 fw-bold">{{ total_finalizado }}</div>
-                    <div>Finalizado</div>
-                </div>
+      </form>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Pendentes</div>
+              <div class="stat-value">{{ total_pendente }}</div>
             </div>
+          </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-bg-secondary h-100">
-                <div class="card-body text-center">
-                    <div class="fs-2 fw-bold">{{ total_cancelado }}</div>
-                    <div>Cancelado</div>
-                </div>
+        <div class="col-6 col-md">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Conferidos</div>
+              <div class="stat-value">{{ total_conferido }}</div>
             </div>
+          </div>
+        </div>
+        <div class="col-6 col-md">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-red mb-0"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Divergentes</div>
+              <div class="stat-value">{{ total_divergente }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-flag"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Finalizados</div>
+              <div class="stat-value">{{ total_finalizado }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-x-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Cancelados</div>
+              <div class="stat-value">{{ total_cancelado }}</div>
+            </div>
+          </div>
         </div>
     </div>
 
@@ -134,65 +178,46 @@
     </ul>
 
     <!-- Conteúdo das abas -->
-    <div class="tab-content">
-        <div class="tab-pane fade {% if active_tab == 'pendente' %}show active{% endif %}" id="pane-pendente" role="tabpanel">
-            {% with recebimentos=tab_data.pendente.recebimentos page_obj=tab_data.pendente.page_obj %}
-                {% include 'compras/recebimento_list_table.html' %}
-            {% endwith %}
+    <div class="card shadow-sm border-0 rounded-4">
+      <div class="card-body p-0">
+        <div class="tab-content">
+            <div class="tab-pane fade {% if active_tab == 'pendente' %}show active{% endif %}" id="pane-pendente" role="tabpanel">
+                {% with recebimentos=tab_data.pendente.recebimentos page_obj=tab_data.pendente.page_obj %}
+                    {% include 'compras/recebimento_list_table.html' %}
+                {% endwith %}
+            </div>
+            <div class="tab-pane fade {% if active_tab == 'conferido' %}show active{% endif %}" id="pane-conferido" role="tabpanel">
+                {% with recebimentos=tab_data.conferido.recebimentos page_obj=tab_data.conferido.page_obj %}
+                    {% include 'compras/recebimento_list_table.html' %}
+                {% endwith %}
+            </div>
+            <div class="tab-pane fade {% if active_tab == 'divergente' %}show active{% endif %}" id="pane-divergente" role="tabpanel">
+                {% with recebimentos=tab_data.divergente.recebimentos page_obj=tab_data.divergente.page_obj %}
+                    {% include 'compras/recebimento_list_table.html' %}
+                {% endwith %}
+            </div>
+            <div class="tab-pane fade {% if active_tab == 'finalizado' %}show active{% endif %}" id="pane-finalizado" role="tabpanel">
+                {% with recebimentos=tab_data.finalizado.recebimentos page_obj=tab_data.finalizado.page_obj %}
+                    {% include 'compras/recebimento_list_table.html' %}
+                {% endwith %}
+            </div>
+            <div class="tab-pane fade {% if active_tab == 'cancelado' %}show active{% endif %}" id="pane-cancelado" role="tabpanel">
+                {% with recebimentos=tab_data.cancelado.recebimentos page_obj=tab_data.cancelado.page_obj %}
+                    {% include 'compras/recebimento_list_table.html' %}
+                {% endwith %}
+            </div>
         </div>
-        <div class="tab-pane fade {% if active_tab == 'conferido' %}show active{% endif %}" id="pane-conferido" role="tabpanel">
-            {% with recebimentos=tab_data.conferido.recebimentos page_obj=tab_data.conferido.page_obj %}
-                {% include 'compras/recebimento_list_table.html' %}
-            {% endwith %}
-        </div>
-        <div class="tab-pane fade {% if active_tab == 'divergente' %}show active{% endif %}" id="pane-divergente" role="tabpanel">
-            {% with recebimentos=tab_data.divergente.recebimentos page_obj=tab_data.divergente.page_obj %}
-                {% include 'compras/recebimento_list_table.html' %}
-            {% endwith %}
-        </div>
-        <div class="tab-pane fade {% if active_tab == 'finalizado' %}show active{% endif %}" id="pane-finalizado" role="tabpanel">
-            {% with recebimentos=tab_data.finalizado.recebimentos page_obj=tab_data.finalizado.page_obj %}
-                {% include 'compras/recebimento_list_table.html' %}
-            {% endwith %}
-        </div>
-        <div class="tab-pane fade {% if active_tab == 'cancelado' %}show active{% endif %}" id="pane-cancelado" role="tabpanel">
-            {% with recebimentos=tab_data.cancelado.recebimentos page_obj=tab_data.cancelado.page_obj %}
-                {% include 'compras/recebimento_list_table.html' %}
-            {% endwith %}
-        </div>
-    </div>
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <input type="hidden" name="tab" value="{{ active_tab }}">
-                <div class="col-md-3">
-                    <label class="form-label">Fornecedor</label>
-                    <select name="fornecedor" class="form-select">
-                        <option value="">Todos</option>
-                        {% for fornecedor in fornecedores %}
-                        <option value="{{ fornecedor.pk }}" {% if request.GET.fornecedor == fornecedor.pk|stringformat:'s' %}selected{% endif %}>{{ fornecedor.get_nome_exibicao_com_documento }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Nota Fiscal</label>
-                    <input type="text" name="nota_fiscal" class="form-control" value="{{ request.GET.nota_fiscal }}" placeholder="Número da NF">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">&nbsp;</label>
-                    <div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search me-2"></i>Filtrar
-                        </button>
-                        <a href="{% url 'compras:recebimento_list' %}?tab={{ active_tab }}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle me-2"></i>Limpar
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
+      </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

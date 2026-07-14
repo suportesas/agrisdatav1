@@ -5,129 +5,172 @@
 
 {% block extra_css %}
 <style>
-  .filter-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    margin-bottom: 1.5rem;
-  }
-  .safra-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.25rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    margin-bottom: 1rem;
-    border-left: 4px solid #198754; /* green */
-  }
-  .safra-card:hover { transform: translateY(-3px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
   .badge-status { padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
   .badge-planejada { background: #d1e7dd; color: #0f5132; }
   .badge-andamento { background: #cfe2ff; color: #084298; }
   .badge-finalizada { background: #e2e3e5; color: #41464b; }
-  .empty-state { text-align:center; padding:3rem; color:#6c757d; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container py-4">
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-calendar3 text-success"></i> Safras</h2>
-      <p class="text-muted mb-0">Planeje e acompanhe safras por fazenda e cultura</p>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-calendar3"></i></span>
+      <div>
+        <h2>Safras</h2>
+        <p class="text-muted mb-0">Planeje e acompanhe safras por fazenda e cultura</p>
+      </div>
     </div>
-    <a href="{% url 'cadastros:safra_create' %}" class="btn btn-success">
-      <i class="bi bi-plus-circle"></i> Nova Safra
-    </a>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.q or request.GET.fazenda or request.GET.cultura or request.GET.ano or request.GET.status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.q or request.GET.fazenda or request.GET.cultura or request.GET.ano or request.GET.status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'cadastros:safra_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nova Safra
+      </a>
+    </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="filter-card">
-    <form method="get" id="filterForm">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold"><i class="bi bi-search"></i> Pesquisar</label>
-          <input type="text" name="q" class="form-control" placeholder="Nome, ano ou fazenda" value="{{ request.GET.q }}">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Fazenda</label>
-          <select name="fazenda" class="form-select">
-            <option value="">Todas Fazendas</option>
-            {% for f in fazendas %}<option value="{{ f.pk }}" {% if request.GET.fazenda == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Cultura</label>
-          <select name="cultura" class="form-select">
-            <option value="">Todas Culturas</option>
-            {% for c in culturas %}<option value="{{ c.pk }}" {% if request.GET.cultura == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-1">
-          <label class="form-label fw-semibold">Ano</label>
-          <input type="number" name="ano" class="form-control" placeholder="Ano" value="{{ request.GET.ano }}">
-        </div>
-        <div class="col-md-2">
-          <label class="form-label fw-semibold">Status</label>
-          <select name="status" class="form-select">
-            <option value="">Todos</option>
-            <option value="PLANEJADA" {% if request.GET.status == 'PLANEJADA' %}selected{% endif %}>Planejada</option>
-            <option value="EM_ANDAMENTO" {% if request.GET.status == 'EM_ANDAMENTO' %}selected{% endif %}>Em Andamento</option>
-            <option value="FINALIZADA" {% if request.GET.status == 'FINALIZADA' %}selected{% endif %}>Finalizada</option>
-          </select>
-        </div>
-        <div class="col-md-1 d-flex align-items-end">
-          <button class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
-        </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.fazenda or request.GET.cultura or request.GET.ano or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field" style="min-width:220px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" class="form-control" placeholder="Nome, ano ou fazenda" value="{{ request.GET.q }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Fazenda</label>
+        <select name="fazenda" class="form-select">
+          <option value="">Todas Fazendas</option>
+          {% for f in fazendas %}<option value="{{ f.pk }}" {% if request.GET.fazenda == f.pk|stringformat:'s' %}selected{% endif %}>{{ f.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Cultura</label>
+        <select name="cultura" class="form-select">
+          <option value="">Todas Culturas</option>
+          {% for c in culturas %}<option value="{{ c.pk }}" {% if request.GET.cultura == c.pk|stringformat:'s' %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="filter-field" style="max-width:120px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Ano</label>
+        <input type="number" name="ano" class="form-control" placeholder="Ano" value="{{ request.GET.ano }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          <option value="PLANEJADA" {% if request.GET.status == 'PLANEJADA' %}selected{% endif %}>Planejada</option>
+          <option value="EM_ANDAMENTO" {% if request.GET.status == 'EM_ANDAMENTO' %}selected{% endif %}>Em Andamento</option>
+          <option value="FINALIZADA" {% if request.GET.status == 'FINALIZADA' %}selected{% endif %}>Finalizada</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
       </div>
     </form>
   </div>
 
-  <!-- Lista de Safras -->
-  <div id="safrasList">
-    {% if safras %}
-      <div class="row">
-        {% for s in safras %}
-          <div class="col-12">
-            <div class="safra-card">
-              <div class="row align-items-center">
-                <div class="col-md-6">
-                  <h5 class="mb-1 fw-bold"><i class="bi bi-calendar-event text-success"></i> <a href="{% url 'cadastros:safra_detail' s.pk %}">{{ s }}</a></h5>
-                  <p class="text-muted mb-1 small"><strong>Fazenda:</strong> {{ s.fazenda.nome }} • <strong>Cultura:</strong> {{ s.cultura.nome }}</p>
-                  <p class="text-muted small">Ano: <strong>{{ s.ano }}</strong> • Talhões: <strong>{{ s.talhoes.count }}</strong></p>
-                </div>
-                <div class="col-md-3 text-center">
-                  {% if s.status == 'PLANEJADA' %}
-                    <span class="badge-status badge-planejada">{{ s.get_status_display }}</span>
-                  {% elif s.status == 'EM_ANDAMENTO' %}
-                    <span class="badge-status badge-andamento">{{ s.get_status_display }}</span>
-                  {% else %}
-                    <span class="badge-status badge-finalizada">{{ s.get_status_display }}</span>
-                  {% endif %}
-                </div>
-                <div class="col-md-3 text-end">
-                  <a href="{% url 'cadastros:safra_update' s.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                  <a href="{% url 'cadastros:safra_delete' s.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                </div>
-              </div>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <div class="empty-state">
-        <i class="bi bi-calendar3"></i>
-        <h4>Nenhuma safra encontrada</h4>
-        <p class="text-muted">Crie uma nova safra para começar a planejar suas operações.</p>
-        <a href="{% url 'cadastros:safra_create' %}" class="btn btn-success">Nova Safra</a>
-      </div>
-    {% endif %}
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> safra{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
   </div>
 
-  <!-- Paginação -->
-  {% include 'partials/pagination.html' with page_obj=page_obj %}
+  <!-- Tabela de Safras -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Safra</th>
+              <th>Fazenda</th>
+              <th>Cultura</th>
+              <th class="text-center">Ano</th>
+              <th class="text-center">Talhões</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in safras %}
+            <tr>
+              <td class="ps-4">
+                <i class="bi bi-calendar-event text-success"></i>
+                <a href="{% url 'cadastros:safra_detail' s.pk %}" class="text-decoration-none"><strong>{{ s }}</strong></a>
+              </td>
+              <td>{{ s.fazenda.nome }}</td>
+              <td>{{ s.cultura.nome }}</td>
+              <td class="text-center">{{ s.ano }}</td>
+              <td class="text-center">
+                <span class="badge bg-info">{{ s.talhoes.count }}</span>
+              </td>
+              <td class="text-center">
+                {% if s.status == 'PLANEJADA' %}
+                  <span class="badge-status badge-planejada">{{ s.get_status_display }}</span>
+                {% elif s.status == 'EM_ANDAMENTO' %}
+                  <span class="badge-status badge-andamento">{{ s.get_status_display }}</span>
+                {% else %}
+                  <span class="badge-status badge-finalizada">{{ s.get_status_display }}</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon" href="{% url 'cadastros:safra_detail' s.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <a class="action-icon edit" href="{% url 'cadastros:safra_update' s.pk %}" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="action-icon danger" href="{% url 'cadastros:safra_delete' s.pk %}" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-calendar3 display-4 d-block mb-3"></i>
+                <p class="mb-0">Nenhuma safra encontrada</p>
+                <a href="{% url 'cadastros:safra_create' %}" class="btn btn-success mt-3">
+                  <i class="bi bi-plus-circle"></i> Nova Safra
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
 
 </div>
 {% endblock %}

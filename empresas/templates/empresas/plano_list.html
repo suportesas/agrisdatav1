@@ -5,158 +5,116 @@
 {% block page_title %}Gestão de Planos{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold text-secondary">📦 Planos do Sistema</h4>
-    <div class="d-flex gap-2">
-      <a href="{% url 'empresas:inicializar_planos' %}" class="btn btn-outline-primary">
-        <i class="bi bi-arrow-clockwise"></i> Inicializar Planos Padrão
-      </a>
-      <a href="{% url 'empresas:plano_create' %}" class="btn btn-success">
-        <i class="bi bi-plus-circle"></i> Novo Plano
-      </a>
-    </div>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-box-seam"></i></span>
+          <h2>Planos do Sistema</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <a href="{% url 'empresas:inicializar_planos' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-clockwise"></i> Inicializar Planos Padrão
+          </a>
+          <a href="{% url 'empresas:plano_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Novo Plano
+          </a>
+      </div>
   </div>
 
-  <div class="row g-4">
-    {% for plano in planos %}
-    <div class="col-md-4">
-      <div class="card shadow-sm h-100 border-0 rounded-4 position-relative overflow-hidden">
-        <!-- Badge Ordem -->
-        <div class="position-absolute top-0 end-0 m-2">
-          <span class="badge bg-secondary">#{{ plano.ordem }}</span>
-        </div>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if planos.paginator %}
+        Exibindo <strong>{{ planos.start_index }}–{{ planos.end_index }}</strong>
+        de <strong>{{ planos.paginator.count }}</strong> plano{{ planos.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
 
-        <!-- Header do Card -->
-        <div class="card-header text-white text-center py-4" 
-             style="background: linear-gradient(135deg, 
-             {% if plano.codigo == 'PEQUENO' %}#48c774, #00d1b2
-             {% elif plano.codigo == 'MEDIO' %}#3e8ed0, #00b4d8
-             {% else %}#ff6b6b, #ee5a6f{% endif %});">
-          <div style="font-size: 3rem;">{{ plano.icone }}</div>
-          <h4 class="fw-bold mb-0">{{ plano.nome }}</h4>
-        </div>
-        
-        <div class="card-body p-4">
-          <!-- Preço -->
-          <div class="text-center mb-4 pb-3 border-bottom">
-            <h2 class="fw-bold text-primary mb-0">
-              R$ {{ plano.valor_mensal|floatformat:2 }}
-              <small class="text-muted fs-6">/mês</small>
-            </h2>
-            {% if plano.valor_anual %}
-            <p class="text-success mb-0 mt-2">
-              <small>
-                <strong>R$ {{ plano.valor_anual|floatformat:2 }}/ano</strong>
-                <br>
-                <span class="badge bg-success">
-                  Economize {{ plano.desconto_anual|floatformat:0 }}%
-                </span>
-              </small>
-            </p>
-            {% endif %}
-          </div>
-
-          <!-- Limites -->
-          <h6 class="text-secondary fw-bold mb-3">Limites Inclusos:</h6>
-          <ul class="list-unstyled mb-3">
-            <li class="mb-2">
-              <i class="bi bi-check-circle-fill text-success me-2"></i>
-              <strong>{{ plano.limite_fazendas }}</strong> 
-              {% if plano.limite_fazendas >= 999 %}
-                Fazendas ilimitadas
-              {% else %}
-                Fazenda{{ plano.limite_fazendas|pluralize }}
-              {% endif %}
-            </li>
-            <li class="mb-2">
-              <i class="bi bi-check-circle-fill text-success me-2"></i>
-              <strong>{{ plano.limite_usuarios }}</strong> 
-              {% if plano.limite_usuarios >= 999 %}
-                Usuários ilimitados
-              {% else %}
-                Usuário{{ plano.limite_usuarios|pluralize }}
-              {% endif %}
-            </li>
-            <li class="mb-2">
-              <i class="bi bi-check-circle-fill text-success me-2"></i>
-              <strong>{{ plano.limite_talhoes }}</strong> 
-              {% if plano.limite_talhoes >= 999 %}
-                Talhões ilimitados
-              {% else %}
-                Talhõ{{ plano.limite_talhoes|pluralize:"ão,ões" }}
-              {% endif %}
-            </li>
-            <li class="mb-2">
-              <i class="bi bi-check-circle-fill text-success me-2"></i>
-              <strong>{{ plano.limite_produtos }}</strong> 
-              {% if plano.limite_produtos >= 999 %}
-                Produtos ilimitados
-              {% else %}
-                Produto{{ plano.limite_produtos|pluralize }}
-              {% endif %}
-            </li>
-          </ul>
-
-          <!-- Funcionalidades -->
-          <h6 class="text-secondary fw-bold mb-3 border-top pt-3">Recursos:</h6>
-          <ul class="list-unstyled">
-            {% if plano.acesso_relatorios_avancados %}
-            <li class="mb-2">
-              <i class="bi bi-star-fill text-warning me-2"></i> Relatórios Avançados
-            </li>
-            {% endif %}
-            {% if plano.acesso_api %}
-            <li class="mb-2">
-              <i class="bi bi-plug-fill text-info me-2"></i> Acesso à API
-            </li>
-            {% endif %}
-            {% if plano.acesso_app_mobile %}
-            <li class="mb-2">
-              <i class="bi bi-phone-fill text-primary me-2"></i> App Mobile
-            </li>
-            {% endif %}
-            {% if plano.acesso_suporte_prioritario %}
-            <li class="mb-2">
-              <i class="bi bi-headset text-success me-2"></i> Suporte Prioritário
-            </li>
-            {% endif %}
-          </ul>
-
-          {% if plano.descricao %}
-          <div class="alert alert-light mt-3 mb-0">
-            <small>{{ plano.descricao }}</small>
-          </div>
-          {% endif %}
-        </div>
-
-        <!-- Footer com ações -->
-        <div class="card-footer bg-transparent border-0 text-center pb-3">
-          <div class="d-flex gap-2 justify-content-center">
-            <a href="{% url 'empresas:plano_update' plano.pk %}" 
-               class="btn btn-sm btn-outline-primary flex-fill">
-              <i class="bi bi-pencil"></i> Editar
-            </a>
-            <a href="{% url 'empresas:plano_delete' plano.pk %}" 
-               class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-trash"></i>
-            </a>
-          </div>
-        </div>
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Ordem</th>
+              <th>Plano</th>
+              <th class="text-end">Mensal</th>
+              <th class="text-end">Anual</th>
+              <th>Limites</th>
+              <th>Recursos</th>
+              <th class="text-center">Empresas ativas</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for plano in planos %}
+            <tr>
+              <td class="ps-4"><span class="badge bg-secondary">#{{ plano.ordem }}</span></td>
+              <td>
+                <span style="font-size:1.2rem">{{ plano.icone }}</span>
+                <strong>{{ plano.nome }}</strong>
+                {% if plano.descricao %}<div class="text-muted small">{{ plano.descricao }}</div>{% endif %}
+              </td>
+              <td class="text-end text-mono">R$ {{ plano.valor_mensal|floatformat:2 }}</td>
+              <td class="text-end text-mono">
+                {% if plano.valor_anual %}
+                  R$ {{ plano.valor_anual|floatformat:2 }}
+                  {% if plano.desconto_anual %}<div class="text-success small">-{{ plano.desconto_anual|floatformat:0 }}%</div>{% endif %}
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                <div class="small">
+                  {{ plano.limite_fazendas }} fazenda{{ plano.limite_fazendas|pluralize }} ·
+                  {{ plano.limite_usuarios }} usuário{{ plano.limite_usuarios|pluralize }} ·
+                  {{ plano.limite_talhoes }} talhõ{{ plano.limite_talhoes|pluralize:"ão,ões" }} ·
+                  {{ plano.limite_produtos }} produto{{ plano.limite_produtos|pluralize }}
+                </div>
+              </td>
+              <td>
+                <div class="d-flex flex-wrap gap-1">
+                  {% if plano.acesso_relatorios_avancados %}<span class="badge bg-warning text-dark"><i class="bi bi-star-fill"></i> Relatórios</span>{% endif %}
+                  {% if plano.acesso_api %}<span class="badge bg-info text-dark"><i class="bi bi-plug-fill"></i> API</span>{% endif %}
+                  {% if plano.acesso_app_mobile %}<span class="badge bg-primary"><i class="bi bi-phone-fill"></i> Mobile</span>{% endif %}
+                  {% if plano.acesso_suporte_prioritario %}<span class="badge bg-success"><i class="bi bi-headset"></i> Suporte</span>{% endif %}
+                </div>
+              </td>
+              <td class="text-center text-mono">{{ plano.total_empresas_ativas }}</td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon edit" href="{% url 'empresas:plano_update' plano.pk %}" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a class="action-icon danger" href="{% url 'empresas:plano_delete' plano.pk %}" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum plano cadastrado
+                <div class="mt-3">
+                  <a href="{% url 'empresas:inicializar_planos' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Criar Planos Padrão
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-    {% empty %}
-    <div class="col-12">
-      <div class="alert alert-warning shadow-sm rounded-4 text-center p-4">
-        <i class="bi bi-exclamation-triangle fs-1"></i>
-        <h5 class="mt-3">Nenhum plano cadastrado</h5>
-        <p class="mb-3">Crie os planos padrão do sistema para começar.</p>
-        <a href="{% url 'empresas:inicializar_planos' %}" class="btn btn-primary">
-          <i class="bi bi-plus-circle"></i> Criar Planos Padrão
-        </a>
-      </div>
+    {% if planos.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=planos %}
     </div>
-    {% endfor %}
+    {% endif %}
   </div>
 </div>
 {% endblock %}

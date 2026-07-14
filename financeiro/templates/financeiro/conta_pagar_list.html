@@ -5,52 +5,72 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1><i class="bi bi-list-check"></i> Contas a Pagar</h1>
-                    <p class="text-muted">{{ request.user.empresa.nome }}</p>
-                </div>
-                <a href="{% url 'financeiro:conta_pagar_create' %}" class="btn btn-primary">
-                    <i class="bi bi-plus-circle"></i> Nova Conta
-                </a>
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-list-check"></i></span>
+            <div>
+                <h2>Contas a Pagar</h2>
+                <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
             </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if status_filter or fornecedor_filter or data_ini or data_fim %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if status_filter or fornecedor_filter or data_ini or data_fim %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
+            <a href="{% url 'financeiro:conta_pagar_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nova Conta
+            </a>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Total</h5>
-                    <h2>{{ stats.total }}</h2>
-                </div>
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-list-ul"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Total</div>
+              <div class="stat-value">{{ stats.total }}</div>
             </div>
+          </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Abertas</h5>
-                    <h2 class="text-warning">{{ stats.abertas }}</h2>
-                </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Abertas</div>
+              <div class="stat-value">{{ stats.abertas }}</div>
             </div>
+          </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Aprovadas</h5>
-                    <h2 class="text-info">{{ stats.aprovadas }}</h2>
-                </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-check2-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Aprovadas</div>
+              <div class="stat-value">{{ stats.aprovadas }}</div>
             </div>
+          </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body text-center">
-                    <h5 class="card-title">Pagas</h5>
-                    <h2 class="text-success">{{ stats.pagas }}</h2>
-                </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Pagas</div>
+              <div class="stat-value">{{ stats.pagas }}</div>
             </div>
+          </div>
         </div>
     </div>
 
@@ -124,69 +144,77 @@
     </div>
     {% endif %}
 
-    {# ── filtros avançados ── #}
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <input type="hidden" name="periodo" value="{{ periodo }}">
+    {# ── filtros avançados (colapsável) ── #}
+    <div class="collapse {% if status_filter or fornecedor_filter or data_ini or data_fim %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <input type="hidden" name="periodo" value="{{ periodo }}">
 
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="ABERTA"    {% if status_filter == 'ABERTA' %}selected{% endif %}>Aberta</option>
-                        <option value="APROVADA"  {% if status_filter == 'APROVADA' %}selected{% endif %}>Aprovada</option>
-                        <option value="PAGA"      {% if status_filter == 'PAGA' %}selected{% endif %}>Paga</option>
-                        <option value="CANCELADA" {% if status_filter == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
-                    </select>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Fornecedor</label>
-                    <input type="text" name="fornecedor" class="form-control"
-                           placeholder="Nome do fornecedor" value="{{ fornecedor_filter }}">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Emissão — de</label>
-                    <input type="date" name="data_ini" class="form-control" value="{{ data_ini }}">
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">até</label>
-                    <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
-                </div>
-
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-search"></i> Filtrar
-                    </button>
-                    <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-counterclockwise"></i> Limpar
-                    </a>
-                </div>
-            </form>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+          <select name="status" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="ABERTA"    {% if status_filter == 'ABERTA' %}selected{% endif %}>Aberta</option>
+              <option value="APROVADA"  {% if status_filter == 'APROVADA' %}selected{% endif %}>Aprovada</option>
+              <option value="PAGA"      {% if status_filter == 'PAGA' %}selected{% endif %}>Paga</option>
+              <option value="CANCELADA" {% if status_filter == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+          </select>
         </div>
+
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Fornecedor</label>
+          <input type="text" name="fornecedor" class="form-control"
+                 placeholder="Nome do fornecedor" value="{{ fornecedor_filter }}">
+        </div>
+
+        <div class="filter-field" style="max-width:160px;">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Emissão — de</label>
+          <input type="date" name="data_ini" class="form-control" value="{{ data_ini }}">
+        </div>
+
+        <div class="filter-field" style="max-width:160px;">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">até</label>
+          <input type="date" name="data_fim" class="form-control" value="{{ data_fim }}">
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-counterclockwise"></i> Limpar
+            </a>
+        </div>
+      </form>
     </div>
 
-    <div class="card">
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if page_obj.paginator %}
+          Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+          de <strong>{{ page_obj.paginator.count }}</strong> conta{{ page_obj.paginator.count|pluralize }}
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
                     <tr>
-                        <th>Número</th>
+                        <th class="ps-4">Número</th>
                         <th>Fornecedor</th>
                         <th>Valor</th>
                         <th>Data Emissão</th>
                         <th>Parcelas</th>
-                        <th>Status</th>
+                        <th class="text-center">Status</th>
                         <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for conta in contas %}
                     <tr>
-                        <td><strong>{{ conta.numero }}</strong></td>
+                        <td class="ps-4"><strong>{{ conta.numero }}</strong></td>
                         <td>{{ conta.fornecedor.nome }}</td>
                         <td class="text-mono">R$ {{ conta.valor_total|floatformat:2 }}</td>
                         <td class="text-mono">{{ conta.data_emissao|date:'d/m/Y' }}</td>
@@ -198,36 +226,40 @@
                             <span class="text-muted">Sem parcelas</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-center">
                             <span class="badge bg-{% if conta.status == 'PAGA' %}success{% elif conta.status == 'ABERTA' %}warning{% elif conta.status == 'APROVADA' %}info{% else %}secondary{% endif %}">
                                 {{ conta.get_status_display }}
                             </span>
                         </td>
                         <td class="text-center">
-                            <a href="{% url 'financeiro:conta_pagar_detail' conta.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i> Ver
-                            </a>
-                            {% if conta.status == 'ABERTA' %}
-                            <a href="{% url 'financeiro:conta_pagar_edit' conta.id %}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            {% endif %}
+                            <div class="d-flex gap-3 justify-content-center">
+                                <a class="action-icon" href="{% url 'financeiro:conta_pagar_detail' conta.id %}" title="Ver detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if conta.status == 'ABERTA' %}
+                                <a class="action-icon edit" href="{% url 'financeiro:conta_pagar_edit' conta.id %}" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox"></i> Nenhuma conta encontrada
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                            Nenhuma conta encontrada
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-
-    <div class="mt-4">
-        {% include 'partials/pagination.html' with page_obj=page_obj %}
+        {% if page_obj.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=page_obj %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

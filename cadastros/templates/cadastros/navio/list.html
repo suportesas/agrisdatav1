@@ -5,90 +5,111 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-sailboat"></i> Navios
-            </h1>
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-water"></i></span>
+            <h2>Navios</h2>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:navio_create' %}" class="btn btn-primary">
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if request.GET.search or request.GET.tipo or request.GET.status or request.GET.ativo %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if request.GET.search or request.GET.tipo or request.GET.status or request.GET.ativo %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
+            <a href="{% url 'cadastros:navio_create' %}" class="btn btn-success">
                 <i class="bi bi-plus-circle"></i> Novo Navio
             </a>
         </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar (Nome ou CÃ³digo)</label>
-                    <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Digite para buscar...">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Tipo</label>
-                    <select name="tipo" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="CONTAINER" {% if request.GET.tipo == 'CONTAINER' %}selected{% endif %}>Container</option>
-                        <option value="REEFER" {% if request.GET.tipo == 'REEFER' %}selected{% endif %}>Reefer</option>
-                        <option value="BREAKBULK" {% if request.GET.tipo == 'BREAKBULK' %}selected{% endif %}>Breakbulk</option>
-                        <option value="MULTIPURPOSE" {% if request.GET.tipo == 'MULTIPURPOSE' %}selected{% endif %}>Multipurpose</option>
-                        <option value="GENERAL" {% if request.GET.tipo == 'GENERAL' %}selected{% endif %}>General</option>
-                        <option value="TANKER" {% if request.GET.tipo == 'TANKER' %}selected{% endif %}>Tanker</option>
-                        <option value="RORO" {% if request.GET.tipo == 'RORO' %}selected{% endif %}>RoRo</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="ATIVO" {% if request.GET.status == 'ATIVO' %}selected{% endif %}>Ativo</option>
-                        <option value="INATIVO" {% if request.GET.status == 'INATIVO' %}selected{% endif %}>Inativo</option>
-                        <option value="MANUTENCAO" {% if request.GET.status == 'MANUTENCAO' %}selected{% endif %}>ManutenÃ§Ã£o</option>
-                        <option value="DESCARTE" {% if request.GET.status == 'DESCARTE' %}selected{% endif %}>Descarte</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Ativo</label>
-                    <select name="ativo" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Sim</option>
-                        <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>NÃ£o</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-outline-primary w-100">
-                        <i class="bi bi-search"></i> Filtrar
-                    </button>
-                    <a href="{% url 'cadastros:navio_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x"></i>
-                    </a>
-                </div>
-            </form>
+    <!-- Filtros (colapsável) -->
+    <div class="collapse {% if request.GET.search or request.GET.tipo or request.GET.status or request.GET.ativo %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <div class="filter-field" style="min-width:220px;">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+          <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Nome ou código...">
         </div>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo</label>
+          <select name="tipo" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="CONTAINER" {% if request.GET.tipo == 'CONTAINER' %}selected{% endif %}>Container</option>
+              <option value="REEFER" {% if request.GET.tipo == 'REEFER' %}selected{% endif %}>Reefer</option>
+              <option value="BREAKBULK" {% if request.GET.tipo == 'BREAKBULK' %}selected{% endif %}>Breakbulk</option>
+              <option value="MULTIPURPOSE" {% if request.GET.tipo == 'MULTIPURPOSE' %}selected{% endif %}>Multipurpose</option>
+              <option value="GENERAL" {% if request.GET.tipo == 'GENERAL' %}selected{% endif %}>General</option>
+              <option value="TANKER" {% if request.GET.tipo == 'TANKER' %}selected{% endif %}>Tanker</option>
+              <option value="RORO" {% if request.GET.tipo == 'RORO' %}selected{% endif %}>RoRo</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+          <select name="status" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="ATIVO" {% if request.GET.status == 'ATIVO' %}selected{% endif %}>Ativo</option>
+              <option value="INATIVO" {% if request.GET.status == 'INATIVO' %}selected{% endif %}>Inativo</option>
+              <option value="MANUTENCAO" {% if request.GET.status == 'MANUTENCAO' %}selected{% endif %}>Manutenção</option>
+              <option value="DESCARTE" {% if request.GET.status == 'DESCARTE' %}selected{% endif %}>Descarte</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Ativo</label>
+          <select name="ativo" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Sim</option>
+              <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>Não</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'cadastros:navio_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if page_obj.paginator %}
+          Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+          de <strong>{{ page_obj.paginator.count }}</strong> navio{{ page_obj.paginator.count|pluralize }}
+        {% endif %}
+      </span>
     </div>
 
     <!-- Tabela -->
     {% if navios %}
-    <div class="card">
+    <div class="card shadow-sm border-0 rounded-4">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
                     <tr>
-                        <th>CÃ³digo</th>
+                        <th class="ps-4">Código</th>
                         <th>Nome</th>
                         <th>Tipo</th>
                         <th>Capacidade</th>
                         <th>Armador</th>
                         <th>Status</th>
-                        <th class="text-center">AÃ§Ãµes</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for navio in navios %}
                     <tr>
-                        <td>
+                        <td class="ps-4">
                             <span class="badge bg-info">{{ navio.codigo }}</span>
                         </td>
                         <td>{{ navio.nome }}</td>
@@ -117,20 +138,20 @@
                             {% elif navio.status == 'INATIVO' %}
                             <span class="badge bg-danger">Inativo</span>
                             {% elif navio.status == 'MANUTENCAO' %}
-                            <span class="badge bg-warning">ManutenÃ§Ã£o</span>
+                            <span class="badge bg-warning">Manutenção</span>
                             {% else %}
                             <span class="badge bg-dark">Descarte</span>
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{% url 'cadastros:navio_detail' navio.id %}" class="btn btn-outline-primary" title="Ver">
+                            <div class="d-flex gap-3 justify-content-center">
+                                <a class="action-icon" href="{% url 'cadastros:navio_detail' navio.id %}" title="Ver detalhes">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'cadastros:navio_update' navio.id %}" class="btn btn-outline-warning" title="Editar">
+                                <a class="action-icon edit" href="{% url 'cadastros:navio_update' navio.id %}" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'cadastros:navio_delete' navio.id %}" class="btn btn-outline-danger" title="Deletar">
+                                <a class="action-icon danger" href="{% url 'cadastros:navio_delete' navio.id %}" title="Excluir">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </div>
@@ -140,10 +161,12 @@
                 </tbody>
             </table>
         </div>
+        {% if page_obj.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=page_obj %}
+        </div>
+        {% endif %}
     </div>
-
-    <!-- PaginaÃ§Ã£o -->
-    {% include 'partials/pagination.html' with page_obj=page_obj %}
 
     {% else %}
     <div class="alert alert-info" role="alert">

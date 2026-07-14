@@ -15,86 +15,101 @@
 <div class="container-fluid mt-4">
   <div class="row">
     <div class="col-lg-12">
-      
-      <!-- Header com Estatísticas -->
-      <div class="row mb-4">
+
+      <!-- Cabeçalho -->
+      <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon orange"><i class="bi bi-diagram-3"></i></span>
+          <h2>Estágios de Desenvolvimento</h2>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.praga or request.GET.tipo %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+            <i class="bi bi-funnel"></i> Filtros
+            {% if request.GET.praga or request.GET.tipo %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                ●<span class="visually-hidden">filtro ativo</span>
+              </span>
+            {% endif %}
+          </button>
+          <a href="{% url 'mip:estagio_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Novo Estágio
+          </a>
+        </div>
+      </div>
+
+      <!-- Estatísticas -->
+      <div class="row g-3 mb-4">
         <div class="col-md-4">
-          <div class="card shadow-sm border-0 rounded-4 bg-primary text-white">
-            <div class="card-body">
-              <p class="mb-1"><small>TOTAL DE ESTÁGIOS</small></p>
-              <h3 class="mb-0">{{ estagios|length }}</h3>
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-diagram-3"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Total de Estágios</div>
+              <div class="stat-value">{{ estagios|length }}</div>
             </div>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card shadow-sm border-0 rounded-4 bg-success text-white">
-            <div class="card-body">
-              <p class="mb-1"><small>FASES CRÍTICAS</small></p>
-              <h3 class="mb-0">{{ fases_criticas }}</h3>
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-red mb-0"><i class="bi bi-exclamation-triangle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Fases Críticas</div>
+              <div class="stat-value">{{ fases_criticas }}</div>
             </div>
           </div>
         </div>
         <div class="col-md-4">
-          <div class="card shadow-sm border-0 rounded-4 bg-info text-white">
-            <div class="card-body">
-              <p class="mb-1"><small>PRAGAS MONITORADAS</small></p>
-              <h3 class="mb-0">{{ pragas_count }}</h3>
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-bug"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Pragas Monitoradas</div>
+              <div class="stat-value">{{ pragas_count }}</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Botão Novo Estágio -->
-      <div class="mb-4">
-        <a href="{% url 'mip:estagio_create' %}" class="btn btn-success btn-lg">
-          <i class="bi bi-plus-circle"></i> Novo Estágio
-        </a>
-      </div>
-
-      <!-- Filtros -->
-      <div class="card shadow-sm border-0 rounded-4 mb-4">
-        <div class="card-header bg-light">
-          <h6 class="mb-0"><i class="bi bi-funnel"></i> Filtros</h6>
-        </div>
-        <div class="card-body">
-          <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-4">
-              <label for="praga_filter" class="form-label">Praga</label>
-              <select class="form-select" id="praga_filter" name="praga">
-                <option value="">Todas as pragas</option>
-                {% for praga in pragas %}
-                  <option value="{{ praga.id }}" {% if request.GET.praga == praga.id|stringformat:"s" %}selected{% endif %}>
-                    {{ praga.nome_comum }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label for="tipo_filter" class="form-label">Tipo de Estágio</label>
-              <select class="form-select" id="tipo_filter" name="tipo">
-                <option value="">Todos os tipos</option>
-                <option value="OVO" {% if request.GET.tipo == 'OVO' %}selected{% endif %}>Ovo</option>
-                <option value="NINFA" {% if request.GET.tipo == 'NINFA' %}selected{% endif %}>Ninfa</option>
-                <option value="LARVA" {% if request.GET.tipo == 'LARVA' %}selected{% endif %}>Larva</option>
-                <option value="PUPA" {% if request.GET.tipo == 'PUPA' %}selected{% endif %}>Pupa</option>
-                <option value="ADULTO" {% if request.GET.tipo == 'ADULTO' %}selected{% endif %}>Adulto</option>
-                <option value="ESPORO" {% if request.GET.tipo == 'ESPORO' %}selected{% endif %}>Esporo</option>
-                <option value="LESAO" {% if request.GET.tipo == 'LESAO' %}selected{% endif %}>Lesão</option>
-                <option value="OUTRO" {% if request.GET.tipo == 'OUTRO' %}selected{% endif %}>Outro</option>
-              </select>
-            </div>
-            <div class="col-md-2">
-              <button type="submit" class="btn btn-primary w-100">
-                <i class="bi bi-search"></i> Filtrar
-              </button>
-            </div>
-            <div class="col-md-2">
-              <a href="{% url 'mip:estagio_list' %}" class="btn btn-outline-secondary w-100">
-                <i class="bi bi-arrow-clockwise"></i> Limpar
-              </a>
-            </div>
-          </form>
-        </div>
+      <!-- Filtros (colapsável) -->
+      <div class="collapse {% if request.GET.praga or request.GET.tipo %}show{% endif %} mb-4" id="filterCollapse">
+        <form method="get" id="filterForm" class="filter-bar">
+          <div class="filter-field">
+            <label class="form-label form-label-sm mb-0 fw-semibold small">Praga</label>
+            <select class="form-select" id="praga_filter" name="praga">
+              <option value="">Todas as pragas</option>
+              {% for praga in pragas %}
+                <option value="{{ praga.id }}" {% if request.GET.praga == praga.id|stringformat:"s" %}selected{% endif %}>
+                  {{ praga.nome_comum }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="filter-field">
+            <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo de Estágio</label>
+            <select class="form-select" id="tipo_filter" name="tipo">
+              <option value="">Todos os tipos</option>
+              <option value="OVO" {% if request.GET.tipo == 'OVO' %}selected{% endif %}>Ovo</option>
+              <option value="NINFA" {% if request.GET.tipo == 'NINFA' %}selected{% endif %}>Ninfa</option>
+              <option value="LARVA" {% if request.GET.tipo == 'LARVA' %}selected{% endif %}>Larva</option>
+              <option value="PUPA" {% if request.GET.tipo == 'PUPA' %}selected{% endif %}>Pupa</option>
+              <option value="ADULTO" {% if request.GET.tipo == 'ADULTO' %}selected{% endif %}>Adulto</option>
+              <option value="ESPORO" {% if request.GET.tipo == 'ESPORO' %}selected{% endif %}>Esporo</option>
+              <option value="LESAO" {% if request.GET.tipo == 'LESAO' %}selected{% endif %}>Lesão</option>
+              <option value="OUTRO" {% if request.GET.tipo == 'OUTRO' %}selected{% endif %}>Outro</option>
+            </select>
+          </div>
+          <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'mip:estagio_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+            </a>
+          </div>
+        </form>
       </div>
 
       <!-- Accordion de Pragas e Estágios -->

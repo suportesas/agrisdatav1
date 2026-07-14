@@ -4,54 +4,52 @@
 {% block page_title %}Tipos de Usuário{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-    <div>
-      <h4 class="fw-bold text-secondary mb-1">Tipos de Usuário</h4>
-      <p class="text-muted mb-0">Cadastre novos tipos e controle os acessos principais do sistema.</p>
-    </div>
-    <div class="d-flex gap-2">
-      <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Voltar para Usuários
-      </a>
-      <a href="{% url 'usuarios:tipo_usuario_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Novo Tipo
-      </a>
-    </div>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-person-badge"></i></span>
+          <div>
+              <h2>Tipos de Usuário</h2>
+              <p class="text-muted mb-0">Cadastre novos tipos e controle os acessos principais do sistema.</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Voltar para Usuários
+          </a>
+          <a href="{% url 'usuarios:tipo_usuario_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Novo Tipo
+          </a>
+      </div>
   </div>
 
   <div class="row g-3 mb-4">
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-body">
-          <small class="text-uppercase text-muted">Total</small>
-          <div class="display-6 fw-bold">{{ total_tipos }}</div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Total</div>
+        <div class="stat-value">{{ total_tipos }}</div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-body">
-          <small class="text-uppercase text-muted">Ativos</small>
-          <div class="display-6 fw-bold text-success">{{ tipos_ativos }}</div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Ativos</div>
+        <div class="stat-value text-success">{{ tipos_ativos }}</div>
       </div>
     </div>
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-body">
-          <small class="text-uppercase text-muted">Protegidos</small>
-          <div class="display-6 fw-bold text-primary">{{ tipos_protegidos }}</div>
-          <div class="text-muted small">Os padrões não podem ser excluídos.</div>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Protegidos</div>
+        <div class="stat-value text-primary">{{ tipos_protegidos }}</div>
+        <div class="text-muted small">Os padrões não podem ser excluídos.</div>
       </div>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm rounded-4">
+  <div class="card shadow-sm border-0 rounded-4">
     <div class="table-responsive">
-      <table class="table align-middle mb-0">
-        <thead class="table-light">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
           <tr>
             <th class="ps-4">Tipo</th>
             <th>Código</th>
@@ -95,13 +93,13 @@
               {% endif %}
             </td>
             <td class="text-center pe-4">
-              <div class="btn-group btn-group-sm" role="group">
-                <a href="{% url 'usuarios:tipo_usuario_update' tipo.id %}" class="btn btn-outline-primary" title="Editar">
-                  <i class="bi bi-pencil-square"></i>
-                </a>
-                <a href="{% url 'usuarios:tipo_usuario_delete' tipo.id %}" class="btn btn-outline-danger {% if tipo.protegido or item.uso_total %}disabled{% endif %}" title="Excluir">
-                  <i class="bi bi-trash"></i>
-                </a>
+              <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon edit" href="{% url 'usuarios:tipo_usuario_update' tipo.id %}" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                  </a>
+                  <a class="action-icon danger {% if tipo.protegido or item.uso_total %}disabled{% endif %}" href="{% url 'usuarios:tipo_usuario_delete' tipo.id %}" title="Excluir">
+                      <i class="bi bi-trash"></i>
+                  </a>
               </div>
             </td>
           </tr>

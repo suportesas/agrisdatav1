@@ -4,17 +4,19 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>{{ titulo }}</h1>
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-diagram-3"></i></span>
+            <h2>{{ titulo }}</h2>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'empresas:ajuda_grupos_corporativos' %}" class="btn btn-info me-2">
-                <i class="fas fa-question-circle"></i> Ajuda
+        <div class="d-flex gap-2 align-items-center">
+            <a href="{% url 'empresas:ajuda_grupos_corporativos' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-question-circle"></i> Ajuda
             </a>
-            <a href="{% url 'empresas:grupo_create' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Novo Grupo
+            <a href="{% url 'empresas:grupo_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Novo Grupo
             </a>
         </div>
     </div>
@@ -30,66 +32,78 @@
         </div>
     {% endif %}
 
-    {% if grupos %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Nome</th>
-                        <th>CNPJ</th>
-                        <th>Admin</th>
-                        <th>Empresas</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for grupo in grupos %}
+    <!-- Lista -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
-                            <td><strong>{{ grupo.nome }}</strong></td>
-                            <td>
-                                {% if grupo.cnpj %}
-                                    {{ grupo.cnpj }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {{ grupo.administrador.get_full_name|default:grupo.administrador.username }}
-                            </td>
-                            <td>
-                                <span class="badge bg-info">{{ grupo.num_empresas }}</span>
-                            </td>
-                            <td>
-                                {% if grupo.status == 'ATIVO' %}
-                                    <span class="badge bg-success">Ativo</span>
-                                {% elif grupo.status == 'INATIVO' %}
-                                    <span class="badge bg-secondary">Inativo</span>
-                                {% else %}
-                                    <span class="badge bg-warning">Suspenso</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{% url 'empresas:grupo_detail' grupo.pk %}" class="btn btn-sm btn-info" title="Detalhes">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'empresas:grupo_update' grupo.pk %}" class="btn btn-sm btn-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'empresas:grupo_delete' grupo.pk %}" class="btn btn-sm btn-danger" title="Deletar">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
+                            <th class="ps-4">Nome</th>
+                            <th>CNPJ</th>
+                            <th>Admin</th>
+                            <th class="text-center">Empresas</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Ações</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for grupo in grupos %}
+                            <tr>
+                                <td class="ps-4"><strong>{{ grupo.nome }}</strong></td>
+                                <td>
+                                    {% if grupo.cnpj %}
+                                        {{ grupo.cnpj }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ grupo.administrador.get_full_name|default:grupo.administrador.username }}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">{{ grupo.num_empresas }}</span>
+                                </td>
+                                <td class="text-center">
+                                    {% if grupo.status == 'ATIVO' %}
+                                        <span class="badge bg-success">Ativo</span>
+                                    {% elif grupo.status == 'INATIVO' %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Suspenso</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex gap-3 justify-content-center">
+                                        <a class="action-icon" href="{% url 'empresas:grupo_detail' grupo.pk %}" title="Detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a class="action-icon edit" href="{% url 'empresas:grupo_update' grupo.pk %}" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a class="action-icon danger" href="{% url 'empresas:grupo_delete' grupo.pk %}" title="Deletar">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-5">
+                                    <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                    Nenhum grupo corporativo criado ainda
+                                    <div class="mt-3">
+                                        <a href="{% url 'empresas:grupo_create' %}" class="btn btn-primary">
+                                            <i class="bi bi-plus-circle"></i> Criar Novo Grupo
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    {% else %}
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle"></i> Nenhum grupo corporativo criado ainda.
-            <a href="{% url 'empresas:grupo_create' %}">Criar novo grupo</a>
-        </div>
-    {% endif %}
+    </div>
 </div>
 {% endblock %}

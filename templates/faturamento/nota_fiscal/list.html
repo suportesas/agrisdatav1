@@ -3,28 +3,45 @@
 {% block page_title %}Notas Fiscais{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-file-earmark-text me-2"></i>Notas Fiscais</h2>
-    <div class="d-flex gap-2">
-      <a href="{% url 'faturamento:nota_fiscal_inutilizar' %}" class="btn btn-outline-secondary" title="Inutilizar intervalo de numeração">
-        <i class="bi bi-slash-circle me-1"></i>Inutilizar Numeração
-      </a>
-      <a href="{% url 'faturamento:nota_fiscal_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle me-1"></i>Nova NF-e
-      </a>
-    </div>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-file-earmark-text"></i></span>
+          <h2>Notas Fiscais</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q or request.GET.status or request.GET.data_ini or request.GET.data_fim %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q or request.GET.status or request.GET.data_ini or request.GET.data_fim %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'faturamento:nota_fiscal_inutilizar' %}" class="btn btn-outline-secondary" title="Inutilizar intervalo de numeração">
+              <i class="bi bi-slash-circle"></i> Inutilizar Numeração
+          </a>
+          <a href="{% url 'faturamento:nota_fiscal_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Nova NF-e
+          </a>
+      </div>
   </div>
 
-  <!-- Filtros -->
-  <form method="get" class="card card-body mb-3 shadow-sm border-0">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-4">
-        <label class="form-label small mb-1">Buscar</label>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.status or request.GET.data_ini or request.GET.data_fim %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
         <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Cliente ou número...">
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Status</label>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
         <select name="status" class="form-select">
           <option value="">Todos</option>
           {% for val, label in status_choices %}
@@ -32,129 +49,162 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">De</label>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">De</label>
         <input type="date" name="data_ini" value="{{ data_ini }}" class="form-control">
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Até</label>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Até</label>
         <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control">
       </div>
-      <div class="col-md-2 d-flex gap-2">
-        <button type="submit" class="btn btn-outline-primary flex-fill">Filtrar</button>
-        <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary">Limpar</a>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
       </div>
-    </div>
-  </form>
-
-  <div class="table-responsive">
-    <table class="table table-hover table-bordered align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>NF / Série</th>
-          <th>Cliente</th>
-          <th>Emissão</th>
-          <th>CFOP</th>
-          <th class="text-end">Valor Total</th>
-          <th>Status</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for nf in page_obj %}
-        <tr>
-          <td class="fw-semibold text-mono">{{ nf.numero|default:"S/N" }}/{{ nf.serie }}</td>
-          <td>{{ nf.cliente.razao_social }}</td>
-          <td class="text-mono">{{ nf.data_emissao|date:"d/m/Y" }}</td>
-          <td>{{ nf.cfop }}</td>
-          <td class="text-end text-mono">{{ nf.valor_total|moeda }}</td>
-          <td>
-            {% if nf.status == 'RASCUNHO' and nf.chave_acesso %}
-              <span class="badge" style="background:#f59e0b;color:#000"><i class="bi bi-hourglass-split me-1"></i>Ag. SEFAZ</span>
-            {% elif nf.status == 'RASCUNHO' %}
-              <span class="badge bg-secondary">Rascunho</span>
-            {% elif nf.status == 'EMITIDA' and not nf.protocolo_autorizacao %}
-              <span class="badge" style="background:#f59e0b;color:#000"><i class="bi bi-hourglass-split me-1"></i>Ag. Protocolo</span>
-            {% elif nf.status == 'EMITIDA' %}
-              <span class="badge bg-success"><i class="bi bi-patch-check me-1"></i>Autorizada</span>
-            {% else %}
-              <span class="badge bg-danger">Cancelada</span>
-            {% endif %}
-          </td>
-          <td class="text-nowrap">
-            <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
-                      data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="bi bi-three-dots-vertical"></i>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li>
-                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}">
-                    <i class="bi bi-eye me-2"></i>Visualizar Detalhes
-                  </a>
-                </li>
-                {% if nf.status == 'RASCUNHO' and not nf.chave_acesso %}
-                <li>
-                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_update' nf.pk %}">
-                    <i class="bi bi-pencil me-2"></i>Editar
-                  </a>
-                </li>
-                {% endif %}
-                {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
-                <li>
-                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}">
-                    <i class="bi bi-file-earmark-code me-2 text-success"></i>Baixar XML
-                  </a>
-                </li>
-                {% endif %}
-                {% if nf.pdf_danfe or nf.pdf_danfe_url %}
-                <li>
-                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" target="_blank">
-                    <i class="bi bi-file-pdf me-2 text-danger"></i>DANFE
-                  </a>
-                </li>
-                {% endif %}
-                <li>
-                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_danfe_preview' nf.pk %}" target="_blank">
-                    <i class="bi bi-eye me-2 text-primary"></i>Pré-visualizar DANFE
-                  </a>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_clone' nf.pk %}">
-                    <i class="bi bi-copy me-2 text-secondary"></i>Clonar NF-e
-                  </a>
-                </li>
-                {% if nf.status == 'EMITIDA' and nf.finalidade_nfe != '4' and nf.chave_acesso %}
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <a class="dropdown-item text-warning" href="{% url 'faturamento:nota_fiscal_devolucao' nf.pk %}"
-                     onclick="return confirm('Criar rascunho de NF-e de devolução?\n\nOs CFOPs serão convertidos automaticamente (5xxx→1xxx).')">
-                    <i class="bi bi-arrow-return-left me-2"></i>Criar Devolução
-                  </a>
-                </li>
-                {% endif %}
-                {% if nf.status == 'EMITIDA' %}
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <a class="dropdown-item text-danger" href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}">
-                    <i class="bi bi-x-circle me-2"></i>Cancelar NF-e
-                  </a>
-                </li>
-                {% endif %}
-              </ul>
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="6" class="text-center text-muted py-4">Nenhuma nota fiscal encontrada.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    </form>
   </div>
 
-  {% include 'partials/pagination.html' with page_obj=page_obj %}
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> nota{{ page_obj.paginator.count|pluralize }} fiscal{{ page_obj.paginator.count|pluralize:"is" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">NF / Série</th>
+              <th>Cliente</th>
+              <th>Emissão</th>
+              <th>CFOP</th>
+              <th class="text-end">Valor Total</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for nf in page_obj %}
+            <tr>
+              <td class="ps-4 fw-semibold text-mono">{{ nf.numero|default:"S/N" }}/{{ nf.serie }}</td>
+              <td>{{ nf.cliente.razao_social }}</td>
+              <td class="text-mono">{{ nf.data_emissao|date:"d/m/Y" }}</td>
+              <td>{{ nf.cfop }}</td>
+              <td class="text-end text-mono">{{ nf.valor_total|moeda }}</td>
+              <td class="text-center">
+                {% if nf.status == 'RASCUNHO' and nf.chave_acesso %}
+                  <span class="badge" style="background:#f59e0b;color:#000"><i class="bi bi-hourglass-split me-1"></i>Ag. SEFAZ</span>
+                {% elif nf.status == 'RASCUNHO' %}
+                  <span class="badge bg-secondary">Rascunho</span>
+                {% elif nf.status == 'EMITIDA' and not nf.protocolo_autorizacao %}
+                  <span class="badge" style="background:#f59e0b;color:#000"><i class="bi bi-hourglass-split me-1"></i>Ag. Protocolo</span>
+                {% elif nf.status == 'EMITIDA' %}
+                  <span class="badge bg-success"><i class="bi bi-patch-check me-1"></i>Autorizada</span>
+                {% else %}
+                  <span class="badge bg-danger">Cancelada</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="dropdown">
+                  <button class="action-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Ações">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}">
+                        <i class="bi bi-eye me-2"></i>Visualizar Detalhes
+                      </a>
+                    </li>
+                    {% if nf.status == 'RASCUNHO' and not nf.chave_acesso %}
+                    <li>
+                      <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_update' nf.pk %}">
+                        <i class="bi bi-pencil me-2"></i>Editar
+                      </a>
+                    </li>
+                    {% endif %}
+                    {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
+                    <li>
+                      <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}">
+                        <i class="bi bi-file-earmark-code me-2 text-success"></i>Baixar XML
+                      </a>
+                    </li>
+                    {% endif %}
+                    {% if nf.pdf_danfe or nf.pdf_danfe_url %}
+                    <li>
+                      <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" target="_blank">
+                        <i class="bi bi-file-pdf me-2 text-danger"></i>DANFE
+                      </a>
+                    </li>
+                    {% endif %}
+                    <li>
+                      <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_danfe_preview' nf.pk %}" target="_blank">
+                        <i class="bi bi-eye me-2 text-primary"></i>Pré-visualizar DANFE
+                      </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <a class="dropdown-item" href="{% url 'faturamento:nota_fiscal_clone' nf.pk %}">
+                        <i class="bi bi-copy me-2 text-secondary"></i>Clonar NF-e
+                      </a>
+                    </li>
+                    {% if nf.status == 'EMITIDA' and nf.finalidade_nfe != '4' and nf.chave_acesso %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <a class="dropdown-item text-warning" href="{% url 'faturamento:nota_fiscal_devolucao' nf.pk %}"
+                         onclick="return confirm('Criar rascunho de NF-e de devolução?\n\nOs CFOPs serão convertidos automaticamente (5xxx→1xxx).')">
+                        <i class="bi bi-arrow-return-left me-2"></i>Criar Devolução
+                      </a>
+                    </li>
+                    {% endif %}
+                    {% if nf.status == 'EMITIDA' %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <a class="dropdown-item text-danger" href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar NF-e
+                      </a>
+                    </li>
+                    {% endif %}
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhuma nota fiscal encontrada
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

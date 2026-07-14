@@ -624,7 +624,7 @@ def produto_create(request):
             messages.success(request, 'Produto cadastrado com sucesso!')
 
             continue_tab = request.POST.get('continue_tab')
-            if continue_tab in {'defensivo', 'fertilizante', 'fornecedores'}:
+            if continue_tab in {'defensivo', 'fertilizante', 'fornecedores', 'fiscal'}:
                 return redirect(f"{reverse('produtos:produto_update', args=[produto.pk])}#{continue_tab}")
 
             return redirect('produtos:produto_list')
@@ -1053,11 +1053,7 @@ def ajax_produto_tributacoes(request, produto_id):
             'icms_aliquota': str(t.icms_aliquota),
             'icms_base_calculo': str(t.icms_base_calculo),
             'icms_reducao_base': str(t.icms_reducao_base),
-            'icms_st_aliquota': str(t.icms_st_aliquota),
-            'icms_st_mva': str(t.icms_st_mva),
-            'icms_st_reducao_base': str(t.icms_st_reducao_base),
             'ipi_situacao_tributaria': t.ipi_situacao_tributaria,
-            'ipi_aliquota': str(t.ipi_aliquota),
             'ipi_codigo_enquadramento': t.ipi_codigo_enquadramento,
             'pis_situacao_tributaria': t.pis_situacao_tributaria,
             'pis_aliquota': str(t.pis_aliquota),
@@ -1065,6 +1061,18 @@ def ajax_produto_tributacoes(request, produto_id):
             'cofins_situacao_tributaria': t.cofins_situacao_tributaria,
             'cofins_aliquota': str(t.cofins_aliquota),
             'cofins_base_calculo': str(t.cofins_base_calculo),
+            'icms_percentual_diferimento': str(t.icms_percentual_diferimento),
+            'ibs_cbs_situacao_tributaria': t.ibs_cbs_situacao_tributaria,
+            'ibs_cbs_classificacao_tributaria': t.ibs_cbs_classificacao_tributaria,
+            'ibs_cbs_aliquota_uf': str(t.ibs_cbs_aliquota_uf),
+            'ibs_cbs_aliquota_municipal': str(t.ibs_cbs_aliquota_municipal),
+            'ibs_cbs_aliquota_cbs': str(t.ibs_cbs_aliquota_cbs),
+            'ibs_percentual_reducao': str(t.ibs_percentual_reducao),
+            'ibs_percentual_diferimento': str(t.ibs_percentual_diferimento),
+            'cbs_percentual_reducao': str(t.cbs_percentual_reducao),
+            'cbs_percentual_diferimento': str(t.cbs_percentual_diferimento),
+            'ibs_cbs_credito_presumido_codigo': t.ibs_cbs_credito_presumido_codigo,
+            'ibs_cbs_credito_presumido_percentual': str(t.ibs_cbs_credito_presumido_percentual),
         })
     return JsonResponse({'success': True, 'produto_nome': produto.nome, 'tributacoes': tributacoes})
 

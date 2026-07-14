@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.db.models import Sum
 
@@ -56,9 +57,18 @@ def planejamento_custo_list(request):
         .filter(empresa=empresa)
         .select_related('cultura', 'safra', 'talhao')
         .prefetch_related('itens')
+        .order_by('-data_criacao')
     )
+
+    paginator = Paginator(plans, 20)
+    page = request.GET.get('page', 1)
+    try:
+        plans_page = paginator.page(page)
+    except Exception:
+        plans_page = paginator.page(1)
+
     return render(request, 'cadastros/planejamento_custo/planejamento_custo_list.html', {
-        'plans': plans,
+        'plans': plans_page,
         'title': 'Planejamento de Custo',
     })
 

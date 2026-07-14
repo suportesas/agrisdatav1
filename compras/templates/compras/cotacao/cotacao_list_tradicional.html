@@ -3,70 +3,123 @@
 {% block title %}Cotações Tradicionais{% endblock %}
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-shopping-cart"></i> Cotações</h2>
-    </div>
-    
-    <!-- Filtros -->
-    <div class="card mb-3">
-        <div class="card-body">
-            <form method="get" class="row g-2">
-                <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
-                        <option value="">Todos os Status</option>
-                        {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </form>
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-cart3"></i></span>
+            <h2>Cotações</h2>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if request.GET.status %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if request.GET.status %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
         </div>
     </div>
-    
-    <!-- Alerta de cotações pendentes -->
-    {% if cotacoes_pendentes > 0 %}
-    <div class="alert alert-warning mb-3" role="alert">
-        <strong>{{ cotacoes_pendentes }}</strong> cotações pendentes de resposta!
+
+    {% if cotacoes_pendentes > 0 or solicitacoes_pendentes > 0 or solicitacoes_parcial > 0 %}
+    <div class="row g-3 mb-4">
+        {% if cotacoes_pendentes > 0 %}
+        <div class="col-md-4">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-hourglass-split"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Cotações Pendentes de Resposta</div>
+              <div class="stat-value">{{ cotacoes_pendentes }}</div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% if solicitacoes_pendentes > 0 %}
+        <div class="col-md-4">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-file-earmark-text"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Solicitações Pendentes de Cotação</div>
+              <div class="stat-value">{{ solicitacoes_pendentes }} <small class="fs-6 text-muted">({{ percentual_pendentes }}%)</small></div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% if solicitacoes_parcial > 0 %}
+        <div class="col-md-4">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-pie-chart"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Parcialmente Cotadas</div>
+              <div class="stat-value">{{ solicitacoes_parcial }}</div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
-    
-    <!-- Card de solicitações pendentes de cotação -->
-    {% if solicitacoes_pendentes > 0 %}
-    <div class="alert alert-info mb-3" role="alert">
-        <strong>{{ solicitacoes_pendentes }}</strong> solicitações de cotação pendentes ({{ percentual_pendentes }}%)
+
+    <!-- Filtros (colapsável) -->
+    <div class="collapse {% if request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+          <select name="status" class="form-select">
+              <option value="">Todos os Status</option>
+              {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                  {{ label }}
+              </option>
+              {% endfor %}
+          </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'compras:cotacao_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
+        </div>
+      </form>
     </div>
-    {% endif %}
-    
-    <!-- Card de solicitações parcialmente cotadas -->
-    {% if solicitacoes_parcial > 0 %}
-    <div class="alert alert-primary mb-3" role="alert">
-        <strong>{{ solicitacoes_parcial }}</strong> solicitações de compra estão <b>Parcialmente Cotadas</b>!
+
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if cotacoes.paginator %}
+          Exibindo <strong>{{ cotacoes.start_index }}–{{ cotacoes.end_index }}</strong>
+          de <strong>{{ cotacoes.paginator.count }}</strong> cotaç{{ cotacoes.paginator.count|pluralize:"ão,ões" }}
+        {% endif %}
+      </span>
     </div>
-    {% endif %}
-    
+
     <!-- Lista -->
-    <div class="card">
-        <div class="card-body">
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
-                            <th>Número</th>
+                            <th class="ps-4">Número</th>
                             <th>Solicitação</th>
                             <th>Comprador</th>
                             <th>Data</th>
                             <th>Limite Resposta</th>
-                            <th>Status</th>
-                            <th>Ações</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for cotacao in cotacoes %}
                         <tr>
-                            <td>
-                                <a href="{% url 'compras:cotacao_detail' cotacao.pk %}">
+                            <td class="ps-4">
+                                <a href="{% url 'compras:cotacao_detail' cotacao.pk %}" class="text-decoration-none">
                                     <strong>{{ cotacao.numero }}</strong>
                                 </a>
                             </td>
@@ -84,7 +137,7 @@
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
-                            <td>
+                            <td class="text-center">
                                 {% if cotacao.status == 'RASCUNHO' %}
                                 <span class="badge bg-secondary">{{ cotacao.get_status_display }}</span>
                                 {% elif cotacao.status == 'EM_ANDAMENTO' %}
@@ -95,24 +148,38 @@
                                 <span class="badge bg-danger">{{ cotacao.get_status_display }}</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                <a href="{% url 'compras:cotacao_detail' cotacao.pk %}" class="btn btn-sm btn-info" title="Ver Detalhes">
-                                    <i class="fas fa-eye"></i>
+                            <td class="text-center">
+                                <a class="action-icon" href="{% url 'compras:cotacao_detail' cotacao.pk %}" title="Ver detalhes">
+                                    <i class="bi bi-eye"></i>
                                 </a>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center">Nenhuma cotação encontrada</td>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                Nenhuma cotação encontrada
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Paginação -->
-            {% include 'partials/pagination.html' with page_obj=cotacoes %}
         </div>
+        {% if cotacoes.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=cotacoes %}
+        </div>
+        {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

@@ -5,19 +5,36 @@
 
 {% block content %}
 <div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="mb-1">
-        <i class="bi bi-box2"></i> Lotes em Estoque
-        <button type="button" class="btn btn-sm btn-outline-info ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
-          <i class="bi bi-question-circle"></i> Ajuda
-        </button>
-      </h2>
-      <p class="text-muted">Controle de lotes e validades</p>
-    </div>
-    <a href="{% url 'estoque:lote_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Novo Lote
-    </a>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon orange"><i class="bi bi-box2"></i></span>
+          <div>
+              <h2>Lotes em Estoque</h2>
+              <p class="text-muted mb-0">Controle de lotes e validades</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.status or request.GET.armazem %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.status or request.GET.armazem %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#helpModal">
+              <i class="bi bi-question-circle"></i> Ajuda
+          </button>
+          <a href="{% url 'estoque:lote_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Novo Lote
+          </a>
+      </div>
   </div>
 
   {% if messages %}
@@ -29,26 +46,79 @@
     {% endfor %}
   {% endif %}
 
-  <div class="card shadow-sm">
-    <div class="card-body">
+  {% if produto_filtrado %}
+  <div class="alert alert-info d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-funnel me-2"></i>Filtrando por produto: <strong>{{ produto_filtrado.nome }}</strong></span>
+    <a href="{% url 'estoque:lote_list' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-x-lg"></i> Limpar
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.status or request.GET.armazem %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      {% if produto_id %}<input type="hidden" name="produto" value="{{ produto_id }}">{% endif %}
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+            <option value="">Todos os Status</option>
+            {% for valor, label in status_choices %}
+            <option value="{{ valor }}" {% if valor == status_filtro %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Armazém</label>
+        <select name="armazem" class="form-select">
+            <option value="">Todos os Armazéns</option>
+            {% for a in armazens %}
+            <option value="{{ a.pk }}" {% if a.pk|stringformat:"s" == armazem_id %}selected{% endif %}>{{ a.nome }}</option>
+            {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'estoque:lote_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if lotes.paginator %}
+        Exibindo <strong>{{ lotes.start_index }}–{{ lotes.end_index }}</strong>
+        de <strong>{{ lotes.paginator.count }}</strong> lote{{ lotes.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
             <tr>
-              <th>Lote</th>
+              <th class="ps-4">Lote</th>
               <th>Produto</th>
               <th>Armazém</th>
               <th>Local</th>
               <th>Quantidade</th>
               <th>Validade</th>
-              <th>Status</th>
-              <th style="width: 120px;">Ações</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for lote in lotes %}
             <tr {% if lote.esta_vencido %}class="table-danger"{% elif lote.dias_para_vencer <= 30 %}class="table-warning"{% endif %}>
-              <td><strong>{{ lote.numero_lote }}</strong></td>
+              <td class="ps-4"><strong>{{ lote.numero_lote }}</strong></td>
               <td>{{ lote.produto.nome }}</td>
               <td>{{ lote.armazem.nome }}</td>
               <td>{{ lote.local_estocagem.codigo|default:"-" }}</td>
@@ -61,31 +131,32 @@
                   <br><span class="badge bg-warning">{{ lote.dias_para_vencer }} dias</span>
                 {% endif %}
               </td>
-              <td>
+              <td class="text-center">
                 <span class="badge bg-{% if lote.status == 'DISPONIVEL' %}success{% elif lote.status == 'BLOQUEADO' %}danger{% elif lote.status == 'VENCIDO' %}dark{% elif lote.status == 'ESGOTADO' %}secondary{% else %}warning{% endif %}">
                   {{ lote.get_status_display }}
                 </span>
               </td>
-              <td>
-                <div class="dropdown">
-                  <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                    <i class="bi bi-three-dots-vertical"></i>
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'estoque:lote_detail' lote.pk %}"><i class="bi bi-eye text-primary"></i> Visualizar</a></li>
-                    <li><a class="dropdown-item" href="{% url 'estoque:lote_edit' lote.pk %}"><i class="bi bi-pencil text-warning"></i> Editar</a></li>
-                  </ul>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon" href="{% url 'estoque:lote_detail' lote.pk %}" title="Visualizar">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a class="action-icon edit" href="{% url 'estoque:lote_edit' lote.pk %}" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
                 </div>
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="8" class="text-center text-muted py-4">
-                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-                <p class="mt-2">Nenhum lote cadastrado</p>
-                <a href="{% url 'estoque:lote_create' %}" class="btn btn-primary">
-                  <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Lote
-                </a>
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum lote cadastrado
+                <div class="mt-3">
+                  <a href="{% url 'estoque:lote_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Lote
+                  </a>
+                </div>
               </td>
             </tr>
             {% endfor %}
@@ -93,8 +164,22 @@
         </table>
       </div>
     </div>
+    {% if lotes.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=lotes %}
+    </div>
+    {% endif %}
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 
 <!-- Modal de Ajuda -->
 <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">

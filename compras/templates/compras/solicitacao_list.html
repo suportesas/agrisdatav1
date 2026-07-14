@@ -16,52 +16,88 @@
         </div>
     </div>
     {% endif %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-file-alt"></i> Solicitações de Compra</h2>
-        <a href="{% url 'compras:solicitacao_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Nova Solicitação
-        </a>
-    </div>
-    
-    <!-- Filtros -->
-    <div class="card mb-3">
-        <div class="card-body">
-            <form method="get" class="row g-2">
-                <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
-                        <option value="">Todos os Status</option>
-                        {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
-                            {{ label }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </form>
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-file-earmark-text"></i></span>
+            <h2>Solicitações de Compra</h2>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if request.GET.status %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if request.GET.status %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
+            <a href="{% url 'compras:solicitacao_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Nova Solicitação
+            </a>
         </div>
     </div>
-    
+
+    <!-- Filtros (colapsável) -->
+    <div class="collapse {% if request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+          <select name="status" class="form-select">
+              <option value="">Todos os Status</option>
+              {% for value, label in status_choices %}
+              <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>
+                  {{ label }}
+              </option>
+              {% endfor %}
+          </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'compras:solicitacao_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if solicitacoes.paginator %}
+          Exibindo <strong>{{ solicitacoes.start_index }}–{{ solicitacoes.end_index }}</strong>
+          de <strong>{{ solicitacoes.paginator.count }}</strong> solicitaç{{ solicitacoes.paginator.count|pluralize:"ão,ões" }}
+        {% endif %}
+      </span>
+    </div>
+
     <!-- Lista -->
-    <div class="card">
-        <div class="card-body">
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
-                            <th>Número</th>
+                            <th class="ps-4">Número</th>
                             <th>Solicitante</th>
                             <th>Data Solicitação</th>
                             <th>Data Necessidade</th>
-                            <th>Status</th>
+                            <th class="text-center">Status</th>
                             <th>% Cotado</th>
-                            <th>Ações</th>
+                            <th class="text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for solicitacao in solicitacoes %}
                         <tr>
-                            <td>
-                                <a href="{% url 'compras:solicitacao_detail' solicitacao.pk %}">
+                            <td class="ps-4">
+                                <a href="{% url 'compras:solicitacao_detail' solicitacao.pk %}" class="text-decoration-none">
                                     <strong>{{ solicitacao.numero }}</strong>
                                 </a>
                                 {% if solicitacao.nova_msg %}
@@ -76,7 +112,7 @@
                             <td>{{ solicitacao.solicitante.get_full_name }}</td>
                             <td class="text-mono">{{ solicitacao.data_solicitacao|date:"d/m/Y H:i" }}</td>
                             <td class="text-mono">{{ solicitacao.data_necessidade|date:"d/m/Y" }}</td>
-                            <td>
+                            <td class="text-center">
                                 {% if solicitacao.status == 'TOTALMENTE_COTADA' %}
                                     <span class="badge bg-primary">Totalmente Cotado</span>
                                 {% elif solicitacao.status == 'PARCIALMENTE_COTADA' %}
@@ -96,42 +132,57 @@
                             <td>
                                 <div class="progress" style="height: 20px;">
                                     {% with percentual=solicitacao.calcular_percentual_cotado %}
-                                    <div class="progress-bar" role="progressbar" 
-                                         style="width: {{ percentual }}%" 
-                                         aria-valuenow="{{ percentual }}" 
+                                    <div class="progress-bar" role="progressbar"
+                                         style="width: {{ percentual }}%"
+                                         aria-valuenow="{{ percentual }}"
                                          aria-valuemin="0" aria-valuemax="100">
                                         {{ percentual }}%
                                     </div>
                                     {% endwith %}
                                 </div>
                             </td>
-                            <td>
-                                <a href="{% url 'compras:solicitacao_detail' solicitacao.pk %}" 
-                                   class="btn btn-sm btn-info" title="Ver Detalhes">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% if solicitacao.status in 'RASCUNHO,PENDENTE' %}
-                                <a href="{% url 'compras:solicitacao_cancelar' solicitacao.pk %}"
-                                   class="btn btn-sm btn-danger ms-1"
-                                   title="Cancelar Solicitação"
-                                   onclick="return confirm('Deseja realmente cancelar esta solicitação?');">
-                                    <i class="fas fa-times"></i>
-                                </a>
-                                {% endif %}
+                            <td class="text-center">
+                                <div class="d-flex gap-3 justify-content-center">
+                                    <a class="action-icon" href="{% url 'compras:solicitacao_detail' solicitacao.pk %}" title="Ver detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if solicitacao.status in 'RASCUNHO,PENDENTE' %}
+                                    <a class="action-icon danger"
+                                       href="{% url 'compras:solicitacao_cancelar' solicitacao.pk %}"
+                                       title="Cancelar Solicitação"
+                                       onclick="return confirm('Deseja realmente cancelar esta solicitação?');">
+                                        <i class="bi bi-x-lg"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center">Nenhuma solicitação encontrada</td>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                Nenhuma solicitação encontrada
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            
-            <!-- Paginação -->
-            {% include 'partials/pagination.html' with page_obj=solicitacoes %}
         </div>
+        {% if solicitacoes.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=solicitacoes %}
+        </div>
+        {% endif %}
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

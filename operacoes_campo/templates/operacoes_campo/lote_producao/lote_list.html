@@ -5,98 +5,114 @@
 {% block page_title %}Lotes de Produção{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="fw-bold text-secondary mb-1">
-        <i class="bi bi-boxes text-success"></i> Lotes de Produção
-      </h4>
-      <p class="text-muted small mb-0">
-        Total: <strong>{{ total }}</strong> lote{{ total|pluralize }}
-      </p>
-    </div>
-  </div>
-
-  <!-- Filtros -->
-  <div class="card shadow-sm border-0 rounded-4 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3 align-items-end">
-        <div class="col-md-4">
-          <div class="input-group">
-            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
-            <input type="text" name="q" class="form-control border-start-0"
-              placeholder="Número, código rastreamento, talhão ou safra..."
-              value="{{ request.GET.q }}">
-          </div>
-        </div>
-        <div class="col-md-3">
-          <select name="safra" class="form-select">
-            <option value="">Todas as safras</option>
-            {% for s in safras %}
-              <option value="{{ s.pk }}" {% if request.GET.safra == s.pk|stringformat:"s" %}selected{% endif %}>
-                {{ s.nome }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select name="status" class="form-select">
-            <option value="">Todos os status</option>
-            {% for val, label in status_choices %}
-              <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <button type="submit" class="btn btn-outline-success w-100">
-            <i class="bi bi-funnel"></i> Filtrar
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon green"><i class="bi bi-boxes"></i></span>
+          <h2>Lotes de Produção</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q or request.GET.safra or request.GET.status %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q or request.GET.safra or request.GET.status %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
           </button>
-        </div>
-        <div class="col-md-1">
-          <a href="{% url 'operacoes_campo:lote_list' %}" class="btn btn-outline-secondary w-100">
-            <i class="bi bi-x"></i>
-          </a>
-        </div>
-      </form>
-    </div>
+      </div>
   </div>
 
-  <!-- Tabela -->
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.safra or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" class="form-control"
+          placeholder="Número, código rastreamento, talhão ou safra..."
+          value="{{ request.GET.q }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Safra</label>
+        <select name="safra" class="form-select">
+          <option value="">Todas as safras</option>
+          {% for s in safras %}
+            <option value="{{ s.pk }}" {% if request.GET.safra == s.pk|stringformat:"s" %}selected{% endif %}>
+              {{ s.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos os status</option>
+          {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'operacoes_campo:lote_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if lotes.paginator %}
+        Exibindo <strong>{{ lotes.start_index }}–{{ lotes.end_index }}</strong>
+        de <strong>{{ lotes.paginator.count }}</strong> lote{{ lotes.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
   <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-0">
-      {% if lotes %}
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+          <thead class="bg-light">
             <tr>
-              <th>Nº Lote</th>
+              <th class="ps-4">Nº Lote</th>
               <th>Código Rastreamento</th>
               <th>Talhão</th>
               <th>Safra / Cultura</th>
               <th>Peso Colhido</th>
               <th>Data Colheita</th>
-              <th>Status</th>
-              <th class="text-end">Ações</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for lote in lotes %}
-            {% with status_badges="COLHIDO:warning,RECEBIDO_PACKING:info,EM_PROCESSAMENTO:primary,CONCLUIDO:success,CANCELADO:secondary" %}
             <tr>
-              <td><strong>{{ lote.numero_lote }}</strong></td>
+              <td class="ps-4"><strong>{{ lote.numero_lote }}</strong></td>
               <td><code class="small">{{ lote.codigo_rastreamento }}</code></td>
               <td>{{ lote.talhao.nome }}</td>
               <td>
                 {{ lote.safra.nome }}<br>
                 <small class="text-muted">{{ lote.cultura.nome }}</small>
               </td>
-              <td>
+              <td class="text-mono">
                 {% if lote.peso_total_colhido_kg %}
                   <strong>{{ lote.peso_total_colhido_kg|floatformat:0 }} kg</strong>
                 {% else %}—{% endif %}
               </td>
-              <td>
+              <td class="text-mono">
                 {% if lote.data_colheita_inicio %}
                   {{ lote.data_colheita_inicio|date:"d/m/Y" }}
                   {% if lote.data_colheita_fim and lote.data_colheita_fim != lote.data_colheita_inicio %}
@@ -104,7 +120,7 @@
                   {% endif %}
                 {% else %}—{% endif %}
               </td>
-              <td>
+              <td class="text-center">
                 {% if lote.status == 'COLHIDO' %}
                   <span class="badge bg-warning text-dark">{{ lote.get_status_display }}</span>
                 {% elif lote.status == 'RECEBIDO_PACKING' %}
@@ -117,33 +133,47 @@
                   <span class="badge bg-secondary">{{ lote.get_status_display }}</span>
                 {% endif %}
               </td>
-              <td class="text-end">
-                <a href="{% url 'operacoes_campo:lote_detail' lote.pk %}"
-                   class="btn btn-sm btn-outline-primary me-1" title="Ver detalhe">
-                  <i class="bi bi-eye"></i>
-                </a>
-                {% if lote.status == 'COLHIDO' %}
-                <a href="{% url 'operacoes_campo:lote_recepcao' lote.pk %}"
-                   class="btn btn-sm btn-outline-success" title="Receber no Packing">
-                  <i class="bi bi-box-arrow-in-down"></i> Packing
-                </a>
-                {% endif %}
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon" href="{% url 'operacoes_campo:lote_detail' lote.pk %}" title="Ver detalhe">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    {% if lote.status == 'COLHIDO' %}
+                    <a class="action-icon" href="{% url 'operacoes_campo:lote_recepcao' lote.pk %}" title="Receber no Packing">
+                        <i class="bi bi-box-arrow-in-down"></i>
+                    </a>
+                    {% endif %}
+                </div>
               </td>
             </tr>
-            {% endwith %}
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum lote de produção encontrado
+                <div class="small mt-1">Os lotes são gerados automaticamente ao concluir uma Etapa de Colheita.</div>
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      {% else %}
-      <div class="text-center py-5">
-        <i class="bi bi-boxes display-1 text-muted"></i>
-        <p class="text-muted mt-3">Nenhum lote de produção encontrado.</p>
-        <small class="text-muted">Os lotes são gerados automaticamente ao concluir uma Etapa de Colheita.</small>
-      </div>
-      {% endif %}
     </div>
+    {% if lotes.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=lotes %}
+    </div>
+    {% endif %}
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

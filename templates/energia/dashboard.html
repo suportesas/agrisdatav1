@@ -4,47 +4,53 @@
 {% block content %}
 <div class="container-fluid">
 
-  <div class="d-flex align-items-center justify-content-between mb-4">
-    <h1 class="mb-0 fs-4"><i class="bi bi-sun-fill text-warning me-2"></i>Energia Solar — Dashboard</h1>
-    <span class="text-muted small">{{ mes_atual|date:"F/Y" }}</span>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon orange"><i class="bi bi-sun-fill"></i></span>
+          <h2>Energia Solar — Dashboard</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <span class="text-muted small">{{ mes_atual|date:"F/Y" }}</span>
+      </div>
   </div>
 
   <!-- Cards de resumo -->
   <div class="row g-3 mb-4">
     <div class="col-6 col-md-3">
-      <div class="kpi-card h-100">
-        <div class="kpi-icon green"><i class="bi bi-lightning-charge-fill"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Usinas Ativas</div>
-          <div class="kpi-value">{{ total_usinas }}</div>
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-lightning-charge-fill"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Usinas Ativas</div>
+          <div class="stat-value">{{ total_usinas }}</div>
         </div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="kpi-card h-100">
-        <div class="kpi-icon green"><i class="bi bi-sun-fill"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Geração (mês atual)</div>
-          <div class="kpi-value">{{ totais_mes.geracao|default:0|floatformat:0 }}</div>
-          <div class="kpi-sub">kWh</div>
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-sun-fill"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Geração (mês atual)</div>
+          <div class="stat-value">{{ totais_mes.geracao|default:0|floatformat:0 }}</div>
+          <small class="text-muted">kWh</small>
         </div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="kpi-card h-100">
-        <div class="kpi-icon green"><i class="bi bi-cash-coin"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Economia (mês atual)</div>
-          <div class="kpi-value">R$ {{ totais_mes.economia|default:0|floatformat:2 }}</div>
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-cash-coin"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Economia (mês atual)</div>
+          <div class="stat-value">R$ {{ totais_mes.economia|default:0|floatformat:2 }}</div>
         </div>
       </div>
     </div>
     <div class="col-6 col-md-3">
-      <div class="kpi-card h-100">
-        <div class="kpi-icon {% if totais_mes.desempenho >= 90 %}green{% elif totais_mes.desempenho >= 75 %}orange{% else %}red{% endif %}"><i class="bi bi-speedometer2"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Desempenho Médio</div>
-          <div class="kpi-value">{{ totais_mes.desempenho|default:0|floatformat:1 }}%</div>
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon {% if totais_mes.desempenho >= 90 %}stat-icon-green{% elif totais_mes.desempenho >= 75 %}stat-icon-orange{% else %}stat-icon-red{% endif %} mb-0"><i class="bi bi-speedometer2"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Desempenho Médio</div>
+          <div class="stat-value">{{ totais_mes.desempenho|default:0|floatformat:1 }}%</div>
         </div>
       </div>
     </div>

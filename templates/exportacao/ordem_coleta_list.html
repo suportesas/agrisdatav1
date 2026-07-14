@@ -4,69 +4,102 @@
 {% block page_title %}Ordens de Coleta{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Ordens de Coleta</h2>
-    <a class="btn btn-primary" href="{% url 'exportacao:ordem_coleta_create' %}">
-      <i class="bi bi-plus-lg me-1"></i>Nova Ordem de Coleta
-    </a>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon orange"><i class="bi bi-truck"></i></span>
+          <h2>Ordens de Coleta</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <a class="btn btn-success" href="{% url 'exportacao:ordem_coleta_create' %}">
+              <i class="bi bi-plus-lg"></i> Nova Ordem de Coleta
+          </a>
+      </div>
   </div>
 
-  <div class="table-responsive">
-    <table class="table table-bordered table-hover align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Número</th>
-          <th>Booking</th>
-          <th>Contêiner</th>
-          <th>Motorista</th>
-          <th>Data Prevista</th>
-          <th>Status</th>
-          <th class="text-center">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for ordem in ordens %}
-          <tr>
-            <td class="fw-semibold">{{ ordem.numero|default:"—" }}</td>
-            <td>{{ ordem.booking.codigo|default:"—" }}</td>
-            <td>{{ ordem.container|default:"—" }}</td>
-            <td>{{ ordem.motorista.nome|default:"—" }}</td>
-            <td>{{ ordem.data_prevista|date:'d/m/Y'|default:"—" }}</td>
-            <td>
-              {% if ordem.status == 'PENDENTE' %}
-                <span class="badge bg-warning text-dark">Pendente</span>
-              {% elif ordem.status == 'EM_ANDAMENTO' %}
-                <span class="badge bg-primary">Em andamento</span>
-              {% elif ordem.status == 'CONCLUIDA' %}
-                <span class="badge bg-success">Concluída</span>
-              {% elif ordem.status == 'CANCELADA' %}
-                <span class="badge bg-danger">Cancelada</span>
-              {% endif %}
-            </td>
-            <td class="text-center text-nowrap">
-              <a class="btn btn-sm btn-outline-secondary" href="{% url 'exportacao:ordem_coleta_update' ordem.pk %}" title="Editar">
-                <i class="bi bi-pencil"></i>
-              </a>
-              <a class="btn btn-sm btn-outline-danger ms-1" href="{% url 'exportacao:ordem_coleta_print' ordem.pk %}" target="_blank" title="Ordem de Coleta PDF">
-                <i class="bi bi-file-earmark-pdf"></i>
-              </a>
-              <a class="btn btn-sm btn-outline-info ms-1" href="{% url 'exportacao:ordem_coleta_carta_temperatura' ordem.pk %}" target="_blank" title="Carta de Temperatura">
-                <i class="bi bi-thermometer-half"></i>
-              </a>
-              <a class="btn btn-sm btn-outline-success ms-1 position-relative" href="{% url 'exportacao:ordem_coleta_fotos' ordem.pk %}" title="Fotos da Coleta">
-                <i class="bi bi-camera"></i>
-                {% with n=ordem.fotos.count %}
-                {% if n %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:.6rem;">{{ n }}</span>{% endif %}
-                {% endwith %}
-              </a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma ordem de coleta encontrada.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if ordens.paginator %}
+        Exibindo <strong>{{ ordens.start_index }}–{{ ordens.end_index }}</strong>
+        de <strong>{{ ordens.paginator.count }}</strong> ordem{{ ordens.paginator.count|pluralize }} de coleta
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Número</th>
+              <th>Booking</th>
+              <th>Contêiner</th>
+              <th>Motorista</th>
+              <th>Data Prevista</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ordem in ordens %}
+              <tr>
+                <td class="ps-4 fw-semibold">{{ ordem.numero|default:"—" }}</td>
+                <td>{{ ordem.booking.codigo|default:"—" }}</td>
+                <td>{{ ordem.container|default:"—" }}</td>
+                <td>{{ ordem.motorista.nome|default:"—" }}</td>
+                <td class="text-mono">{{ ordem.data_prevista|date:'d/m/Y'|default:"—" }}</td>
+                <td class="text-center">
+                  {% if ordem.status == 'PENDENTE' %}
+                    <span class="badge bg-warning text-dark">Pendente</span>
+                  {% elif ordem.status == 'EM_ANDAMENTO' %}
+                    <span class="badge bg-primary">Em andamento</span>
+                  {% elif ordem.status == 'CONCLUIDA' %}
+                    <span class="badge bg-success">Concluída</span>
+                  {% elif ordem.status == 'CANCELADA' %}
+                    <span class="badge bg-danger">Cancelada</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  <div class="d-flex gap-3 justify-content-center">
+                      <a class="action-icon edit" href="{% url 'exportacao:ordem_coleta_update' ordem.pk %}" title="Editar">
+                          <i class="bi bi-pencil"></i>
+                      </a>
+                      <a class="action-icon" href="{% url 'exportacao:ordem_coleta_print' ordem.pk %}" target="_blank" title="Ordem de Coleta PDF">
+                          <i class="bi bi-file-earmark-pdf"></i>
+                      </a>
+                      <a class="action-icon" href="{% url 'exportacao:ordem_coleta_carta_temperatura' ordem.pk %}" target="_blank" title="Carta de Temperatura">
+                          <i class="bi bi-thermometer-half"></i>
+                      </a>
+                      <a class="action-icon position-relative" href="{% url 'exportacao:ordem_coleta_fotos' ordem.pk %}" title="Fotos da Coleta">
+                          <i class="bi bi-camera"></i>
+                          {% with n=ordem.fotos.count %}
+                          {% if n %}<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success" style="font-size:.6rem;">{{ n }}</span>{% endif %}
+                          {% endwith %}
+                      </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                  Nenhuma ordem de coleta encontrada
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if ordens.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=ordens %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

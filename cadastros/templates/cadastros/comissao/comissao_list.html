@@ -1,23 +1,164 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<div class="container py-4">
-  <h3>Comissões</h3>
-  {% if comissoes %}
-    <table class="table">
-      <thead><tr><th>Vendedor</th><th>Valor</th><th>Status</th><th>Referência</th></tr></thead>
-      <tbody>
-      {% for c in comissoes %}
-        <tr>
-          <td>{{ c.vendedor }}</td>
-          <td>{{ c.valor_comissao }}</td>
-          <td>{{ c.status }}</td>
-          <td>{{ c.referencia_mes }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>Nenhuma comissão encontrada.</p>
-  {% endif %}
+<div class="container-fluid py-4">
+
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-cash-coin"></i></span>
+      <h2>Comissões</h2>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.vendedor or request.GET.status %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.vendedor or request.GET.status %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'cadastros:comissao_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nova Comissão
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total Pendente</div>
+          <div class="stat-value">{{ total_pendente|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total Pago</div>
+          <div class="stat-value">{{ total_pago|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.vendedor or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Vendedor</label>
+        <select name="vendedor" class="form-select">
+          <option value="">Todos</option>
+          {% for v in vendedores %}
+            <option value="{{ v.pk }}" {% if request.GET.vendedor == v.pk|stringformat:"s" %}selected{% endif %}>{{ v.nome_completo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          <option value="PENDENTE" {% if request.GET.status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+          <option value="PAGA" {% if request.GET.status == 'PAGA' %}selected{% endif %}>Paga</option>
+          <option value="CANCELADA" {% if request.GET.status == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-search"></i> Filtrar
+        </button>
+        <a href="{% url 'cadastros:comissao_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if comissoes.paginator %}
+        Exibindo <strong>{{ comissoes.start_index }}–{{ comissoes.end_index }}</strong>
+        de <strong>{{ comissoes.paginator.count }}</strong> comissõe{{ comissoes.paginator.count|pluralize:"m,s" }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Tabela -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Vendedor</th>
+              <th>Referência</th>
+              <th class="text-end">Valor</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in comissoes %}
+            <tr>
+              <td class="ps-4">{{ c.vendedor }}</td>
+              <td>{{ c.referencia_mes|date:"m/Y" }}</td>
+              <td class="text-end">{{ c.valor_comissao|floatformat:2 }}</td>
+              <td class="text-center">
+                {% if c.status == 'PAGA' %}
+                  <span class="badge bg-success">Paga</span>
+                {% elif c.status == 'CANCELADA' %}
+                  <span class="badge bg-secondary">Cancelada</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if c.status == 'PENDENTE' %}
+                  <a href="{% url 'cadastros:comissao_pagar' c.pk %}" class="action-icon success" title="Marcar como paga">
+                    <i class="bi bi-check-circle"></i>
+                  </a>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-5 text-muted">
+                <i class="bi bi-cash-coin display-4 d-block mb-3"></i>
+                Nenhuma comissão encontrada.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if comissoes.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=comissoes %}
+    </div>
+    {% endif %}
+  </div>
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

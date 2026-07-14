@@ -4,91 +4,101 @@
 {% block title %}Inventário Cíclico{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>
-                <i class="fas fa-cube"></i> Inventário Cíclico (RF-056)
-            </h1>
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-boxes"></i></span>
+            <h2>Inventário Cíclico</h2>
         </div>
-        <div class="col-md-4 text-end">
-            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
-                <i class="fas fa-question-circle"></i> Como Fazer?
-            </button>
-            <a href="{% url 'estoque:inventario_ciclico_create' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Novo Inventário
+        <div class="d-flex gap-2 align-items-center">
+            <a href="{% url 'estoque:inventario_ciclico_relatorio_acuracia' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-bar-chart"></i> Relatório de Acurácia
             </a>
-            <a href="{% url 'estoque:inventario_ciclico_relatorio_acuracia' %}" class="btn btn-info">
-                <i class="fas fa-chart-bar"></i> Relatório de Acurácia
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+                <i class="bi bi-question-circle"></i> Como Fazer?
+            </button>
+            <a href="{% url 'estoque:inventario_ciclico_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Novo Inventário
             </a>
         </div>
     </div>
 
     <!-- Cards de Resumo -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-calendar-check"></i> Planejados</h5>
-                    <p class="card-text display-4">{{ total_planejados }}</p>
-                </div>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-calendar-check"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Planejados</div>
+              <div class="stat-value">{{ total_planejados }}</div>
             </div>
+          </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-tasks"></i> Em Contagem</h5>
-                    <p class="card-text display-4">{{ total_em_contagem }}</p>
-                </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-list-check"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Em Contagem</div>
+              <div class="stat-value">{{ total_em_contagem }}</div>
             </div>
+          </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-check-circle"></i> Finalizados</h5>
-                    <p class="card-text display-4">{{ total_finalizados }}</p>
-                </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Finalizados</div>
+              <div class="stat-value">{{ total_finalizados }}</div>
             </div>
+          </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-boxes"></i> Total</h5>
-                    <p class="card-text display-4">{{ inventarios.count }}</p>
-                </div>
+        <div class="col-6 col-md-3">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-box-seam"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Total</div>
+              <div class="stat-value">{{ total_inventarios }}</div>
             </div>
+          </div>
         </div>
     </div>
 
-    <!-- Tabela de Inventários -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">Lista de Inventários Cíclicos</h5>
-        </div>
-        <div class="card-body">
-            {% if inventarios %}
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if inventarios.paginator %}
+          Exibindo <strong>{{ inventarios.start_index }}–{{ inventarios.end_index }}</strong>
+          de <strong>{{ inventarios.paginator.count }}</strong> invent{{ inventarios.paginator.count|pluralize:"ário,ários" }}
+        {% endif %}
+      </span>
+    </div>
+
+    <!-- Lista -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
-                            <th>Número</th>
+                            <th class="ps-4">Número</th>
                             <th>Armazém</th>
                             <th>Data</th>
-                            <th>Status</th>
+                            <th class="text-center">Status</th>
                             <th class="text-center">Items</th>
                             <th class="text-center">Contados</th>
                             <th class="text-center">Divergências</th>
                             <th class="text-center">Acurácia</th>
-                            <th>Ações</th>
+                            <th class="text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for inv in inventarios %}
                         <tr>
-                            <td><strong>{{ inv.numero }}</strong></td>
+                            <td class="ps-4"><strong>{{ inv.numero }}</strong></td>
                             <td>{{ inv.armazem.nome }}</td>
-                            <td>{{ inv.data_contagem|date:"d/m/Y" }}</td>
-                            <td>
+                            <td class="text-mono">{{ inv.data_contagem|date:"d/m/Y" }}</td>
+                            <td class="text-center">
                                 <span class="badge bg-{% if inv.status == 'PLANEJADO' %}primary{% elif inv.status == 'EM_CONTAGEM' %}warning{% elif inv.status == 'CONCILIADO' %}info{% else %}success{% endif %}">
                                     {{ inv.get_status_display }}
                                 </span>
@@ -107,28 +117,41 @@
                             <td class="text-center">
                                 <strong>{{ inv.acuracia_percentual|floatformat:1 }}%</strong>
                             </td>
-                            <td>
-                                <a href="{% url 'estoque:inventario_ciclico_detail' inv.id %}" class="btn btn-sm btn-info" title="Detalhar">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                {% if inv.status == 'PLANEJADO' %}
-                                <a href="{% url 'estoque:inventario_ciclico_detail' inv.id %}" class="btn btn-sm btn-warning" title="Iniciar Contagem">
-                                    <i class="fas fa-play"></i>
-                                </a>
-                                {% endif %}
+                            <td class="text-center">
+                                <div class="d-flex gap-3 justify-content-center">
+                                    <a class="action-icon" href="{% url 'estoque:inventario_ciclico_detail' inv.id %}" title="Detalhar">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if inv.status == 'PLANEJADO' %}
+                                    <a class="action-icon" href="{% url 'estoque:inventario_ciclico_detail' inv.id %}" title="Iniciar Contagem">
+                                        <i class="bi bi-play"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                Nenhum inventário cíclico registrado
+                                <div class="mt-3">
+                                    <a href="{% url 'estoque:inventario_ciclico_create' %}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle"></i> Criar Primeiro Inventário
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> Nenhum inventário cíclico registrado.
-                <a href="{% url 'estoque:inventario_ciclico_create' %}">Clique aqui para criar um novo.</a>
-            </div>
-            {% endif %}
         </div>
+        {% if inventarios.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=inventarios %}
+        </div>
+        {% endif %}
     </div>
 </div>
 

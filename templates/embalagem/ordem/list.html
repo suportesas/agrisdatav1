@@ -3,48 +3,86 @@
 {% block page_title %}Ordens de Embalagem{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="mb-0">Ordens de Embalagem</h3>
-    <a href="{% url 'embalagem:ordem_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Nova Ordem
-    </a>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-box-seam"></i></span>
+          <h2>Ordens de Embalagem</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q or request.GET.status or request.GET.data_ini or request.GET.data_fim %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q or request.GET.status or request.GET.data_ini or request.GET.data_fim %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'embalagem:ordem_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Nova Ordem
+          </a>
+      </div>
   </div>
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-2">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <input type="text" name="q" class="form-control form-control-sm" placeholder="Número ou tipo embalagem" value="{{ filtros.q }}">
-        </div>
-        <div class="col-md-2">
-          <select name="status" class="form-select form-select-sm">
-            <option value="">Todos status</option>
-            {% for val, lbl in status_choices %}
-            <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ lbl }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ filtros.data_ini }}">
-        </div>
-        <div class="col-md-2">
-          <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filtros.data_fim }}">
-        </div>
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-search"></i></button>
-        </div>
-      </form>
-    </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.status or request.GET.data_ini or request.GET.data_fim %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" class="form-control" placeholder="Número ou tipo embalagem" value="{{ filtros.q }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos status</option>
+          {% for val, lbl in status_choices %}
+          <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">De</label>
+        <input type="date" name="data_ini" class="form-control" value="{{ filtros.data_ini }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Até</label>
+        <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
   </div>
 
-  <div class="card border-0 shadow-sm">
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> ordem{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
             <tr>
-              <th>Número</th>
+              <th class="ps-4">Número</th>
               <th>Data</th>
               <th>Tipo Embalagem</th>
               <th>Lote Origem</th>
@@ -52,38 +90,59 @@
               <th class="text-end">Pallets</th>
               <th>Armazém Destino</th>
               <th>Responsável</th>
-              <th>Status</th>
-              <th></th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for o in page_obj %}
             <tr>
-              <td><a href="{% url 'embalagem:ordem_detail' o.pk %}"><strong>{{ o.numero }}</strong></a></td>
-              <td>{{ o.data|date:"d/m/Y" }}</td>
+              <td class="ps-4"><a href="{% url 'embalagem:ordem_detail' o.pk %}"><strong>{{ o.numero }}</strong></a></td>
+              <td class="text-mono">{{ o.data|date:"d/m/Y" }}</td>
               <td>{{ o.tipo_embalagem.nome }}</td>
               <td><small>{{ o.lote_origem.numero|default:o.lote_origem.pk }}</small></td>
-              <td class="text-end">{{ o.quantidade_entrada_kg|floatformat:0 }}</td>
-              <td class="text-end">{{ o.n_pallets }}</td>
+              <td class="text-end text-mono">{{ o.quantidade_entrada_kg|floatformat:0 }}</td>
+              <td class="text-end text-mono">{{ o.n_pallets }}</td>
               <td>{{ o.armazem_destino.nome }}</td>
               <td>{{ o.responsavel.get_full_name|default:"—" }}</td>
-              <td>
+              <td class="text-center">
                 {% if o.status == 'ABERTA' %}<span class="badge bg-secondary">Aberta</span>
                 {% elif o.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary">Em Andamento</span>
                 {% elif o.status == 'CONCLUIDA' %}<span class="badge bg-success">Concluída</span>
                 {% else %}<span class="badge bg-danger">Cancelada</span>{% endif %}
               </td>
-              <td><a href="{% url 'embalagem:ordem_detail' o.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a></td>
+              <td class="text-center">
+                <a class="action-icon" href="{% url 'embalagem:ordem_detail' o.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                </a>
+              </td>
             </tr>
             {% empty %}
-            <tr><td colspan="10" class="text-center text-muted py-4">Nenhuma ordem encontrada.</td></tr>
+            <tr>
+              <td colspan="10" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhuma ordem encontrada
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
   </div>
-
-  {% include 'partials/pagination.html' with page_obj=page_obj %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

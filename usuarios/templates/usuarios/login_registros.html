@@ -75,62 +75,80 @@
 {% block content %}
 <div class="container-fluid py-4">
   
-  <!-- Header -->
-  <div class="mb-4">
-    <h2 class="fw-bold text-dark mb-2">
-      <i class="bi bi-shield-check text-primary"></i> Segurança e Auditoria de Acesso
-    </h2>
-    <p class="text-muted mb-0">Monitore todos os logins, anomalias e alertas de segurança do sistema</p>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-shield-check"></i></span>
+          <div>
+              <h2>Segurança e Auditoria de Acesso</h2>
+              <p class="text-muted mb-0">Monitore todos os logins, anomalias e alertas de segurança do sistema</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.empresa or request.GET.usuario or request.GET.periodo or request.GET.sucesso %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.empresa or request.GET.usuario or request.GET.periodo or request.GET.sucesso %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+      </div>
   </div>
 
   <!-- Cards de Estatísticas -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="kpi-card">
-        <div class="kpi-icon green"><i class="bi bi-check-circle"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Logins com Sucesso</div>
-          <div class="kpi-value">{{ logins_sucesso }}</div>
-          <div class="kpi-sub">{{ taxa_sucesso }}% de taxa de sucesso</div>
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Logins com Sucesso</div>
+          <div class="stat-value">{{ logins_sucesso }}</div>
+          <small class="text-muted">{{ taxa_sucesso }}% de taxa de sucesso</small>
         </div>
       </div>
     </div>
 
     <div class="col-md-3">
-      <div class="kpi-card">
-        <div class="kpi-icon red"><i class="bi bi-x-circle"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Logins Falhados</div>
-          <div class="kpi-value">{{ logins_falha }}</div>
-          <div class="kpi-sub">Tentativas rejeitadas</div>
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-red mb-0"><i class="bi bi-x-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Logins Falhados</div>
+          <div class="stat-value">{{ logins_falha }}</div>
+          <small class="text-muted">Tentativas rejeitadas</small>
         </div>
       </div>
     </div>
 
     <div class="col-md-3">
-      <div class="kpi-card">
-        <div class="kpi-icon orange"><i class="bi bi-exclamation-triangle"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Anomalias Detectadas</div>
-          <div class="kpi-value">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-exclamation-triangle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Anomalias Detectadas</div>
+          <div class="stat-value">
             {% if dados_graficos %}
               {{ dados_graficos.totais.anomalias_detectadas }}
             {% else %}
               0
             {% endif %}
           </div>
-          <div class="kpi-sub">Eventos suspeitos</div>
+          <small class="text-muted">Eventos suspeitos</small>
         </div>
       </div>
     </div>
 
     <div class="col-md-3">
-      <div class="kpi-card">
-        <div class="kpi-icon blue"><i class="bi bi-diagram-3"></i></div>
-        <div class="kpi-body">
-          <div class="kpi-label">Total de Logins</div>
-          <div class="kpi-value">{{ total_logins }}</div>
-          <div class="kpi-sub">Últimos 30 dias</div>
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-diagram-3"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total de Logins</div>
+          <div class="stat-value">{{ total_logins }}</div>
+          <small class="text-muted">Últimos 30 dias</small>
         </div>
       </div>
     </div>
@@ -167,60 +185,60 @@
   </div>
   {% endif %}
 
-  <!-- Filtros -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-      <h5 class="card-title mb-3">Filtros</h5>
-      <form method="get" class="row g-3">
-        {% if user.is_superuser %}
-        <div class="col-md-3">
-          <label class="form-label">Empresa</label>
-          <select name="empresa" class="form-select">
-            <option value="">Todas</option>
-            {% for empresa in empresas %}
-            <option value="{{ empresa.id }}" {% if empresa_filtro.id == empresa.id %}selected{% endif %}>
-              {{ empresa.nome }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        {% endif %}
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.empresa or request.GET.usuario or request.GET.periodo or request.GET.sucesso %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      {% if user.is_superuser %}
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Empresa</label>
+        <select name="empresa" class="form-select">
+          <option value="">Todas</option>
+          {% for empresa in empresas %}
+          <option value="{{ empresa.id }}" {% if empresa_filtro.id == empresa.id %}selected{% endif %}>
+            {{ empresa.nome }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
 
-        <div class="col-md-3">
-          <label class="form-label">Usuário</label>
-          <select name="usuario" class="form-select">
-            <option value="">Todos</option>
-            {% for usuario in usuarios %}
-            <option value="{{ usuario.id }}">{{ usuario.get_full_name|default:usuario.username }}</option>
-            {% endfor %}
-          </select>
-        </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Usuário</label>
+        <select name="usuario" class="form-select">
+          <option value="">Todos</option>
+          {% for usuario in usuarios %}
+          <option value="{{ usuario.id }}" {% if request.GET.usuario == usuario.id|stringformat:"s" %}selected{% endif %}>{{ usuario.get_full_name|default:usuario.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-        <div class="col-md-2">
-          <label class="form-label">Período</label>
-          <select name="periodo" class="form-select">
-            <option value="hoje" {% if request.GET.periodo == "hoje" %}selected{% endif %}>Hoje</option>
-            <option value="semana" {% if request.GET.periodo == "semana" or not request.GET.periodo %}selected{% endif %}>Última Semana</option>
-            <option value="mes" {% if request.GET.periodo == "mes" %}selected{% endif %}>Último Mês</option>
-          </select>
-        </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Período</label>
+        <select name="periodo" class="form-select">
+          <option value="hoje" {% if request.GET.periodo == "hoje" %}selected{% endif %}>Hoje</option>
+          <option value="semana" {% if request.GET.periodo == "semana" or not request.GET.periodo %}selected{% endif %}>Última Semana</option>
+          <option value="mes" {% if request.GET.periodo == "mes" %}selected{% endif %}>Último Mês</option>
+        </select>
+      </div>
 
-        <div class="col-md-2">
-          <label class="form-label">Status</label>
-          <select name="sucesso" class="form-select">
-            <option value="">Todos</option>
-            <option value="sim">Sucesso</option>
-            <option value="nao">Falha</option>
-          </select>
-        </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="sucesso" class="form-select">
+          <option value="">Todos</option>
+          <option value="sim" {% if request.GET.sucesso == "sim" %}selected{% endif %}>Sucesso</option>
+          <option value="nao" {% if request.GET.sucesso == "nao" %}selected{% endif %}>Falha</option>
+        </select>
+      </div>
 
-        <div class="col-md-2 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary w-100">
-            <i class="bi bi-funnel"></i> Filtrar
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
           </button>
-        </div>
-      </form>
-    </div>
+          <a href="{% url 'usuarios:login_registros' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
   </div>
 
   <!-- Tabs -->
@@ -240,10 +258,10 @@
 
   <!-- TAB: Registros de Login -->
   <div id="tab-logins" class="tab-content active">
-    <div class="card border-0 shadow-sm">
+    <div class="card shadow-sm border-0 rounded-4">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+          <thead class="bg-light">
             <tr>
               <th class="ps-4">Data/Hora</th>
               <th>Usuário</th>
@@ -280,8 +298,8 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="6" class="text-center py-4 text-muted">
-                <i class="bi bi-inbox" style="font-size: 2rem; opacity: 0.5;"></i><br>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
                 Nenhum registro encontrado
               </td>
             </tr>
@@ -289,11 +307,11 @@
           </tbody>
         </table>
       </div>
-      
-      <!-- Paginação -->
-      <div class="card-footer bg-light border-top">
+      {% if page_obj.paginator %}
+      <div class="card-footer">
         {% include 'partials/pagination.html' with page_obj=page_obj %}
       </div>
+      {% endif %}
     </div>
   </div>
 
@@ -396,6 +414,13 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('filterForm');
+    if (form) {
+      form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+    }
+  });
+
   function mostrarTab(nome) {
     // Esconder todos
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));

@@ -3,12 +3,31 @@
 {% block page_title %}Pallets{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="mb-0">Pallets</h3>
-    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
-      <i class="bi bi-question-circle me-1"></i>Ajuda
-    </button>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-pallet"></i></span>
+          <h2>Pallets</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q or request.GET.status or request.GET.armazem or request.GET.data_ini or request.GET.data_fim %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q or request.GET.status or request.GET.armazem or request.GET.data_ini or request.GET.data_fim %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+              <i class="bi bi-question-circle"></i> Ajuda
+          </button>
+      </div>
   </div>
 
   <!-- Modal de Ajuda -->
@@ -110,61 +129,99 @@
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-2">
-      <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-3">
-          <input type="text" name="q" class="form-control form-control-sm" placeholder="Código do pallet" value="{{ filtros.q }}">
-        </div>
-        <div class="col-md-2">
-          <select name="status" class="form-select form-select-sm">
-            <option value="">Todos status</option>
-            {% for val, lbl in status_choices %}
-            <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ lbl }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select name="armazem" class="form-select form-select-sm">
-            <option value="">Todos armazéns</option>
-            {% for a in armazens %}
-            <option value="{{ a.pk }}" {% if filtros.armazem == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <input type="date" name="data_ini" class="form-control form-control-sm" value="{{ filtros.data_ini }}">
-        </div>
-        <div class="col-md-2">
-          <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ filtros.data_fim }}">
-        </div>
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-sm btn-outline-secondary w-100"><i class="bi bi-search"></i></button>
-        </div>
-      </form>
-    </div>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.status or request.GET.armazem or request.GET.data_ini or request.GET.data_fim %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" class="form-control" placeholder="Código do pallet" value="{{ filtros.q }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos status</option>
+          {% for val, lbl in status_choices %}
+          <option value="{{ val }}" {% if filtros.status == val %}selected{% endif %}>{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Armazém</label>
+        <select name="armazem" class="form-select">
+          <option value="">Todos armazéns</option>
+          {% for a in armazens %}
+          <option value="{{ a.pk }}" {% if filtros.armazem == a.pk|stringformat:"s" %}selected{% endif %}>{{ a.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">De</label>
+        <input type="date" name="data_ini" class="form-control" value="{{ filtros.data_ini }}">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Até</label>
+        <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim }}">
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'embalagem:pallet_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
   </div>
 
   <!-- Resumo -->
-  <div class="row g-2 mb-3">
-    <div class="col-auto">
-      <span class="badge bg-success fs-6 px-3">Disponíveis: {{ stats.disponiveis }}</span>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Disponíveis</div>
+          <div class="stat-value">{{ stats.disponiveis }}</div>
+        </div>
+      </div>
     </div>
-    <div class="col-auto">
-      <span class="badge bg-warning text-dark fs-6 px-3">Reservados: {{ stats.reservados }}</span>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-bookmark-check"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Reservados</div>
+          <div class="stat-value">{{ stats.reservados }}</div>
+        </div>
+      </div>
     </div>
-    <div class="col-auto">
-      <span class="badge bg-info fs-6 px-3">Carregados: {{ stats.carregados }}</span>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-truck"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Carregados</div>
+          <div class="stat-value">{{ stats.carregados }}</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm">
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> pallet{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-0">
       <div class="table-responsive">
-        <table class="table table-hover table-sm mb-0">
-          <thead class="table-light">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
             <tr>
-              <th>Código</th>
+              <th class="ps-4">Código</th>
               <th>Tipo Embalagem</th>
               <th>Data Embalagem</th>
               <th class="text-end">Caixas</th>
@@ -172,42 +229,59 @@
               <th class="text-end">Peso Bruto (kg)</th>
               <th>Armazém</th>
               <th>Local</th>
-              <th>Status</th>
-              <th></th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
             </tr>
           </thead>
           <tbody>
             {% for p in page_obj %}
             <tr>
-              <td><strong>{{ p.codigo_pallet }}</strong></td>
+              <td class="ps-4"><strong>{{ p.codigo_pallet }}</strong></td>
               <td>{{ p.tipo_embalagem.nome|default:"Misto" }}{% if p.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
-              <td>{{ p.data_embalagem|date:"d/m/Y" }}</td>
-              <td class="text-end">{{ p.quantidade_caixas }}</td>
-              <td class="text-end">{{ p.peso_liquido_kg|floatformat:3 }}</td>
-              <td class="text-end">{{ p.peso_bruto_kg|floatformat:3 }}</td>
+              <td class="text-mono">{{ p.data_embalagem|date:"d/m/Y" }}</td>
+              <td class="text-end text-mono">{{ p.quantidade_caixas }}</td>
+              <td class="text-end text-mono">{{ p.peso_liquido_kg|floatformat:3 }}</td>
+              <td class="text-end text-mono">{{ p.peso_bruto_kg|floatformat:3 }}</td>
               <td>{{ p.armazem.nome }}</td>
               <td>{{ p.local_estocagem|default:"—" }}</td>
-              <td>
+              <td class="text-center">
                 {% if p.status == 'DISPONIVEL' %}<span class="badge bg-success">Disponível</span>
                 {% elif p.status == 'RESERVADO' %}<span class="badge bg-warning text-dark">Reservado</span>
                 {% elif p.status == 'CARREGADO' %}<span class="badge bg-info">Carregado</span>
                 {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
               </td>
-              <td>
-                <a href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Etiqueta PDF">
+              <td class="text-center">
+                <a class="action-icon" href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" target="_blank" title="Etiqueta PDF">
                   <i class="bi bi-printer"></i>
                 </a>
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="10" class="text-center text-muted py-4">Nenhum pallet encontrado.</td></tr>
+            <tr>
+              <td colspan="10" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum pallet encontrado
+              </td>
+            </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
   </div>
-
-  {% include 'partials/pagination.html' with page_obj=page_obj %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

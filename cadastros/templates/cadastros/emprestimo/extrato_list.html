@@ -6,16 +6,66 @@
 
 {% block content %}
 <div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0"><i class="bi bi-journal-text me-2"></i>Extrato de Empréstimos</h2>
-    <div>
-      <a href="{% url 'emprestimos:emprestimo_devolucao_create' %}" class="btn btn-primary">
-        <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon blue"><i class="bi bi-journal-text"></i></span>
+      <h2>Extrato de Empréstimos</h2>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if request.GET.produtor or request.GET.produto or request.GET.status or request.GET.data_inicio or request.GET.data_fim %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if request.GET.produtor or request.GET.produto or request.GET.status or request.GET.data_inicio or request.GET.data_fim %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="{% url 'emprestimos:emprestimo_devolucao_create' %}" class="btn btn-success">
+        <i class="bi bi-arrow-return-left"></i> Registrar Devolução
       </a>
     </div>
   </div>
 
-  <div class="card mb-3">
+  <!-- Stats -->
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-arrow-up-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total Emprestado</div>
+          <div class="stat-value">R$ {{ totais.total_emprestado_valor|default:0|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-arrow-down-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total Devolvido</div>
+          <div class="stat-value">R$ {{ totais.total_devolvido_valor|default:0|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon {% if totais.total_saldo_valor|default:0 > 0 %}stat-icon-orange{% else %}stat-icon-green{% endif %} mb-0"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Saldo em Aberto</div>
+          <div class="stat-value">R$ {{ totais.total_saldo_valor|default:0|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.produtor or request.GET.produto or request.GET.status or request.GET.data_inicio or request.GET.data_fim %}show{% endif %} mb-4" id="filterCollapse">
+    <div class="card">
     <div class="card-body">
       <form method="get" class="row g-3 align-items-end">
         <div class="col-md-3">
@@ -63,32 +113,6 @@
         </div>
       </form>
     </div>
-  </div>
-
-  <div class="row g-3 mb-3">
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <small class="text-muted d-block">Total Emprestado</small>
-          <h4 class="mb-0 text-primary">R$ {{ totais.total_emprestado_valor|default:0|floatformat:2 }}</h4>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <small class="text-muted d-block">Total Devolvido</small>
-          <h4 class="mb-0 text-success">R$ {{ totais.total_devolvido_valor|default:0|floatformat:2 }}</h4>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <small class="text-muted d-block">Saldo em Aberto</small>
-          <h4 class="mb-0 {% if totais.total_saldo_valor|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">R$ {{ totais.total_saldo_valor|default:0|floatformat:2 }}</h4>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -198,7 +222,7 @@
       </table>
     </div>
 
-    {% if pagina_obj and pagina_obj.paginator.num_pages > 1 %}
+    {% if pagina_obj.paginator %}
     <div class="card-footer bg-white">
       {% include 'partials/pagination.html' with page_obj=pagina_obj %}
     </div>

@@ -122,7 +122,7 @@ def booking_list(request):
         messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
 
-    bookings = (
+    bookings_qs = (
         Booking.objects
         .filter(empresa=request.user.empresa)
         .select_related('solicitacao')
@@ -135,6 +135,9 @@ def booking_list(request):
         )
         .order_by('-data_embarque_previsto')
     )
+    paginator = Paginator(bookings_qs, 25)
+    bookings = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'exportacao/booking_list.html', {
         'bookings': bookings,
         'request': request
@@ -286,11 +289,14 @@ def container_list(request, booking_pk=None):
         messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
 
-    containers = BookingContainer.objects.filter(empresa=request.user.empresa).order_by('booking__codigo', 'numero_container')
+    containers_qs = BookingContainer.objects.filter(empresa=request.user.empresa).order_by('booking__codigo', 'numero_container')
     booking = None
     if booking_pk:
         booking = get_object_or_404(Booking, pk=booking_pk, empresa=request.user.empresa)
-        containers = containers.filter(booking=booking)
+        containers_qs = containers_qs.filter(booking=booking)
+
+    paginator = Paginator(containers_qs, 25)
+    containers = paginator.get_page(request.GET.get('page'))
 
     return render(request, 'exportacao/container_list.html', {
         'containers': containers,
@@ -453,12 +459,15 @@ def ordem_coleta_list(request):
         messages.warning(request, '⚠️ Seu usuário não está vinculado a nenhuma empresa.')
         return redirect('dashboard:index')
 
-    ordens = (
+    ordens_qs = (
         OrdemColeta.objects.filter(empresa=request.user.empresa)
         .select_related('booking', 'motorista', 'container')
         .prefetch_related('fotos')
         .order_by('-data_prevista')
     )
+    paginator = Paginator(ordens_qs, 25)
+    ordens = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'exportacao/ordem_coleta_list.html', {
         'ordens': ordens,
         'request': request

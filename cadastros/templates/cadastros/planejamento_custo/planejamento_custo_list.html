@@ -5,13 +5,25 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="fw-bold text-secondary mb-0">
-      <i class="bi bi-clipboard-data text-warning me-2"></i>Planejamento de Custo
-    </h5>
-    <a href="{% url 'operacoes_campo:planejamento_custo_create' %}" class="btn btn-warning btn-sm">
-      <i class="bi bi-plus me-1"></i>Novo Planejamento
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon orange"><i class="bi bi-clipboard-data"></i></span>
+      <h2>Planejamento de Custo</h2>
+    </div>
+    <a href="{% url 'operacoes_campo:planejamento_custo_create' %}" class="btn btn-success">
+      <i class="bi bi-plus-circle"></i> Novo Planejamento
     </a>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if plans.paginator %}
+        Exibindo <strong>{{ plans.start_index }}–{{ plans.end_index }}</strong>
+        de <strong>{{ plans.paginator.count }}</strong> planejamento{{ plans.paginator.count|pluralize }}
+      {% endif %}
+    </span>
   </div>
 
   <div class="card border-0 shadow-sm rounded-4">
@@ -83,6 +95,11 @@
         </tbody>
       </table>
     </div>
+    {% if plans.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=plans %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

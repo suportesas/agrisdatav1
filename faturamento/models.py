@@ -250,6 +250,10 @@ class NotaFiscal(FaturamentoBaseModel):
     valor_ipi = models.DecimalField('Valor IPI', max_digits=14, decimal_places=2, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
     valor_cofins = models.DecimalField('Valor COFINS', max_digits=14, decimal_places=2, default=0)
+    valor_ibs = models.DecimalField('Valor IBS', max_digits=14, decimal_places=2, default=0,
+        help_text='Soma de ibs_cbs_valor_uf + ibs_cbs_valor_municipal de todos os itens.')
+    valor_cbs = models.DecimalField('Valor CBS', max_digits=14, decimal_places=2, default=0,
+        help_text='Soma de ibs_cbs_valor_cbs de todos os itens.')
     valor_total = models.DecimalField('Valor Total', max_digits=14, decimal_places=2, default=0)
     informacoes_complementares = models.TextField('Informações Complementares', blank=True)
     informacoes_fisco = models.TextField('Informações para o Fisco (infAdFisco)', blank=True)
@@ -434,6 +438,8 @@ class NotaFiscal(FaturamentoBaseModel):
         self.valor_ipi = sum(i.valor_ipi for i in items)
         self.valor_pis = sum(i.valor_pis for i in items)
         self.valor_cofins = sum(i.valor_cofins for i in items)
+        self.valor_ibs = sum(i.ibs_cbs_valor_uf + i.ibs_cbs_valor_municipal for i in items)
+        self.valor_cbs = sum(i.ibs_cbs_valor_cbs for i in items)
         self.valor_total = (
             self.valor_produtos
             + self.valor_frete
@@ -441,10 +447,14 @@ class NotaFiscal(FaturamentoBaseModel):
             + self.valor_ipi
             + self.valor_icms_st
             - self.valor_desconto
+            # IBS/CBS não somados aqui: durante a fase de transição da LC 214/2025
+            # rodam em paralelo com os tributos antigos a valores-teste — somar
+            # duplicaria o valor devido. Revisitar quando o cronograma de
+            # transição começar a extinguir os tributos antigos.
         )
         self.save(update_fields=[
             'valor_produtos', 'valor_icms', 'valor_icms_st', 'valor_ipi',
-            'valor_pis', 'valor_cofins', 'valor_total',
+            'valor_pis', 'valor_cofins', 'valor_ibs', 'valor_cbs', 'valor_total',
         ])
 
 
@@ -482,6 +492,15 @@ class ItemNotaFiscal(models.Model):
     icms_modalidade_base = models.CharField('Modalidade BC ICMS', max_length=1, default='3',
         help_text='0=MVA, 1=Pauta, 2=Preço Tabelado, 3=Valor da Operação, 4=Margem Valor Agregado')
     icms_reducao_base = models.DecimalField('Redução BC ICMS (%)', max_digits=5, decimal_places=2, default=0)
+    icms_percentual_diferimento = models.DecimalField(
+        'Percentual de Diferimento ICMS (%)', max_digits=5, decimal_places=2, default=100,
+        help_text='pDif — percentual da operação com ICMS diferido. CST 51. '
+                   'Use 100 para diferimento total (padrão em commodities agro).',
+    )
+    icms_valor_diferido = models.DecimalField(
+        'Valor ICMS Diferido', max_digits=14, decimal_places=2, default=0,
+        help_text='vICMSDif — valor do ICMS cujo lançamento foi diferido (calculado).',
+    )
     # ICMS ST
     icms_st_aliquota = models.DecimalField('Alíq. ICMS ST (%)', max_digits=5, decimal_places=2, default=0)
     icms_st_mva = models.DecimalField('MVA ST (%)', max_digits=5, decimal_places=2, default=0)
@@ -493,6 +512,11 @@ class ItemNotaFiscal(models.Model):
     aliquota_ipi = models.DecimalField('Alíq. IPI (%)', max_digits=5, decimal_places=2, default=0)
     valor_ipi = models.DecimalField('Valor IPI', max_digits=14, decimal_places=2, default=0)
     ipi_codigo_enquadramento = models.CharField('Código Enquadramento IPI', max_length=3, default='999', blank=True)
+    ipi_cnpj_produtor = models.CharField(
+        'CNPJ do Produtor (IPI)', max_length=14, blank=True,
+        help_text='CNPJProd — CNPJ do produtor da mercadoria, quando diferente do '
+                   'emitente. Somente para exportação direta ou indireta.',
+    )
     # PIS
     aliquota_pis = models.DecimalField('Alíq. PIS (%)', max_digits=9, decimal_places=6, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
@@ -635,34 +659,50 @@ class ItemNotaFiscal(models.Model):
     # IBS-Município e CBS. Grupos especiais (monofásico, crédito presumido,
     # transferência/estorno de crédito, ZFM, compra governamental) ficam fora
     # deste escopo inicial.
+    # Restrito aos 5 CSTs confirmados para o escopo desta fazenda (commodities
+    # agrícolas, insumos, exportação direta e indireta) — ver IBS_CBS_CST_CCLASSTRIB_MAP.
     IBS_CBS_CST_CHOICES = [
         ('',    '--- Não informado ---'),
         ('000', '000 - Tributação integral'),
-        ('010', '010 - Tributação com alíquotas uniformes'),
-        ('011', '011 - Tributação com alíquotas uniformes reduzidas'),
         ('200', '200 - Alíquota reduzida'),
-        ('210', '210 - Redução de alíquota com redutor de base de cálculo'),
-        ('220', '220 - Alíquota fixa'),
-        ('221', '221 - Alíquota fixa rateada'),
-        ('222', '222 - Redução de Base de Cálculo'),
-        ('400', '400 - Isenção'),
         ('410', '410 - Imunidade e não incidência'),
-        ('510', '510 - Diferimento'),
         ('515', '515 - Diferimento com redução de alíquota'),
         ('550', '550 - Suspensão'),
-        ('620', '620 - Tributação Monofásica'),
-        ('800', '800 - Transferência de crédito'),
-        ('810', '810 - Ajustes de IBS na ZFM'),
-        ('811', '811 - Ajustes'),
-        ('820', '820 - Tributação em declaração de regime específico'),
-        ('830', '830 - Exclusão da Base de Cálculo'),
+    ]
+    # cClassTrib restrito aos pares CST/código confirmados para o escopo desta
+    # fazenda (commodities agrícolas, insumos, exportação direta e indireta).
+    # Fonte única de verdade também usada por forms.py, views.py e o template.
+    IBS_CBS_CST_CCLASSTRIB_MAP = {
+        '000': [
+            ('000001', '000001 - Tributação integral (padrão)'),
+        ],
+        '200': [
+            ('200003', '200003 - Alíquota reduzida (insumo agropecuário específico)'),
+            ('200034', '200034 - Alimentação humana / cesta básica (redução 60%)'),
+            ('200036', '200036 - Produtos agropecuários in natura (redução 60%)'),
+            ('200038', '200038 - Insumos agropecuários/aquícolas Anexo IX (redução 60%)'),
+        ],
+        '410': [
+            ('410004', '410004 - Não incidência'),
+            ('410014', '410014 - Fornecimento por produtor rural não contribuinte (Art. 164 LC 214/2025)'),
+            ('410030', '410030 - Perecimento/deterioração/roubo/furto/extravio (Art. 47 §6º)'),
+        ],
+        '515': [
+            ('515001', '515001 - Diferimento de insumos agropecuários (Art. 138 §2º)'),
+        ],
+        '550': [
+            ('550001', '550001 - Suspensão / exportação indireta via trading'),
+        ],
+    }
+    IBS_CBS_CCLASSTRIB_CHOICES = [('', '--- Não informado ---')] + [
+        par for pares in IBS_CBS_CST_CCLASSTRIB_MAP.values() for par in pares
     ]
     ibs_cbs_situacao_tributaria = models.CharField(
         'CST IBS/CBS', max_length=3, blank=True, choices=IBS_CBS_CST_CHOICES,
         help_text='Código de Situação Tributária do IBS/CBS (CST da Reforma Tributária).',
     )
     ibs_cbs_classificacao_tributaria = models.CharField(
-        'cClassTrib', max_length=6, blank=True,
+        'cClassTrib', max_length=6, blank=True, choices=IBS_CBS_CCLASSTRIB_CHOICES,
         help_text='Código de Classificação Tributária do IBS e da CBS — 6 dígitos.',
     )
     ibs_cbs_base_calculo = models.DecimalField('BC IBS/CBS', max_digits=14, decimal_places=2, default=0)
@@ -672,6 +712,51 @@ class ItemNotaFiscal(models.Model):
     ibs_cbs_valor_municipal = models.DecimalField('Valor IBS Municipal', max_digits=14, decimal_places=2, default=0)
     ibs_cbs_aliquota_cbs = models.DecimalField('Alíq. CBS (%)', max_digits=6, decimal_places=4, default=0)
     ibs_cbs_valor_cbs = models.DecimalField('Valor CBS', max_digits=14, decimal_places=2, default=0)
+
+    # Redução e diferimento são grupos independentes para IBS e para CBS (cada
+    # um pode ter seu próprio percentual), mesma divisão do emissor de referência.
+    ibs_percentual_reducao = models.DecimalField(
+        'Percentual de Redução IBS (%)', max_digits=7, decimal_places=4, default=0,
+        help_text='pRedAliq — CST 200/515. Percentual de redução aplicado sobre a alíquota '
+                   'padrão do IBS (ex: 60.0000 para redução de 60%).',
+    )
+    ibs_percentual_diferimento = models.DecimalField(
+        'Percentual de Diferimento IBS (%)', max_digits=7, decimal_places=4, default=0,
+        help_text='pDif — CST 515. Percentual da operação com IBS diferido. '
+                   'Use 100 para diferimento total.',
+    )
+    ibs_valor_diferido = models.DecimalField(
+        'Valor IBS Diferido', max_digits=14, decimal_places=2, default=0,
+        help_text='vDif — valor do IBS diferido (calculado).',
+    )
+    cbs_percentual_reducao = models.DecimalField(
+        'Percentual de Redução CBS (%)', max_digits=7, decimal_places=4, default=0,
+        help_text='pRedAliq — CST 200/515. Percentual de redução aplicado sobre a alíquota '
+                   'padrão da CBS (ex: 60.0000 para redução de 60%).',
+    )
+    cbs_percentual_diferimento = models.DecimalField(
+        'Percentual de Diferimento CBS (%)', max_digits=7, decimal_places=4, default=0,
+        help_text='pDif — CST 515. Percentual da operação com CBS diferido. '
+                   'Use 100 para diferimento total.',
+    )
+    cbs_valor_diferido = models.DecimalField(
+        'Valor CBS Diferido', max_digits=14, decimal_places=2, default=0,
+        help_text='vDif — valor da CBS diferido (calculado).',
+    )
+
+    IBS_CBS_CREDPRES_CHOICES = [
+        ('', '--- Não informado ---'),
+        ('1', '1 - Aquisição de Produtor Rural não contribuinte (Art. 164 LC 214/2025)'),
+    ]
+    ibs_cbs_credito_presumido_codigo = models.CharField(
+        'Código Crédito Presumido (cCredPres)', max_length=2, blank=True,
+        choices=IBS_CBS_CREDPRES_CHOICES,
+        help_text='gCredPresOper — código do tipo de crédito presumido do IBS/CBS.',
+    )
+    ibs_cbs_credito_presumido_percentual = models.DecimalField(
+        'Percentual Crédito Presumido IBS/CBS (%)', max_digits=7, decimal_places=4, default=0)
+    ibs_cbs_credito_presumido_valor = models.DecimalField(
+        'Valor Crédito Presumido IBS/CBS', max_digits=14, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = 'Item da Nota Fiscal'
@@ -700,6 +785,13 @@ class ItemNotaFiscal(models.Model):
         reducao = d(self.icms_reducao_base)
         self.icms_base_calculo = self.valor_total * (_100 - reducao) / _100
         self.valor_icms = self.icms_base_calculo * d(self.aliquota_icms) / _100
+
+        # ICMS diferimento (CST 51)
+        if self.cst_icms == '51' and d(self.icms_percentual_diferimento) > _0:
+            self.icms_valor_diferido = self.valor_icms * d(self.icms_percentual_diferimento) / _100
+            self.valor_icms = self.valor_icms - self.icms_valor_diferido
+        else:
+            self.icms_valor_diferido = _0
 
         # ICMS ST
         if self.icms_st_aliquota and self.icms_st_aliquota > _0:
@@ -752,11 +844,24 @@ class ItemNotaFiscal(models.Model):
             self.ibs_cbs_valor_uf = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_uf) / _100
             self.ibs_cbs_valor_municipal = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_municipal) / _100
             self.ibs_cbs_valor_cbs = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_cbs) / _100
+            if d(self.ibs_percentual_diferimento) > _0:
+                self.ibs_valor_diferido = (
+                    (self.ibs_cbs_valor_uf + self.ibs_cbs_valor_municipal)
+                    * d(self.ibs_percentual_diferimento) / _100
+                )
+            else:
+                self.ibs_valor_diferido = _0
+            if d(self.cbs_percentual_diferimento) > _0:
+                self.cbs_valor_diferido = self.ibs_cbs_valor_cbs * d(self.cbs_percentual_diferimento) / _100
+            else:
+                self.cbs_valor_diferido = _0
         else:
             self.ibs_cbs_base_calculo = _0
             self.ibs_cbs_valor_uf = _0
             self.ibs_cbs_valor_municipal = _0
             self.ibs_cbs_valor_cbs = _0
+            self.ibs_valor_diferido = _0
+            self.cbs_valor_diferido = _0
 
         super().save(*args, **kwargs)
 

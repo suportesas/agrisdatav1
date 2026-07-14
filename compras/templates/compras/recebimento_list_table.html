@@ -1,24 +1,24 @@
 {% if recebimentos %}
 <div class="table-responsive">
-    <table class="table table-hover">
-        <thead>
+    <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
             <tr>
-                <th>Número</th>
+                <th class="ps-4">Número</th>
                 <th>Pedido</th>
                 <th class="text-center">Parcial</th>
                 <th>Fornecedor</th>
                 <th>NF-e</th>
                 <th>Data Recebimento</th>
                 <th>Valor NF</th>
-                <th>Status</th>
+                <th class="text-center">Status</th>
                 <th>Recebido por</th>
-                <th class="text-end">Ações</th>
+                <th class="text-center">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for recebimento in recebimentos %}
             <tr>
-                <td>
+                <td class="ps-4">
                     <a href="{% url 'compras:recebimento_detail' recebimento.pk %}">
                         <strong>{{ recebimento.numero }}</strong>
                     </a>
@@ -49,11 +49,11 @@
                     {% endif %}
                 </td>
                 <td>{{ recebimento.nota_fiscal }}</td>
-                <td>{{ recebimento.data_recebimento|date:"d/m/Y" }}</td>
-                <td>R$ {{ recebimento.valor_total_nf|floatformat:2 }}</td>
-                <td>
+                <td class="text-mono">{{ recebimento.data_recebimento|date:"d/m/Y" }}</td>
+                <td class="text-mono">R$ {{ recebimento.valor_total_nf|floatformat:2 }}</td>
+                <td class="text-center">
                     {% if recebimento.status == 'PENDENTE' %}
-                        <span class="badge bg-warning">{{ recebimento.get_status_display }}</span>
+                        <span class="badge bg-warning text-dark">{{ recebimento.get_status_display }}</span>
                     {% elif recebimento.status == 'CONFERIDO' %}
                         <span class="badge bg-success">{{ recebimento.get_status_display }}</span>
                     {% elif recebimento.status == 'DIVERGENTE' %}
@@ -63,23 +63,22 @@
                     {% endif %}
                 </td>
                 <td>{{ recebimento.recebido_por.get_full_name }}</td>
-                <td class="text-end">
-                    <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" 
-                       class="btn btn-sm btn-info" title="Ver detalhes">
-                        <i class="bi bi-eye"></i>
-                    </a>
-                    {% if recebimento.status == 'PENDENTE' %}
-                    <a href="{% url 'compras:recebimento_conferir' recebimento.pk %}"
-                       class="btn btn-sm btn-success" title="Conferir">
-                        <i class="bi bi-check-circle"></i>
-                    </a>
-                    {% endif %}
-                    {% if recebimento.status == 'FINALIZADO' %}
-                    <a href="{% url 'compras:devolucao_compra' recebimento.pk %}"
-                       class="btn btn-sm btn-outline-warning" title="Criar NF-e de Devolução">
-                        <i class="bi bi-arrow-return-left"></i>
-                    </a>
-                    {% endif %}
+                <td class="text-center">
+                    <div class="d-flex gap-3 justify-content-center">
+                        <a class="action-icon" href="{% url 'compras:recebimento_detail' recebimento.pk %}" title="Ver detalhes">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        {% if recebimento.status == 'PENDENTE' %}
+                        <a class="action-icon" href="{% url 'compras:recebimento_conferir' recebimento.pk %}" title="Conferir">
+                            <i class="bi bi-check-circle"></i>
+                        </a>
+                        {% endif %}
+                        {% if recebimento.status == 'FINALIZADO' %}
+                        <a class="action-icon" href="{% url 'compras:devolucao_compra' recebimento.pk %}" title="Criar NF-e de Devolução">
+                            <i class="bi bi-arrow-return-left"></i>
+                        </a>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}
@@ -107,8 +106,8 @@
     </ul>
 </nav>
 {% else %}
-<div class="alert alert-info">
-    <i class="bi bi-info-circle me-2"></i>
+<div class="text-center text-muted py-5">
+    <i class="bi bi-inbox display-4 d-block mb-3"></i>
     Nenhum recebimento encontrado.
 </div>
 {% endif %}

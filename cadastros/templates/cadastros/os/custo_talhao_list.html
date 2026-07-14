@@ -8,25 +8,40 @@
 <div class="container-fluid mt-4">
 
   <!-- Cabeçalho -->
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h5 class="fw-bold text-secondary mb-0">
-      <i class="bi bi-bar-chart-line text-success"></i> Custos por Talhão e Safra
-    </h5>
-    <div class="d-flex gap-2 flex-wrap">
-      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=excel" class="btn btn-outline-success btn-sm">
-        <i class="bi bi-file-earmark-spreadsheet me-1"></i> Excel
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-bar-chart-line"></i></span>
+      <h2>Custos por Talhão e Safra</h2>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if talhao_filter or safra_filter or search %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if talhao_filter or safra_filter or search %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
+      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=excel" class="btn btn-outline-success">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Excel
       </a>
-      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=pdf" class="btn btn-outline-danger btn-sm" target="_blank" rel="noopener">
-        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+      <a href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&export=pdf" class="btn btn-outline-danger" target="_blank" rel="noopener">
+        <i class="bi bi-file-earmark-pdf"></i> PDF
       </a>
-      <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Voltar para OS
+      <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Voltar para OS
       </a>
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card border-0 shadow-sm mb-4">
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if talhao_filter or safra_filter or search %}show{% endif %} mb-4" id="filterCollapse">
+    <div class="card border-0 shadow-sm">
     <div class="card-body py-3">
       <form method="get" class="row g-2 align-items-end">
         <div class="col-md-3">
@@ -58,89 +73,79 @@
         </div>
       </form>
     </div>
+    </div>
   </div>
 
   <!-- KPI Cards -->
   <div class="row g-3 mb-4">
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm bg-success text-white h-100">
-        <div class="card-body d-flex justify-content-between align-items-center py-3">
-          <div>
-            <div class="small opacity-75">Custo Total</div>
-            <div class="fs-5 fw-bold">R$ {{ resumo.total_geral|floatformat:2 }}</div>
-          </div>
-          <i class="bi bi-currency-dollar fs-2 opacity-50"></i>
+      <div class="stat-card d-flex align-items-center gap-3 h-100">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-currency-dollar"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Custo Total</div>
+          <div class="stat-value">R$ {{ resumo.total_geral|floatformat:2 }}</div>
         </div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body py-3">
-          <div class="row g-0 text-center">
-            <div class="col-6 border-end">
-              <div class="small text-muted">Mão de Obra</div>
-              <div class="fw-bold text-primary small">R$ {{ resumo.total_mao_obra|floatformat:2 }}</div>
-            </div>
-            <div class="col-6">
-              <div class="small text-muted">Maquinário</div>
-              <div class="fw-bold text-info small">R$ {{ resumo.total_maquinario|floatformat:2 }}</div>
-            </div>
+      <div class="stat-card h-100">
+        <div class="row g-0 text-center">
+          <div class="col-6 border-end">
+            <div class="stat-label text-uppercase">Mão de Obra</div>
+            <div class="fw-bold text-primary small">R$ {{ resumo.total_mao_obra|floatformat:2 }}</div>
           </div>
-          <hr class="my-2">
-          <div class="row g-0 text-center">
-            <div class="col-6 border-end">
-              <div class="small text-muted">Insumos</div>
-              <div class="fw-bold text-warning small">R$ {{ resumo.total_insumos|floatformat:2 }}</div>
-            </div>
-            <div class="col-6">
-              <div class="small text-muted">Serv. Externo</div>
-              <div class="fw-bold text-secondary small">R$ {{ resumo.total_servico|floatformat:2 }}</div>
-            </div>
+          <div class="col-6">
+            <div class="stat-label text-uppercase">Maquinário</div>
+            <div class="fw-bold text-info small">R$ {{ resumo.total_maquinario|floatformat:2 }}</div>
+          </div>
+        </div>
+        <hr class="my-2">
+        <div class="row g-0 text-center">
+          <div class="col-6 border-end">
+            <div class="stat-label text-uppercase">Insumos</div>
+            <div class="fw-bold text-warning small">R$ {{ resumo.total_insumos|floatformat:2 }}</div>
+          </div>
+          <div class="col-6">
+            <div class="stat-label text-uppercase">Serv. Externo</div>
+            <div class="fw-bold text-secondary small">R$ {{ resumo.total_servico|floatformat:2 }}</div>
           </div>
         </div>
       </div>
     </div>
     <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center py-3">
-          <div class="small text-muted">Custo Médio/ha</div>
-          <div class="fs-5 fw-bold text-dark">R$ {{ resumo.custo_medio_ha|floatformat:2 }}</div>
-          <div class="small text-muted mt-1">{{ resumo.total_area|floatformat:2 }} ha</div>
-        </div>
+      <div class="stat-card text-center h-100">
+        <div class="stat-label text-uppercase">Custo Médio/ha</div>
+        <div class="stat-value">R$ {{ resumo.custo_medio_ha|floatformat:2 }}</div>
+        <div class="small text-muted mt-1">{{ resumo.total_area|floatformat:2 }} ha</div>
       </div>
     </div>
     {% if producao_total %}
     <div class="col-md-2">
-      <div class="card border-0 shadow-sm bg-info text-white h-100">
-        <div class="card-body text-center py-3">
-          <div class="small opacity-75">Produção Total</div>
-          <div class="fs-5 fw-bold">{{ producao_total|floatformat:0 }} kg</div>
-          {% if resumo.total_geral and producao_total %}
-          <div class="small opacity-75 mt-1">R$ {% widthratio resumo.total_geral producao_total 1 %}/kg</div>
-          {% endif %}
-        </div>
+      <div class="stat-card text-center h-100">
+        <div class="stat-icon stat-icon-blue mb-2 mx-auto"><i class="bi bi-box-seam"></i></div>
+        <div class="stat-label text-uppercase">Produção Total</div>
+        <div class="stat-value">{{ producao_total|floatformat:0 }} kg</div>
+        {% if resumo.total_geral and producao_total %}
+        <div class="small text-muted mt-1">R$ {% widthratio resumo.total_geral producao_total 1 %}/kg</div>
+        {% endif %}
       </div>
     </div>
     {% endif %}
     {% if talhao_mais_caro %}
     <div class="col-md-2">
-      <div class="card border-0 shadow-sm border-start border-danger border-3 h-100">
-        <div class="card-body py-3">
-          <div class="small text-muted">Talhão maior custo/ha</div>
-          <div class="fw-bold text-danger small">{{ talhao_mais_caro.talhao__nome }}</div>
-          <div class="small text-muted">R$ {{ talhao_mais_caro.custo_medio_ha|floatformat:2 }}/ha</div>
-        </div>
+      <div class="stat-card border-start border-danger border-3 h-100">
+        <div class="stat-label text-uppercase">Talhão maior custo/ha</div>
+        <div class="fw-bold text-danger small">{{ talhao_mais_caro.talhao__nome }}</div>
+        <div class="small text-muted">R$ {{ talhao_mais_caro.custo_medio_ha|floatformat:2 }}/ha</div>
       </div>
     </div>
     {% endif %}
     {% if talhao_mais_barato %}
     <div class="col-md-2">
-      <div class="card border-0 shadow-sm border-start border-success border-3 h-100">
-        <div class="card-body py-3">
-          <div class="small text-muted">Talhão menor custo/ha</div>
-          <div class="fw-bold text-success small">{{ talhao_mais_barato.talhao__nome }}</div>
-          <div class="small text-muted">R$ {{ talhao_mais_barato.custo_medio_ha|floatformat:2 }}/ha</div>
-        </div>
+      <div class="stat-card border-start border-success border-3 h-100">
+        <div class="stat-label text-uppercase">Talhão menor custo/ha</div>
+        <div class="fw-bold text-success small">{{ talhao_mais_barato.talhao__nome }}</div>
+        <div class="small text-muted">R$ {{ talhao_mais_barato.custo_medio_ha|floatformat:2 }}/ha</div>
       </div>
     </div>
     {% endif %}

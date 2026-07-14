@@ -2,93 +2,133 @@
 {% block title %}Empresas | ERP Agrícola{% endblock %}
 {% block page_title %}Empresas Cadastradas{% endblock %}
 
-{% block extra_css %}
-<style>
-  .nav-tabs .nav-link {
-    color: #6c757d;
-    font-weight: 500;
-    border-color: #dee2e6;
-    transition: all 0.2s ease;
-  }
-  
-  .nav-tabs .nav-link:hover {
-    color: #495057;
-    border-color: #dee2e6;
-  }
-  
-  .nav-tabs .nav-link.active {
-    color: #f0f0f0;
-    border-bottom: 3px solid #0d6efd;
-    font-weight: 600;
-    background-color: #0d6efd;
-    border-radius: 4px 4px 0 0;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex justify-content-between mb-3">
-    <h4 class="fw-bold text-secondary">Empresas</h4>
-    <a href="{% url 'empresas:empresa_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Nova Empresa
-    </a>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-building"></i></span>
+          <h2>Empresas</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'empresas:empresa_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Nova Empresa
+          </a>
+      </div>
   </div>
 
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" class="filter-bar">
+      <input type="hidden" name="status" value="{{ status }}">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" class="form-control" placeholder="Nome ou CNPJ..." value="{{ q }}">
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'empresas:empresa_list' %}?status={{ status }}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Abas de status -->
   <ul class="nav nav-tabs mb-3">
     <li class="nav-item">
-      <a class="nav-link {% if status == 'ativas' %}active{% endif %}" href="{% url 'empresas:empresa_list' %}?status=ativas">Ativas</a>
+      <a class="nav-link {% if status == 'ativas' %}active{% endif %}" href="?status=ativas{% if q %}&q={{ q }}{% endif %}">Ativas</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link {% if status == 'inativas' %}active{% endif %}" href="{% url 'empresas:empresa_list' %}?status=inativas">Inativas</a>
+      <a class="nav-link {% if status == 'inativas' %}active{% endif %}" href="?status=inativas{% if q %}&q={{ q }}{% endif %}">Inativas</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link {% if status == 'todas' %}active{% endif %}" href="{% url 'empresas:empresa_list' %}?status=todas">Todas</a>
+      <a class="nav-link {% if status == 'todas' %}active{% endif %}" href="?status=todas{% if q %}&q={{ q }}{% endif %}">Todas</a>
     </li>
   </ul>
 
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if empresas.paginator %}
+        Exibindo <strong>{{ empresas.start_index }}–{{ empresas.end_index }}</strong>
+        de <strong>{{ empresas.paginator.count }}</strong> empresa{{ empresas.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
   <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Nome</th>
-            <th>CNPJ</th>
-            <th>Email</th>
-            <th>Ativa</th>
-            <th>Bloqueada</th>
-            <th class="text-center">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for empresa in empresas %}
-          <tr>
-            <td>{{ empresa.nome }}</td>
-            <td>{{ empresa.cnpj|default:"—" }}</td>
-            <td>{{ empresa.email|default:"—" }}</td>
-            <td>{{ empresa.ativa|yesno:"Sim,Não" }}</td>
-            <td>
-              {% if empresa.is_blocked %}
-                <span class="badge bg-danger">Bloqueada</span>
-              {% else %}
-                <span class="badge bg-success">Ativa</span>
-              {% endif %}
-            </td>
-            <td class="text-center">
-              <a href="{% url 'empresas:empresa_update' empresa.id %}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-pencil-square"></i>
-              </a>
-              <a href="{% url 'empresas:empresa_delete' empresa.id %}" class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i>
-              </a>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="6" class="text-center text-muted">Nenhuma empresa cadastrada.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Nome</th>
+              <th>CNPJ</th>
+              <th>Email</th>
+              <th class="text-center">Ativa</th>
+              <th class="text-center">Bloqueada</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for empresa in empresas %}
+            <tr>
+              <td class="ps-4">{{ empresa.nome }}</td>
+              <td>{{ empresa.cnpj|default:"—" }}</td>
+              <td>{{ empresa.email|default:"—" }}</td>
+              <td class="text-center">{{ empresa.ativa|yesno:"Sim,Não" }}</td>
+              <td class="text-center">
+                {% if empresa.is_blocked %}
+                  <span class="badge bg-danger">Bloqueada</span>
+                {% else %}
+                  <span class="badge bg-success">Ativa</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon edit" href="{% url 'empresas:empresa_update' empresa.id %}" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a class="action-icon danger" href="{% url 'empresas:empresa_delete' empresa.id %}" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhuma empresa encontrada
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+    {% if empresas.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=empresas %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

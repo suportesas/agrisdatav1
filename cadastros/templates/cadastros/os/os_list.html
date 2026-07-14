@@ -8,12 +8,28 @@
 <div class="container-fluid mt-3">
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h4 class="fw-bold mb-0"><i class="bi bi-clipboard-check text-success me-2"></i>Ordens de Serviço</h4>
-      <small class="text-muted">Gestão de atividades no campo</small>
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-clipboard-check"></i></span>
+      <div>
+        <h2>Ordens de Serviço</h2>
+        <p class="text-muted mb-0">Gestão de atividades no campo</p>
+      </div>
     </div>
     <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary position-relative"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#filterCollapse"
+              aria-expanded="{% if search or tipo_servico_filter or talhao_filter or safra_filter %}true{% else %}false{% endif %}"
+              title="Pesquisar / Filtrar">
+        <i class="bi bi-funnel"></i> Filtros
+        {% if search or tipo_servico_filter or talhao_filter or safra_filter %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+            ●<span class="visually-hidden">filtro ativo</span>
+          </span>
+        {% endif %}
+      </button>
       <!-- Toggle de visualização -->
       <div class="btn-group btn-group-sm" role="group">
         <a href="?view=kanban{% if search %}&q={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if tipo_servico_filter %}&tipo_servico={{ tipo_servico_filter }}{% endif %}{% if talhao_filter %}&talhao={{ talhao_filter }}{% endif %}{% if safra_filter %}&safra={{ safra_filter }}{% endif %}"
@@ -31,51 +47,51 @@
     </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card border-0 shadow-sm mb-3">
-    <div class="card-body py-2">
-      <form method="get" class="row g-2 align-items-end">
-        <input type="hidden" name="view" value="{{ view_mode }}">
-        <div class="col-md-3">
-          <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm"
-                 placeholder="Número, talhão, responsável...">
-        </div>
-        <div class="col-md-2">
-          <select name="tipo_servico" class="form-select form-select-sm">
-            <option value="">Todos os tipos</option>
-            {% for ts in tipos_servico %}
-              <option value="{{ ts.pk }}" {% if tipo_servico_filter == ts.pk|stringformat:"s" %}selected{% endif %}>{{ ts.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select name="talhao" class="form-select form-select-sm">
-            <option value="">Todos os talhões</option>
-            {% for t in talhoes %}
-              <option value="{{ t.pk }}" {% if talhao_filter == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <select name="safra" class="form-select form-select-sm">
-            <option value="">Todas as safras</option>
-            {% for s in safras %}
-              <option value="{{ s.pk }}" {% if safra_filter == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nome }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-auto">
-          <button type="submit" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-search me-1"></i>Filtrar
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if search or tipo_servico_filter or talhao_filter or safra_filter %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <input type="hidden" name="view" value="{{ view_mode }}">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" value="{{ search }}" class="form-control"
+               placeholder="Número, talhão, responsável...">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo de Serviço</label>
+        <select name="tipo_servico" class="form-select">
+          <option value="">Todos os tipos</option>
+          {% for ts in tipos_servico %}
+            <option value="{{ ts.pk }}" {% if tipo_servico_filter == ts.pk|stringformat:"s" %}selected{% endif %}>{{ ts.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Talhão</label>
+        <select name="talhao" class="form-select">
+          <option value="">Todos os talhões</option>
+          {% for t in talhoes %}
+            <option value="{{ t.pk }}" {% if talhao_filter == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Safra</label>
+        <select name="safra" class="form-select">
+          <option value="">Todas as safras</option>
+          {% for s in safras %}
+            <option value="{{ s.pk }}" {% if safra_filter == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
           </button>
-          {% if search or status_filter or tipo_servico_filter or talhao_filter or safra_filter %}
-          <a href="?view={{ view_mode }}" class="btn btn-outline-danger btn-sm ms-1" title="Limpar filtros">
-            <i class="bi bi-x-circle"></i>
+          <a href="?view={{ view_mode }}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
           </a>
-          {% endif %}
-        </div>
-      </form>
-    </div>
+      </div>
+    </form>
   </div>
 
   <!-- Pills de status -->
@@ -562,6 +578,10 @@ a.os-badge:hover { filter: brightness(0.9); }
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+  const filterForm = document.getElementById('filterForm');
+  if (filterForm) {
+    filterForm.querySelectorAll('select').forEach(s => s.addEventListener('change', () => filterForm.submit()));
+  }
   {% if view_mode == 'kanban' %}
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);

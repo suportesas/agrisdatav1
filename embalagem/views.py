@@ -62,8 +62,12 @@ def tipo_embalagem_list(request):
     q = request.GET.get('q', '')
     if q:
         qs = qs.filter(nome__icontains=q)
+
+    paginator = Paginator(qs.order_by('nome'), 25)
+    tipos = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'embalagem/tipo_embalagem/list.html', {
-        'tipos': qs.order_by('nome'),
+        'tipos': tipos,
         'q': q,
     })
 

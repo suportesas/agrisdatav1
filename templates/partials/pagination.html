@@ -1,6 +1,6 @@
-{% comment %}Compact pagination with ellipses and query param preservation{% endcomment %}
+{% comment %}Compact pagination with ellipses and query param preservation. Always visible while there's at least 1 record, even on a single page.{% endcomment %}
 {% load pagination_extras %}
-{% if page_obj.has_other_pages %}
+{% if page_obj.paginator.count > 0 %}
 <nav aria-label="Navegação de páginas" class="d-flex align-items-center justify-content-between">
   <div>
     <small class="text-muted">Mostrando <strong>{{ page_obj.start_index }}</strong> - <strong>{{ page_obj.end_index }}</strong> de <strong>{{ page_obj.paginator.count }}</strong></small>
@@ -15,14 +15,18 @@
         {% endif %}
       </li>
 
-      {% compact_page_range page_obj as page_list %}
-      {% for item in page_list %}
-        {% if item == '...' %}
-          <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
-        {% else %}
-          <li class="page-item {% if page_obj.number == item %}active{% endif %}"><a class="page-link" href="?page={{ item }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">{{ item }}</a></li>
-        {% endif %}
-      {% endfor %}
+      {% if page_obj.paginator.num_pages > 1 %}
+        {% compact_page_range page_obj as page_list %}
+        {% for item in page_list %}
+          {% if item == '...' %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+          {% else %}
+            <li class="page-item {% if page_obj.number == item %}active{% endif %}"><a class="page-link" href="?page={{ item }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">{{ item }}</a></li>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <li class="page-item active"><span class="page-link">1</span></li>
+      {% endif %}
 
       <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
         {% if page_obj.has_next %}

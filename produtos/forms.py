@@ -333,10 +333,42 @@ class ProdutoForm(forms.ModelForm):
         return cleaned_data
 
 
+# CSTs restritos ao escopo de uma fazenda agrícola (commodities, insumos,
+# exportação direta e indireta) — regime tributário antigo. Mantidos como
+# constantes de FORM (não em ProdutoTributacao.CST_*_CHOICES) porque templates
+# de tributação já cadastrados podem ter CSTs fora desse escopo — restringir
+# no model quebraria a edição desses registros legados.
+CST_ICMS_CHOICES_FAZENDA = [
+    ('00', '00 - Tributada integralmente'),
+    ('40', '40 - Isenta'),
+    ('41', '41 - Não tributada'),
+    ('51', '51 - Diferimento'),
+]
+CST_PIS_COFINS_CHOICES_FAZENDA = [
+    ('01', '01 - Operação Tributável com Alíquota Básica'),
+    ('06', '06 - Operação Tributável a Alíquota Zero'),
+    ('08', '08 - Operação sem Incidência da Contribuição'),
+    ('09', '09 - Operação com Suspensão da Contribuição'),
+]
+CST_IPI_CHOICES_FAZENDA = [
+    ('53', '53 - Saída Não-Tributada'),
+    ('55', '55 - Saída com Suspensão'),
+]
+
+
 class ProdutoTributacaoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         empresa = kwargs.pop('empresa', None)
         super().__init__(*args, **kwargs)
+        # Restringe as opções de CST ao escopo desta fazenda. Precisa ser feito
+        # aqui (não só via Meta.widgets) porque os campos do model já têm
+        # choices= — ChoiceField.choices tem um setter que resincroniza
+        # automaticamente widget.choices, então passar choices= só no widget
+        # é sobrescrito pelas choices completas do model.
+        self.fields['icms_situacao_tributaria'].choices = [('', '--- Selecione ---')] + CST_ICMS_CHOICES_FAZENDA
+        self.fields['ipi_situacao_tributaria'].choices = [('', '--- Selecione ---')] + CST_IPI_CHOICES_FAZENDA
+        self.fields['pis_situacao_tributaria'].choices = [('', '--- Selecione ---')] + CST_PIS_COFINS_CHOICES_FAZENDA
+        self.fields['cofins_situacao_tributaria'].choices = [('', '--- Selecione ---')] + CST_PIS_COFINS_CHOICES_FAZENDA
         # Filtrar por empresa
         if empresa:
             self.fields['natureza_operacao'].queryset = NaturezaOperacao.objects.filter(empresa=empresa)
@@ -353,17 +385,23 @@ class ProdutoTributacaoForm(forms.ModelForm):
         model = ProdutoTributacao
         fields = [
             'produto', 'cfop', 'natureza_operacao', 'descricao', 'origem_mercadoria',
-            # ICMS
+            # ICMS (ICMS-ST fora de escopo: pertence aos CSTs 10/30/60/70, fora
+            # do escopo 00/40/41/51 desta fazenda)
             'icms_situacao_tributaria', 'icms_modalidade_base', 'icms_aliquota',
-            'icms_reducao_base', 'icms_base_calculo',
-            # ICMS ST
-            'icms_st_aliquota', 'icms_st_mva', 'icms_st_reducao_base',
-            # IPI
-            'ipi_situacao_tributaria', 'ipi_aliquota', 'ipi_codigo_enquadramento',
+            'icms_reducao_base', 'icms_base_calculo', 'icms_percentual_diferimento',
+            # IPI (sem alíquota: CST 53/55, únicos no escopo, são sempre
+            # não-tributada/suspensão, nunca com alíquota)
+            'ipi_situacao_tributaria', 'ipi_codigo_enquadramento',
             # PIS
             'pis_situacao_tributaria', 'pis_aliquota', 'pis_base_calculo', 'natureza_receita_pis',
             # COFINS
             'cofins_situacao_tributaria', 'cofins_aliquota', 'cofins_base_calculo', 'natureza_receita_cofins',
+            # IBS/CBS (Reforma Tributária)
+            'ibs_cbs_situacao_tributaria', 'ibs_cbs_classificacao_tributaria',
+            'ibs_cbs_aliquota_uf', 'ibs_cbs_aliquota_municipal', 'ibs_cbs_aliquota_cbs',
+            'ibs_percentual_reducao', 'ibs_percentual_diferimento',
+            'cbs_percentual_reducao', 'cbs_percentual_diferimento',
+            'ibs_cbs_credito_presumido_codigo', 'ibs_cbs_credito_presumido_percentual',
             # Outros
             'beneficio_fiscal', 'padrao', 'ativo', 'observacoes',
         ]
@@ -378,15 +416,10 @@ class ProdutoTributacaoForm(forms.ModelForm):
             'icms_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'icms_reducao_base': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'icms_base_calculo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
-            
-            # ICMS ST
-            'icms_st_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
-            'icms_st_mva': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
-            'icms_st_reducao_base': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
-            
+            'icms_percentual_diferimento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '100.00'}),
+
             # IPI
             'ipi_situacao_tributaria': forms.Select(attrs={'class': 'form-select'}),
-            'ipi_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'ipi_codigo_enquadramento': forms.TextInput(attrs={'class': 'form-control', 'value': '999'}),
             
             # PIS
@@ -407,7 +440,19 @@ class ProdutoTributacaoForm(forms.ModelForm):
                 'placeholder': 'Ex: 116', 'list': 'natureza-receita-list',
                 'autocomplete': 'off',
             }),
-            
+
+            # IBS/CBS (Reforma Tributária)
+            'ibs_cbs_situacao_tributaria': forms.Select(attrs={'class': 'form-select ibs-cbs-cst'}),
+            'ibs_cbs_classificacao_tributaria': forms.Select(attrs={'class': 'form-select ibs-cbs-cclasstrib'}),
+            'ibs_cbs_aliquota_uf': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
+            'ibs_cbs_aliquota_municipal': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
+            'ibs_cbs_aliquota_cbs': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
+            'ibs_percentual_reducao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
+            'ibs_percentual_diferimento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
+            'cbs_percentual_reducao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
+            'cbs_percentual_diferimento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
+            'ibs_cbs_credito_presumido_codigo': forms.Select(attrs={'class': 'form-select'}),
+            'ibs_cbs_credito_presumido_percentual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '%'}),
             # Outros
             'beneficio_fiscal': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código'}),
             'padrao': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -426,6 +471,24 @@ class ProdutoTributacaoForm(forms.ModelForm):
 
     def clean_cofins_aliquota(self):
         return self._round_aliquota('cofins_aliquota')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # cClassTrib deve formar um par válido com o CST IBS/CBS escolhido
+        cst_reforma = cleaned_data.get('ibs_cbs_situacao_tributaria')
+        cclasstrib = cleaned_data.get('ibs_cbs_classificacao_tributaria')
+        if cst_reforma:
+            validos = {c for c, _ in ProdutoTributacao.IBS_CBS_CST_CCLASSTRIB_MAP.get(cst_reforma, [])}
+            if not cclasstrib:
+                self.add_error('ibs_cbs_classificacao_tributaria',
+                                'cClassTrib obrigatório quando CST IBS/CBS é informado.')
+            elif cclasstrib not in validos:
+                self.add_error('ibs_cbs_classificacao_tributaria',
+                                f'cClassTrib "{cclasstrib}" não é válido para o CST IBS/CBS {cst_reforma}.')
+        elif cclasstrib:
+            self.add_error('ibs_cbs_classificacao_tributaria',
+                            'cClassTrib informado sem CST IBS/CBS selecionado.')
+        return cleaned_data
 
 class ProdutoDefensivoCulturaForm(forms.ModelForm):
     """Formulário para registrar cultura e praga combatida por defensivo"""

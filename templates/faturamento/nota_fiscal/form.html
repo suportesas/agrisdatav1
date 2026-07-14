@@ -679,18 +679,16 @@
                               </div>
                             </div>
 
-                            <!-- ── Pane: Tributação (sub-abas: ICMS, ICMS-ST, IPI, PIS/COFINS, FCP) ── -->
+                            <!-- ── Pane: Tributação (sub-abas: ICMS, IPI, PIS/COFINS) ── -->
+                            <!-- ICMS-ST e FCP fora de escopo desta fazenda: ICMS-ST pertence aos CSTs
+                                 10/30/60/70 (fora do escopo 00/40/41/51) e FCP incide sobre produtos
+                                 supérfluos, não commodities agrícolas/insumos. -->
                             <div class="tab-pane fade" id="pane-trib-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-trib-{{ forloop.counter0 }}">
 
                               <ul class="nav nav-pills fiscal-subtabs" role="tablist">
                                 <li class="nav-item" role="presentation">
                                   <button class="nav-link active" id="subtab-icms-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-icms-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-icms-{{ forloop.counter0 }}" aria-selected="true">
                                     <i class="bi bi-percent me-1"></i>ICMS
-                                  </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                  <button class="nav-link" id="subtab-st-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-st-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-st-{{ forloop.counter0 }}" aria-selected="false">
-                                    <i class="bi bi-arrow-repeat me-1"></i>ICMS-ST
                                   </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
@@ -704,18 +702,13 @@
                                   </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                  <button class="nav-link" id="subtab-fcp-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-fcp-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-fcp-{{ forloop.counter0 }}" aria-selected="false">
-                                    <i class="bi bi-coin me-1"></i>FCP
-                                  </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
                                   <button class="nav-link" id="subtab-ibscbs-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-ibscbs-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-ibscbs-{{ forloop.counter0 }}" aria-selected="false">
                                     <i class="bi bi-bank2 me-1"></i>IBS/CBS
                                   </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                   <button class="nav-link" id="subtab-credexp-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-credexp-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-credexp-{{ forloop.counter0 }}" aria-selected="false">
-                                    <i class="bi bi-globe-americas me-1"></i>Créd. Presumido / Exp. Indireta
+                                    <i class="bi bi-globe-americas me-1"></i>Créd. Presumido ICMS (Estadual) / Exp. Indireta
                                   </button>
                                 </li>
                               </ul>
@@ -729,35 +722,37 @@
                                       <label class="fiscal-label">CST ICMS</label>
                                       {{ item_form.cst_icms }}
                                     </div>
-                                    <div>
+                                    <!-- CST 00 (tributada integralmente) e CST 51 (diferimento) = grupos
+                                         ICMS00/ICMS51: modBC + BC + alíquota + valor. CST 40/41 (isenta/
+                                         não tributada) = grupo ICMS40: nenhum destes campos existe. -->
+                                    <div class="icms-aliq-wrap" style="display:none;">
                                       <label class="fiscal-label">Modalidade BC</label>
                                       {{ item_form.icms_modalidade_base }}
                                     </div>
-                                    <div>
-                                      <label class="fiscal-label">Red. BC (%)</label>
-                                      {{ item_form.icms_reducao_base }}
+                                    <div class="icms-aliq-wrap" style="display:none;">
+                                      <label class="fiscal-label">BC ICMS</label>
+                                      {{ item_form.icms_base_calculo }}
                                     </div>
-                                    <div>
+                                    <div class="icms-aliq-wrap" style="display:none;">
                                       <label class="fiscal-label">Alíq. ICMS (%)</label>
                                       {{ item_form.aliquota_icms }}
                                     </div>
-                                  </div>
-                                </div>
-
-                                <!-- ICMS ST -->
-                                <div class="tab-pane fade" id="subpane-st-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-st-{{ forloop.counter0 }}">
-                                  <div class="fiscal-section st d-flex flex-wrap gap-2 align-items-end">
-                                    <div>
-                                      <label class="fiscal-label">Alíq. ST (%)</label>
-                                      {{ item_form.icms_st_aliquota }}
+                                    <div class="icms-aliq-wrap" style="display:none;">
+                                      <label class="fiscal-label">Valor ICMS</label>
+                                      {{ item_form.valor_icms }}
                                     </div>
-                                    <div>
-                                      <label class="fiscal-label">MVA ST (%)</label>
-                                      {{ item_form.icms_st_mva }}
+                                    <!-- Redução de BC e diferimento — só fazem sentido no grupo ICMS51 -->
+                                    <div class="icms-dif-wrap" style="display:none;">
+                                      <label class="fiscal-label">Red. BC (%)</label>
+                                      {{ item_form.icms_reducao_base }}
                                     </div>
-                                    <div>
-                                      <label class="fiscal-label">Red. BC ST (%)</label>
-                                      {{ item_form.icms_st_reducao_base }}
+                                    <div class="icms-dif-wrap" style="display:none;">
+                                      <label class="fiscal-label">% Diferimento (CST 51)</label>
+                                      {{ item_form.icms_percentual_diferimento }}
+                                    </div>
+                                    <div class="icms-dif-wrap" style="display:none;">
+                                      <label class="fiscal-label">Valor Diferido</label>
+                                      {{ item_form.icms_valor_diferido }}
                                     </div>
                                   </div>
                                 </div>
@@ -770,12 +765,12 @@
                                       {{ item_form.cst_ipi }}
                                     </div>
                                     <div>
-                                      <label class="fiscal-label">Alíq. IPI (%)</label>
-                                      {{ item_form.aliquota_ipi }}
-                                    </div>
-                                    <div>
                                       <label class="fiscal-label">Cód. Enquadramento</label>
                                       {{ item_form.ipi_codigo_enquadramento }}
+                                    </div>
+                                    <div>
+                                      <label class="fiscal-label">CNPJ Produtor <small class="text-muted">(exportação)</small></label>
+                                      {{ item_form.ipi_cnpj_produtor }}
                                     </div>
                                   </div>
                                 </div>
@@ -793,9 +788,19 @@
                                         <label class="fiscal-label">Nat. Receita PIS</label>
                                         {{ item_form.natureza_receita_pis }}
                                       </div>
-                                      <div>
+                                      <!-- CST 01 (tributável) = grupo PISAliq: exige BC/alíquota/valor.
+                                           CST 06/08/09 = grupo PISNT: só o CST é enviado na NF-e. -->
+                                      <div class="pis-aliq-wrap" style="display:none;">
+                                        <label class="fiscal-label">BC PIS</label>
+                                        {{ item_form.pis_base_calculo }}
+                                      </div>
+                                      <div class="pis-aliq-wrap" style="display:none;">
                                         <label class="fiscal-label">Alíq. PIS (%)</label>
                                         {{ item_form.aliquota_pis }}
+                                      </div>
+                                      <div class="pis-aliq-wrap" style="display:none;">
+                                        <label class="fiscal-label">Valor PIS</label>
+                                        {{ item_form.valor_pis }}
                                       </div>
                                     </div>
                                     <!-- linha COFINS -->
@@ -808,31 +813,27 @@
                                         <label class="fiscal-label">Nat. Receita COFINS</label>
                                         {{ item_form.natureza_receita_cofins }}
                                       </div>
-                                      <div>
+                                      <!-- CST 01 (tributável) = grupo COFINSAliq: exige BC/alíquota/valor.
+                                           CST 06/08/09 = grupo COFINSNT: só o CST é enviado na NF-e. -->
+                                      <div class="cofins-aliq-wrap" style="display:none;">
+                                        <label class="fiscal-label">BC COFINS</label>
+                                        {{ item_form.cofins_base_calculo }}
+                                      </div>
+                                      <div class="cofins-aliq-wrap" style="display:none;">
                                         <label class="fiscal-label">Alíq. COFINS (%)</label>
                                         {{ item_form.aliquota_cofins }}
                                       </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <!-- FCP -->
-                                <div class="tab-pane fade" id="subpane-fcp-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-fcp-{{ forloop.counter0 }}">
-                                  <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
-                                    <div>
-                                      <label class="fiscal-label">Alíq. FCP (%)</label>
-                                      {{ item_form.fcp_aliquota }}
-                                    </div>
-                                    <div>
-                                      <label class="fiscal-label">Alíq. FCP ST (%)</label>
-                                      {{ item_form.fcp_st_aliquota }}
+                                      <div class="cofins-aliq-wrap" style="display:none;">
+                                        <label class="fiscal-label">Valor COFINS</label>
+                                        {{ item_form.valor_cofins }}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
 
                                 <!-- IBS/CBS — Reforma Tributária -->
                                 <div class="tab-pane fade" id="subpane-ibscbs-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-ibscbs-{{ forloop.counter0 }}">
-                                  <div class="fiscal-section ibscbs d-flex flex-wrap gap-2 align-items-end">
+                                  <div class="fiscal-section ibscbs d-flex flex-wrap gap-2 align-items-end mb-2">
                                     <div>
                                       <label class="fiscal-label">CST IBS/CBS</label>
                                       {{ item_form.ibs_cbs_situacao_tributaria }}
@@ -841,35 +842,104 @@
                                       <label class="fiscal-label">cClassTrib</label>
                                       {{ item_form.ibs_cbs_classificacao_tributaria }}
                                     </div>
+                                  </div>
+
+                                  <!-- Divisão clara IBS x CBS — cada tributo tem sua própria alíquota,
+                                       redução e diferimento (podem ter percentuais diferentes). -->
+                                  <ul class="nav nav-pills fiscal-subtabs mb-2" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                      <button class="nav-link active" id="subtab-ibs-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-ibs-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-ibs-{{ forloop.counter0 }}" aria-selected="true">IBS</button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                      <button class="nav-link" id="subtab-cbs-{{ forloop.counter0 }}" data-bs-toggle="tab" data-bs-target="#subpane-cbs-{{ forloop.counter0 }}" type="button" role="tab" aria-controls="subpane-cbs-{{ forloop.counter0 }}" aria-selected="false">CBS</button>
+                                    </li>
+                                  </ul>
+                                  <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="subpane-ibs-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-ibs-{{ forloop.counter0 }}">
+                                      <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
+                                        <div>
+                                          <label class="fiscal-label">Alíq. IBS Estadual (%)</label>
+                                          {{ item_form.ibs_cbs_aliquota_uf }}
+                                        </div>
+                                        <div>
+                                          <label class="fiscal-label">Alíq. IBS Municipal (%)</label>
+                                          {{ item_form.ibs_cbs_aliquota_municipal }}
+                                        </div>
+                                        <div>
+                                          <label class="fiscal-label">% Redução IBS (CST 200/515)</label>
+                                          {{ item_form.ibs_percentual_reducao }}
+                                        </div>
+                                        <div>
+                                          <label class="fiscal-label">% Diferimento IBS (CST 515)</label>
+                                          {{ item_form.ibs_percentual_diferimento }}
+                                        </div>
+                                        <div>
+                                          <label class="fiscal-label">Valor Diferido IBS</label>
+                                          {{ item_form.ibs_valor_diferido }}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="subpane-cbs-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-cbs-{{ forloop.counter0 }}">
+                                      <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
+                                        <div>
+                                          <label class="fiscal-label">Alíq. CBS (%)</label>
+                                          {{ item_form.ibs_cbs_aliquota_cbs }}
+                                        </div>
+                                        <div>
+                                          <label class="fiscal-label">% Redução CBS (CST 200/515)</label>
+                                          {{ item_form.cbs_percentual_reducao }}
+                                        </div>
+                                        <div>
+                                          <label class="fiscal-label">% Diferimento CBS (CST 515)</label>
+                                          {{ item_form.cbs_percentual_diferimento }}
+                                        </div>
+                                        <div>
+                                          <label class="fiscal-label">Valor Diferido CBS</label>
+                                          {{ item_form.cbs_valor_diferido }}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <small class="text-muted d-block mb-1">
+                                    Crédito presumido da Reforma Tributária (gCredPresOper) — mecanismo do
+                                    <em>comprador</em>, diferente do crédito presumido estadual de ICMS (aba
+                                    "Créd. Presumido ICMS (Estadual) / Exp. Indireta").
+                                  </small>
+                                  <div class="fiscal-section ibscbs-credpres d-flex flex-wrap gap-2 align-items-end mt-2">
                                     <div>
-                                      <label class="fiscal-label">Alíq. IBS Estadual (%)</label>
-                                      {{ item_form.ibs_cbs_aliquota_uf }}
+                                      <label class="fiscal-label">cCredPres (Créd. Presumido IBS/CBS — Reforma)</label>
+                                      {{ item_form.ibs_cbs_credito_presumido_codigo }}
                                     </div>
                                     <div>
-                                      <label class="fiscal-label">Alíq. IBS Municipal (%)</label>
-                                      {{ item_form.ibs_cbs_aliquota_municipal }}
+                                      <label class="fiscal-label">% Créd. Presumido IBS/CBS</label>
+                                      {{ item_form.ibs_cbs_credito_presumido_percentual }}
                                     </div>
                                     <div>
-                                      <label class="fiscal-label">Alíq. CBS (%)</label>
-                                      {{ item_form.ibs_cbs_aliquota_cbs }}
+                                      <label class="fiscal-label">Valor Créd. Presumido IBS/CBS</label>
+                                      {{ item_form.ibs_cbs_credito_presumido_valor }}
                                     </div>
                                   </div>
                                 </div>
 
-                                <!-- Crédito Presumido de ICMS / Exportação Indireta -->
+                                <!-- Crédito Presumido de ICMS (estadual, regime antigo) / Exportação Indireta -->
                                 <div class="tab-pane fade" id="subpane-credexp-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="subtab-credexp-{{ forloop.counter0 }}">
                                   <div class="fiscal-section credexp">
+                                    <small class="text-muted d-block mb-1">
+                                      Benefício fiscal estadual de ICMS (ex: PR810001) — mecanismo diferente do
+                                      cCredPres da Reforma Tributária (aba IBS/CBS), que é um crédito do <em>comprador</em>.
+                                    </small>
                                     <div class="d-flex flex-wrap gap-2 align-items-end mb-1">
                                       <div>
-                                        <label class="fiscal-label">Cód. Benefício (cCredPresumido)</label>
+                                        <label class="fiscal-label">Cód. Benefício ICMS Estadual (cCredPresumido)</label>
                                         {{ item_form.credito_presumido_codigo_beneficio }}
                                       </div>
                                       <div>
-                                        <label class="fiscal-label">% Créd. Presumido</label>
+                                        <label class="fiscal-label">% Créd. Presumido ICMS</label>
                                         {{ item_form.credito_presumido_percentual }}
                                       </div>
                                       <div>
-                                        <label class="fiscal-label">Valor Créd. Presumido</label>
+                                        <label class="fiscal-label">Valor Créd. Presumido ICMS</label>
                                         {{ item_form.credito_presumido_valor }}
                                       </div>
                                     </div>
@@ -996,6 +1066,10 @@
                                 <div class="deson-wrap" style="display:none;">
                                   <label class="fiscal-label">Motivo Desoneração ICMS</label>
                                   {{ item_form.icms_motivo_desoneracao }}
+                                </div>
+                                <div class="deson-wrap" style="display:none;">
+                                  <label class="fiscal-label">Valor Desoneração</label>
+                                  {{ item_form.icms_valor_desoneracao }}
                                 </div>
                               </div>
                             </div>
@@ -1342,16 +1416,12 @@
     const ncm  = src.querySelector('[name$="-ncm"]')?.value?.trim();
     const cfop = src.querySelector('[name$="-cfop"]')?.value?.trim();
     const cst  = src.querySelector('[name$="-cst_icms"]')?.value?.trim();
-    const stAl = parseFloat(src.querySelector('[name$="-icms_st_aliquota"]')?.value || 0);
 
-    btn.classList.remove('btn-outline-secondary','btn-outline-warning','btn-outline-success','btn-outline-info');
+    btn.classList.remove('btn-outline-secondary','btn-outline-warning','btn-outline-success');
     if (!prod) { btn.classList.add('btn-outline-secondary'); return; }
     if (!ncm || !cfop || !cst) {
       btn.classList.add('btn-outline-warning');
       btn.title = 'Dados Fiscais incompletos — revise NCM, CFOP e CST ICMS';
-    } else if (stAl > 0) {
-      btn.classList.add('btn-outline-info');
-      btn.title = 'Dados Fiscais OK (com ICMS ST)';
     } else {
       btn.classList.add('btn-outline-success');
       btn.title = 'Dados Fiscais OK';
@@ -1366,34 +1436,48 @@
       if (el && val !== undefined && val !== null) el.value = val;
     };
     setF('input[name$="-cfop"]',                      t.cfop);
-    setF('input[name$="-cst_icms"]',                  t.cst_icms);
+    // cst_icms/cst_pis/cst_cofins agora são <select> (restritos ao escopo da
+    // fazenda) — seletor sem qualificador de tag para casar com input OU select.
+    setF('[name$="-cst_icms"]',                        t.cst_icms);
     setF('select[name$="-icms_modalidade_base"]',      t.icms_modalidade_base);
     setF('input[name$="-icms_reducao_base"]',          t.icms_reducao_base);
     setF('input[name$="-aliquota_icms"]',              t.aliquota_icms);
-    setF('input[name$="-icms_st_aliquota"]',           t.icms_st_aliquota);
-    setF('input[name$="-icms_st_mva"]',                t.icms_st_mva);
-    setF('input[name$="-icms_st_reducao_base"]',       t.icms_st_reducao_base);
+    setF('input[name$="-icms_percentual_diferimento"]', t.icms_percentual_diferimento);
     setF('select[name$="-cst_ipi"]',                   t.cst_ipi);
-    setF('input[name$="-aliquota_ipi"]',               t.aliquota_ipi);
     setF('input[name$="-ipi_codigo_enquadramento"]',   t.ipi_codigo_enquadramento);
-    setF('input[name$="-cst_pis"]',                    t.cst_pis);
+    setF('[name$="-cst_pis"]',                          t.cst_pis);
     setF('input[name$="-aliquota_pis"]',               t.aliquota_pis);
     setF('input[name$="-natureza_receita_pis"]',       t.natureza_receita_pis);
-    setF('input[name$="-cst_cofins"]',                 t.cst_cofins);
+    setF('[name$="-cst_cofins"]',                       t.cst_cofins);
     setF('input[name$="-aliquota_cofins"]',            t.aliquota_cofins);
     setF('input[name$="-natureza_receita_cofins"]',    t.natureza_receita_cofins);
     setF('input[name$="-beneficio_fiscal"]',           t.beneficio_fiscal);
-    setF('input[name$="-fcp_aliquota"]',               t.fcp_aliquota);
-    setF('input[name$="-fcp_st_aliquota"]',            t.fcp_st_aliquota);
+    // IBS/CBS (Reforma Tributária)
+    setF('select[name$="-ibs_cbs_situacao_tributaria"]',      t.ibs_cbs_situacao_tributaria);
+    setF('select[name$="-ibs_cbs_classificacao_tributaria"]', t.ibs_cbs_classificacao_tributaria);
+    setF('input[name$="-ibs_cbs_aliquota_uf"]',               t.ibs_cbs_aliquota_uf);
+    setF('input[name$="-ibs_cbs_aliquota_municipal"]',        t.ibs_cbs_aliquota_municipal);
+    setF('input[name$="-ibs_cbs_aliquota_cbs"]',               t.ibs_cbs_aliquota_cbs);
+    setF('input[name$="-ibs_percentual_reducao"]',        t.ibs_percentual_reducao);
+    setF('input[name$="-cbs_percentual_reducao"]',        t.cbs_percentual_reducao);
+    setF('input[name$="-ibs_percentual_diferimento"]',    t.ibs_percentual_diferimento);
+    setF('input[name$="-cbs_percentual_diferimento"]',    t.cbs_percentual_diferimento);
+    setF('select[name$="-ibs_cbs_credito_presumido_codigo"]', t.ibs_cbs_credito_presumido_codigo);
+    setF('input[name$="-ibs_cbs_credito_presumido_percentual"]', t.ibs_cbs_credito_presumido_percentual);
+    // Re-filtra as opções de cClassTrib conforme o CST IBS/CBS recém-aplicado
+    (fiscalRow || mainRow).querySelector('.ibs-cbs-cst')
+      ?.dispatchEvent(new Event('change'));
     // Show/hide Natureza da Receita por CST
-    const CST_NAT = new Set(['04','05','06','07','08','09','49','99']);
     const fiscalSrc = fiscalRow || mainRow;
-    fiscalSrc.querySelectorAll('.nat-receita-wrap').forEach((wrap, i) => {
-      const cst = i === 0 ? (t.cst_pis || '') : (t.cst_cofins || '');
-      wrap.style.display = CST_NAT.has(cst) ? '' : 'none';
-    });
+    toggleNatureza(fiscalSrc);
+    // Show/hide BC/Alíq./Valor de PIS-COFINS (grupo Aliq, só CST 01) + recalcula
+    togglePisCofinsAliq(fiscalSrc);
+    calcPisCofins(mainRow, fiscalRow);
     // Show/hide Desoneração por CST ICMS
     toggleDeson(fiscalSrc, t.cst_icms || '');
+    // Show/hide BC/Alíq./Valor/Diferimento de ICMS (grupo Aliq, só CST 00/51) + recalcula
+    toggleIcmsGroups(fiscalSrc);
+    calcIcmsGroup(mainRow, fiscalRow);
     updateFiscalBadge(mainRow, fiscalRow);
   }
 
@@ -1405,7 +1489,6 @@
     const idx   = selectedIdx ?? 0;
     const wrap  = document.createElement('div');
     wrap.className = 'trib-selector-wrap col-12 mb-2 px-1';
-    const hasst = t => parseFloat(t.icms_st_aliquota) > 0 ? ' 🔶ST' : '';
 
     const cfopHeader = document.getElementById('id_cfop')?.value?.trim();
     const matched    = tributacoes[idx]?.cfop === cfopHeader;
@@ -1421,7 +1504,7 @@
       </div>
       <select class="form-select form-select-sm trib-select">
         ${tributacoes.map((t, i) =>
-          `<option value="${i}"${i === idx ? ' selected' : ''}>CFOP ${t.cfop} · CST-${t.cst_icms} · ICMS ${parseFloat(t.aliquota_icms)}%${hasst(t)} · PIS ${t.cst_pis} · COFINS ${t.cst_cofins}</option>`
+          `<option value="${i}"${i === idx ? ' selected' : ''}>CFOP ${t.cfop} · CST-${t.cst_icms} · ICMS ${parseFloat(t.aliquota_icms)}% · PIS ${t.cst_pis} · COFINS ${t.cst_cofins}</option>`
         ).join('')}
       </select>`;
     wrap.querySelector('.trib-select').addEventListener('change', function () {
@@ -1571,6 +1654,23 @@
       const el = row.querySelector(sel);
       if (el) el.addEventListener('input', () => atualizarTributavel(row));
     });
+    // BC/Valor de PIS e COFINS (grupo Aliq, CST 01) — recalcula ao vivo
+    const fiscalRow = row.nextElementSibling?.classList.contains('item-fiscal-row')
+      ? row.nextElementSibling : null;
+    ['input[name$="-quantidade"]','input[name$="-valor_unitario"]','input[name$="-valor_desconto"]',
+     'input[name$="-aliquota_pis"]','input[name$="-aliquota_cofins"]'].forEach(sel => {
+      const el = row.querySelector(sel) || fiscalRow?.querySelector(sel);
+      if (el) el.addEventListener('input', () => calcPisCofins(row, fiscalRow));
+    });
+    calcPisCofins(row, fiscalRow);
+    // BC/Valor/Diferido de ICMS — recalcula ao vivo
+    ['input[name$="-quantidade"]','input[name$="-valor_unitario"]','input[name$="-valor_desconto"]',
+     'input[name$="-aliquota_icms"]','input[name$="-icms_reducao_base"]',
+     'input[name$="-icms_percentual_diferimento"]'].forEach(sel => {
+      const el = row.querySelector(sel) || fiscalRow?.querySelector(sel);
+      if (el) el.addEventListener('input', () => calcIcmsGroup(row, fiscalRow));
+    });
+    calcIcmsGroup(row, fiscalRow);
   }
 
   // ── AJAX: produto selecionado ─────────────────────────────────────
@@ -1657,7 +1757,7 @@
     });
 
     // Badge ao editar manualmente
-    ['[name$="-ncm"]','[name$="-cfop"]','[name$="-cst_icms"]','[name$="-icms_st_aliquota"]'].forEach(sel => {
+    ['[name$="-ncm"]','[name$="-cfop"]','[name$="-cst_icms"]'].forEach(sel => {
       const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
       if (el) el.addEventListener('input', () => updateFiscalBadge(mainRow, rowFiscal));
     });
@@ -2040,6 +2140,140 @@
 </script>
 
 <script>
+// ── Toggles CST-driven (Desoneração ICMS / Natureza da Receita PIS-COFINS) ──
+// Declaradas fora de qualquer IIFE — precisam ser chamáveis tanto daqui
+// quanto de applyTributacao(), que vive em outro <script> (escopo separado).
+const CST_DESON = new Set(['20','30','40','41','50','51','60','70','90','300','400','500','900']);
+
+function toggleDeson(container, cst) {
+  if (!container) return;
+  const wrap = container.querySelector('.deson-wrap');
+  if (wrap) wrap.style.display = CST_DESON.has(String(cst).padStart ? String(cst) : '') ? '' : 'none';
+}
+
+// CSTs de PIS/COFINS que exigem Natureza da Receita. No escopo restrito desta
+// fazenda (01/06/08/09), nenhum exige: CST 01 usa BC+alíquota+valor (grupo
+// Aliq); CST 06/08/09 usam apenas o CST (grupo NT, sem nenhum campo extra).
+// Mantido genérico (04/05/49/99) apenas para não quebrar se o escopo de CSTs
+// for ampliado no futuro — hoje esses códigos não aparecem no dropdown.
+const CST_NAT = new Set(['04','05','49','99']);
+
+function toggleNatureza(container) {
+  if (!container) return;
+  const cstPis    = container.querySelector('[name$="-cst_pis"]')?.value || '';
+  const cstCofins = container.querySelector('[name$="-cst_cofins"]')?.value || '';
+  container.querySelectorAll('.nat-receita-wrap').forEach((wrap, i) => {
+    const cst = i === 0 ? cstPis : cstCofins;
+    wrap.style.display = CST_NAT.has(cst) ? '' : 'none';
+  });
+}
+
+// CST 01 = grupo PISAliq/COFINSAliq (BC + alíquota + valor). CST 06/08/09 =
+// grupo PISNT/COFINSNT — só o CST é enviado na NF-e, sem BC/alíquota/valor.
+const CST_PIS_COFINS_ALIQ = new Set(['01']);
+
+function togglePisCofinsAliq(container) {
+  if (!container) return;
+  const cstPis    = container.querySelector('[name$="-cst_pis"]')?.value || '';
+  const cstCofins = container.querySelector('[name$="-cst_cofins"]')?.value || '';
+  const showPis    = CST_PIS_COFINS_ALIQ.has(cstPis);
+  const showCofins = CST_PIS_COFINS_ALIQ.has(cstCofins);
+  container.querySelectorAll('.pis-aliq-wrap').forEach(wrap => { wrap.style.display = showPis ? '' : 'none'; });
+  container.querySelectorAll('.cofins-aliq-wrap').forEach(wrap => { wrap.style.display = showCofins ? '' : 'none'; });
+  // CST 06/08/09 não têm alíquota (grupo NT) — zera para não submeter um
+  // percentual residual de quando o CST era 01 (evita cobrar PIS/COFINS
+  // indevidamente após o usuário trocar o CST sem apagar a alíquota).
+  if (!showPis) {
+    const el = container.querySelector('[name$="-aliquota_pis"]');
+    if (el) el.value = '0';
+  }
+  if (!showCofins) {
+    const el = container.querySelector('[name$="-aliquota_cofins"]');
+    if (el) el.value = '0';
+  }
+}
+
+// Recalcula BC/Valor de PIS e COFINS ao vivo (espelha ItemNotaFiscal.save()):
+// base = valor_total do item; valor = base * alíquota / 100.
+function calcPisCofins(mainRow, fiscalRow) {
+  if (!mainRow) return;
+  const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
+  const qtd  = parseFloat(mainRow.querySelector('[name$="-quantidade"]')?.value) || 0;
+  const vu   = parseFloat(mainRow.querySelector('[name$="-valor_unitario"]')?.value) || 0;
+  const desc = parseFloat(mainRow.querySelector('[name$="-valor_desconto"]')?.value) || 0;
+  const base = Math.max(0, qtd * vu - desc);
+  const aliqPis    = parseFloat(src.querySelector('[name$="-aliquota_pis"]')?.value) || 0;
+  const aliqCofins = parseFloat(src.querySelector('[name$="-aliquota_cofins"]')?.value) || 0;
+  const bcPisEl    = src.querySelector('[name$="-pis_base_calculo"]');
+  const valorPisEl = src.querySelector('[name$="-valor_pis"]');
+  const bcCofinsEl    = src.querySelector('[name$="-cofins_base_calculo"]');
+  const valorCofinsEl = src.querySelector('[name$="-valor_cofins"]');
+  if (bcPisEl)    bcPisEl.value    = base.toFixed(2);
+  if (valorPisEl) valorPisEl.value = (base * aliqPis / 100).toFixed(2);
+  if (bcCofinsEl)    bcCofinsEl.value    = base.toFixed(2);
+  if (valorCofinsEl) valorCofinsEl.value = (base * aliqCofins / 100).toFixed(2);
+}
+
+// CST 00 (tributada integralmente) e 51 (diferimento) = grupos ICMS00/ICMS51:
+// modBC + BC + alíquota + valor. CST 40/41 (isenta/não tributada) = grupo
+// ICMS40 — nenhum desses campos existe na NF-e, só CST + desoneração opcional.
+const CST_ICMS_ALIQ = new Set(['00', '51']);
+// Redução de BC e diferimento só se aplicam ao grupo ICMS51.
+const CST_ICMS_DIF = new Set(['51']);
+
+function toggleIcmsGroups(container) {
+  if (!container) return;
+  const cst = container.querySelector('[name$="-cst_icms"]')?.value || '';
+  const showAliq = CST_ICMS_ALIQ.has(cst);
+  const showDif  = CST_ICMS_DIF.has(cst);
+  container.querySelectorAll('.icms-aliq-wrap').forEach(wrap => { wrap.style.display = showAliq ? '' : 'none'; });
+  container.querySelectorAll('.icms-dif-wrap').forEach(wrap => { wrap.style.display = showDif ? '' : 'none'; });
+  // CST 40/41 não têm alíquota nem diferimento (grupo ICMS40) — zera para não
+  // submeter um percentual residual de quando o CST era 00/51.
+  if (!showAliq) {
+    const el = container.querySelector('[name$="-aliquota_icms"]');
+    if (el) el.value = '0';
+  }
+  if (!showDif) {
+    const redEl = container.querySelector('[name$="-icms_reducao_base"]');
+    if (redEl) redEl.value = '0';
+    const difEl = container.querySelector('[name$="-icms_percentual_diferimento"]');
+    if (difEl) difEl.value = '0';
+  }
+}
+
+// Recalcula BC/Valor/Diferido de ICMS ao vivo (espelha ItemNotaFiscal.save()).
+// Recalcula BC/Valor/Diferido de ICMS ao vivo (espelha ItemNotaFiscal.save()).
+// ICMS-ST e FCP fora de escopo desta fazenda — ver nota no formulário.
+function calcIcmsGroup(mainRow, fiscalRow) {
+  if (!mainRow) return;
+  const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
+  const qtd  = parseFloat(mainRow.querySelector('[name$="-quantidade"]')?.value) || 0;
+  const vu   = parseFloat(mainRow.querySelector('[name$="-valor_unitario"]')?.value) || 0;
+  const desc = parseFloat(mainRow.querySelector('[name$="-valor_desconto"]')?.value) || 0;
+  const total = Math.max(0, qtd * vu - desc);
+
+  const reducao = parseFloat(src.querySelector('[name$="-icms_reducao_base"]')?.value) || 0;
+  const aliq    = parseFloat(src.querySelector('[name$="-aliquota_icms"]')?.value) || 0;
+  const cst     = src.querySelector('[name$="-cst_icms"]')?.value || '';
+  const pDif    = parseFloat(src.querySelector('[name$="-icms_percentual_diferimento"]')?.value) || 0;
+  const bcIcms = total * (100 - reducao) / 100;
+  let valorIcms = bcIcms * aliq / 100;
+  let diferido = 0;
+  if (cst === '51' && pDif > 0) {
+    diferido = valorIcms * pDif / 100;
+    valorIcms -= diferido;
+  }
+  const bcEl = src.querySelector('[name$="-icms_base_calculo"]');
+  const valorEl = src.querySelector('[name$="-valor_icms"]');
+  const difEl = src.querySelector('[name$="-icms_valor_diferido"]');
+  if (bcEl)    bcEl.value    = bcIcms.toFixed(2);
+  if (valorEl) valorEl.value = valorIcms.toFixed(2);
+  if (difEl)   difEl.value   = diferido.toFixed(2);
+}
+</script>
+
+<script>
 // ── DI — show/hide por origem da mercadoria ──────────────────────────────
 (function () {
   const ORIGENS_IMPORTADO = new Set(['1','2','6','7']);
@@ -2145,13 +2379,8 @@
     }
   }
 
-  const CST_DESON = new Set(['20','30','40','41','50','51','60','70','90','300','400','500','900']);
-
-  function toggleDeson(container, cst) {
-    if (!container) return;
-    const wrap = container.querySelector('.deson-wrap');
-    if (wrap) wrap.style.display = CST_DESON.has(String(cst).padStart ? String(cst) : '') ? '' : 'none';
-  }
+  // toggleDeson / toggleNatureza agora são globais (script anterior) —
+  // precisam ser chamáveis também a partir de applyTributacao().
 
   function bindDIRow(fr) {
     const origemSel = fr.querySelector('[name$="-origem_mercadoria"]');
@@ -2164,14 +2393,39 @@
     toggleDI(fr);
   }
 
+  function bindNaturezaRow(fr) {
+    const mainRow = fr.previousElementSibling;
+    const cstPisSel    = fr.querySelector('[name$="-cst_pis"]');
+    const cstCofinsSel = fr.querySelector('[name$="-cst_cofins"]');
+    const onCstChange = () => {
+      toggleNatureza(fr);
+      togglePisCofinsAliq(fr);
+      calcPisCofins(mainRow, fr);
+    };
+    if (cstPisSel)    cstPisSel.addEventListener('change', onCstChange);
+    if (cstCofinsSel) cstCofinsSel.addEventListener('change', onCstChange);
+    toggleNatureza(fr);
+    togglePisCofinsAliq(fr);
+  }
+
+  function bindIcmsRow(fr) {
+    const mainRow = fr.previousElementSibling;
+    const cstSel = fr.querySelector('[name$="-cst_icms"]');
+    if (!cstSel) return;
+    cstSel.addEventListener('change', () => {
+      toggleDeson(fr, cstSel.value);
+      toggleIcmsGroups(fr);
+      calcIcmsGroup(mainRow, fr);
+    });
+    toggleDeson(fr, cstSel.value);
+    toggleIcmsGroups(fr);
+  }
+
   // Aplica a todos os fiscalRows existentes
   document.querySelectorAll('.item-fiscal-row').forEach(fr => {
     bindDIRow(fr);
-    const cstInput = fr.querySelector('[name$="-cst_icms"]');
-    if (cstInput) {
-      cstInput.addEventListener('input', () => toggleDeson(fr, cstInput.value));
-      toggleDeson(fr, cstInput.value);
-    }
+    bindNaturezaRow(fr);
+    bindIcmsRow(fr);
   });
 
   // Observer para novos itens adicionados
@@ -2181,13 +2435,48 @@
       mutations.forEach(m => m.addedNodes.forEach(node => {
         if (node.classList?.contains('item-fiscal-row')) {
           bindDIRow(node);
-          const cstInput = node.querySelector('[name$="-cst_icms"]');
-          if (cstInput) {
-            cstInput.addEventListener('input', () => toggleDeson(node, cstInput.value));
-          }
+          bindNaturezaRow(node);
+          bindIcmsRow(node);
         }
       }));
     }).observe(itemsBody, { childList: true });
+  }
+})();
+
+// ── IBS/CBS — filtra opções de cClassTrib pelo CST selecionado ────────────
+// UX apenas: os 3 primeiros dígitos de cada cClassTrib do escopo desta
+// fazenda coincidem com o CST correspondente (ex: 200034 → CST 200). A
+// validação que realmente impede uma combinação inválida é server-side
+// (ItemNotaFiscalForm.clean() e o checklist de pré-emissão).
+(function () {
+  function filterCclasstrib(row) {
+    const cstSel = row.querySelector('.ibs-cbs-cst');
+    const cclasstribSel = row.querySelector('.ibs-cbs-cclasstrib');
+    if (!cstSel || !cclasstribSel) return;
+    const cst = cstSel.value;
+    Array.from(cclasstribSel.options).forEach(opt => {
+      if (!opt.value) { opt.hidden = false; return; }
+      opt.hidden = cst ? opt.value.slice(0, 3) !== cst : false;
+    });
+    if (cclasstribSel.selectedOptions[0]?.hidden) cclasstribSel.value = '';
+  }
+
+  function bindRow(row) {
+    const cstSel = row.querySelector('.ibs-cbs-cst');
+    if (!cstSel) return;
+    cstSel.addEventListener('change', () => filterCclasstrib(row));
+    filterCclasstrib(row);
+  }
+
+  document.querySelectorAll('.item-fiscal-row').forEach(bindRow);
+
+  const itemsBodyIbsCbs = document.getElementById('items-body');
+  if (itemsBodyIbsCbs) {
+    new MutationObserver(mutations => {
+      mutations.forEach(m => m.addedNodes.forEach(node => {
+        if (node.classList?.contains('item-fiscal-row')) bindRow(node);
+      }));
+    }).observe(itemsBodyIbsCbs, { childList: true });
   }
 })();
 

@@ -117,33 +117,18 @@
             </td>
             {% if user.is_superuser or user.is_staff or user.is_admin_empresa %}
             <td class="px-3 py-3 text-center">
-              <div class="btn-group btn-group-sm" role="group">
-                <a href="{% url 'usuarios:usuario_update' usuario.id %}" 
-                   class="btn btn-outline-primary" 
-                   title="Visualizar"
-                   data-bs-toggle="tooltip">
-                  <i class="bi bi-eye"></i>
-                </a>
-                <a href="{% url 'usuarios:usuario_update' usuario.id %}" 
-                   class="btn btn-outline-success" 
-                   title="Editar"
-                   data-bs-toggle="tooltip">
-                  <i class="bi bi-pencil-square"></i>
-                </a>
-                {% if user.is_superuser and not usuario.is_superuser %}
-                <a href="{% url 'usuarios:usuario_troca_senha_emergencial' usuario.id %}" 
-                   class="btn btn-outline-warning"
-                   title="Troca Emergencial de Senha"
-                   data-bs-toggle="tooltip">
-                  <i class="bi bi-key"></i>
-                </a>
-                {% endif %}
-                <a href="{% url 'usuarios:usuario_delete' usuario.id %}" 
-                   class="btn btn-outline-danger" 
-                   title="Excluir"
-                   data-bs-toggle="tooltip">
-                  <i class="bi bi-trash"></i>
-                </a>
+              <div class="d-flex gap-3 justify-content-center">
+                  <a class="action-icon edit" href="{% url 'usuarios:usuario_update' usuario.id %}" title="Editar">
+                      <i class="bi bi-pencil"></i>
+                  </a>
+                  {% if user.is_superuser and not usuario.is_superuser %}
+                  <a class="action-icon" href="{% url 'usuarios:usuario_troca_senha_emergencial' usuario.id %}" title="Troca Emergencial de Senha">
+                      <i class="bi bi-key"></i>
+                  </a>
+                  {% endif %}
+                  <a class="action-icon danger" href="{% url 'usuarios:usuario_delete' usuario.id %}" title="Excluir">
+                      <i class="bi bi-trash"></i>
+                  </a>
               </div>
             </td>
             {% endif %}

@@ -1010,7 +1010,12 @@ class IntegranNotasClient:
 
         icms_block: dict = {'situacao_tributaria': cst_icms}
 
-        if item.aliquota_icms and float(item.aliquota_icms) > 0:
+        # CST 40/41 (isenta/não tributada) usam o grupo ICMS40 da NF-e, que não
+        # tem modBC/vBC/pICMS/vICMS — só CST + desoneração opcional. Gate por
+        # CST (não só por alíquota>0) para nunca enviar esse grupo nesses CSTs,
+        # mesmo que aliquota_icms guarde um valor residual/hipotético.
+        CST_ICMS_SEM_TRIBUTACAO = {'40', '41'}
+        if cst_icms not in CST_ICMS_SEM_TRIBUTACAO and item.aliquota_icms and float(item.aliquota_icms) > 0:
             icms_block.update({
                 'modalidade_base_calculo': modalidade_bc,
                 'valor_base_calculo': str(item.icms_base_calculo),
@@ -1019,6 +1024,13 @@ class IntegranNotasClient:
             })
             if reducao_bc > 0:
                 icms_block['aliquota_reducao_base_calculo'] = str(reducao_bc)
+
+        # Diferimento ICMS (CST 51) — nomes de campo a confirmar contra o
+        # schema real da IntegraNotas antes de emitir em produção.
+        pdif_icms = float(getattr(item, 'icms_percentual_diferimento', 0) or 0)
+        if cst_icms == '51' and pdif_icms > 0:
+            icms_block['percentual_diferimento'] = str(pdif_icms)
+            icms_block['valor_icms_diferido'] = str(getattr(item, 'icms_valor_diferido', 0) or 0)
 
         # Desoneração ICMS
         motivo_deson = (getattr(item, 'icms_motivo_desoneracao', '') or '').strip()
@@ -1079,6 +1091,13 @@ class IntegranNotasClient:
                 'aliquota': str(item.aliquota_ipi),
                 'valor': str(item.valor_ipi),
             }
+            # CNPJProd — CNPJ do produtor, quando diferente do emitente
+            # (exportação direta/indireta). Bloco inteiro segue omitido para
+            # CST 53/55 (alíquota=0), então isto só entra em vigor se o grupo
+            # IPI voltar a ser enviado com alíquota diferente de zero.
+            cnpj_produtor = (getattr(item, 'ipi_cnpj_produtor', '') or '').strip()
+            if cnpj_produtor:
+                impostos['ipi']['cnpj_produtor'] = cnpj_produtor
 
         # PIS
         cst_pis = item.cst_pis or '07'
@@ -1139,6 +1158,48 @@ class IntegranNotasClient:
                     },
                 },
             }
+
+            # gRed — redução de alíquota (CST 200/515), independente para IBS e
+            # CBS. Nomes de campo a confirmar contra o schema real da
+            # IntegraNotas antes de produção.
+            pred_ibs = float(getattr(item, 'ibs_percentual_reducao', 0) or 0)
+            if pred_ibs > 0:
+                impostos['ibs_cbs']['grupo_ibs_cbs']['reducao_ibs'] = {
+                    'percentual_reducao_aliquota': str(pred_ibs),
+                }
+            pred_cbs = float(getattr(item, 'cbs_percentual_reducao', 0) or 0)
+            if pred_cbs > 0:
+                impostos['ibs_cbs']['grupo_ibs_cbs']['reducao_cbs'] = {
+                    'percentual_reducao_aliquota': str(pred_cbs),
+                }
+
+            # gDif — diferimento (CST 515), independente para IBS e CBS.
+            pdif_ibs = float(getattr(item, 'ibs_percentual_diferimento', 0) or 0)
+            if pdif_ibs > 0:
+                impostos['ibs_cbs']['grupo_ibs_cbs']['diferimento_ibs'] = {
+                    'percentual_diferimento': str(pdif_ibs),
+                    'valor_diferido': str(getattr(item, 'ibs_valor_diferido', 0) or 0),
+                }
+            pdif_cbs = float(getattr(item, 'cbs_percentual_diferimento', 0) or 0)
+            if pdif_cbs > 0:
+                impostos['ibs_cbs']['grupo_ibs_cbs']['diferimento_cbs'] = {
+                    'percentual_diferimento': str(pdif_cbs),
+                    'valor_diferido': str(getattr(item, 'cbs_valor_diferido', 0) or 0),
+                }
+
+            # gCredPresOper — crédito presumido (ex.: cCredPres=1, aquisição de
+            # produtor rural não contribuinte). Subgrupo do próprio bloco
+            # IBS/CBS, distinto do crédito presumido de ICMS (que é um
+            # benefício estadual independente do CST, ver creditos_presumido
+            # em _build_item).
+            credpres_cod = (getattr(item, 'ibs_cbs_credito_presumido_codigo', '') or '').strip()
+            credpres_pct = float(getattr(item, 'ibs_cbs_credito_presumido_percentual', 0) or 0)
+            if credpres_cod and credpres_pct > 0:
+                impostos['ibs_cbs']['grupo_credito_presumido'] = {
+                    'codigo_credito_presumido': credpres_cod,
+                    'percentual': str(item.ibs_cbs_credito_presumido_percentual),
+                    'valor': str(item.ibs_cbs_credito_presumido_valor),
+                }
 
         return impostos
 

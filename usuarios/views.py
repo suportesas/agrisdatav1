@@ -433,15 +433,20 @@ def usuario_list(request):
         usuarios_grouped_qs = usuarios.order_by('empresa__nome', 'username')
         grupos_por_empresa = {}
         sem_empresa = []
+        limite_por_grupo = 200
 
         for usuario in usuarios_grouped_qs:
             if usuario.empresa_id:
                 if usuario.empresa_id not in grupos_por_empresa:
                     grupos_por_empresa[usuario.empresa_id] = {
                         'empresa': usuario.empresa,
-                        'usuarios': []
+                        'usuarios': [],
+                        'total': 0,
                     }
-                grupos_por_empresa[usuario.empresa_id]['usuarios'].append(usuario)
+                grupo = grupos_por_empresa[usuario.empresa_id]
+                grupo['total'] += 1
+                if grupo['total'] <= limite_por_grupo:
+                    grupo['usuarios'].append(usuario)
             else:
                 sem_empresa.append(usuario)
 
@@ -449,8 +454,15 @@ def usuario_list(request):
             grupos_por_empresa.values(),
             key=lambda item: (item['empresa'].nome or '').lower()
         )
+        for grupo in grouped_empresas:
+            grupo['restantes'] = grupo['total'] - len(grupo['usuarios'])
         if sem_empresa:
-            grouped_empresas.append({'empresa': None, 'usuarios': sem_empresa})
+            grouped_empresas.append({
+                'empresa': None,
+                'usuarios': sem_empresa[:limite_por_grupo],
+                'total': len(sem_empresa),
+                'restantes': max(0, len(sem_empresa) - limite_por_grupo),
+            })
     else:
         paginator = Paginator(usuarios, per_page)
         page_number = request.GET.get('page')

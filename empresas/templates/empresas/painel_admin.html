@@ -5,26 +5,30 @@
 {% block page_title %}Controle de Empresas (Proprietário do Sistema){% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="fw-bold text-secondary">Empresas Clientes</h4>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-building-gear"></i></span>
+          <h2>Controle de Empresas Clientes</h2>
+      </div>
   </div>
 
-  <!-- Filtros -->
-  <form id="filtroForm" method="get" class="card p-3 mb-4 shadow-sm border-0 rounded-4 bg-light">
-    <div class="row g-2 align-items-center">
-      <div class="col-md-4">
-        <input type="text" id="buscaInput" name="q" value="{{ request.GET.q|default:'' }}" class="form-control"
-          placeholder="Buscar por nome ou CNPJ...">
-      </div>
-      <div class="col-md-3">
-        <select id="statusSelect" name="status" class="form-select">
-          <option value="">-- Status --</option>
-          <option value="ativas" {% if request.GET.status == "ativas" %}selected{% endif %}>Ativas</option>
-          <option value="bloqueadas" {% if request.GET.status == "bloqueadas" %}selected{% endif %}>Bloqueadas</option>
-          <option value="expiradas" {% if request.GET.status == "expiradas" %}selected{% endif %}>Expiradas</option>
-        </select>
-      </div>
+  <!-- Filtros (busca ao vivo via AJAX — sempre visível) -->
+  <form id="filtroForm" method="get" class="filter-bar mb-4">
+    <div class="filter-field">
+      <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+      <input type="text" id="buscaInput" name="q" value="{{ request.GET.q|default:'' }}" class="form-control"
+        placeholder="Nome ou CNPJ...">
+    </div>
+    <div class="filter-field">
+      <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+      <select id="statusSelect" name="status" class="form-select">
+        <option value="">Todos</option>
+        <option value="ativas" {% if request.GET.status == "ativas" %}selected{% endif %}>Ativas</option>
+        <option value="bloqueadas" {% if request.GET.status == "bloqueadas" %}selected{% endif %}>Bloqueadas</option>
+        <option value="expiradas" {% if request.GET.status == "expiradas" %}selected{% endif %}>Expiradas</option>
+      </select>
     </div>
   </form>
 

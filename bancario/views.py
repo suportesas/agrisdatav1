@@ -26,7 +26,10 @@ from .models import (
 @login_required
 def conta_bancaria_list(request):
     empresa = request.user.empresa
-    contas = ContaBancaria.objects.filter(empresa=empresa).order_by('-conta_principal', 'banco')
+    contas_qs = ContaBancaria.objects.filter(empresa=empresa).order_by('-conta_principal', 'banco')
+
+    paginator = Paginator(contas_qs, 20)
+    contas = paginator.get_page(request.GET.get('page'))
 
     # Anota última importação de cada conta
     for conta in contas:
@@ -468,10 +471,14 @@ def relatorio_conciliacao(request):
 
     contas = ContaBancaria.objects.filter(empresa=empresa, ativa=True)
 
+    conciliados_paginator = Paginator(conciliados, 25)
+    pendentes_paginator = Paginator(pendentes, 25)
+    ignorados_paginator = Paginator(ignorados, 25)
+
     return render(request, 'bancario/relatorio_conciliacao.html', {
-        'conciliados': conciliados,
-        'pendentes': pendentes,
-        'ignorados': ignorados,
+        'conciliados': conciliados_paginator.get_page(request.GET.get('conciliados_page')),
+        'pendentes': pendentes_paginator.get_page(request.GET.get('pendentes_page')),
+        'ignorados': ignorados_paginator.get_page(request.GET.get('ignorados_page')),
         'contas': contas,
         'filtros': {'data_inicio': data_inicio, 'data_fim': data_fim, 'conta_id': conta_id},
         'stats': {

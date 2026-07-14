@@ -3,212 +3,211 @@
 
 {% block title %}Consumo de Recursos - {{ block.super }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .progress-badge {
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: bold;
-        color: white;
-    }
-    .badge-ok {
-        background-color: #28a745;
-    }
-    .badge-atencao {
-        background-color: #ffc107;
-        color: #000;
-    }
-    .badge-critico {
-        background-color: #dc3545;
-    }
-    .empresa-row:hover {
-        background-color: #f8f9fa;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h2">📊 Consumo de Recursos</h1>
-                    <p class="text-muted">Monitoramento de utilização por empresa</p>
-                </div>
-                <div>
-                    <a href="{% url 'metricas:dashboard_executivo' %}" class="btn btn-outline-secondary">
-                        ← Voltar ao Dashboard
-                    </a>
-                </div>
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-bar-chart"></i></span>
+            <div>
+                <h2>Consumo de Recursos</h2>
+                <p class="text-muted mb-0">Monitoramento de utilização por empresa</p>
             </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if request.GET.filtro or request.GET.busca %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if request.GET.filtro or request.GET.busca %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
+            <a href="{% url 'metricas:dashboard_executivo' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar ao Dashboard
+            </a>
         </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <form method="get" class="form-inline gap-3">
-                        <div class="me-3">
-                            <label class="form-label mb-0 me-2">Filtro:</label>
-                            <select name="filtro" class="form-select form-select-sm d-inline-block w-auto">
-                                <option value="">Todas</option>
-                                <option value="com_alerta" {% if filtro == "com_alerta" %}selected{% endif %}>Com Alerta</option>
-                                <option value="sem_alerta" {% if filtro == "sem_alerta" %}selected{% endif %}>Sem Alerta</option>
-                            </select>
-                        </div>
-                        <div class="me-3">
-                            <input type="search" name="busca" class="form-control form-control-sm" placeholder="Buscar empresa..." value="{{ busca }}">
-                        </div>
-                        <button type="submit" class="btn btn-sm btn-primary">🔍 Buscar</button>
-                        <a href="{% url 'metricas:consumo_lista' %}" class="btn btn-sm btn-secondary">Limpar</a>
-                    </form>
-                </div>
-            </div>
+    <!-- Filtros (colapsável) -->
+    <div class="collapse {% if request.GET.filtro or request.GET.busca %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Filtro</label>
+          <select name="filtro" class="form-select">
+              <option value="">Todas</option>
+              <option value="com_alerta" {% if filtro == "com_alerta" %}selected{% endif %}>Com Alerta</option>
+              <option value="sem_alerta" {% if filtro == "sem_alerta" %}selected{% endif %}>Sem Alerta</option>
+          </select>
         </div>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+          <input type="search" name="busca" class="form-control" placeholder="Buscar empresa..." value="{{ busca }}">
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'metricas:consumo_lista' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
+        </div>
+      </form>
     </div>
 
     <!-- Sumário -->
-    <div class="row mb-3">
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">Total de Empresas</h5>
-                    <p class="h3 text-primary">{{ empresas_total }}</p>
-                </div>
-            </div>
+          <div class="stat-card">
+            <div class="stat-label text-uppercase">Total de Empresas</div>
+            <div class="stat-value text-primary">{{ empresas_total }}</div>
+          </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">Com Alertas</h5>
-                    <p class="h3 text-warning">{{ empresas_com_alerta }}</p>
-                </div>
-            </div>
+          <div class="stat-card">
+            <div class="stat-label text-uppercase">Com Alertas</div>
+            <div class="stat-value text-warning">{{ empresas_com_alerta }}</div>
+          </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">Média de Uso</h5>
-                    <p class="h3 text-info">{{ media_uso|floatformat:0 }}%</p>
-                </div>
-            </div>
+          <div class="stat-card">
+            <div class="stat-label text-uppercase">Média de Uso</div>
+            <div class="stat-value text-info">{{ media_uso|floatformat:0 }}%</div>
+          </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">Críticos</h5>
-                    <p class="h3 text-danger">{{ empresas_criticas }}</p>
-                </div>
-            </div>
+          <div class="stat-card">
+            <div class="stat-label text-uppercase">Críticos</div>
+            <div class="stat-value text-danger">{{ empresas_criticas }}</div>
+          </div>
         </div>
+    </div>
+
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if page_obj.paginator %}
+          Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+          de <strong>{{ page_obj.paginator.count }}</strong> empresa{{ page_obj.paginator.count|pluralize }}
+        {% endif %}
+      </span>
     </div>
 
     <!-- Lista de Empresas -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Empresa</th>
-                                <th>Plano</th>
-                                <th>Fazendas</th>
-                                <th>Usuários</th>
-                                <th>Talhões</th>
-                                <th>Produtos</th>
-                                <th>Status</th>
-                                <th>Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for consumo in page_obj %}
-                            <tr class="empresa-row">
-                                <td>
-                                    <strong>{{ consumo.empresa.razao_social }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ consumo.empresa.nome_fantasia }}</small>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info">{{ consumo.empresa.plano.codigo }}</span>
-                                    <br>
-                                    <small>{{ consumo.empresa.plano.nome }}</small>
-                                </td>
-                                <td>
-                                    <div class="progress" style="height: 20px; width: 120px;">
-                                        <div class="progress-bar {% if consumo.percentual_fazendas >= 80 %}bg-danger{% elif consumo.percentual_fazendas >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                                             role="progressbar" 
-                                             style="width: {{ consumo.percentual_fazendas }}%">
-                                            {{ consumo.fazendas_usadas }}/{{ consumo.limite_fazendas }}
-                                        </div>
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Empresa</th>
+                            <th>Plano</th>
+                            <th>Fazendas</th>
+                            <th>Usuários</th>
+                            <th>Talhões</th>
+                            <th>Produtos</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for consumo in page_obj %}
+                        <tr>
+                            <td class="ps-4">
+                                <strong>{{ consumo.empresa.razao_social }}</strong>
+                                <br>
+                                <small class="text-muted">{{ consumo.empresa.nome_fantasia }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ consumo.empresa.plano.codigo }}</span>
+                                <br>
+                                <small>{{ consumo.empresa.plano.nome }}</small>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px; width: 120px;">
+                                    <div class="progress-bar {% if consumo.percentual_fazendas >= 80 %}bg-danger{% elif consumo.percentual_fazendas >= 60 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ consumo.percentual_fazendas }}%">
+                                        {{ consumo.fazendas_usadas }}/{{ consumo.limite_fazendas }}
                                     </div>
-                                    <small class="text-muted d-block">{{ consumo.percentual_fazendas|floatformat:0 }}%</small>
-                                </td>
-                                <td>
-                                    <div class="progress" style="height: 20px; width: 120px;">
-                                        <div class="progress-bar {% if consumo.percentual_usuarios >= 80 %}bg-danger{% elif consumo.percentual_usuarios >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                                             role="progressbar" 
-                                             style="width: {{ consumo.percentual_usuarios }}%">
-                                            {{ consumo.usuarios_ativos }}/{{ consumo.limite_usuarios }}
-                                        </div>
+                                </div>
+                                <small class="text-muted d-block">{{ consumo.percentual_fazendas|floatformat:0 }}%</small>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px; width: 120px;">
+                                    <div class="progress-bar {% if consumo.percentual_usuarios >= 80 %}bg-danger{% elif consumo.percentual_usuarios >= 60 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ consumo.percentual_usuarios }}%">
+                                        {{ consumo.usuarios_ativos }}/{{ consumo.limite_usuarios }}
                                     </div>
-                                    <small class="text-muted d-block">{{ consumo.percentual_usuarios|floatformat:0 }}%</small>
-                                </td>
-                                <td>
-                                    <div class="progress" style="height: 20px; width: 120px;">
-                                        <div class="progress-bar {% if consumo.percentual_talhoes >= 80 %}bg-danger{% elif consumo.percentual_talhoes >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                                             role="progressbar" 
-                                             style="width: {{ consumo.percentual_talhoes }}%">
-                                            {{ consumo.talhoes_cadastrados }}/{{ consumo.limite_talhoes }}
-                                        </div>
+                                </div>
+                                <small class="text-muted d-block">{{ consumo.percentual_usuarios|floatformat:0 }}%</small>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px; width: 120px;">
+                                    <div class="progress-bar {% if consumo.percentual_talhoes >= 80 %}bg-danger{% elif consumo.percentual_talhoes >= 60 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ consumo.percentual_talhoes }}%">
+                                        {{ consumo.talhoes_cadastrados }}/{{ consumo.limite_talhoes }}
                                     </div>
-                                    <small class="text-muted d-block">{{ consumo.percentual_talhoes|floatformat:0 }}%</small>
-                                </td>
-                                <td>
-                                    <div class="progress" style="height: 20px; width: 120px;">
-                                        <div class="progress-bar {% if consumo.percentual_produtos >= 80 %}bg-danger{% elif consumo.percentual_produtos >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                                             role="progressbar" 
-                                             style="width: {{ consumo.percentual_produtos }}%">
-                                            {{ consumo.produtos_cadastrados }}/{{ consumo.limite_produtos }}
-                                        </div>
+                                </div>
+                                <small class="text-muted d-block">{{ consumo.percentual_talhoes|floatformat:0 }}%</small>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 20px; width: 120px;">
+                                    <div class="progress-bar {% if consumo.percentual_produtos >= 80 %}bg-danger{% elif consumo.percentual_produtos >= 60 %}bg-warning{% else %}bg-success{% endif %}"
+                                         role="progressbar"
+                                         style="width: {{ consumo.percentual_produtos }}%">
+                                        {{ consumo.produtos_cadastrados }}/{{ consumo.limite_produtos }}
                                     </div>
-                                    <small class="text-muted d-block">{{ consumo.percentual_produtos|floatformat:0 }}%</small>
-                                </td>
-                                <td>
-                                    {% if consumo.alerta_fazendas or consumo.alerta_usuarios or consumo.alerta_talhoes or consumo.alerta_produtos %}
-                                        <span class="badge bg-danger">⚠️ ALERTA</span>
-                                    {% else %}
-                                        <span class="badge bg-success">✓ OK</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'metricas:consumo_detail' consumo.empresa.id %}" class="btn btn-sm btn-outline-primary">
-                                        Detalhes →
-                                    </a>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
-                                    Nenhuma empresa encontrada
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                                </div>
+                                <small class="text-muted d-block">{{ consumo.percentual_produtos|floatformat:0 }}%</small>
+                            </td>
+                            <td class="text-center">
+                                {% if consumo.alerta_fazendas or consumo.alerta_usuarios or consumo.alerta_talhoes or consumo.alerta_produtos %}
+                                    <span class="badge bg-danger">ALERTA</span>
+                                {% else %}
+                                    <span class="badge bg-success">OK</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a class="action-icon" href="{% url 'metricas:consumo_detail' consumo.empresa.id %}" title="Detalhes">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                                Nenhuma empresa encontrada
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-
-            <!-- Paginação -->
-            {% include 'partials/pagination.html' with page_obj=page_obj %}
-
         </div>
+        {% if page_obj.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=page_obj %}
+        </div>
+        {% endif %}
     </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

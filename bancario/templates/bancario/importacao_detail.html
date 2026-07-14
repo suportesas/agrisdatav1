@@ -5,64 +5,55 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- Header -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h1><i class="bi bi-list-ul"></i> Detalhe da Importação</h1>
-          <p class="text-muted mb-0">{{ importacao.conta_bancaria.banco }} — {{ importacao.importado_em|date:"d/m/Y H:i" }}</p>
-        </div>
-        <div class="d-flex gap-2">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-list-ul"></i></span>
+          <div>
+              <h2>Detalhe da Importação</h2>
+              <p class="text-muted mb-0">{{ importacao.conta_bancaria.banco }} — {{ importacao.importado_em|date:"d/m/Y H:i" }}</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
           {% if total_pendentes > 0 %}
-          <a href="{% url 'bancario:conciliacao_workspace' importacao.pk %}" class="btn btn-primary">
+          <a href="{% url 'bancario:conciliacao_workspace' importacao.pk %}" class="btn btn-success">
             <i class="bi bi-check2-all"></i> Conciliar ({{ total_pendentes }} pendentes)
           </a>
           {% endif %}
           <a href="{% url 'bancario:conta_bancaria_detail' importacao.conta_bancaria.pk %}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Voltar
           </a>
-        </div>
       </div>
-    </div>
   </div>
 
   <!-- Resumo -->
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-md-3">
-      <div class="card text-center">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Tipo</p>
-          <strong>{{ importacao.get_tipo_arquivo_display }}</strong>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Tipo</div>
+        <div class="fw-bold">{{ importacao.get_tipo_arquivo_display }}</div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Período</div>
+        <div class="fw-bold">
+          {% if importacao.data_inicio_extrato %}
+          {{ importacao.data_inicio_extrato|date:"d/m/Y" }} a {{ importacao.data_fim_extrato|date:"d/m/Y" }}
+          {% else %}—{% endif %}
         </div>
       </div>
     </div>
     <div class="col-sm-6 col-md-3">
-      <div class="card text-center">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Período</p>
-          <strong>
-            {% if importacao.data_inicio_extrato %}
-            {{ importacao.data_inicio_extrato|date:"d/m/Y" }} a {{ importacao.data_fim_extrato|date:"d/m/Y" }}
-            {% else %}—{% endif %}
-          </strong>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Total Débitos</div>
+        <div class="fw-bold text-danger">R$ {{ importacao.total_debitos|floatformat:2 }}</div>
       </div>
     </div>
     <div class="col-sm-6 col-md-3">
-      <div class="card text-center border-danger">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Total Débitos</p>
-          <strong class="text-danger">R$ {{ importacao.total_debitos|floatformat:2 }}</strong>
-        </div>
-      </div>
-    </div>
-    <div class="col-sm-6 col-md-3">
-      <div class="card text-center border-success">
-        <div class="card-body py-2">
-          <p class="text-muted small mb-1">Total Créditos</p>
-          <strong class="text-success">R$ {{ importacao.total_creditos|floatformat:2 }}</strong>
-        </div>
+      <div class="stat-card">
+        <div class="stat-label text-uppercase">Total Créditos</div>
+        <div class="fw-bold text-success">R$ {{ importacao.total_creditos|floatformat:2 }}</div>
       </div>
     </div>
   </div>
@@ -82,51 +73,56 @@
   {% endif %}
 
   <!-- Tabela de lançamentos -->
-  <div class="card">
-    <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0">
-        <thead class="table-light">
-          <tr>
-            <th>Data</th>
-            <th>Tipo</th>
-            <th>Descrição</th>
-            <th>Nº Doc.</th>
-            <th class="text-end">Valor</th>
-            <th>Conciliação</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for lanc in page_obj.object_list %}
-          <tr>
-            <td class="text-nowrap">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
-            <td>
-              <span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span>
-            </td>
-            <td>
-              <small>{{ lanc.descricao|truncatechars:60 }}</small>
-            </td>
-            <td><small class="text-muted">{{ lanc.numero_documento|default:"—" }}</small></td>
-            <td class="text-end text-nowrap">
-              <span class="{% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
-                R$ {{ lanc.valor|floatformat:2 }}
-              </span>
-            </td>
-            <td>
-              <span class="badge bg-{{ lanc.badge_status }}">{{ lanc.get_status_conciliacao_display }}</span>
-              {% if lanc.status_conciliacao == 'CONCILIADO' and lanc.conciliacao %}
-              <small class="text-muted d-block">{{ lanc.conciliacao.get_tipo_operacao_display }}</small>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="6" class="text-center py-3 text-muted">Nenhum lançamento.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Data</th>
+              <th class="text-center">Tipo</th>
+              <th>Descrição</th>
+              <th>Nº Doc.</th>
+              <th class="text-end">Valor</th>
+              <th>Conciliação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for lanc in page_obj.object_list %}
+            <tr>
+              <td class="ps-4 text-mono">{{ lanc.data_lancamento|date:"d/m/Y" }}</td>
+              <td class="text-center">
+                <span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span>
+              </td>
+              <td>
+                <small>{{ lanc.descricao|truncatechars:60 }}</small>
+              </td>
+              <td><small class="text-muted">{{ lanc.numero_documento|default:"—" }}</small></td>
+              <td class="text-end text-mono text-nowrap">
+                <span class="{% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
+                  R$ {{ lanc.valor|floatformat:2 }}
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-{{ lanc.badge_status }}">{{ lanc.get_status_conciliacao_display }}</span>
+                {% if lanc.status_conciliacao == 'CONCILIADO' and lanc.conciliacao %}
+                <small class="text-muted d-block">{{ lanc.conciliacao.get_tipo_operacao_display }}</small>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum lançamento
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
-    {% if page_obj.has_other_pages %}
+    {% if page_obj.paginator %}
     <div class="card-footer">
       {% include 'partials/pagination.html' with page_obj=page_obj %}
     </div>

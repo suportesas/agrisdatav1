@@ -3,6 +3,7 @@ import json
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db.models import Count, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -44,8 +45,15 @@ def estufa_list(request):
 
     fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True)
 
+    paginator = Paginator(estufas.order_by('nome'), 20)
+    page = request.GET.get('page', 1)
+    try:
+        estufas_page = paginator.page(page)
+    except Exception:
+        estufas_page = paginator.page(1)
+
     return render(request, 'cadastros/estufas/estufa_list.html', {
-        'estufas': estufas,
+        'estufas': estufas_page,
         'fazendas': fazendas,
         'fazenda_selecionada': fazenda_id,
         'title': 'Estufas',
@@ -147,8 +155,15 @@ def lote_muda_list(request):
         .annotate(total=Count('id'))
     )
 
+    paginator = Paginator(qs.order_by('-data_semeadura'), 20)
+    page = request.GET.get('page', 1)
+    try:
+        lotes_page = paginator.page(page)
+    except Exception:
+        lotes_page = paginator.page(1)
+
     return render(request, 'cadastros/estufas/lote_muda_list.html', {
-        'lotes': qs.order_by('-data_semeadura'),
+        'lotes': lotes_page,
         'estufas': estufas,
         'culturas': culturas,
         'status_choices': LoteMuda.STATUS_CHOICES,
@@ -340,8 +355,15 @@ def transplantio_list(request):
     talhoes = Talhao.objects.filter(empresa=empresa, ativo=True)
     safras = Safra.objects.filter(fazenda__empresa=empresa)
 
+    paginator = Paginator(qs.order_by('-data_transplantio'), 20)
+    page = request.GET.get('page', 1)
+    try:
+        transplantios_page = paginator.page(page)
+    except Exception:
+        transplantios_page = paginator.page(1)
+
     return render(request, 'cadastros/estufas/transplantio_list.html', {
-        'transplantios': qs.order_by('-data_transplantio'),
+        'transplantios': transplantios_page,
         'talhoes': talhoes,
         'safras': safras,
         'talhao_selecionado': request.GET.get('talhao'),
@@ -406,8 +428,15 @@ def replantio_list(request):
     talhoes = Talhao.objects.filter(empresa=empresa, ativo=True)
     safras = Safra.objects.filter(fazenda__empresa=empresa)
 
+    paginator = Paginator(qs.order_by('-data_replantio'), 20)
+    page = request.GET.get('page', 1)
+    try:
+        replantios_page = paginator.page(page)
+    except Exception:
+        replantios_page = paginator.page(1)
+
     return render(request, 'cadastros/estufas/replantio_list.html', {
-        'replantios': qs.order_by('-data_replantio'),
+        'replantios': replantios_page,
         'talhoes': talhoes,
         'safras': safras,
         'motivo_choices': ReplantioTalhao.MOTIVO_CHOICES,

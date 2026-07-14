@@ -88,6 +88,7 @@ from .models import (
     DocumentoVinculadoMDFe,
     InutilizacaoNFe,
     InvoiceExportacao,
+    ItemNotaFiscal,
     ItemPackingList,
     ManifestoDocumentoFiscal,
     NotaFiscal,
@@ -857,15 +858,44 @@ def nota_fiscal_emitir_ajax(request, pk):
                 faltam.append(f'Nº Drawback "{item.di_numero_drawback}" deve ter exatamente 11 dígitos (tem {len(dw)})')
         elif cfop_digits.startswith('3') and not (item.di_numero or '').strip():
             faltam.append('CFOP 3xxx exige Declaração de Importação (aba DI no item)')
-        # IPI: se alíquota > 0, CST deve corresponder a saída tributada (50)
+        # IPI: fora do escopo desta fazenda (commodities agrícolas não são
+        # produtos industrializados). CST 53/55 (únicos no escopo) são sempre
+        # não-tributada/suspensão — nunca com alíquota.
         aliq_ipi = item.aliquota_ipi or 0
         if aliq_ipi > 0:
             cst_ipi = (item.cst_ipi or '').strip()
-            if cst_ipi not in ('50',):
+            faltam.append(
+                f'IPI: CST "{cst_ipi}" não deveria ter alíquota preenchida '
+                f'({aliq_ipi}%) — CST 53/55 são sempre não-tributada/suspensão (0%)'
+            )
+        # IBS/CBS — Reforma Tributária: CST + cClassTrib devem formar um par válido
+        cst_reforma = (item.ibs_cbs_situacao_tributaria or '').strip()
+        cclasstrib = (item.ibs_cbs_classificacao_tributaria or '').strip()
+        if cst_reforma:
+            codigos_validos = {c for c, _ in ItemNotaFiscal.IBS_CBS_CST_CCLASSTRIB_MAP.get(cst_reforma, [])}
+            if not cclasstrib:
+                faltam.append('cClassTrib obrigatório quando CST IBS/CBS informado')
+            elif cclasstrib not in codigos_validos:
+                faltam.append(f'cClassTrib "{cclasstrib}" inválido para CST IBS/CBS {cst_reforma}')
+            # Campos obrigatórios por CST IBS/CBS (redução/diferimento são
+            # independentes para IBS e CBS — exige os dois lados preenchidos)
+            if cst_reforma == '200' and (
+                (item.ibs_percentual_reducao or 0) <= 0
+                or (item.cbs_percentual_reducao or 0) <= 0
+            ):
+                faltam.append('CST IBS/CBS 200 exige "% Redução IBS" e "% Redução CBS" preenchidos')
+            if cst_reforma == '515' and (
+                (item.ibs_percentual_diferimento or 0) <= 0
+                or (item.ibs_percentual_reducao or 0) <= 0
+                or (item.cbs_percentual_diferimento or 0) <= 0
+                or (item.cbs_percentual_reducao or 0) <= 0
+            ):
                 faltam.append(
-                    f'IPI: CST "{cst_ipi}" incompatível com alíquota {aliq_ipi}% '
-                    f'(use CST 50 — Saída Tributada)'
+                    'CST IBS/CBS 515 exige "% Diferimento" e "% Redução" preenchidos '
+                    'tanto para IBS quanto para CBS'
                 )
+        elif cclasstrib:
+            faltam.append('cClassTrib informado sem CST IBS/CBS')
         if faltam:
             item_erros.append(f'Item {item.numero_item} — {desc}: {"; ".join(faltam)}')
 
@@ -2669,11 +2699,7 @@ def ajax_produto_detail(request, pk):
             'icms_modalidade_base': t.icms_modalidade_base or '3',
             'icms_reducao_base': float(t.icms_reducao_base or 0),
             'aliquota_icms': float(t.icms_aliquota),
-            'icms_st_aliquota': float(t.icms_st_aliquota or 0),
-            'icms_st_mva': float(t.icms_st_mva or 0),
-            'icms_st_reducao_base': float(t.icms_st_reducao_base or 0),
             'cst_ipi': t.ipi_situacao_tributaria or '99',
-            'aliquota_ipi': float(t.ipi_aliquota),
             'ipi_codigo_enquadramento': t.ipi_codigo_enquadramento or '999',
             'cst_pis': t.pis_situacao_tributaria,
             'aliquota_pis': float(t.pis_aliquota),
@@ -2682,6 +2708,18 @@ def ajax_produto_detail(request, pk):
             'aliquota_cofins': float(t.cofins_aliquota),
             'natureza_receita_cofins': t.natureza_receita_cofins or '',
             'beneficio_fiscal': t.beneficio_fiscal or '',
+            'icms_percentual_diferimento': float(t.icms_percentual_diferimento or 0),
+            'ibs_cbs_situacao_tributaria': t.ibs_cbs_situacao_tributaria or '',
+            'ibs_cbs_classificacao_tributaria': t.ibs_cbs_classificacao_tributaria or '',
+            'ibs_cbs_aliquota_uf': float(t.ibs_cbs_aliquota_uf or 0),
+            'ibs_cbs_aliquota_municipal': float(t.ibs_cbs_aliquota_municipal or 0),
+            'ibs_cbs_aliquota_cbs': float(t.ibs_cbs_aliquota_cbs or 0),
+            'ibs_percentual_reducao': float(t.ibs_percentual_reducao or 0),
+            'ibs_percentual_diferimento': float(t.ibs_percentual_diferimento or 0),
+            'cbs_percentual_reducao': float(t.cbs_percentual_reducao or 0),
+            'cbs_percentual_diferimento': float(t.cbs_percentual_diferimento or 0),
+            'ibs_cbs_credito_presumido_codigo': t.ibs_cbs_credito_presumido_codigo or '',
+            'ibs_cbs_credito_presumido_percentual': float(t.ibs_cbs_credito_presumido_percentual or 0),
         })
 
     fator = float(produto.fator_conversao or 1)
@@ -2968,8 +3006,11 @@ def cotacoes_bcb_list(request):
         for d in sorted(por_data.keys(), reverse=True)
     ]
 
+    paginator = Paginator(linhas, 30)
+    linhas_page = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'faturamento/cotacoes_bcb/list.html', {
-        'linhas': linhas,
+        'linhas': linhas_page,
         'data_ini': data_ini_str,
         'data_fim': data_fim_str,
         'total': len(linhas),

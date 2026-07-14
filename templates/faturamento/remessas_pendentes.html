@@ -4,13 +4,32 @@
 {% block page_title %}Remessas Pendentes de Faturamento{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid">
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2><i class="bi bi-clock-history me-2 text-warning"></i>Remessas Pendentes de Faturamento</h2>
-    <a href="{% url 'faturamento:nota_fiscal_create' %}" class="btn btn-primary">
-      <i class="bi bi-plus-circle me-1"></i>Nova Remessa
-    </a>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon orange"><i class="bi bi-clock-history"></i></span>
+          <h2>Remessas Pendentes de Faturamento</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.cliente_id or request.GET.data_de or request.GET.data_ate %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.cliente_id or request.GET.data_de or request.GET.data_ate %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <a href="{% url 'faturamento:nota_fiscal_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Nova Remessa
+          </a>
+      </div>
   </div>
 
   {% if messages %}
@@ -21,11 +40,11 @@
     {% endfor %}
   {% endif %}
 
-  <!-- Filtros -->
-  <form method="get" class="card card-body mb-3 shadow-sm border-0">
-    <div class="row g-2 align-items-end">
-      <div class="col-md-4">
-        <label class="form-label small mb-1">Cliente</label>
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.cliente_id or request.GET.data_de or request.GET.data_ate %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Cliente</label>
         <select name="cliente_id" class="form-select select2-cliente" id="id_cliente_filtro">
           <option value="">Todos os clientes</option>
           {% for c in clientes %}
@@ -35,34 +54,43 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">De</label>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">De</label>
         <input type="date" name="data_de" value="{{ data_de }}" class="form-control">
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1">Até</label>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Até</label>
         <input type="date" name="data_ate" value="{{ data_ate }}" class="form-control">
       </div>
-      <div class="col-md-2 d-flex gap-2">
-        <button type="submit" class="btn btn-outline-primary flex-fill">
-          <i class="bi bi-search me-1"></i>Buscar
-        </button>
-        <a href="{% url 'faturamento:remessas_pendentes' %}" class="btn btn-outline-secondary">Limpar</a>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Buscar
+          </button>
+          <a href="{% url 'faturamento:remessas_pendentes' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
       </div>
-    </div>
-  </form>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {{ notas|length }} remessa{{ notas|length|pluralize }} pendente{{ notas|length|pluralize }}
+    </span>
+  </div>
 
   <!-- Tabela de remessas -->
   <form id="form-selecao" method="post" action="{% url 'faturamento:fechar_lote' %}">
     {% csrf_token %}
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0 rounded-4">
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table table-hover table-bordered align-middle mb-0" id="tabela-remessas">
-            <thead class="table-light">
+          <table class="table table-hover align-middle mb-0" id="tabela-remessas">
+            <thead class="bg-light">
               <tr>
-                <th style="width:40px">
+                <th class="ps-4" style="width:40px">
                   <input type="checkbox" id="chk-todos" class="form-check-input" title="Selecionar todas visíveis">
                 </th>
                 <th>NF #</th>
@@ -70,14 +98,14 @@
                 <th>Cliente</th>
                 <th class="text-end">Valor</th>
                 <th>CFOP</th>
-                <th>Status Fat.</th>
+                <th class="text-center">Status Fat.</th>
                 <th>Chave</th>
               </tr>
             </thead>
             <tbody>
               {% for nf in notas %}
               <tr>
-                <td class="text-center">
+                <td class="ps-4 text-center">
                   <input type="checkbox"
                          name="notas_ids"
                          value="{{ nf.pk }}"
@@ -91,11 +119,11 @@
                     {{ nf.numero|stringformat:"06d" }}
                   </a>
                 </td>
-                <td>{{ nf.data_emissao|date:"d/m/Y" }}</td>
+                <td class="text-mono">{{ nf.data_emissao|date:"d/m/Y" }}</td>
                 <td>{{ nf.cliente.razao_social }}</td>
-                <td class="text-end">R$ {{ nf.valor_total|floatformat:2 }}</td>
+                <td class="text-end text-mono">R$ {{ nf.valor_total|floatformat:2 }}</td>
                 <td><span class="badge bg-secondary">{{ nf.cfop }}</span></td>
-                <td><span class="badge bg-warning text-dark">Pendente</span></td>
+                <td class="text-center"><span class="badge bg-warning text-dark">Pendente</span></td>
                 <td>
                   {% if nf.chave_acesso %}
                     <span title="{{ nf.chave_acesso }}"
@@ -110,18 +138,18 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="8" class="text-center text-muted py-4">
-                  <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-                  Nenhuma remessa pendente encontrada.
+                <td colspan="8" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                  Nenhuma remessa pendente encontrada
                 </td>
               </tr>
               {% endfor %}
             </tbody>
             {% if notas %}
-            <tfoot class="table-light">
+            <tfoot class="bg-light">
               <tr>
                 <td colspan="4" class="text-end fw-semibold">Total geral:</td>
-                <td class="text-end fw-semibold">R$ {{ total_geral|floatformat:2 }}</td>
+                <td class="text-end fw-semibold text-mono">R$ {{ total_geral|floatformat:2 }}</td>
                 <td colspan="3"></td>
               </tr>
             </tfoot>

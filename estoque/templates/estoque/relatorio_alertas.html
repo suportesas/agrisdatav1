@@ -4,81 +4,78 @@
 {% block title %}Relatório de Alertas de Estoque{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1>
-                <i class="fas fa-exclamation-triangle"></i> Relatório de Alertas de Estoque
-            </h1>
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon red"><i class="bi bi-exclamation-triangle"></i></span>
+            <h2>Relatório de Alertas de Estoque</h2>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="?export=excel" class="btn btn-success me-2">
-                <i class="fas fa-file-excel"></i> Exportar Excel
+        <div class="d-flex gap-2 align-items-center">
+            <a href="?export=excel" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-excel"></i> Exportar Excel
             </a>
-            <a href="?export=pdf" class="btn btn-danger">
-                <i class="fas fa-file-pdf"></i> Exportar PDF
+            <a href="?export=pdf" class="btn btn-outline-secondary">
+                <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
             </a>
         </div>
     </div>
 
     <!-- Cards de Resumo -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-circle"></i> Alertas Críticos
-                    </h5>
-                    <p class="card-text display-4">{{ total_criticos }}</p>
-                    <small>Estoque ≤ Mínimo</small>
-                </div>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-red mb-0"><i class="bi bi-exclamation-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Alertas Críticos</div>
+              <div class="stat-value">{{ total_criticos }}</div>
+              <small class="text-muted">Estoque ≤ Mínimo</small>
             </div>
+          </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-circle"></i> Alertas de Excesso
-                    </h5>
-                    <p class="card-text display-4">{{ total_excesso }}</p>
-                    <small>Estoque > Máximo</small>
-                </div>
+        <div class="col-6 col-md-4">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-arrow-up-circle"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Alertas de Excesso</div>
+              <div class="stat-value">{{ total_excesso }}</div>
+              <small class="text-muted">Estoque &gt; Máximo</small>
             </div>
+          </div>
         </div>
-        <div class="col-md-4">
-            <div class="card bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="fas fa-bell"></i> Total de Alertas
-                    </h5>
-                    <p class="card-text display-4">{{ total_alertas }}</p>
-                    <small>Produtos afetados</small>
-                </div>
+        <div class="col-6 col-md-4">
+          <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-bell"></i></div>
+            <div>
+              <div class="stat-label text-uppercase">Total de Alertas</div>
+              <div class="stat-value">{{ total_alertas }}</div>
+              <small class="text-muted">Produtos afetados</small>
             </div>
+          </div>
         </div>
     </div>
 
     <!-- Alertas Críticos -->
     {% if alertas_criticos %}
-    <div class="card mb-4 border-danger">
-        <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">
-                <i class="fas fa-exclamation-circle"></i> Alertas Críticos ({{ total_criticos }})
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-danger">
+                <i class="bi bi-exclamation-circle"></i> Alertas Críticos ({{ total_criticos }})
             </h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             <form method="post" action="{% url 'compras:central_alertas_gerar_solicitacao' %}">
                 {% csrf_token %}
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover">
-                        <thead class="table-light">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
                             <tr>
                                 {% if pode_gerar_compra %}
-                                <th style="width: 40px;">
+                                <th class="ps-4" style="width: 40px;">
                                     <input type="checkbox" class="form-check-input" id="marcar-todos-criticos">
                                 </th>
                                 {% endif %}
-                                <th>Código</th>
+                                <th {% if not pode_gerar_compra %}class="ps-4"{% endif %}>Código</th>
                                 <th>Produto</th>
                                 <th>Categoria</th>
                                 <th class="text-end">Saldo Atual</th>
@@ -94,7 +91,7 @@
                             {% for alerta in alertas_criticos %}
                             <tr class="table-danger">
                                 {% if pode_gerar_compra %}
-                                <td>
+                                <td class="ps-4">
                                     {% if alerta.pode_comprar %}
                                     <input type="checkbox" class="form-check-input item-checkbox-critico" name="produto_id[]" value="{{ alerta.produto.id }}">
                                     {% elif alerta.ja_solicitado %}
@@ -104,7 +101,7 @@
                                     {% endif %}
                                 </td>
                                 {% endif %}
-                                <td>
+                                <td {% if not pode_gerar_compra %}class="ps-4"{% endif %}>
                                     <code>{{ alerta.produto.codigo|default:"-" }}</code>
                                 </td>
                                 <td>
@@ -133,9 +130,11 @@
                     </table>
                 </div>
                 {% if pode_gerar_compra and tem_criticos_compraveis %}
-                <button type="submit" class="btn btn-primary mt-2">
-                    <i class="fas fa-cart-plus"></i> Gerar Solicitação de Compra e Ir para Cotação
-                </button>
+                <div class="p-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cart-plus"></i> Gerar Solicitação de Compra e Ir para Cotação
+                    </button>
+                </div>
                 {% endif %}
             </form>
         </div>
@@ -144,18 +143,18 @@
 
     <!-- Alertas de Excesso -->
     {% if alertas_excesso %}
-    <div class="card mb-4 border-info">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0">
-                <i class="fas fa-arrow-up-circle"></i> Alertas de Excesso ({{ total_excesso }})
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-info">
+                <i class="bi bi-arrow-up-circle"></i> Alertas de Excesso ({{ total_excesso }})
             </h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <thead class="table-light">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
-                            <th>Código</th>
+                            <th class="ps-4">Código</th>
                             <th>Produto</th>
                             <th>Categoria</th>
                             <th class="text-end">Saldo Atual</th>
@@ -167,7 +166,7 @@
                     <tbody>
                         {% for alerta in alertas_excesso %}
                         <tr class="table-info">
-                            <td>
+                            <td class="ps-4">
                                 <code>{{ alerta.produto.codigo|default:"-" }}</code>
                             </td>
                             <td>
@@ -191,9 +190,11 @@
 
     <!-- Sem alertas -->
     {% if not alertas_criticos and not alertas_excesso %}
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="fas fa-check-circle"></i> <strong>Nenhum alerta!</strong> Todos os produtos estão com estoque normal.
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-check-circle display-4 d-block mb-3 text-success"></i>
+            <strong>Nenhum alerta!</strong> Todos os produtos estão com estoque normal.
+        </div>
     </div>
     {% endif %}
 </div>

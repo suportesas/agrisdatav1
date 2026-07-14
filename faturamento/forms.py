@@ -545,16 +545,30 @@ MODALIDADE_BC_ICMS_CHOICES = [
     ('3', '3 - Valor da Operação'),
 ]
 
-CST_IPI_CHOICES = [
-    ('00', '00 - Entrada com Recuperação de Crédito'),
-    ('49', '49 - Outras entradas'),
-    ('50', '50 - Saída tributada'),
-    ('51', '51 - Saída tributada com alíquota zero'),
-    ('52', '52 - Saída isenta'),
+# CSTs restritos ao escopo de uma fazenda agrícola (commodities, insumos,
+# exportação direta e indireta) — regime tributário antigo (ICMS/PIS/COFINS).
+CST_ICMS_CHOICES_FAZENDA = [
+    ('', '--- Selecione ---'),
+    ('00', '00 - Tributada integralmente'),
+    ('40', '40 - Isenta'),
+    ('41', '41 - Não tributada'),
+    ('51', '51 - Diferimento'),
+]
+CST_PIS_COFINS_CHOICES_FAZENDA = [
+    ('', '--- Selecione ---'),
+    ('01', '01 - Tributável'),
+    ('06', '06 - Alíquota zero'),
+    ('08', '08 - Sem incidência (exportação direta)'),
+    ('09', '09 - Suspensão (exportação indireta via trading)'),
+]
+# IPI: commodities agrícolas não são produtos industrializados — quando o CST
+# é informado, é sempre não-tributada/suspensão (alíquota 0). O grupo IPI
+# continua sendo omitido do payload da IntegraNotas nesse caso (alíquota=0),
+# igual já era antes — só o dropdown fica restrito ao escopo real.
+CST_IPI_CHOICES_FAZENDA = [
+    ('', '--- Selecione ---'),
     ('53', '53 - Saída não tributada'),
-    ('54', '54 - Saída imune'),
     ('55', '55 - Saída com suspensão'),
-    ('99', '99 - Outras saídas'),
 ]
 
 
@@ -563,27 +577,30 @@ class ItemNotaFiscalForm(forms.ModelForm):
     _DECIMAL_ZERO_FIELDS = (
         'valor_desconto',
         # ICMS
-        'icms_reducao_base', 'aliquota_icms',
-        # ICMS ST
-        'icms_st_aliquota', 'icms_st_mva', 'icms_st_reducao_base',
-        # IPI
-        'aliquota_ipi',
+        'icms_reducao_base', 'aliquota_icms', 'icms_base_calculo', 'valor_icms',
+        'icms_valor_diferido', 'icms_valor_desoneracao',
         # PIS / COFINS
-        'aliquota_pis', 'aliquota_cofins',
+        'aliquota_pis', 'aliquota_cofins', 'pis_base_calculo', 'valor_pis',
+        'cofins_base_calculo', 'valor_cofins',
         # Unidade tributável (exportação)
         'quantidade_tributavel', 'valor_unitario_tributavel',
         # DI
         'di_valor_afrmm', 'di_desconto_adicao',
         # Rateio
         'valor_frete_item', 'valor_seguro_item', 'valor_outras_despesas',
-        # FCP
-        'fcp_aliquota', 'fcp_st_aliquota',
         # IBS/CBS (Reforma Tributária)
         'ibs_cbs_aliquota_uf', 'ibs_cbs_aliquota_municipal', 'ibs_cbs_aliquota_cbs',
+        'ibs_percentual_reducao', 'ibs_percentual_diferimento', 'ibs_valor_diferido',
+        'cbs_percentual_reducao', 'cbs_percentual_diferimento', 'cbs_valor_diferido',
+        'ibs_cbs_credito_presumido_percentual', 'ibs_cbs_credito_presumido_valor',
         # Crédito Presumido / Exportação Indireta
         'credito_presumido_percentual', 'credito_presumido_valor',
         'exportacao_indireta_quantidade',
     )
+    # DecimalFields com default != 0 no model — inicial próprio, não zerado em clean()
+    _DECIMAL_CUSTOM_INITIAL = {
+        'icms_percentual_diferimento': Decimal('100'),
+    }
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -605,6 +622,9 @@ class ItemNotaFiscalForm(forms.ModelForm):
         for f in self._DECIMAL_ZERO_FIELDS:
             self.fields[f].required = False
             self.fields[f].initial = Decimal('0')
+        for f, initial in self._DECIMAL_CUSTOM_INITIAL.items():
+            self.fields[f].required = False
+            self.fields[f].initial = initial
 
     def _get_validation_exclusions(self):
         # Exclui numero_item da checagem de unique_together — o view atribui
@@ -619,6 +639,9 @@ class ItemNotaFiscalForm(forms.ModelForm):
         for f in self._DECIMAL_ZERO_FIELDS:
             if cleaned_data.get(f) is None:
                 cleaned_data[f] = Decimal('0')
+        for f, initial in self._DECIMAL_CUSTOM_INITIAL.items():
+            if cleaned_data.get(f) is None:
+                cleaned_data[f] = initial
         # Normaliza aliquotas para no máximo 6 casas decimais (alinha com ProdutoTributacao)
         for f in ('aliquota_pis', 'aliquota_cofins'):
             val = cleaned_data.get(f)
@@ -638,6 +661,20 @@ class ItemNotaFiscalForm(forms.ModelForm):
                         self.add_error('lote', 'Lote obrigatório para itens de NF-e de Remessa (configuração da empresa).')
                 except Exception:
                     pass
+        # cClassTrib deve formar um par válido com o CST IBS/CBS escolhido
+        cst_reforma = cleaned_data.get('ibs_cbs_situacao_tributaria')
+        cclasstrib = cleaned_data.get('ibs_cbs_classificacao_tributaria')
+        if cst_reforma:
+            validos = {c for c, _ in ItemNotaFiscal.IBS_CBS_CST_CCLASSTRIB_MAP.get(cst_reforma, [])}
+            if not cclasstrib:
+                self.add_error('ibs_cbs_classificacao_tributaria',
+                                'cClassTrib obrigatório quando CST IBS/CBS é informado.')
+            elif cclasstrib not in validos:
+                self.add_error('ibs_cbs_classificacao_tributaria',
+                                f'cClassTrib "{cclasstrib}" não é válido para o CST IBS/CBS {cst_reforma}.')
+        elif cclasstrib:
+            self.add_error('ibs_cbs_classificacao_tributaria',
+                            'cClassTrib informado sem CST IBS/CBS selecionado.')
         return cleaned_data
 
     class Meta:
@@ -649,14 +686,17 @@ class ItemNotaFiscalForm(forms.ModelForm):
             # Unidade Tributável (exportação CFOP 7xxx)
             'quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel',
             # ICMS
-            'cst_icms', 'icms_modalidade_base', 'icms_reducao_base', 'aliquota_icms',
-            # ICMS ST
-            'icms_st_aliquota', 'icms_st_mva', 'icms_st_reducao_base',
+            # ICMS-ST fora de escopo: os CSTs com substituição tributária (10,
+            # 30, 60, 70) não fazem parte do escopo desta fazenda (00/40/41/51).
+            'cst_icms', 'icms_modalidade_base', 'icms_base_calculo', 'icms_reducao_base',
+            'aliquota_icms', 'valor_icms', 'icms_percentual_diferimento', 'icms_valor_diferido',
             # IPI
-            'cst_ipi', 'aliquota_ipi', 'ipi_codigo_enquadramento',
+            # aliquota_ipi fora de escopo: CST 53/55 (únicos no escopo) são
+            # sempre não-tributada/suspensão, nunca com alíquota.
+            'cst_ipi', 'ipi_codigo_enquadramento', 'ipi_cnpj_produtor',
             # PIS / COFINS
-            'cst_pis', 'aliquota_pis', 'natureza_receita_pis',
-            'cst_cofins', 'aliquota_cofins', 'natureza_receita_cofins',
+            'cst_pis', 'aliquota_pis', 'pis_base_calculo', 'valor_pis', 'natureza_receita_pis',
+            'cst_cofins', 'aliquota_cofins', 'cofins_base_calculo', 'valor_cofins', 'natureza_receita_cofins',
             # DI - Declaração de Importação
             'di_numero', 'di_data_registro', 'di_local_desembaraco',
             'di_uf_desembaraco', 'di_data_desembaraco', 'di_via_transporte',
@@ -668,12 +708,16 @@ class ItemNotaFiscalForm(forms.ModelForm):
             # Pedido de Compra
             'pedido_compra', 'item_pedido_compra',
             # Benefício Fiscal / Desoneração
-            'beneficio_fiscal', 'icms_motivo_desoneracao',
-            # FCP
-            'fcp_aliquota', 'fcp_st_aliquota',
+            'beneficio_fiscal', 'icms_motivo_desoneracao', 'icms_valor_desoneracao',
+            # FCP fora de escopo: incide sobre produtos supérfluos, não sobre
+            # commodities agrícolas/insumos — não relevante ao escopo desta fazenda.
             # IBS/CBS (Reforma Tributária)
             'ibs_cbs_situacao_tributaria', 'ibs_cbs_classificacao_tributaria',
             'ibs_cbs_aliquota_uf', 'ibs_cbs_aliquota_municipal', 'ibs_cbs_aliquota_cbs',
+            'ibs_percentual_reducao', 'ibs_percentual_diferimento', 'ibs_valor_diferido',
+            'cbs_percentual_reducao', 'cbs_percentual_diferimento', 'cbs_valor_diferido',
+            'ibs_cbs_credito_presumido_codigo', 'ibs_cbs_credito_presumido_percentual',
+            'ibs_cbs_credito_presumido_valor',
             # Crédito Presumido de ICMS
             'credito_presumido_codigo_beneficio', 'credito_presumido_percentual',
             'credito_presumido_valor',
@@ -703,26 +747,40 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'unidade_tributavel':        forms.TextInput(attrs={**_sm, 'placeholder': 'KG', 'style': 'width:55px'}),
             'valor_unitario_tributavel': forms.NumberInput(attrs=_sm_num4),
             # ICMS
-            'cst_icms': forms.TextInput(attrs={**_sm, 'placeholder': '000', 'style': 'width:60px'}),
+            # CST 00 (tributada integralmente) e CST 51 (diferimento) usam os
+            # grupos ICMS00/ICMS51 — exigem modBC/BC/alíquota/valor. CST 40/41
+            # (isenta/não tributada) usam o grupo ICMS40 — nenhum desses campos
+            # existe, só o CST + desoneração opcional (Motivo/Valor).
+            'cst_icms': forms.Select(attrs=_sm_sel, choices=CST_ICMS_CHOICES_FAZENDA),
             'icms_modalidade_base': forms.Select(attrs=_sm_sel, choices=MODALIDADE_BC_ICMS_CHOICES),
+            'icms_base_calculo': forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
             'icms_reducao_base': forms.NumberInput(attrs={**_sm_num, 'placeholder': '0.00'}),
             'aliquota_icms': forms.NumberInput(attrs=_sm_num),
-            # ICMS ST
-            'icms_st_aliquota': forms.NumberInput(attrs=_sm_num),
-            'icms_st_mva': forms.NumberInput(attrs=_sm_num),
-            'icms_st_reducao_base': forms.NumberInput(attrs=_sm_num),
+            'valor_icms': forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
+            'icms_percentual_diferimento': forms.NumberInput(attrs={**_sm_num, 'placeholder': '100.00'}),
+            'icms_valor_diferido': forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
             # IPI
-            'cst_ipi': forms.Select(attrs=_sm_sel, choices=CST_IPI_CHOICES),
-            'aliquota_ipi': forms.NumberInput(attrs=_sm_num),
+            'cst_ipi': forms.Select(attrs=_sm_sel, choices=CST_IPI_CHOICES_FAZENDA),
             'ipi_codigo_enquadramento': forms.TextInput(attrs={**_sm, 'placeholder': '999', 'style': 'width:60px'}),
+            'ipi_cnpj_produtor': forms.TextInput(attrs={**_sm, 'maxlength': '14',
+                                                         'placeholder': 'Somente dígitos',
+                                                         'title': 'CNPJ do produtor, se diferente do emitente '
+                                                                  '(exportação direta/indireta)'}),
             # PIS / COFINS
-            'cst_pis': forms.TextInput(attrs={**_sm, 'placeholder': '07', 'style': 'width:55px'}),
+            # CST 01 (tributável) usa o grupo PISAliq/COFINSAliq da NF-e — exige
+            # base de cálculo, alíquota e valor. CST 06/08/09 usam o grupo
+            # PISNT/COFINSNT — só o CST é enviado (sem base/alíquota/valor).
+            'cst_pis': forms.Select(attrs=_sm_sel, choices=CST_PIS_COFINS_CHOICES_FAZENDA),
             'aliquota_pis': forms.NumberInput(attrs=_sm_num),
+            'pis_base_calculo': forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
+            'valor_pis': forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
             'natureza_receita_pis': forms.TextInput(attrs={**_sm, 'placeholder': 'ex: 116',
                                                            'maxlength': '3', 'style': 'width:70px',
                                                            'title': 'Natureza da Receita PIS (3 dígitos)'}),
-            'cst_cofins': forms.TextInput(attrs={**_sm, 'placeholder': '07', 'style': 'width:55px'}),
+            'cst_cofins': forms.Select(attrs=_sm_sel, choices=CST_PIS_COFINS_CHOICES_FAZENDA),
             'aliquota_cofins': forms.NumberInput(attrs=_sm_num),
+            'cofins_base_calculo': forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
+            'valor_cofins': forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
             'natureza_receita_cofins': forms.TextInput(attrs={**_sm, 'placeholder': 'ex: 116',
                                                               'maxlength': '3', 'style': 'width:70px',
                                                               'title': 'Natureza da Receita COFINS (3 dígitos)'}),
@@ -760,17 +818,22 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'beneficio_fiscal':         forms.TextInput(attrs={**_sm, 'maxlength': '10',
                                                                'placeholder': 'Ex: PR810001'}),
             'icms_motivo_desoneracao':  forms.Select(attrs=_sm_sel),
-            # FCP
-            'fcp_aliquota':    forms.NumberInput(attrs=_sm_num),
-            'fcp_st_aliquota': forms.NumberInput(attrs=_sm_num),
+            'icms_valor_desoneracao':   forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
             # IBS/CBS (Reforma Tributária)
-            'ibs_cbs_situacao_tributaria':      forms.Select(attrs=_sm_sel),
-            'ibs_cbs_classificacao_tributaria': forms.TextInput(attrs={**_sm, 'maxlength': '6',
-                                                                       'placeholder': '000001',
-                                                                       'title': 'cClassTrib — 6 dígitos'}),
+            'ibs_cbs_situacao_tributaria':      forms.Select(attrs={**_sm_sel, 'class': _sm_sel['class'] + ' ibs-cbs-cst'}),
+            'ibs_cbs_classificacao_tributaria': forms.Select(attrs={**_sm_sel, 'class': _sm_sel['class'] + ' ibs-cbs-cclasstrib'}),
             'ibs_cbs_aliquota_uf':        forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
             'ibs_cbs_aliquota_municipal': forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
             'ibs_cbs_aliquota_cbs':       forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'ibs_percentual_reducao':     forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'ibs_percentual_diferimento': forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'ibs_valor_diferido':         forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
+            'cbs_percentual_reducao':     forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'cbs_percentual_diferimento': forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'cbs_valor_diferido':         forms.NumberInput(attrs={**_sm_num, 'readonly': True, 'tabindex': '-1'}),
+            'ibs_cbs_credito_presumido_codigo':      forms.Select(attrs=_sm_sel),
+            'ibs_cbs_credito_presumido_percentual':  forms.NumberInput(attrs={**_sm_num, 'step': '0.0001'}),
+            'ibs_cbs_credito_presumido_valor':       forms.NumberInput(attrs=_sm_num),
             # Crédito Presumido de ICMS
             'credito_presumido_codigo_beneficio': forms.TextInput(attrs={**_sm, 'maxlength': '10',
                                                                           'placeholder': 'Ex: PR810001'}),

@@ -5,58 +5,76 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- Header -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h1><i class="bi bi-file-earmark-bar-graph"></i> Balancete de Verificação</h1>
-          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
-        </div>
-        <div class="d-flex gap-2">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3 d-print-none">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-file-earmark-bar-graph"></i></span>
+          <div>
+              <h2>Balancete de Verificação</h2>
+              <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.tipo %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.tipo %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
           <button class="btn btn-outline-secondary" onclick="window.print()">
-            <i class="bi bi-printer"></i> Imprimir
+              <i class="bi bi-printer"></i> Imprimir
           </button>
           <a href="{% url 'plano_contas:conta_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
+              <i class="bi bi-arrow-left"></i> Voltar
           </a>
-        </div>
       </div>
-    </div>
   </div>
 
-  <!-- Filtros -->
-  <div class="card mb-4 d-print-none">
-    <div class="card-body">
-      <form method="get" class="row g-3 align-items-end">
-        <div class="col-md-4">
-          <label class="form-label">Tipo de Conta</label>
-          <select name="tipo" class="form-select">
-            <option value="">Todos os tipos</option>
-            {% for tipo_key, tipo_label in tipos %}
-            <option value="{{ tipo_key }}" {% if tipo_filter == tipo_key %}selected{% endif %}>{{ tipo_label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3 d-flex gap-2">
+  <!-- Título visível na impressão -->
+  <div class="d-none d-print-block mb-3">
+      <h2>Balancete de Verificação</h2>
+      <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+  </div>
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.tipo %}show{% endif %} mb-4 d-print-none" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo de Conta</label>
+        <select name="tipo" class="form-select">
+          <option value="">Todos os tipos</option>
+          {% for tipo_key, tipo_label in tipos %}
+          <option value="{{ tipo_key }}" {% if tipo_filter == tipo_key %}selected{% endif %}>{{ tipo_label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
           <button type="submit" class="btn btn-primary">
-            <i class="bi bi-funnel"></i> Filtrar
+              <i class="bi bi-search"></i> Filtrar
           </button>
-          <a href="{% url 'plano_contas:balancete' %}" class="btn btn-outline-secondary">Limpar</a>
-        </div>
-      </form>
-    </div>
+          <a href="{% url 'plano_contas:balancete' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
   </div>
 
   <!-- Tabela do Balancete -->
-  <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <span><strong>Contas Analíticas — {{ contas.count }} conta(s)</strong></span>
-      <small class="text-muted">* Saldo será calculado após implementação de lançamentos contábeis</small>
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+      <span><strong>Contas Analíticas — {{ contas.count }} conta{{ contas.count|pluralize }}</strong></span>
+      <small class="text-muted d-print-none">* Saldo será calculado após implementação de lançamentos contábeis</small>
     </div>
     <div class="table-responsive">
-      <table class="table table-sm table-hover mb-0">
-        <thead class="table-light">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
           <tr>
             <th>Código</th>
             <th>Nome</th>
@@ -71,11 +89,11 @@
           {% regroup contas by tipo as contas_por_tipo %}
           {% for grupo in contas_por_tipo %}
           <tr class="table-secondary">
-            <td colspan="7"><strong>{{ grupo.grouper|upper }}</strong></td>
+            <td class="ps-4" colspan="7"><strong>{{ grupo.grouper|upper }}</strong></td>
           </tr>
           {% for conta in grupo.list %}
           <tr>
-            <td><code>{{ conta.codigo }}</code></td>
+            <td class="ps-4"><code>{{ conta.codigo }}</code></td>
             <td>{{ conta.nome }}</td>
             <td><span class="badge bg-{{ conta.badge_tipo }}">{{ conta.get_tipo_display }}</span></td>
             <td><small class="text-muted">{{ conta.get_natureza_display }}</small></td>
@@ -86,9 +104,9 @@
           {% endfor %}
           {% empty %}
           <tr>
-            <td colspan="7" class="text-center py-4 text-muted">
-              <i class="bi bi-inbox fs-3 d-block mb-2"></i>
-              Nenhuma conta analítica encontrada.
+            <td colspan="7" class="text-center text-muted py-5">
+              <i class="bi bi-inbox display-4 d-block mb-3"></i>
+              Nenhuma conta analítica encontrada
             </td>
           </tr>
           {% endfor %}
@@ -110,4 +128,13 @@
   .container-fluid { padding: 0 !important; }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
 {% endblock %}

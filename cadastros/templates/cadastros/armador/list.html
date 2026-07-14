@@ -5,65 +5,86 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-ship"></i> Armadores
-            </h1>
+    <!-- Cabeçalho -->
+    <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <span class="page-header-icon blue"><i class="bi bi-flag"></i></span>
+            <h2>Armadores</h2>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:armador_create' %}" class="btn btn-primary">
+        <div class="d-flex gap-2 align-items-center">
+            <button class="btn btn-outline-secondary position-relative"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#filterCollapse"
+                    aria-expanded="{% if request.GET.search or request.GET.ativo or request.GET.pais %}true{% else %}false{% endif %}"
+                    title="Pesquisar / Filtrar">
+                <i class="bi bi-funnel"></i> Filtros
+                {% if request.GET.search or request.GET.ativo or request.GET.pais %}
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                    ●<span class="visually-hidden">filtro ativo</span>
+                  </span>
+                {% endif %}
+            </button>
+            <a href="{% url 'cadastros:armador_create' %}" class="btn btn-success">
                 <i class="bi bi-plus-circle"></i> Novo Armador
             </a>
         </div>
     </div>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <label class="form-label">Buscar (Nome, CNPJ ou Código)</label>
-                    <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Digite para buscar...">
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="ativo" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Ativos</option>
-                        <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>Inativos</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">País</label>
-                    <select name="pais" class="form-select">
-                        <option value="">-- Todos --</option>
-                        <option value="Brasil" {% if request.GET.pais == 'Brasil' %}selected{% endif %}>Brasil</option>
-                        <option value="Argentina" {% if request.GET.pais == 'Argentina' %}selected{% endif %}>Argentina</option>
-                        <option value="Uruguai" {% if request.GET.pais == 'Uruguai' %}selected{% endif %}>Uruguai</option>
-                        <option value="Paraguai" {% if request.GET.pais == 'Paraguai' %}selected{% endif %}>Paraguai</option>
-                    </select>
-                </div>
-                <div class="col-md-2 d-flex align-items-end gap-2">
-                    <button type="submit" class="btn btn-outline-primary w-100">
-                        <i class="bi bi-search"></i> Filtrar
-                    </button>
-                    <a href="{% url 'cadastros:armador_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x"></i>
-                    </a>
-                </div>
-            </form>
+    <!-- Filtros (colapsável) -->
+    <div class="collapse {% if request.GET.search or request.GET.ativo or request.GET.pais %}show{% endif %} mb-4" id="filterCollapse">
+      <form method="get" id="filterForm" class="filter-bar">
+        <div class="filter-field" style="min-width:240px;">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+          <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Nome, CNPJ ou código...">
         </div>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+          <select name="ativo" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="1" {% if request.GET.ativo == '1' %}selected{% endif %}>Ativos</option>
+              <option value="0" {% if request.GET.ativo == '0' %}selected{% endif %}>Inativos</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label class="form-label form-label-sm mb-0 fw-semibold small">País</label>
+          <select name="pais" class="form-select">
+              <option value="">-- Todos --</option>
+              <option value="Brasil" {% if request.GET.pais == 'Brasil' %}selected{% endif %}>Brasil</option>
+              <option value="Argentina" {% if request.GET.pais == 'Argentina' %}selected{% endif %}>Argentina</option>
+              <option value="Uruguai" {% if request.GET.pais == 'Uruguai' %}selected{% endif %}>Uruguai</option>
+              <option value="Paraguai" {% if request.GET.pais == 'Paraguai' %}selected{% endif %}>Paraguai</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <a href="{% url 'cadastros:armador_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Barra de resultado -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="text-muted small">
+        {% if page_obj.paginator %}
+          Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+          de <strong>{{ page_obj.paginator.count }}</strong> armador{{ page_obj.paginator.count|pluralize }}
+        {% endif %}
+      </span>
     </div>
 
     <!-- Tabela -->
     {% if armadores %}
-    <div class="card">
+    <div class="card shadow-sm border-0 rounded-4">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
                     <tr>
-                        <th>Código</th>
+                        <th class="ps-4">Código</th>
                         <th>Nome</th>
                         <th>CNPJ</th>
                         <th>Contatos</th>
@@ -75,7 +96,7 @@
                 <tbody>
                     {% for armador in armadores %}
                     <tr>
-                        <td>
+                        <td class="ps-4">
                             <span class="badge bg-info">{{ armador.codigo }}</span>
                         </td>
                         <td>
@@ -102,14 +123,14 @@
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-primary" title="Ver">
+                            <div class="d-flex gap-3 justify-content-center">
+                                <a class="action-icon" href="{% url 'cadastros:armador_detail' armador.id %}" title="Ver detalhes">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'cadastros:armador_update' armador.id %}" class="btn btn-outline-warning" title="Editar">
+                                <a class="action-icon edit" href="{% url 'cadastros:armador_update' armador.id %}" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'cadastros:armador_delete' armador.id %}" class="btn btn-outline-danger" title="Deletar">
+                                <a class="action-icon danger" href="{% url 'cadastros:armador_delete' armador.id %}" title="Excluir">
                                     <i class="bi bi-trash"></i>
                                 </a>
                             </div>
@@ -119,10 +140,12 @@
                 </tbody>
             </table>
         </div>
+        {% if page_obj.paginator %}
+        <div class="card-footer">
+          {% include 'partials/pagination.html' with page_obj=page_obj %}
+        </div>
+        {% endif %}
     </div>
-
-    <!-- Paginação -->
-    {% include 'partials/pagination.html' with page_obj=page_obj %}
 
     {% else %}
     <div class="alert alert-info" role="alert">

@@ -2,6 +2,7 @@
 Views para gerenciamento de Lotes de Produção — RF-109 e RF-110.
 """
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.http import require_POST
@@ -42,11 +43,15 @@ def lote_list(request):
     from cadastros.models import Safra
     safras = Safra.objects.filter(fazenda__empresa=empresa).order_by('-ano', 'nome')
 
+    lotes = lotes.order_by('-criado_em')
+    paginator = Paginator(lotes, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
     return render(request, 'operacoes_campo/lote_producao/lote_list.html', {
-        'lotes': lotes,
+        'lotes': page_obj,
         'safras': safras,
         'status_choices': LoteProducao.STATUS_CHOICES,
-        'total': lotes.count(),
+        'total': paginator.count,
     })
 
 

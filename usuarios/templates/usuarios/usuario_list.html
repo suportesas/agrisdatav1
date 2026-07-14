@@ -5,21 +5,25 @@
 {% block page_title %}Gerenciamento de Usuários{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4 px-4">
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-    <h4 class="fw-bold text-secondary">Usuários Cadastrados</h4>
-    {% if user.is_superuser or user.is_staff or user.is_admin_empresa %}
-    <div class="d-flex flex-wrap gap-2">
-      {% if user.is_superuser %}
-      <a href="{% url 'usuarios:tipo_usuario_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-diagram-3"></i> Tipos de Usuário
-      </a>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-people"></i></span>
+          <h2>Usuários Cadastrados</h2>
+      </div>
+      {% if user.is_superuser or user.is_staff or user.is_admin_empresa %}
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+          {% if user.is_superuser %}
+          <a href="{% url 'usuarios:tipo_usuario_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-diagram-3"></i> Tipos de Usuário
+          </a>
+          {% endif %}
+          <a href="{% url 'usuarios:usuario_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Novo Usuário
+          </a>
+      </div>
       {% endif %}
-      <a href="{% url 'usuarios:usuario_create' %}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Novo Usuário
-      </a>
-    </div>
-    {% endif %}
   </div>
 
   {% if user.is_superuser %}
@@ -37,46 +41,43 @@
   </div>
   {% endif %}
 
-  <!-- Filtros -->
-  <form id="filtroForm" method="get" class="card p-3 mb-4 shadow-sm border-0 rounded-4 bg-light">
+  <!-- Filtros (busca ao vivo via AJAX — sempre visível) -->
+  <form id="filtroForm" method="get" class="filter-bar mb-4">
     <input type="hidden" id="viewInput" name="view" value="{{ view_mode|default:'lista' }}">
-    <div class="row g-2 align-items-center">
-      <div class="col-md-3">
-        <input type="text" id="buscaInput" name="q" value="{{ request.GET.q|default:'' }}" class="form-control"
-          placeholder="Buscar por nome, e-mail ou telefone...">
-      </div>
-      <div class="col-md-2">
-        <select id="tipoSelect" name="tipo" class="form-select">
-          <option value="">-- Tipo de Usuário --</option>
-          {% for tipo_item in tipos %}
-          <option value="{{ tipo_item.codigo }}" {% if request.GET.tipo == tipo_item.codigo %}selected{% endif %}>{{ tipo_item.nome }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% if user.is_superuser %}
-      <div class="col-md-4">
-        <select id="empresaSelect" name="empresa_id" class="form-select">
-          <option value="">-- Todas as empresas --</option>
-          {% for e in empresas %}
-          <option value="{{ e.id }}" {% if request.GET.empresa_id == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nome }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% endif %}
-      <div class="col-md-3">
-        <div class="input-group">
-          <span class="input-group-text bg-white border-end-0">
-            <i class="bi bi-list-ol"></i>
-          </span>
-          <select id="perPageSelect" name="per_page" class="form-select border-start-0">
-            <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10 por página</option>
-            <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 por página</option>
-            <option value="25" {% if request.GET.per_page == '25' or not request.GET.per_page %}selected{% endif %}>25 por página</option>
-            <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50 por página</option>
-            <option value="100" {% if request.GET.per_page == '100' %}selected{% endif %}>100 por página</option>
-          </select>
-        </div>
-      </div>
+    <div class="filter-field">
+      <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+      <input type="text" id="buscaInput" name="q" value="{{ request.GET.q|default:'' }}" class="form-control"
+        placeholder="Nome, e-mail ou telefone...">
+    </div>
+    <div class="filter-field">
+      <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo de Usuário</label>
+      <select id="tipoSelect" name="tipo" class="form-select">
+        <option value="">Todos os tipos</option>
+        {% for tipo_item in tipos %}
+        <option value="{{ tipo_item.codigo }}" {% if request.GET.tipo == tipo_item.codigo %}selected{% endif %}>{{ tipo_item.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if user.is_superuser %}
+    <div class="filter-field">
+      <label class="form-label form-label-sm mb-0 fw-semibold small">Empresa</label>
+      <select id="empresaSelect" name="empresa_id" class="form-select">
+        <option value="">Todas as empresas</option>
+        {% for e in empresas %}
+        <option value="{{ e.id }}" {% if request.GET.empresa_id == e.id|stringformat:"s" %}selected{% endif %}>{{ e.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="filter-field">
+      <label class="form-label form-label-sm mb-0 fw-semibold small">Por página</label>
+      <select id="perPageSelect" name="per_page" class="form-select">
+        <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10 por página</option>
+        <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20 por página</option>
+        <option value="25" {% if request.GET.per_page == '25' or not request.GET.per_page %}selected{% endif %}>25 por página</option>
+        <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50 por página</option>
+        <option value="100" {% if request.GET.per_page == '100' %}selected{% endif %}>100 por página</option>
+      </select>
     </div>
   </form>
 

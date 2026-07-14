@@ -4,72 +4,105 @@
 {% block page_title %}Bookings{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>Bookings</h2>
-    <a class="btn btn-primary" href="{% url 'exportacao:booking_create' %}">Novo Booking</a>
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-ship"></i></span>
+          <h2>Bookings</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <a class="btn btn-success" href="{% url 'exportacao:booking_create' %}">
+              <i class="bi bi-plus-circle"></i> Novo Booking
+          </a>
+      </div>
   </div>
 
-  <div class="table-responsive">
-    <table class="table table-hover table-bordered align-middle">
-      <thead class="table-light">
-        <tr>
-          <th>Código</th>
-          <th>Solicitação</th>
-          <th>Status</th>
-          <th>Porto Origem</th>
-          <th>Porto Destino</th>
-          <th class="text-center" title="Quantidade solicitada">Qtd. Solicitada</th>
-          <th class="text-center" title="Contêineres adicionados ao booking">Contêineres</th>
-          <th class="text-center" title="Saldo = Solicitado − Adicionados">Saldo</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for booking in bookings %}
-          <tr>
-            <td class="fw-semibold">{{ booking.codigo|default:"—" }}</td>
-            <td>{{ booking.solicitacao|default:"—" }}</td>
-            <td>
-              {% if booking.status == 'RASCUNHO' %}<span class="badge bg-secondary">{{ booking.get_status_display }}</span>
-              {% elif booking.status == 'ABERTO' %}<span class="badge bg-primary">{{ booking.get_status_display }}</span>
-              {% elif booking.status == 'CONFIRMADO' %}<span class="badge bg-info">{{ booking.get_status_display }}</span>
-              {% elif booking.status == 'EMBARCADO' %}<span class="badge bg-warning text-dark">{{ booking.get_status_display }}</span>
-              {% elif booking.status == 'CONCLUÍDO' %}<span class="badge bg-success">{{ booking.get_status_display }}</span>
-              {% elif booking.status == 'CANCELADO' %}<span class="badge bg-danger">{{ booking.get_status_display }}</span>
-              {% else %}<span class="badge bg-secondary">{{ booking.get_status_display }}</span>{% endif %}
-            </td>
-            <td>{{ booking.porto_origem|default:"—" }}</td>
-            <td>{{ booking.porto_destino|default:"—" }}</td>
-            <td class="text-center">{{ booking.solicitacao.quantidade|floatformat:0|default:"—" }}</td>
-            <td class="text-center fw-semibold">{{ booking.n_containers }}</td>
-            <td class="text-center fw-semibold">
-              {% if booking.saldo is not None %}
-                {% if booking.saldo < 0 %}
-                  <span class="text-danger">{{ booking.saldo|floatformat:0 }}</span>
-                {% elif booking.saldo == 0 %}
-                  <span class="text-success">0</span>
-                {% else %}
-                  <span class="text-warning">{{ booking.saldo|floatformat:0 }}</span>
-                {% endif %}
-              {% else %}—{% endif %}
-            </td>
-            <td class="text-nowrap">
-              <a class="btn btn-sm btn-outline-primary" href="{% url 'exportacao:booking_detail' booking.pk %}" title="Ver detalhes">
-                <i class="bi bi-eye"></i>
-              </a>
-              <a class="btn btn-sm btn-outline-secondary ms-1" href="{% url 'exportacao:booking_update' booking.pk %}" title="Editar">
-                <i class="bi bi-pencil"></i>
-              </a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr>
-            <td colspan="9" class="text-center text-muted py-4">Nenhum booking encontrado.</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if bookings.paginator %}
+        Exibindo <strong>{{ bookings.start_index }}–{{ bookings.end_index }}</strong>
+        de <strong>{{ bookings.paginator.count }}</strong> booking{{ bookings.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Código</th>
+              <th>Solicitação</th>
+              <th class="text-center">Status</th>
+              <th>Porto Origem</th>
+              <th>Porto Destino</th>
+              <th class="text-center" title="Quantidade solicitada">Qtd. Solicitada</th>
+              <th class="text-center" title="Contêineres adicionados ao booking">Contêineres</th>
+              <th class="text-center" title="Saldo = Solicitado − Adicionados">Saldo</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for booking in bookings %}
+              <tr>
+                <td class="ps-4 fw-semibold">{{ booking.codigo|default:"—" }}</td>
+                <td>{{ booking.solicitacao|default:"—" }}</td>
+                <td class="text-center">
+                  {% if booking.status == 'RASCUNHO' %}<span class="badge bg-secondary">{{ booking.get_status_display }}</span>
+                  {% elif booking.status == 'ABERTO' %}<span class="badge bg-primary">{{ booking.get_status_display }}</span>
+                  {% elif booking.status == 'CONFIRMADO' %}<span class="badge bg-info">{{ booking.get_status_display }}</span>
+                  {% elif booking.status == 'EMBARCADO' %}<span class="badge bg-warning text-dark">{{ booking.get_status_display }}</span>
+                  {% elif booking.status == 'CONCLUÍDO' %}<span class="badge bg-success">{{ booking.get_status_display }}</span>
+                  {% elif booking.status == 'CANCELADO' %}<span class="badge bg-danger">{{ booking.get_status_display }}</span>
+                  {% else %}<span class="badge bg-secondary">{{ booking.get_status_display }}</span>{% endif %}
+                </td>
+                <td>{{ booking.porto_origem|default:"—" }}</td>
+                <td>{{ booking.porto_destino|default:"—" }}</td>
+                <td class="text-center text-mono">{{ booking.solicitacao.quantidade|floatformat:0|default:"—" }}</td>
+                <td class="text-center fw-semibold text-mono">{{ booking.n_containers }}</td>
+                <td class="text-center fw-semibold text-mono">
+                  {% if booking.saldo is not None %}
+                    {% if booking.saldo < 0 %}
+                      <span class="text-danger">{{ booking.saldo|floatformat:0 }}</span>
+                    {% elif booking.saldo == 0 %}
+                      <span class="text-success">0</span>
+                    {% else %}
+                      <span class="text-warning">{{ booking.saldo|floatformat:0 }}</span>
+                    {% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td class="text-center">
+                  <div class="d-flex gap-3 justify-content-center">
+                      <a class="action-icon" href="{% url 'exportacao:booking_detail' booking.pk %}" title="Ver detalhes">
+                          <i class="bi bi-eye"></i>
+                      </a>
+                      <a class="action-icon edit" href="{% url 'exportacao:booking_update' booking.pk %}" title="Editar">
+                          <i class="bi bi-pencil"></i>
+                      </a>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="9" class="text-center text-muted py-5">
+                  <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                  Nenhum booking encontrado
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if bookings.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=bookings %}
+    </div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

@@ -5,59 +5,62 @@
 {% block content %}
 <div class="container-fluid">
 
-  <!-- Header -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h1><i class="bi bi-diagram-2"></i> Árvore do Plano de Contas</h1>
-          <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-outline-secondary btn-sm" onclick="expandAll()">
-            <i class="bi bi-arrows-expand"></i> Expandir Tudo
-          </button>
-          <button class="btn btn-outline-secondary btn-sm" onclick="collapseAll()">
-            <i class="bi bi-arrows-collapse"></i> Colapsar Tudo
-          </button>
-          <a href="{% url 'plano_contas:conta_list' %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-list-ul"></i> Ver Lista
-          </a>
-          <a href="{% url 'plano_contas:conta_create' %}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle"></i> Nova Conta
-          </a>
-        </div>
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-diagram-2"></i></span>
+          <div>
+              <h2>Árvore do Plano de Contas</h2>
+              <p class="text-muted mb-0">{{ request.user.empresa.nome }}</p>
+          </div>
       </div>
-    </div>
+      <div class="d-flex gap-2 flex-wrap align-items-center">
+          <button class="btn btn-outline-secondary" onclick="expandAll()">
+              <i class="bi bi-arrows-expand"></i> Expandir Tudo
+          </button>
+          <button class="btn btn-outline-secondary" onclick="collapseAll()">
+              <i class="bi bi-arrows-collapse"></i> Colapsar Tudo
+          </button>
+          <a href="{% url 'plano_contas:conta_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-list-ul"></i> Ver Lista
+          </a>
+          <a href="{% url 'plano_contas:conta_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Nova Conta
+          </a>
+      </div>
   </div>
 
   <!-- Filtro de Tipo -->
-  <div class="card mb-3">
-    <div class="card-body py-2">
-      <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
-        <label class="form-label mb-0">Tipo:</label>
-        <select name="tipo" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+  <div class="filter-bar mb-4">
+    <form method="get" id="filterForm" class="filter-bar p-0 border-0">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo</label>
+        <select name="tipo" class="form-select">
           <option value="">Todos</option>
           {% for tipo_key, tipo_label in tipos %}
           <option value="{{ tipo_key }}" {% if tipo_filter == tipo_key %}selected{% endif %}>{{ tipo_label }}</option>
           {% endfor %}
         </select>
-        {% if tipo_filter %}
-        <a href="{% url 'plano_contas:conta_arvore' %}" class="btn btn-sm btn-outline-secondary">Limpar</a>
-        {% endif %}
-      </form>
-    </div>
+      </div>
+      {% if tipo_filter %}
+      <div class="filter-actions">
+        <a href="{% url 'plano_contas:conta_arvore' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg"></i> Limpar
+        </a>
+      </div>
+      {% endif %}
+    </form>
   </div>
 
   <!-- Árvore -->
-  <div class="card">
+  <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body">
       <ul class="list-unstyled mb-0" id="arvore-raiz">
         {% for conta in contas_raiz %}
           {% include 'plano_contas/partials/conta_node.html' with conta=conta nivel=0 %}
         {% empty %}
-        <li class="text-center py-4 text-muted">
-          <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+        <li class="text-center text-muted py-5">
+          <i class="bi bi-inbox display-4 d-block mb-3"></i>
           Nenhuma conta cadastrada ainda.
           <a href="{% url 'plano_contas:conta_create' %}">Cadastre a primeira conta</a>.
         </li>
@@ -92,5 +95,11 @@ function toggleNode(btn) {
     icon.classList.toggle('bi-chevron-down');
   }
 }
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
 </script>
 {% endblock %}

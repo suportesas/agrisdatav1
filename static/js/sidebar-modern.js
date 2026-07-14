@@ -1,6 +1,6 @@
 /**
  * Sidebar Moderno - JavaScript
- * ERP Agrícola
+ * Agrisdata
  */
 
 document.addEventListener('DOMContentLoaded', function() {

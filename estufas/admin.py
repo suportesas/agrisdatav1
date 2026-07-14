@@ -5,8 +5,6 @@ from .models import (
     LoteMuda,
     MonitoramentoEstufa,
     PerdaEstufa,
-    ReplantioTalhao,
-    Transplantio,
 )
 
 
@@ -33,15 +31,3 @@ class LoteMudaAdmin(admin.ModelAdmin):
     readonly_fields = ['data_cadastro']
 
 
-@admin.register(Transplantio)
-class TransplantioAdmin(admin.ModelAdmin):
-    list_display = ['lote_muda', 'talhao', 'data_transplantio', 'quantidade_transplantada', 'tipo']
-    list_filter = ['tipo', 'empresa']
-    readonly_fields = ['data_cadastro', 'custo_transferido']
-
-
-@admin.register(ReplantioTalhao)
-class ReplantioTalhaoAdmin(admin.ModelAdmin):
-    list_display = ['talhao', 'data_replantio', 'quantidade', 'origem_muda', 'motivo_perda']
-    list_filter = ['origem_muda', 'motivo_perda', 'empresa']
-    readonly_fields = ['data_cadastro']

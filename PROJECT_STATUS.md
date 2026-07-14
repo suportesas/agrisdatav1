@@ -1,4 +1,4 @@
-# ERP Agrícola - Status de Conclusão
+# Agrisdata - Status de Conclusão
 
 ## Resumo Geral do Projeto
 
@@ -350,7 +350,7 @@ Alertas:             http://localhost:8000/estoque/relatorio/alertas/
 
 ---
 
-**Projeto:** ERP Agrícola  
+**Projeto:** Agrisdata  
 **Versão:** 3.0 (FASE 3 Completa)  
 **Data:** 2024  
 **Status:** ✅ PRONTO PARA PRODUÇÃO  

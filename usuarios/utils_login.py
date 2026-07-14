@@ -284,7 +284,7 @@ def criar_qrcode_totp(usuario, chave_secreta):
     # Provisioning URI é o padrão para gerar QR codes
     provisioning_uri = totp.provisioning_uri(
         name=usuario.email,
-        issuer_name='ERP Agrícola'
+        issuer_name='Agrisdata'
     )
     
     # Gerar QR Code

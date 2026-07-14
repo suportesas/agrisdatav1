@@ -1,4 +1,4 @@
-# 📊 ANÁLISE DE STATUS PRD - ERP Agrícola Salutaris
+# 📊 ANÁLISE DE STATUS PRD - Agrisdata Salutaris
 **Data**: 17/02/2026  
 **Django Status**: ✅ Funcional (v5.2.7)  
 **Banco de Dados**: PostgreSQL (configurado)

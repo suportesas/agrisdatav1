@@ -362,7 +362,7 @@ Compartilhe com usuários:
 **Data de Implementação:** 2025-02-04  
 **Status:** ✅ PRONTO PARA PRODUÇÃO  
 **Versão:** 1.0  
-**Assinado por:** Sistema ERP Agrícola
+**Assinado por:** Sistema Agrisdata
 
 ---
 

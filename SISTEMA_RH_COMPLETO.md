@@ -1,4 +1,4 @@
-# Sistema de Controle de RH - ERP Agrícola
+# Sistema de Controle de RH - Agrisdata
 
 ## 📋 Visão Geral
 

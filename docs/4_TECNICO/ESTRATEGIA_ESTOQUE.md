@@ -7,7 +7,7 @@ Scope: Movimentação e cálculo de estoque
 
 ## Visão Geral
 
-O sistema de estoque do ERP Agrícola suporta **dois fluxos principais** de atualização:
+O sistema de estoque do Agrisdata suporta **dois fluxos principais** de atualização:
 
 ### 1️⃣ Fluxo de Lotes (Histórico - com detalhamento PEPS/FIFO)
 - **Quando usar**: Produtos que exigem rastreabilidade por lote

@@ -93,7 +93,7 @@ def main():
         print("❌ Senha deve ter mínimo 6 caracteres")
         return
     
-    nome_completo = input("Nome Completo (ex: Proprietário ERP Agrícola): ").strip()
+    nome_completo = input("Nome Completo (ex: Proprietário Agrisdata): ").strip()
     
     if not nome_completo:
         nome_completo = "Proprietário SAAS"

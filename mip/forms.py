@@ -15,7 +15,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
     class Meta:
         model = MonitoramentoMIP
         fields = [
-            'talhao', 'safra', 'cultura', 'data_monitoramento', 'tipo_monitoramento',
+            'talhao', 'safra', 'cultura', 'os', 'data_monitoramento', 'tipo_monitoramento',
             'responsavel', 'quantidade_pontos',
             'condicoes_tempo', 'temperatura_media', 'umidade_media',
             'velocidade_vento_media', 'foto_area_geral',
@@ -25,6 +25,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
             'talhao': forms.Select(attrs={'class': 'form-control'}),
             'safra': forms.Select(attrs={'class': 'form-control'}),
             'cultura': forms.Select(attrs={'class': 'form-control'}),
+            'os': forms.Select(attrs={'class': 'form-control'}),
             'data_monitoramento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'tipo_monitoramento': forms.Select(attrs={'class': 'form-control'}),
             'responsavel': forms.Select(attrs={'class': 'form-control'}),
@@ -43,6 +44,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.fields['condicoes_tempo'].required = False
+        self.fields['os'].required = False
 
         valor_legado = (getattr(self.instance, 'condicoes_tempo', '') or '').strip() if self.instance else ''
         choices = [('', 'Selecione...')] + list(getattr(MonitoramentoMIP, 'CONDICOES_TEMPO_CHOICES', []))
@@ -66,6 +68,10 @@ class MonitoramentoMIPForm(forms.ModelForm):
             self.fields['safra'].required = True
 
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.empresa)
+
+            from operacoes_campo.models import OrdemServico
+            self.fields['os'].queryset = OrdemServico.objects.filter(empresa=self.empresa).order_by('-data_cadastro')
+            self.fields['os'].label_from_instance = lambda obj: f"{obj.numero} — {obj.descricao_servico}"
 
         if self.user:
             self.fields['responsavel'].initial = self.user.id

@@ -195,4 +195,4 @@ Use com consciência e apenas quando realmente necessário!
 ---
 
 **Desenvolvido:** Janeiro 2025
-**Módulo:** Compras - ERP Agrícola SAAS
+**Módulo:** Compras - Agrisdata SAAS

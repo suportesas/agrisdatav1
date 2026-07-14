@@ -38,7 +38,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ERP Agrícola <no-reply@erp-agricola.com>')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Agrisdata <no-reply@erp-agricola.com>')
 ```
 
 ## 🚀 Usando em Produção
@@ -60,7 +60,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=seu.email@gmail.com
 EMAIL_HOST_PASSWORD=sua_senha_de_app_16_caracteres
-DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
+DEFAULT_FROM_EMAIL=Agrisdata <seu.email@gmail.com>
 ```
 
 ### Opção 2: Outlook/Office 365
@@ -71,7 +71,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=seu.email@outlook.com
 EMAIL_HOST_PASSWORD=sua_senha
-DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@outlook.com>
+DEFAULT_FROM_EMAIL=Agrisdata <seu.email@outlook.com>
 ```
 
 ### Opção 3: Teste Local (Console)

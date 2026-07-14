@@ -1,4 +1,4 @@
-PRD - ERP Agrícola Salutaris
+PRD - Agrisdata Salutaris
 Versão 1.0 - Documento Consolidado
 
 ## Release Notes
@@ -9,7 +9,7 @@ Versão 1.0 - Documento Consolidado
 
 1. VISÃO GERAL DO PRODUTO
 1.1 Nome do Sistema
-ERP Agrícola Salutaris - Plataforma SaaS Integrada para Gestão Agroindustrial, Exportação e Compliance
+Agrisdata Salutaris - Plataforma SaaS Integrada para Gestão Agroindustrial, Exportação e Compliance
 1.2 Objetivo Principal
 Entregar uma solução completa que integre produção agrícola, packing house, exportação, logística, financeiro, fiscal, RH, certificações, BI e portais externos, centralizando todos os dados do agronegócio em uma única plataforma multiempresa, segura e escalável.
 1.3 Público-Alvo

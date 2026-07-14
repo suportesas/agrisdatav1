@@ -1,7 +1,7 @@
 # ESPECIFICAÇÃO TÉCNICA COMPLETA
 ## CADASTRO DE PRODUTOS E INSUMOS COM TRIBUTAÇÃO AUTOMATIZADA
 
-**Projeto**: ERP Agrícola Salutaris  
+**Projeto**: Agrisdata Salutaris  
 **Versão**: 2.0  
 **Data**: Janeiro 2026  
 **Regime Tributário**: Lucro Real (Base)  

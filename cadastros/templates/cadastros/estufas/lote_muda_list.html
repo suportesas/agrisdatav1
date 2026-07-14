@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Lotes de Mudas | ERP Agrícola{% endblock %}
+{% block title %}Lotes de Mudas | Agrisdata{% endblock %}
 {% block page_title %}Lotes de Mudas{% endblock %}
 
 {% block content %}
@@ -26,8 +26,8 @@
           </span>
         {% endif %}
       </button>
-      <a href="{% url 'estufas:transplantio_create' %}" class="btn btn-outline-primary">
-        <i class="bi bi-arrow-right-square"></i> Novo Transplantio
+      <a href="{% url 'operacoes_campo:os_create' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-right-square"></i> Novo Transplantio (OS)
       </a>
       <a href="{% url 'estufas:lote_muda_create' %}" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Novo Lote

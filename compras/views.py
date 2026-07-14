@@ -1746,7 +1746,7 @@ def pedido_whatsapp(request, pk):
 
 Por favor, confirme o recebimento deste pedido.
 
-_Mensagem enviada via ERP Agrícola_"""
+_Mensagem enviada via Agrisdata_"""
     
     # Gera o link do WhatsApp
     whatsapp_url = f"https://wa.me/{telefone}?text={quote(mensagem)}"

@@ -1,4 +1,4 @@
-# Documentacao Oficial do ERP Agricola
+# Documentacao Oficial do Agrisdata
 
 ## Objetivo
 Este diretorio centraliza toda a documentacao funcional, tecnica e operacional do sistema.

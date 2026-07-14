@@ -150,5 +150,5 @@ Se uploads continuarem falhando:
 
 ---
 **Data:** 2026-04-08
-**Versão:** ERP Agrícola v1.0
+**Versão:** Agrisdata v1.0
 **Supabase Storage:** v25.1

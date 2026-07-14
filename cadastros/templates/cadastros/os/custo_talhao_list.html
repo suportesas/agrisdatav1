@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Custo por Talhão e Safra | ERP Agrícola{% endblock %}
+{% block title %}Custo por Talhão e Safra | Agrisdata{% endblock %}
 {% block page_title %}Custo por Talhão e Safra{% endblock %}
 
 {% block content %}
@@ -110,6 +110,15 @@
             <div class="fw-bold text-secondary small">R$ {{ resumo.total_servico|floatformat:2 }}</div>
           </div>
         </div>
+        {% if resumo.total_estufa %}
+        <hr class="my-2">
+        <div class="row g-0 text-center">
+          <div class="col-12">
+            <div class="stat-label text-uppercase">Estufa/Transplantio</div>
+            <div class="fw-bold small" style="color:#0dcaf0;">R$ {{ resumo.total_estufa|floatformat:2 }}</div>
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
     <div class="col-md-2">
@@ -229,6 +238,7 @@
                 <th class="text-end">Maquinário</th>
                 <th class="text-end">Insumos</th>
                 <th class="text-end">Serv. Ext.</th>
+                <th class="text-end">Estufa</th>
                 <th class="text-end">
                   <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_talhao=total_geral&dir_talhao={% if sort_talhao == 'total_geral' and dir_talhao == 'asc' %}desc{% else %}asc{% endif %}&sort_safra={{ sort_safra }}&dir_safra={{ dir_safra }}">
                     Total {% if sort_talhao == 'total_geral' %}{% if dir_talhao == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
@@ -255,6 +265,7 @@
                 <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_estufa|default:0|floatformat:2 }}</td>
                 <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
                 <td class="text-end"><span class="badge bg-secondary">{{ item.pct_total }}%</span></td>
                 <td class="text-end">
@@ -279,7 +290,7 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="13" class="text-center text-muted py-4">Nenhum dado consolidado para os filtros informados.</td></tr>
+              <tr><td colspan="14" class="text-center text-muted py-4">Nenhum dado consolidado para os filtros informados.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -311,6 +322,7 @@
                 <th class="text-end">Maquinário</th>
                 <th class="text-end">Insumos</th>
                 <th class="text-end">Serv. Ext.</th>
+                <th class="text-end">Estufa</th>
                 <th class="text-end">
                   <a class="text-decoration-none text-dark" href="?talhao={{ talhao_filter }}&safra={{ safra_filter }}&q={{ search|urlencode }}&sort_safra=total_geral&dir_safra={% if sort_safra == 'total_geral' and dir_safra == 'asc' %}desc{% else %}asc{% endif %}&sort_talhao={{ sort_talhao }}&dir_talhao={{ dir_talhao }}">
                     Total {% if sort_safra == 'total_geral' %}{% if dir_safra == 'asc' %}&#8593;{% else %}&#8595;{% endif %}{% endif %}
@@ -334,6 +346,7 @@
                 <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_estufa|default:0|floatformat:2 }}</td>
                 <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
                 <td class="text-end">R$ {{ item.custo_medio_ha|default:0|floatformat:2 }}</td>
                 <td>
@@ -345,7 +358,7 @@
                 </td>
               </tr>
               {% empty %}
-              <tr><td colspan="10" class="text-center text-muted py-4">Nenhum dado consolidado por safra para os filtros informados.</td></tr>
+              <tr><td colspan="11" class="text-center text-muted py-4">Nenhum dado consolidado por safra para os filtros informados.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -367,6 +380,7 @@
                 <th class="text-end">Maquinário</th>
                 <th class="text-end">Insumos</th>
                 <th class="text-end">Serv. Ext.</th>
+                <th class="text-end">Estufa</th>
                 <th class="text-end">Total</th>
                 <th class="text-end">R$/ha</th>
               </tr>
@@ -383,12 +397,13 @@
                 <td class="text-end small">R$ {{ item.custo_maquinario|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.custo_insumos|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.custo_servico_externo|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.custo_estufa|floatformat:2 }}</td>
                 <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.custo_por_hectare|floatformat:2 }}</td>
               </tr>
               {% empty %}
               <tr>
-                <td colspan="11" class="text-center text-muted py-4">
+                <td colspan="12" class="text-center text-muted py-4">
                   <i class="bi bi-inboxes fs-2 d-block mb-2"></i>
                   Nenhum custo encontrado com os filtros informados.
                 </td>
@@ -413,6 +428,7 @@
   const dataMaq     = {{ chart_maquinario|safe }};
   const dataIns     = {{ chart_insumos|safe }};
   const dataSvc     = {{ chart_servico|safe }};
+  const dataEstufa  = {{ chart_estufa|safe }};
   const doughnutData = {{ resumo_doughnut|safe }};
 
   // Stacked Bar
@@ -421,10 +437,11 @@
     data: {
       labels: labels,
       datasets: [
-        { label: 'Mão de Obra',     data: dataMO,  backgroundColor: '#0d6efd' },
-        { label: 'Maquinário',      data: dataMaq, backgroundColor: '#0dcaf0' },
-        { label: 'Insumos',         data: dataIns, backgroundColor: '#ffc107' },
-        { label: 'Serviço Externo', data: dataSvc, backgroundColor: '#6c757d' },
+        { label: 'Mão de Obra',     data: dataMO,     backgroundColor: '#0d6efd' },
+        { label: 'Maquinário',      data: dataMaq,    backgroundColor: '#0dcaf0' },
+        { label: 'Insumos',         data: dataIns,    backgroundColor: '#ffc107' },
+        { label: 'Serviço Externo', data: dataSvc,    backgroundColor: '#6c757d' },
+        { label: 'Estufa/Transplantio', data: dataEstufa, backgroundColor: '#6f42c1' },
       ]
     },
     options: {
@@ -441,8 +458,8 @@
   new Chart(document.getElementById('chartDoughnut'), {
     type: 'doughnut',
     data: {
-      labels: ['Mão de Obra', 'Maquinário', 'Insumos', 'Serviço Externo'],
-      datasets: [{ data: doughnutData, backgroundColor: ['#0d6efd','#0dcaf0','#ffc107','#6c757d'], borderWidth: 2 }]
+      labels: ['Mão de Obra', 'Maquinário', 'Insumos', 'Serviço Externo', 'Estufa/Transplantio'],
+      datasets: [{ data: doughnutData, backgroundColor: ['#0d6efd','#0dcaf0','#ffc107','#6c757d','#6f42c1'], borderWidth: 2 }]
     },
     options: {
       responsive: true,

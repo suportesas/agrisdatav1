@@ -40,7 +40,7 @@ def create_test_pdf():
     
     pdf_io = BytesIO()
     c = canvas.Canvas(pdf_io)
-    c.drawString(100, 750, "Documento de Teste - ERP Agrícola")
+    c.drawString(100, 750, "Documento de Teste - Agrisdata")
     c.drawString(100, 735, f"Data: {datetime.now().strftime('%d/%m/%Y')}")
     c.save()
     

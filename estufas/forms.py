@@ -6,10 +6,8 @@ from .models import (
     LoteMuda,
     MonitoramentoEstufa,
     PerdaEstufa,
-    ReplantioTalhao,
-    Transplantio,
 )
-from cadastros.models import Cultura, Fazenda, Praga, Safra, Talhao
+from cadastros.models import Cultura, Fazenda, Praga
 from rh.models import Funcionario
 from produtos.models import Produto, UnidadeMedida
 
@@ -145,67 +143,5 @@ class MonitoramentoEstufaForm(forms.ModelForm):
             self.fields['responsavel'].queryset = Funcionario.objects.none()
 
 
-class TransplantioForm(forms.ModelForm):
-    class Meta:
-        model = Transplantio
-        fields = ['lote_muda', 'talhao', 'safra', 'data_transplantio', 'tipo', 'quantidade_transplantada', 'responsavel', 'observacao', 'fotos']
-        widgets = {
-            'lote_muda': forms.Select(attrs={'class': 'form-select'}),
-            'talhao': forms.Select(attrs={'class': 'form-select'}),
-            'safra': forms.Select(attrs={'class': 'form-select'}),
-            'data_transplantio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'quantidade_transplantada': forms.NumberInput(attrs={'class': 'form-control'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
-            'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'fotos': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        for f in ['safra', 'responsavel', 'observacao', 'fotos']:
-            self.fields[f].required = False
-        if self.user and self.user.empresa:
-            qs_lotes = LoteMuda.objects.filter(empresa=self.user.empresa, status='PRONTO').select_related('cultura', 'estufa')
-            self.fields['lote_muda'].queryset = qs_lotes
-            # Mostra disponível e cultura no label
-            self.fields['lote_muda'].label_from_instance = lambda obj: (
-                f"{obj.codigo_lote} — {obj.cultura.nome} ({obj.quantidade_disponivel} dispon.)"
-            )
-            self.fields['talhao'].queryset = Talhao.objects.filter(
-                empresa=self.user.empresa, ativo=True, status__in=['DISPONIVEL', 'PREPARACAO'],
-            )
-            self.fields['safra'].queryset = Safra.objects.filter(
-                fazenda__empresa=self.user.empresa, status__in=['PLANEJADA', 'EM_ANDAMENTO'],
-            )
-            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
-
-
-class ReplantioTalhaoForm(forms.ModelForm):
-    class Meta:
-        model = ReplantioTalhao
-        fields = ['talhao', 'safra', 'data_replantio', 'quantidade', 'origem_muda', 'lote_muda', 'motivo_perda', 'custo_adicional', 'responsavel', 'observacao']
-        widgets = {
-            'talhao': forms.Select(attrs={'class': 'form-select'}),
-            'safra': forms.Select(attrs={'class': 'form-select'}),
-            'data_replantio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'quantidade': forms.NumberInput(attrs={'class': 'form-control'}),
-            'origem_muda': forms.Select(attrs={'class': 'form-select'}),
-            'lote_muda': forms.Select(attrs={'class': 'form-select'}),
-            'motivo_perda': forms.Select(attrs={'class': 'form-select'}),
-            'custo_adicional': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
-            'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-        for f in ['safra', 'lote_muda', 'custo_adicional', 'responsavel', 'observacao']:
-            self.fields[f].required = False
-        if self.user and self.user.empresa:
-            self.fields['talhao'].queryset = Talhao.objects.filter(empresa=self.user.empresa, ativo=True)
-            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=self.user.empresa)
-            self.fields['lote_muda'].queryset = LoteMuda.objects.filter(empresa=self.user.empresa).select_related('cultura')
-            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+# Transplantio e Replantio agora são executados via Ordem de Serviço
+# (ver operacoes_campo.forms.OSTransplantioForm / OSReplantioForm).

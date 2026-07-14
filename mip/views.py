@@ -542,7 +542,7 @@ def monitoramento_mip_pdf(request, pk):
         story.append(Paragraph(monitoramento.observacoes_gerais.replace('\n', '<br/>'), styles['Normal']))
 
     story.append(Spacer(1, 0.3*inch))
-    footer_text = f'Gerado em {datetime.now().strftime("%d/%m/%Y às %H:%M")} | ERP Agrícola'
+    footer_text = f'Gerado em {datetime.now().strftime("%d/%m/%Y às %H:%M")} | Agrisdata'
     story.append(Paragraph(f'<i><font size=8>{footer_text}</font></i>', header_style))
 
     doc.build(story)

@@ -1,4 +1,4 @@
-# Configuração de Envio de Emails no ERP Agrícola
+# Configuração de Envio de Emails no Agrisdata
 
 ## 🔍 O Problema
 
@@ -20,7 +20,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=seu.email@gmail.com
 EMAIL_HOST_PASSWORD=sua_senha_de_app_aqui
-DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
+DEFAULT_FROM_EMAIL=Agrisdata <seu.email@gmail.com>
 ```
 
 ### 2. Obter Senha de App do Gmail (IMPORTANTE!)
@@ -35,7 +35,7 @@ DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
 2. **Gere uma Senha de App**:
    - Acesse: https://myaccount.google.com/apppasswords
    - Na seção "App", selecione **"Outro (nome personalizado)"**
-   - Digite: **"ERP Agrícola"**
+   - Digite: **"Agrisdata"**
    - Clique em **"Gerar"**
 
 3. **Copie a senha gerada**:
@@ -68,7 +68,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=seu.email@gmail.com
 EMAIL_HOST_PASSWORD=senha_de_app_16_caracteres
-DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
+DEFAULT_FROM_EMAIL=Agrisdata <seu.email@gmail.com>
 ```
 
 ### Outlook/Hotmail
@@ -78,7 +78,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=seu.email@outlook.com
 EMAIL_HOST_PASSWORD=sua_senha_normal
-DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@outlook.com>
+DEFAULT_FROM_EMAIL=Agrisdata <seu.email@outlook.com>
 ```
 
 ### Office 365
@@ -88,7 +88,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=seu.email@empresa.com
 EMAIL_HOST_PASSWORD=sua_senha_normal
-DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@empresa.com>
+DEFAULT_FROM_EMAIL=Agrisdata <seu.email@empresa.com>
 ```
 
 ## 🔧 Modo de Desenvolvimento (sem enviar emails)

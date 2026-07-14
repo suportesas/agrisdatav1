@@ -12,7 +12,7 @@
       {% endif %}
     </div>
     <div class="brand-text">
-      <h4 style="color:#1e293b;">{% if user.is_superuser %}NexSafra SaaS{% else %}ERP Agrícola{% endif %}</h4>
+      <h4 style="color:#1e293b;">{% if user.is_superuser %}NexSafra SaaS{% else %}Agrisdata{% endif %}</h4>
       {% if user.empresa %}
       <span class="brand-subtitle" style="color:#64748b;">{{ user.empresa.nome|truncatewords:3 }}</span>
       {% elif user.is_superuser %}

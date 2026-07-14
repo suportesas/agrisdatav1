@@ -3,7 +3,7 @@
 
 markdown# Especificação Técnica e Funcional
 ## Faturamento Agrupado com Lógica Invertida
-### ERP Agrícola — Módulo faturamento/
+### Agrisdata — Módulo faturamento/
 
 *Versão:* 1.1 | *Data:* 2026-06-29 | *Autor:* Análise Sistêmica & Consultoria Fiscal
 

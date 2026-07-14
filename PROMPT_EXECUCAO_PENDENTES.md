@@ -1,8 +1,8 @@
-# PROMPT DE EXECUÇÃO — Módulos Pendentes do ERP Agrícola Salutaris
+# PROMPT DE EXECUÇÃO — Módulos Pendentes do Agrisdata Salutaris
 
 ## CONTEXTO DO PROJETO
 
-Você está trabalhando no **ERP Agrícola Salutaris**, uma plataforma SaaS Django multiempresa para gestão de produtores de frutas, packing houses e exportadoras. O projeto usa:
+Você está trabalhando no **Agrisdata Salutaris**, uma plataforma SaaS Django multiempresa para gestão de produtores de frutas, packing houses e exportadoras. O projeto usa:
 
 - **Backend:** Django 4.x + Django REST Framework
 - **Banco de dados:** PostgreSQL (via Supabase em produção)

@@ -580,7 +580,7 @@ Retorna defensivos recomendados para uma praga:
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Criar Receituário | ERP Agrícola{% endblock %}
+{% block title %}Criar Receituário | Agrisdata{% endblock %}
 
 {% block extra_css %}
 <style>

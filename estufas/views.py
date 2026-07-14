@@ -15,8 +15,6 @@ from .forms import (
     LoteMudaForm,
     MonitoramentoEstufaForm,
     PerdaEstufaForm,
-    ReplantioTalhaoForm,
-    TransplantioForm,
 )
 from .models import (
     AplicacaoEstufa,
@@ -24,10 +22,8 @@ from .models import (
     LoteMuda,
     MonitoramentoEstufa,
     PerdaEstufa,
-    ReplantioTalhao,
-    Transplantio,
 )
-from cadastros.models import Cultura, Fazenda, Safra, Talhao
+from cadastros.models import Cultura, Fazenda
 
 
 # ============================================================
@@ -335,149 +331,10 @@ def monitoramento_estufa_delete(request, lote_pk, pk):
 
 
 # ============================================================
-# GRUPO 4 — TRANSPLANTIO
-# ============================================================
-
-@login_required
-def transplantio_list(request):
-    empresa = request.user.empresa
-    qs = Transplantio.objects.filter(empresa=empresa).select_related(
-        'lote_muda', 'talhao', 'safra', 'responsavel',
-    )
-
-    if request.GET.get('lote'):
-        qs = qs.filter(lote_muda_id=request.GET['lote'])
-    if request.GET.get('talhao'):
-        qs = qs.filter(talhao_id=request.GET['talhao'])
-    if request.GET.get('safra'):
-        qs = qs.filter(safra_id=request.GET['safra'])
-
-    talhoes = Talhao.objects.filter(empresa=empresa, ativo=True)
-    safras = Safra.objects.filter(fazenda__empresa=empresa)
-
-    paginator = Paginator(qs.order_by('-data_transplantio'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        transplantios_page = paginator.page(page)
-    except Exception:
-        transplantios_page = paginator.page(1)
-
-    return render(request, 'cadastros/estufas/transplantio_list.html', {
-        'transplantios': transplantios_page,
-        'talhoes': talhoes,
-        'safras': safras,
-        'talhao_selecionado': request.GET.get('talhao'),
-        'safra_selecionada': request.GET.get('safra'),
-        'title': 'Transplantios',
-    })
-
-
-@login_required
-def transplantio_create(request):
-    empresa = request.user.empresa
-    lotes_prontos = LoteMuda.objects.filter(empresa=empresa, status='PRONTO').select_related('cultura')
-
-    if request.method == 'POST':
-        form = TransplantioForm(request.POST, request.FILES, user=request.user)
-        if form.is_valid():
-            obj = form.save(commit=False)
-            obj.empresa = empresa
-            obj.cadastrado_por = request.user
-            try:
-                obj.full_clean()
-                obj.save()
-                messages.success(request, f'Transplantio registrado: {obj.quantidade_transplantada} mudas → {obj.talhao.nome}.')
-                return redirect('estufas:transplantio_detail', pk=obj.pk)
-            except Exception as e:
-                messages.error(request, str(e))
-    else:
-        form = TransplantioForm(user=request.user)
-
-    return render(request, 'cadastros/estufas/transplantio_form.html', {
-        'form': form,
-        'lotes_prontos': lotes_prontos,
-        'title': 'Novo Transplantio',
-    })
-
-
-@login_required
-def transplantio_detail(request, pk):
-    obj = get_object_or_404(Transplantio, pk=pk, empresa=request.user.empresa)
-    return render(request, 'cadastros/estufas/transplantio_detail.html', {
-        'obj': obj,
-        'title': f'Transplantio — {obj.lote_muda.codigo_lote}',
-    })
-
-
-# ============================================================
-# GRUPO 5 — REPLANTIO
-# ============================================================
-
-@login_required
-def replantio_list(request):
-    empresa = request.user.empresa
-    qs = ReplantioTalhao.objects.filter(empresa=empresa).select_related('talhao', 'safra')
-
-    if request.GET.get('talhao'):
-        qs = qs.filter(talhao_id=request.GET['talhao'])
-    if request.GET.get('safra'):
-        qs = qs.filter(safra_id=request.GET['safra'])
-    if request.GET.get('motivo'):
-        qs = qs.filter(motivo_perda=request.GET['motivo'])
-
-    talhoes = Talhao.objects.filter(empresa=empresa, ativo=True)
-    safras = Safra.objects.filter(fazenda__empresa=empresa)
-
-    paginator = Paginator(qs.order_by('-data_replantio'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        replantios_page = paginator.page(page)
-    except Exception:
-        replantios_page = paginator.page(1)
-
-    return render(request, 'cadastros/estufas/replantio_list.html', {
-        'replantios': replantios_page,
-        'talhoes': talhoes,
-        'safras': safras,
-        'motivo_choices': ReplantioTalhao.MOTIVO_CHOICES,
-        'talhao_selecionado': request.GET.get('talhao'),
-        'safra_selecionada': request.GET.get('safra'),
-        'motivo_selecionado': request.GET.get('motivo'),
-        'title': 'Replantios',
-    })
-
-
-@login_required
-def replantio_create(request):
-    if request.method == 'POST':
-        form = ReplantioTalhaoForm(request.POST, user=request.user)
-        if form.is_valid():
-            obj = form.save(commit=False)
-            obj.empresa = request.user.empresa
-            obj.cadastrado_por = request.user  # FIX: estava faltando
-            obj.save()
-            messages.success(request, f'Replantio de {obj.quantidade} mudas registrado.')
-            return redirect('estufas:replantio_detail', pk=obj.pk)
-    else:
-        form = ReplantioTalhaoForm(user=request.user)
-    return render(request, 'cadastros/estufas/replantio_form.html', {
-        'form': form,
-        'title': 'Novo Replantio',
-    })
-
-
-@login_required
-def replantio_detail(request, pk):
-    obj = get_object_or_404(ReplantioTalhao, pk=pk, empresa=request.user.empresa)
-    return render(request, 'cadastros/estufas/replantio_detail.html', {
-        'obj': obj,
-        'title': f'Replantio — {obj.talhao.nome}',
-    })
-
-
-# ============================================================
 # GRUPO 6 — DASHBOARD
 # ============================================================
+# Transplantio e Replantio agora são executados via Ordem de Serviço
+# (operacoes_campo.OSTransplantio / OSReplantio) — ver operacoes_campo:os_list.
 
 @login_required
 def dashboard_estufas(request):
@@ -494,13 +351,14 @@ def dashboard_estufas(request):
     status_labels_display = [status_display.get(item['status'], item['status']) for item in lotes_por_status]
     status_data = [item['total'] for item in lotes_por_status]
 
-    ultimos_transplantios = Transplantio.objects.filter(empresa=empresa).select_related(
-        'lote_muda', 'talhao',
-    ).order_by('-data_transplantio')[:10]
+    from operacoes_campo.models import OSTransplantio
+    ultimos_transplantios = OSTransplantio.objects.filter(os__empresa=empresa).select_related(
+        'lote_muda', 'os__talhao',
+    ).order_by('-data_cadastro')[:10]
 
     total_lotes = LoteMuda.objects.filter(empresa=empresa).count()
     lotes_prontos = LoteMuda.objects.filter(empresa=empresa, status='PRONTO').count()
-    total_transplantados = Transplantio.objects.filter(empresa=empresa).aggregate(
+    total_transplantados = OSTransplantio.objects.filter(os__empresa=empresa).aggregate(
         t=Sum('quantidade_transplantada'),
     )['t'] or 0
 

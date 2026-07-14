@@ -14,6 +14,7 @@ from .models import (
     PlanejamentoCustoSafra, PlanejamentoCustoItem,
     PlanejamentoCustoItemIndireto, FormacaoPreco,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
+    OSTransplantio, OSReplantio,
 )
 
 
@@ -161,6 +162,62 @@ class OrdemServicoInsumoForm(forms.ModelForm):
         if custo_unitario in (None, '') and produto and getattr(produto, 'preco_custo', None) not in (None, ''):
             cleaned['custo_unitario'] = produto.preco_custo
         return cleaned
+
+
+class OSTransplantioForm(forms.ModelForm):
+    """Dados de transplantio quando a OS é do tipo Plantio/subtipo Transplante."""
+
+    class Meta:
+        model = OSTransplantio
+        fields = ['lote_muda', 'tipo', 'quantidade_transplantada']
+        widgets = {
+            'lote_muda': forms.Select(attrs={'class': 'form-select'}),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'quantidade_transplantada': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        for f in self.fields.values():
+            f.required = False
+        if empresa:
+            from estufas.models import LoteMuda
+            qs_lotes = LoteMuda.objects.filter(empresa=empresa, status='PRONTO').select_related('cultura', 'estufa')
+            self.fields['lote_muda'].queryset = qs_lotes
+            self.fields['lote_muda'].label_from_instance = lambda obj: (
+                f"{obj.codigo_lote} — {obj.cultura.nome} ({obj.quantidade_disponivel} dispon.)"
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        lote_muda = cleaned.get('lote_muda')
+        quantidade = cleaned.get('quantidade_transplantada')
+        if lote_muda and quantidade and quantidade > lote_muda.quantidade_disponivel:
+            self.add_error('quantidade_transplantada', f'Quantidade supera o disponível no lote ({lote_muda.quantidade_disponivel}).')
+        return cleaned
+
+
+class OSReplantioForm(forms.ModelForm):
+    """Dados de replantio quando a OS é do tipo Plantio/subtipo Replantio."""
+
+    class Meta:
+        model = OSReplantio
+        fields = ['quantidade', 'origem_muda', 'lote_muda', 'motivo_perda', 'custo_adicional']
+        widgets = {
+            'quantidade': forms.NumberInput(attrs={'class': 'form-control'}),
+            'origem_muda': forms.Select(attrs={'class': 'form-select'}),
+            'lote_muda': forms.Select(attrs={'class': 'form-select'}),
+            'motivo_perda': forms.Select(attrs={'class': 'form-select'}),
+            'custo_adicional': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        for f in self.fields.values():
+            f.required = False
+        if empresa:
+            from estufas.models import LoteMuda
+            self.fields['lote_muda'].queryset = LoteMuda.objects.filter(empresa=empresa).select_related('cultura')
 
 
 class OSFuncionarioForm(forms.ModelForm):

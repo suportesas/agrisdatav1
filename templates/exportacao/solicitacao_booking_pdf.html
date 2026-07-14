@@ -140,7 +140,7 @@
   <div class="header">
     <div class="header-top">
       <div class="header-empresa">
-        <div class="empresa-nome">{{ empresa.nome|default:"ERP Agrícola" }}</div>
+        <div class="empresa-nome">{{ empresa.nome|default:"Agrisdata" }}</div>
         {% if empresa.cnpj %}<div style="font-size:8pt; color:#555;">CNPJ: {{ empresa.cnpj }}</div>{% endif %}
       </div>
       <div class="header-titulo">
@@ -256,7 +256,7 @@
   <!-- Rodapé -->
   <div class="footer">
     <div class="footer-left">
-      Gerado pelo ERP Agrícola &mdash; {{ empresa.nome|default:"" }}
+      Gerado pelo Agrisdata &mdash; {{ empresa.nome|default:"" }}
     </div>
     <div class="footer-right">
       Solicitação #{{ solicitacao.pk|stringformat:"05d" }} &mdash; {{ hoje }}

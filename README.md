@@ -1,4 +1,4 @@
-# ERP Agrícola — Sistema Multi-empresa
+# Agrisdata — Sistema Multi-empresa
 
 Sistema de gestão agrícola com arquitetura **multi-tenant** (multiempresa), desenvolvido em **Python/Django** para produtores rurais, cooperativas e empresas do agronegócio.
 
@@ -195,7 +195,7 @@ EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=seu.email@gmail.com
 EMAIL_HOST_PASSWORD=senha-de-app-16-chars
-DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
+DEFAULT_FROM_EMAIL=Agrisdata <seu.email@gmail.com>
 
 # ─────────────────────────────────────────
 # SEGURANÇA HTTPS (ativar em produção)
@@ -292,7 +292,7 @@ Crie o arquivo `/etc/systemd/system/erp_agricola.service`:
 
 ```ini
 [Unit]
-Description=ERP Agrícola - Gunicorn
+Description=Agrisdata - Gunicorn
 After=network.target
 
 [Service]

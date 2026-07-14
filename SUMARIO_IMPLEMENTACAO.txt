@@ -1,7 +1,7 @@
 """
 SUMÁRIO DA IMPLEMENTAÇÃO - DIVERGÊNCIAS E AVALIAÇÃO DE FORNECEDOR
 Data: 03/03/2026
-Sistema: ERP Agrícola
+Sistema: Agrisdata
 """
 
 # =====================================================

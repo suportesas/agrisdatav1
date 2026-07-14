@@ -2,7 +2,7 @@
 
 ## 📋 Resumo Executivo
 
-Implementação concluída de um sistema completo de **Monitoramento MIP (Manejo Integrado de Pragas)** para o ERP Agrícola. O sistema permite que pragueiros (field agents) registrem monitoramentos de pragas em talhões usando o método de sampling de 20 pontos, com comparação automática de incidência contra limites NED (Nível Econômico de Dano) para recomendação inteligente de defensivos.
+Implementação concluída de um sistema completo de **Monitoramento MIP (Manejo Integrado de Pragas)** para o Agrisdata. O sistema permite que pragueiros (field agents) registrem monitoramentos de pragas em talhões usando o método de sampling de 20 pontos, com comparação automática de incidência contra limites NED (Nível Econômico de Dano) para recomendação inteligente de defensivos.
 
 **Status:** ✅ Backend 100% Completo - Pronto para Templates/UI
 

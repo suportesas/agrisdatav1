@@ -1,5 +1,5 @@
 """
-Django settings for core project - ERP Agrícola SaaS
+Django settings for core project - Agrisdata SaaS
 Configurações corrigidas e otimizadas
 """
 
@@ -412,8 +412,8 @@ EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
 EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')  # seu email completo
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')  # senha de app (não a senha normal)
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'ERP Agrícola <no-reply@erp-agricola.com>')
-EMAIL_SUBJECT_PREFIX = '[ERP Agrícola] '
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'Agrisdata <no-reply@erp-agricola.com>')
+EMAIL_SUBJECT_PREFIX = '[Agrisdata] '
 
 # Domínio público do sistema (usado em links de e-mail).
 # Em desenvolvimento: configure com ngrok (ex: abc123.ngrok-free.app)
@@ -446,7 +446,7 @@ if DEBUG:
 # EMAIL_USE_TLS=True
 # EMAIL_HOST_USER=seu.email@gmail.com
 # EMAIL_HOST_PASSWORD=sua_senha_de_app_aqui
-# DEFAULT_FROM_EMAIL=ERP Agrícola <seu.email@gmail.com>
+# DEFAULT_FROM_EMAIL=Agrisdata <seu.email@gmail.com>
 
 
 # ============================================

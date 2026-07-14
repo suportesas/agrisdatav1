@@ -2,7 +2,7 @@
 
 ## Visão Geral
 
-Este sistema permite popular automaticamente uma lista de pragas agrícolas pré-definidas quando uma nova empresa é criada no ERP Agrícola. Isso dá agilidade ao usuário, evitando que ele precise cadastrar manualmente as pragas mais comuns.
+Este sistema permite popular automaticamente uma lista de pragas agrícolas pré-definidas quando uma nova empresa é criada no Agrisdata. Isso dá agilidade ao usuário, evitando que ele precise cadastrar manualmente as pragas mais comuns.
 
 ## Como Funciona
 

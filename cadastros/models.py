@@ -1,5 +1,5 @@
 """
-Módulo de Cadastro de Fazendas - ERP Agrícola
+Módulo de Cadastro de Fazendas - Agrisdata
 Sistema completo com endereços, contatos, bancos e documentos
 """
 from django.contrib.postgres.indexes import GinIndex

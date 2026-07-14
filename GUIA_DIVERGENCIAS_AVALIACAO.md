@@ -242,4 +242,4 @@ python criar_tipos_divergencia.py  # Popular tipos padrão
 ---
 
 **Desenvolvido em 03/03/2026**
-**Sistema ERP Agrícola v1.0**
+**Sistema Agrisdata v1.0**

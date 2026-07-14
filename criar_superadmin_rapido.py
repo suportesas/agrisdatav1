@@ -30,7 +30,7 @@ def main():
     username = 'admin'
     email = 'admin@erpseries.com.br'
     senha = 'AdminERP@2026'
-    nome_completo = 'Proprietário ERP Agrícola'
+    nome_completo = 'Proprietário Agrisdata'
     
     # Checagem
     if Usuario.objects.filter(username=username).exists():

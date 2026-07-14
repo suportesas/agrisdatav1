@@ -1,4 +1,4 @@
-# Análise de Status — ERP Agrícola Salutaris
+# Análise de Status — Agrisdata Salutaris
 **Data:** 2026-04-27
 
 ---

@@ -1,5 +1,5 @@
 """
-Helpers para feature flags do ERP Agricola.
+Helpers para feature flags do Agrisdata.
 
 Mantem uma camada unica para consultar flags de liberacao progressiva.
 """

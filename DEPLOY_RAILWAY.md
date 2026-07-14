@@ -1,4 +1,4 @@
-# 🚀 Deploy do ERP Agrícola em Railway.app
+# 🚀 Deploy do Agrisdata em Railway.app
 
 Railway é uma plataforma de deployment gratuita e muito fácil. Em 5 minutos seu Django está online!
 
@@ -211,4 +211,4 @@ Solução: Adicione em `requirements.txt` e faça `git push`
 3. Testar relatórios e PDFs
 4. Configurar domínio customizado (opcional)
 
-**Status**: 🚀 Seu ERP Agrícola agora é acessível de qualquer lugar!
+**Status**: 🚀 Seu Agrisdata agora é acessível de qualquer lugar!

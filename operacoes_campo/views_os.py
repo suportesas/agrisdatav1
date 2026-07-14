@@ -20,12 +20,21 @@ from .models import (
     OrdemServico, OrdemServicoInsumo, CustoTalhao, CustoHoraMaquina,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
     EtapaColheita, PushSubscriptionCampo, OSIntervalo,
+    OSTransplantio, OSReplantio,
 )
 from cadastros.models import Talhao, Safra
 from .forms import (
     OrdemServicoForm, OSFuncionarioFormSet, OSMaquinaFormSet,
     OrdemServicoInsumoForm, CustoHoraMaquinaForm,
+    OSTransplantioForm, OSReplantioForm,
 )
+
+SUBTIPO_LEGADO_TRANSPLANTE = 'TRANSPLANTE'
+SUBTIPO_LEGADO_REPLANTIO = 'REPLANTIO'
+
+
+def _subtipo_legado(os_obj):
+    return os_obj.subtipo_servico.subtipo_legado if os_obj.subtipo_servico_id else ''
 from estoque.models import MovimentacaoEstoque
 
 
@@ -203,6 +212,7 @@ def custo_talhao_list(request):
             total_maquinario=Sum('custo_maquinario'),
             total_insumos=Sum('custo_insumos'),
             total_servico=Sum('custo_servico_externo'),
+            total_estufa=Sum('custo_estufa'),
             total_area=Sum('area_executada_ha'),
         ).order_by('talhao__nome')
     )
@@ -212,7 +222,8 @@ def custo_talhao_list(request):
             (item.get('total_mao_obra') or Decimal('0')) +
             (item.get('total_maquinario') or Decimal('0')) +
             (item.get('total_insumos') or Decimal('0')) +
-            (item.get('total_servico') or Decimal('0'))
+            (item.get('total_servico') or Decimal('0')) +
+            (item.get('total_estufa') or Decimal('0'))
         )
         area_item = item.get('total_area') or Decimal('0')
         item['total_geral'] = total_item
@@ -225,6 +236,7 @@ def custo_talhao_list(request):
             total_maquinario=Sum('custo_maquinario'),
             total_insumos=Sum('custo_insumos'),
             total_servico=Sum('custo_servico_externo'),
+            total_estufa=Sum('custo_estufa'),
             total_area=Sum('area_executada_ha'),
         ).order_by('safra__ano', 'safra__nome')
     )
@@ -234,7 +246,8 @@ def custo_talhao_list(request):
             (item.get('total_mao_obra') or Decimal('0')) +
             (item.get('total_maquinario') or Decimal('0')) +
             (item.get('total_insumos') or Decimal('0')) +
-            (item.get('total_servico') or Decimal('0'))
+            (item.get('total_servico') or Decimal('0')) +
+            (item.get('total_estufa') or Decimal('0'))
         )
         area_item = item.get('total_area') or Decimal('0')
         nome_safra = item.get('safra__nome') or 'Sem safra'
@@ -276,6 +289,7 @@ def custo_talhao_list(request):
         total_maquinario=Sum('custo_maquinario'),
         total_insumos=Sum('custo_insumos'),
         total_servico=Sum('custo_servico_externo'),
+        total_estufa=Sum('custo_estufa'),
         total_area=Sum('area_executada_ha'),
     )
 
@@ -283,7 +297,8 @@ def custo_talhao_list(request):
         (resumo.get('total_mao_obra') or Decimal('0')) +
         (resumo.get('total_maquinario') or Decimal('0')) +
         (resumo.get('total_insumos') or Decimal('0')) +
-        (resumo.get('total_servico') or Decimal('0'))
+        (resumo.get('total_servico') or Decimal('0')) +
+        (resumo.get('total_estufa') or Decimal('0'))
     )
     total_area = resumo.get('total_area') or Decimal('0')
     custo_medio_ha = (total_geral / total_area) if total_area > 0 else Decimal('0')
@@ -321,11 +336,13 @@ def custo_talhao_list(request):
     chart_maquinario = json.dumps([float(i.get('total_maquinario') or 0) for i in consolidado_talhoes])
     chart_insumos = json.dumps([float(i.get('total_insumos') or 0) for i in consolidado_talhoes])
     chart_servico = json.dumps([float(i.get('total_servico') or 0) for i in consolidado_talhoes])
+    chart_estufa = json.dumps([float(i.get('total_estufa') or 0) for i in consolidado_talhoes])
     resumo_doughnut = json.dumps([
         float(sum(i.get('total_mao_obra') or 0 for i in consolidado_talhoes)),
         float(sum(i.get('total_maquinario') or 0 for i in consolidado_talhoes)),
         float(sum(i.get('total_insumos') or 0 for i in consolidado_talhoes)),
         float(sum(i.get('total_servico') or 0 for i in consolidado_talhoes)),
+        float(sum(i.get('total_estufa') or 0 for i in consolidado_talhoes)),
     ])
 
     export_format = request.GET.get('export')
@@ -375,6 +392,7 @@ def custo_talhao_list(request):
             'total_maquinario': resumo.get('total_maquinario') or Decimal('0'),
             'total_insumos': resumo.get('total_insumos') or Decimal('0'),
             'total_servico': resumo.get('total_servico') or Decimal('0'),
+            'total_estufa': resumo.get('total_estufa') or Decimal('0'),
             'total_geral': total_geral,
             'total_area': total_area,
             'custo_medio_ha': custo_medio_ha,
@@ -387,6 +405,7 @@ def custo_talhao_list(request):
         'chart_maquinario': chart_maquinario,
         'chart_insumos': chart_insumos,
         'chart_servico': chart_servico,
+        'chart_estufa': chart_estufa,
         'resumo_doughnut': resumo_doughnut,
     }
     return render(request, 'cadastros/os/custo_talhao_list.html', context)
@@ -427,7 +446,7 @@ def _exportar_custo_talhao_excel(
     ws['A2'] = f'Gerado em: {timezone.localtime().strftime("%d/%m/%Y %H:%M")}'
     ws['A2'].font = Font(italic=True)
 
-    headers = ['OS', 'Talhão', 'Safra', 'Área (ha)', 'Mão de Obra', 'Maquinário', 'Insumos', 'Serviço Externo', 'Total', 'R$/ha']
+    headers = ['OS', 'Talhão', 'Safra', 'Área (ha)', 'Mão de Obra', 'Maquinário', 'Insumos', 'Serviço Externo', 'Estufa', 'Total', 'R$/ha']
     for col, label in enumerate(headers, start=1):
         cell = ws.cell(row=4, column=col)
         cell.value = label
@@ -446,9 +465,10 @@ def _exportar_custo_talhao_excel(
         ws.cell(row=row, column=6, value=float(item.custo_maquinario or 0))
         ws.cell(row=row, column=7, value=float(item.custo_insumos or 0))
         ws.cell(row=row, column=8, value=float(item.custo_servico_externo or 0))
-        ws.cell(row=row, column=9, value=float(item.custo_total or 0))
-        ws.cell(row=row, column=10, value=float(item.custo_por_hectare or 0))
-        for col in range(1, 11):
+        ws.cell(row=row, column=9, value=float(item.custo_estufa or 0))
+        ws.cell(row=row, column=10, value=float(item.custo_total or 0))
+        ws.cell(row=row, column=11, value=float(item.custo_por_hectare or 0))
+        for col in range(1, 12):
             ws.cell(row=row, column=col).border = border
         row += 1
 
@@ -722,12 +742,35 @@ def os_create(request):
         form = OrdemServicoForm(request.POST, request.FILES, empresa=empresa)
         func_formset = OSFuncionarioFormSet(request.POST, prefix='func')
         maq_formset = OSMaquinaFormSet(request.POST, prefix='maq')
+        transplantio_form = OSTransplantioForm(request.POST, prefix='transplantio', empresa=empresa)
+        replantio_form = OSReplantioForm(request.POST, prefix='replantio', empresa=empresa)
 
         # Limita querysets por empresa antes da validacao.
         _enrich_formset(func_formset, empresa)
         _enrich_formset(maq_formset, empresa)
 
-        if form.is_valid() and func_formset.is_valid() and maq_formset.is_valid():
+        subtipo_legado = ''
+        if form.data.get('subtipo_servico'):
+            subtipo_legado = SubtipoServicoOS.objects.filter(
+                pk=form.data.get('subtipo_servico')
+            ).values_list('subtipo_legado', flat=True).first() or ''
+
+        precisa_transplantio = subtipo_legado == SUBTIPO_LEGADO_TRANSPLANTE
+        precisa_replantio = subtipo_legado == SUBTIPO_LEGADO_REPLANTIO
+
+        extras_validos = True
+        if precisa_transplantio and not transplantio_form.data.get('transplantio-lote_muda'):
+            transplantio_form.add_error('lote_muda', 'Selecione o lote de mudas para o transplantio.')
+            extras_validos = False
+        elif precisa_transplantio and not transplantio_form.is_valid():
+            extras_validos = False
+        if precisa_replantio and not replantio_form.data.get('replantio-quantidade'):
+            replantio_form.add_error('quantidade', 'Informe a quantidade replantada.')
+            extras_validos = False
+        elif precisa_replantio and not replantio_form.is_valid():
+            extras_validos = False
+
+        if form.is_valid() and func_formset.is_valid() and maq_formset.is_valid() and extras_validos:
             os_obj = form.save(commit=False)
             os_obj.empresa = empresa
             os_obj.solicitante = request.user
@@ -740,12 +783,24 @@ def os_create(request):
             maq_formset.instance = os_obj
             maq_formset.save()
 
+            if precisa_transplantio:
+                transplantio = transplantio_form.save(commit=False)
+                transplantio.os = os_obj
+                transplantio.full_clean()
+                transplantio.save()
+            if precisa_replantio:
+                replantio = replantio_form.save(commit=False)
+                replantio.os = os_obj
+                replantio.save()
+
             messages.success(request, f'Ordem de Serviço {os_obj.numero} criada com sucesso!')
             return redirect('operacoes_campo:os_detail', pk=os_obj.pk)
     else:
         form = OrdemServicoForm(empresa=empresa)
         func_formset = OSFuncionarioFormSet(prefix='func')
         maq_formset = OSMaquinaFormSet(prefix='maq')
+        transplantio_form = OSTransplantioForm(prefix='transplantio', empresa=empresa)
+        replantio_form = OSReplantioForm(prefix='replantio', empresa=empresa)
 
     # Enrich formsets with empresa context for querysets
     _enrich_formset(func_formset, empresa)
@@ -755,6 +810,8 @@ def os_create(request):
         'form': form,
         'func_formset': func_formset,
         'maq_formset': maq_formset,
+        'transplantio_form': transplantio_form,
+        'replantio_form': replantio_form,
         'titulo': 'Nova Ordem de Serviço',
         'action': 'Criar',
     }
@@ -806,6 +863,14 @@ def os_detail(request, pk):
 
     custo_maq = sum(m.custo_calculado for m in maquinas)
     custo_serv = os_obj.valor_servico_externo or Decimal('0')
+
+    transplantio_obj = getattr(os_obj, 'transplantio', None)
+    replantio_obj = getattr(os_obj, 'replantio', None)
+    custo_estufa = (
+        (transplantio_obj.custo_transferido if transplantio_obj else Decimal('0'))
+        + (replantio_obj.custo_adicional if replantio_obj else Decimal('0'))
+    )
+
     insumos_os = os_obj.insumos_os.select_related('produto', 'unidade_medida').all()
 
     # Custo de insumos (prioriza os itens diretos da OS)
@@ -817,7 +882,7 @@ def os_detail(request, pk):
             if item.custo_estimado and item.quantidade_atendida:
                 custo_ins += item.custo_estimado * item.quantidade_atendida
 
-    custo_total = custo_mo + custo_maq + custo_ins + custo_serv
+    custo_total = custo_mo + custo_maq + custo_ins + custo_serv + custo_estufa
     area = os_obj.area_executada_ha
     custo_ha = (custo_total / area).quantize(Decimal('0.01')) if area else Decimal('0')
 
@@ -863,6 +928,7 @@ def os_detail(request, pk):
         'custo_maq': custo_maq,
         'custo_ins': custo_ins,
         'custo_serv': custo_serv,
+        'custo_estufa': custo_estufa,
         'custo_total': custo_total,
         'custo_ha': custo_ha,
         'custo_talhao_obj': custo_talhao_obj,
@@ -877,6 +943,8 @@ def os_detail(request, pk):
         'custo_intervalos': custo_intervalos,
         'workers_com_intervalo': workers_com_intervalo,
         'maquinas_sem_horimetro_final': maquinas_sem_horimetro_final,
+        'transplantio_obj': transplantio_obj,
+        'replantio_obj': replantio_obj,
     }
     return render(request, 'cadastros/os/os_detail.html', context)
 
@@ -1074,21 +1142,60 @@ def os_update(request, pk):
         messages.error(request, 'Não é possível editar uma OS concluída ou cancelada.')
         return redirect('operacoes_campo:os_detail', pk=pk)
 
+    transplantio_instance = getattr(os_obj, 'transplantio', None)
+    replantio_instance = getattr(os_obj, 'replantio', None)
+
     if request.method == 'POST':
         form = OrdemServicoForm(request.POST, request.FILES, instance=os_obj, empresa=empresa)
         func_formset = OSFuncionarioFormSet(request.POST, instance=os_obj, prefix='func')
         maq_formset = OSMaquinaFormSet(request.POST, instance=os_obj, prefix='maq')
+        transplantio_form = OSTransplantioForm(request.POST, prefix='transplantio', empresa=empresa, instance=transplantio_instance)
+        replantio_form = OSReplantioForm(request.POST, prefix='replantio', empresa=empresa, instance=replantio_instance)
 
-        if form.is_valid() and func_formset.is_valid() and maq_formset.is_valid():
+        subtipo_legado = ''
+        if form.data.get('subtipo_servico'):
+            subtipo_legado = SubtipoServicoOS.objects.filter(
+                pk=form.data.get('subtipo_servico')
+            ).values_list('subtipo_legado', flat=True).first() or ''
+
+        precisa_transplantio = subtipo_legado == SUBTIPO_LEGADO_TRANSPLANTE
+        precisa_replantio = subtipo_legado == SUBTIPO_LEGADO_REPLANTIO
+
+        extras_validos = True
+        if precisa_transplantio and not transplantio_form.data.get('transplantio-lote_muda') and not transplantio_instance:
+            transplantio_form.add_error('lote_muda', 'Selecione o lote de mudas para o transplantio.')
+            extras_validos = False
+        elif precisa_transplantio and not transplantio_form.is_valid():
+            extras_validos = False
+        if precisa_replantio and not replantio_form.data.get('replantio-quantidade') and not replantio_instance:
+            replantio_form.add_error('quantidade', 'Informe a quantidade replantada.')
+            extras_validos = False
+        elif precisa_replantio and not replantio_form.is_valid():
+            extras_validos = False
+
+        if form.is_valid() and func_formset.is_valid() and maq_formset.is_valid() and extras_validos:
             form.save()
             func_formset.save()
             maq_formset.save()
+
+            if precisa_transplantio and transplantio_form.has_changed():
+                transplantio = transplantio_form.save(commit=False)
+                transplantio.os = os_obj
+                transplantio.full_clean()
+                transplantio.save()
+            if precisa_replantio and replantio_form.has_changed():
+                replantio = replantio_form.save(commit=False)
+                replantio.os = os_obj
+                replantio.save()
+
             messages.success(request, f'OS {os_obj.numero} atualizada com sucesso!')
             return redirect('operacoes_campo:os_detail', pk=pk)
     else:
         form = OrdemServicoForm(instance=os_obj, empresa=empresa)
         func_formset = OSFuncionarioFormSet(instance=os_obj, prefix='func')
         maq_formset = OSMaquinaFormSet(instance=os_obj, prefix='maq')
+        transplantio_form = OSTransplantioForm(prefix='transplantio', empresa=empresa, instance=transplantio_instance)
+        replantio_form = OSReplantioForm(prefix='replantio', empresa=empresa, instance=replantio_instance)
 
     _enrich_formset(func_formset, empresa)
     _enrich_formset(maq_formset, empresa)
@@ -1097,6 +1204,8 @@ def os_update(request, pk):
         'form': form,
         'func_formset': func_formset,
         'maq_formset': maq_formset,
+        'transplantio_form': transplantio_form,
+        'replantio_form': replantio_form,
         'os': os_obj,
         'titulo': f'Editar OS {os_obj.numero}',
         'action': 'Salvar',
@@ -1333,6 +1442,11 @@ def os_concluir(request, pk):
                 )
                 custo_obj.recalcular()
 
+                # Transplantio: só consome o lote de mudas quando a OS é efetivamente concluída
+                transplantio_obj = getattr(os_obj, 'transplantio', None)
+                if transplantio_obj:
+                    transplantio_obj.marcar_lote_se_esgotado()
+
                 # Integração automática: Caderno de Campo
                 if request.POST.get('criar_registro_caderno'):
                     from operacoes_campo.models import RegistroCadernoCampo, RegistroCadernoCampoInsumo
@@ -1474,7 +1588,7 @@ def ajax_opcoes_servico(request):
             tipo_servico=tipo, ativo=True
         ).filter(
             Q(empresa=empresa) | Q(empresa=None)
-        ).order_by('ordem', 'nome').values('id', 'nome')
+        ).order_by('ordem', 'nome').values('id', 'nome', 'subtipo_legado')
     )
 
     modalidades = list(

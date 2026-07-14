@@ -218,7 +218,7 @@ def qualidade_campo_pdf(request, pk):
         story.append(Spacer(1, 0.2 * inch))
 
     story.append(Paragraph(
-        f'Gerado em {datetime.now().strftime("%d/%m/%Y %H:%M")} | ERP Agrícola Salutaris',
+        f'Gerado em {datetime.now().strftime("%d/%m/%Y %H:%M")} | Agrisdata Salutaris',
         ParagraphStyle('footer', parent=styles['Normal'], fontSize=7,
                        textColor=colors.grey, alignment=TA_CENTER)
     ))

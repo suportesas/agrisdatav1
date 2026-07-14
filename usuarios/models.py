@@ -1,6 +1,6 @@
 """
 Modelos do app usuarios
-Sistema de autenticação multi-tenant para ERP Agrícola
+Sistema de autenticação multi-tenant para Agrisdata
 """
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager

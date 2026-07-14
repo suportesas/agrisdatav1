@@ -331,7 +331,7 @@ def login_view(request):
     
     context = {
         'form': form,
-        'title': 'Login - ERP Agrícola'
+        'title': 'Login - Agrisdata'
     }
     return render(request, 'usuarios/login.html', context)
 

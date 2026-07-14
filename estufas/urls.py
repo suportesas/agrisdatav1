@@ -31,13 +31,6 @@ urlpatterns = [
     path('lotes/<int:lote_pk>/monitoramentos/novo/', views.monitoramento_estufa_create, name='monitoramento_estufa_create'),
     path('lotes/<int:lote_pk>/monitoramentos/<int:pk>/excluir/', views.monitoramento_estufa_delete, name='monitoramento_estufa_delete'),
 
-    # Transplantios
-    path('transplantios/', views.transplantio_list, name='transplantio_list'),
-    path('transplantios/novo/', views.transplantio_create, name='transplantio_create'),
-    path('transplantios/<int:pk>/', views.transplantio_detail, name='transplantio_detail'),
-
-    # Replantios
-    path('replantios/', views.replantio_list, name='replantio_list'),
-    path('replantios/novo/', views.replantio_create, name='replantio_create'),
-    path('replantios/<int:pk>/', views.replantio_detail, name='replantio_detail'),
+    # Transplantios e Replantios: agora executados via Ordem de Serviço
+    # (ver operacoes_campo:os_create, tipo Plantio / subtipo Transplante|Replantio)
 ]

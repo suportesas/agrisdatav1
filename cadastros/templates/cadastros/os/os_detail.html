@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ os.numero }} | ERP Agrícola{% endblock %}
+{% block title %}{{ os.numero }} | Agrisdata{% endblock %}
 {% block page_title %}OS {{ os.numero }}{% endblock %}
 
 {% block content %}
@@ -214,6 +214,14 @@
         <div class="fw-bold text-warning">R$ {{ custo_ins|floatformat:2 }}</div>
       </div>
     </div>
+    {% if custo_estufa > 0 %}
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center py-2">
+        <div class="small text-muted">Estufa/Transplantio</div>
+        <div class="fw-bold" style="color:#0dcaf0;">R$ {{ custo_estufa|floatformat:2 }}</div>
+      </div>
+    </div>
+    {% endif %}
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Total</div>
@@ -253,6 +261,13 @@
       <a class="nav-link" data-bs-toggle="tab" href="#tab-colheita">
         <i class="bi bi-basket me-1"></i>Colheita
         {% if etapas_colheita %}<span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">{{ etapas_colheita|length }}</span>{% endif %}
+      </a>
+    </li>
+    {% endif %}
+    {% if transplantio_obj or replantio_obj %}
+    <li class="nav-item">
+      <a class="nav-link" data-bs-toggle="tab" href="#tab-transplantio">
+        <i class="bi bi-arrow-right-square me-1"></i>{% if transplantio_obj %}Transplantio{% else %}Replantio{% endif %}
       </a>
     </li>
     {% endif %}
@@ -564,12 +579,14 @@
                   {% if custo_maq > 0 %}<div class="bg-info" style="width:{% widthratio custo_maq custo_total 100 %}%;" title="Maq."></div>{% endif %}
                   {% if custo_ins > 0 %}<div class="bg-warning" style="width:{% widthratio custo_ins custo_total 100 %}%;" title="Insumos"></div>{% endif %}
                   {% if custo_serv > 0 %}<div class="bg-secondary" style="width:{% widthratio custo_serv custo_total 100 %}%;" title="Serviço Ext."></div>{% endif %}
+                  {% if custo_estufa > 0 %}<div style="background-color:#0dcaf0;width:{% widthratio custo_estufa custo_total 100 %}%;" title="Estufa/Transplantio"></div>{% endif %}
                 </div>
                 <div class="d-flex gap-3 flex-wrap mb-3" style="font-size:.75rem;">
                   <span><span class="badge bg-primary me-1">&nbsp;</span>M.O.</span>
                   <span><span class="badge bg-info me-1">&nbsp;</span>Maq.</span>
                   <span><span class="badge bg-warning me-1">&nbsp;</span>Insumos</span>
                   <span><span class="badge bg-secondary me-1">&nbsp;</span>Serv. Ext.</span>
+                  {% if custo_estufa > 0 %}<span><span class="badge me-1" style="background-color:#0dcaf0;">&nbsp;</span>Estufa</span>{% endif %}
                 </div>
               </div>
               {% endif %}
@@ -591,6 +608,12 @@
                     <td><span class="badge bg-secondary me-1" style="width:10px;">&nbsp;</span>Serviço Externo</td>
                     <td class="text-end fw-semibold">R$ {{ custo_serv|floatformat:2 }}</td>
                   </tr>
+                  {% if custo_estufa > 0 %}
+                  <tr>
+                    <td><span class="badge me-1" style="width:10px;background-color:#0dcaf0;">&nbsp;</span>Estufa/Transplantio</td>
+                    <td class="text-end fw-semibold">R$ {{ custo_estufa|floatformat:2 }}</td>
+                  </tr>
+                  {% endif %}
                   <tr class="border-top">
                     <td class="fw-bold">Total</td>
                     <td class="text-end fw-bold text-success fs-6">R$ {{ custo_total|floatformat:2 }}</td>
@@ -876,6 +899,47 @@
         </div>
       </div>
     </div><!-- /tab-colheita -->
+    {% endif %}
+
+    <!-- ABA: TRANSPLANTIO / REPLANTIO (condicional) -->
+    {% if transplantio_obj or replantio_obj %}
+    <div class="tab-pane fade" id="tab-transplantio">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent py-2">
+          <h6 class="mb-0"><i class="bi bi-arrow-right-square me-2 text-info"></i>{% if transplantio_obj %}Dados do Transplantio{% else %}Dados do Replantio{% endif %}</h6>
+        </div>
+        <div class="card-body">
+          {% if transplantio_obj %}
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Lote de Mudas</dt>
+            <dd class="col-sm-8">{{ transplantio_obj.lote_muda.codigo_lote }} — {{ transplantio_obj.lote_muda.cultura.nome }}</dd>
+            <dt class="col-sm-4">Tipo</dt>
+            <dd class="col-sm-8">{{ transplantio_obj.get_tipo_display }}</dd>
+            <dt class="col-sm-4">Quantidade Transplantada</dt>
+            <dd class="col-sm-8">{{ transplantio_obj.quantidade_transplantada }}</dd>
+            <dt class="col-sm-4">Custo Transferido</dt>
+            <dd class="col-sm-8">R$ {{ transplantio_obj.custo_transferido|floatformat:2 }}</dd>
+          </dl>
+          {% endif %}
+          {% if replantio_obj %}
+          <dl class="row mb-0">
+            <dt class="col-sm-4">Quantidade</dt>
+            <dd class="col-sm-8">{{ replantio_obj.quantidade }}</dd>
+            <dt class="col-sm-4">Origem da Muda</dt>
+            <dd class="col-sm-8">{{ replantio_obj.get_origem_muda_display }}</dd>
+            {% if replantio_obj.lote_muda %}
+            <dt class="col-sm-4">Lote de Mudas</dt>
+            <dd class="col-sm-8">{{ replantio_obj.lote_muda.codigo_lote }}</dd>
+            {% endif %}
+            <dt class="col-sm-4">Motivo da Perda</dt>
+            <dd class="col-sm-8">{{ replantio_obj.get_motivo_perda_display }}</dd>
+            <dt class="col-sm-4">Custo Adicional</dt>
+            <dd class="col-sm-8">R$ {{ replantio_obj.custo_adicional|floatformat:2 }}</dd>
+          </dl>
+          {% endif %}
+        </div>
+      </div>
+    </div><!-- /tab-transplantio -->
     {% endif %}
 
   </div><!-- /tab-content -->

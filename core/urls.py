@@ -1,5 +1,5 @@
 """
-URLs principais do ERP Agrícola SaaS
+URLs principais do Agrisdata SaaS
 """
 
 from django.contrib import admin
@@ -23,8 +23,8 @@ def root_redirect(request):
 
 
 # Customização do Admin
-admin.site.site_header = "ERP Agrícola - Administração"
-admin.site.site_title = "ERP Agrícola Admin"
+admin.site.site_header = "Agrisdata - Administração"
+admin.site.site_title = "Agrisdata Admin"
 admin.site.index_title = "Painel de Administração"
 
 

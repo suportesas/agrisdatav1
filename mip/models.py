@@ -191,6 +191,16 @@ class MonitoramentoMIP(models.Model):
         help_text='Auto-preenchida do talhão'
     )
 
+    os = models.ForeignKey(
+        'operacoes_campo.OrdemServico',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='monitoramentos_mip',
+        verbose_name='Ordem de Serviço',
+        help_text='OS gerada a partir deste monitoramento (ex: pulverização recomendada)',
+    )
+
     data_monitoramento = models.DateField('Data do Monitoramento')
 
     tipo_monitoramento = models.CharField(

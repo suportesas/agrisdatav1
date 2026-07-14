@@ -1,4 +1,4 @@
-# Dockerfile para ERP Agrícola (Django)
+# Dockerfile para Agrisdata (Django)
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1

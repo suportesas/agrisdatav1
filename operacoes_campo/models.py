@@ -88,6 +88,10 @@ class SubtipoServicoOS(models.Model):
     descricao = models.CharField('Descrição', max_length=255, blank=True)
     ordem = models.PositiveSmallIntegerField('Ordem', default=0)
     ativo = models.BooleanField('Ativo', default=True)
+    subtipo_legado = models.CharField(
+        'Subtipo Legado', max_length=30, blank=True,
+        help_text='Valor interno usado por automações (ex: TRANSPLANTE, REPLANTIO)',
+    )
 
     class Meta:
         db_table = 'cadastros_subtiposervicoos'
@@ -324,6 +328,96 @@ class OrdemServicoInsumo(models.Model):
         super().save(*args, **kwargs)
 
 
+# ============================================================================
+# TRANSPLANTIO E REPLANTIO (execução de OS tipo Plantio)
+# ============================================================================
+
+class OSTransplantio(models.Model):
+    """Dados de transplantio de mudas quando a OS é do tipo Plantio/subtipo Transplante."""
+
+    TIPO_CHOICES = [
+        ('TOTAL', 'Total'),
+        ('PARCIAL', 'Parcial'),
+    ]
+
+    os = models.OneToOneField(OrdemServico, on_delete=models.CASCADE, related_name='transplantio', verbose_name='Ordem de Serviço')
+    lote_muda = models.ForeignKey('estufas.LoteMuda', on_delete=models.PROTECT, related_name='transplantios', verbose_name='Lote de Mudas')
+    tipo = models.CharField('Tipo', max_length=10, choices=TIPO_CHOICES, default='TOTAL')
+    quantidade_transplantada = models.IntegerField('Quantidade Transplantada', validators=[MinValueValidator(1)])
+    custo_transferido = models.DecimalField(
+        'Custo Transferido (R$)', max_digits=14, decimal_places=2, default=Decimal('0'),
+        help_text='Custo proporcional da estufa transferido para o talhão (RN-17)',
+    )
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        db_table = 'operacoes_campo_ostransplantio'
+        verbose_name = 'Transplantio da OS'
+        verbose_name_plural = 'Transplantios da OS'
+
+    def __str__(self):
+        return f"Transplantio {self.lote_muda.codigo_lote} → {self.os.talhao.codigo} ({self.os.numero})"
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.custo_transferido = self.lote_muda.custo_por_muda * self.quantidade_transplantada
+        super().save(*args, **kwargs)
+
+    def clean(self):
+        if self.lote_muda_id and self.quantidade_transplantada:
+            disponivel = self.lote_muda.quantidade_disponivel
+            if self.quantidade_transplantada > disponivel:
+                raise ValidationError({
+                    'quantidade_transplantada': f'Quantidade ({self.quantidade_transplantada}) supera o disponível no lote ({disponivel}).',
+                })
+
+    def marcar_lote_se_esgotado(self):
+        """Chamado na conclusão da OS: atualiza status do lote quando não sobra mais muda disponível."""
+        lote = self.lote_muda
+        if lote.quantidade_disponivel <= 0 and lote.status not in ['TRANSPLANTADO', 'ENCERRADO']:
+            lote.status = 'TRANSPLANTADO'
+            lote.save(update_fields=['status'])
+
+
+class OSReplantio(models.Model):
+    """Dados de replantio quando a OS é do tipo Plantio/subtipo Replantio."""
+
+    ORIGEM_CHOICES = [
+        ('ESTUFA', 'Estufa Própria'),
+        ('COMPRA', 'Compra Externa'),
+        ('OUTRA_AREA', 'Outra Área'),
+    ]
+    MOTIVO_CHOICES = [
+        ('CLIMA', 'Clima / Intempérie'),
+        ('PRAGA', 'Praga'),
+        ('DOENCA', 'Doença'),
+        ('MECANICO', 'Dano Mecânico'),
+        ('OUTRO', 'Outro'),
+    ]
+
+    os = models.OneToOneField(OrdemServico, on_delete=models.CASCADE, related_name='replantio', verbose_name='Ordem de Serviço')
+    quantidade = models.IntegerField('Quantidade', validators=[MinValueValidator(1)])
+    origem_muda = models.CharField('Origem da Muda', max_length=20, choices=ORIGEM_CHOICES)
+    lote_muda = models.ForeignKey(
+        'estufas.LoteMuda', on_delete=models.SET_NULL, null=True, blank=True, related_name='replantios',
+        verbose_name='Lote de Mudas', help_text='Preencher somente se origem for "Estufa Própria"',
+    )
+    motivo_perda = models.CharField('Motivo da Perda', max_length=30, choices=MOTIVO_CHOICES)
+    custo_adicional = models.DecimalField(
+        'Custo Adicional (R$)', max_digits=12, decimal_places=2, default=Decimal('0'),
+        validators=[MinValueValidator(Decimal('0'))],
+    )
+    data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
+
+    class Meta:
+        db_table = 'operacoes_campo_osreplantio'
+        verbose_name = 'Replantio da OS'
+        verbose_name_plural = 'Replantios da OS'
+
+    def __str__(self):
+        return f"Replantio {self.os.talhao.codigo} — {self.quantidade} un ({self.os.numero})"
+
+
 def _fator_encargos_empresa(empresa):
     """Retorna o fator de encargos configurado para a empresa (default 1.0)."""
     try:
@@ -488,6 +582,7 @@ class CustoTalhao(models.Model):
     custo_maquinario = models.DecimalField('Custo Maquinário (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
     custo_insumos = models.DecimalField('Custo Insumos (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
     custo_servico_externo = models.DecimalField('Custo Serviço Externo (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
+    custo_estufa = models.DecimalField('Custo Estufa/Transplantio (R$)', max_digits=12, decimal_places=2, default=Decimal('0'))
     area_executada_ha = models.DecimalField('Área Executada (ha)', max_digits=10, decimal_places=4, null=True, blank=True)
 
     data_registro = models.DateTimeField('Data de Registro', auto_now_add=True)
@@ -508,7 +603,7 @@ class CustoTalhao(models.Model):
 
     @property
     def custo_total(self):
-        return self.custo_mao_obra + self.custo_maquinario + self.custo_insumos + self.custo_servico_externo
+        return self.custo_mao_obra + self.custo_maquinario + self.custo_insumos + self.custo_servico_externo + self.custo_estufa
 
     @property
     def custo_por_hectare(self):
@@ -541,6 +636,16 @@ class CustoTalhao(models.Model):
         else:
             self.custo_insumos = Decimal('0')
         self.custo_servico_externo = self.os.valor_servico_externo or Decimal('0')
+        custo_estufa = Decimal('0')
+        try:
+            custo_estufa += self.os.transplantio.custo_transferido or Decimal('0')
+        except OSTransplantio.DoesNotExist:
+            pass
+        try:
+            custo_estufa += self.os.replantio.custo_adicional or Decimal('0')
+        except OSReplantio.DoesNotExist:
+            pass
+        self.custo_estufa = custo_estufa
         self.area_executada_ha = self.os.area_executada_ha
         self.save()
 

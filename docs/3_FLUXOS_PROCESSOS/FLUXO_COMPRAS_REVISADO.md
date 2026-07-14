@@ -7,7 +7,7 @@
 
 ## 📋 Sumário Executivo
 
-Este documento apresenta uma revisão completa do fluxo de compras do ERP Agrícola, desde a solicitação até a entrada no estoque, identificando e corrigindo problemas críticos que impediam a atualização correta do inventário.
+Este documento apresenta uma revisão completa do fluxo de compras do Agrisdata, desde a solicitação até a entrada no estoque, identificando e corrigindo problemas críticos que impediam a atualização correta do inventário.
 
 ### Problema Principal Identificado
 - **Item de recebimento sem produto associado**: ItemRecebimento não preenchia automaticamente o campo `produto` quando criado via `item_pedido`, causando falha na criação de movimentações de estoque.

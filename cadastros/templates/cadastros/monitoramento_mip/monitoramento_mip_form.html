@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{% if form.instance.pk %}Editar Monitoramento{% else %}Novo Monitoramento MIP{% endif %} | ERP Agrícola{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar Monitoramento{% else %}Novo Monitoramento MIP{% endif %} | Agrisdata{% endblock %}
 {% block page_title %}
   <div class="d-flex align-items-center gap-2">
     <span>{% if form.instance.pk %}Editar Monitoramento {{ form.instance.numero }}{% else %}Novo Monitoramento MIP{% endif %}</span>
@@ -94,6 +94,17 @@
                     <div class="invalid-feedback d-block">{{ form.safra.errors.0 }}</div>
                   {% endif %}
                   <small class="text-muted">Selecione a safra em andamento</small>
+                </div>
+
+                <div class="col-md-6">
+                  <label for="{{ form.os.id_for_label }}" class="form-label">
+                    <i class="bi bi-clipboard-check"></i> Ordem de Serviço <small class="fw-normal text-muted">(opcional)</small>
+                  </label>
+                  {{ form.os }}
+                  {% if form.os.errors %}
+                    <div class="invalid-feedback d-block">{{ form.os.errors.0 }}</div>
+                  {% endif %}
+                  <small class="text-muted">Vincule a uma OS relacionada (ex: pulverização gerada por este monitoramento)</small>
                 </div>
               </div>
 

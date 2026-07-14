@@ -1542,7 +1542,7 @@ def buscar_geolocalizacao(request):
                     'countrycodes': 'br',
                 },
                 headers={
-                    'User-Agent': 'ERP-Agricola/1.0 (geolocalizacao-area)'
+                    'User-Agent': 'Agrisdata/1.0 (geolocalizacao-area)'
                 },
                 timeout=10,
             )
@@ -3314,8 +3314,7 @@ def talhao_detail(request, pk):
     Detalhes do talhão com histórico
     🔒 ACESSO APENAS PARA EMPRESA DONA
     """
-    from operacoes_campo.models import CustoTalhao, RegistroCadernoCampo, OrdemServico
-    from estufas.models import Transplantio, ReplantioTalhao
+    from operacoes_campo.models import CustoTalhao, RegistroCadernoCampo, OrdemServico, OSTransplantio, OSReplantio
     from mip.models import MonitoramentoMIP
 
     empresa = request.user.empresa
@@ -3435,20 +3434,20 @@ def talhao_detail(request, pk):
 
     custo_total_talhao = sum((c['total_geral'] or Decimal('0')) for c in custos_safra)
 
-    # Transplantios
+    # Transplantios (executados via OS tipo Plantio/subtipo Transplante)
     transplantios = (
-        Transplantio.objects
-        .filter(empresa=empresa, talhao=talhao)
-        .select_related('lote_muda', 'safra', 'responsavel')
-        .order_by('-data_transplantio')[:20]
+        OSTransplantio.objects
+        .filter(os__empresa=empresa, os__talhao=talhao)
+        .select_related('lote_muda', 'os__safra', 'os__responsavel')
+        .order_by('-data_cadastro')[:20]
     )
 
-    # Replantios
+    # Replantios (executados via OS tipo Plantio/subtipo Replantio)
     replantios = (
-        ReplantioTalhao.objects
-        .filter(empresa=empresa, talhao=talhao)
-        .select_related('safra', 'responsavel')
-        .order_by('-data_replantio')[:20]
+        OSReplantio.objects
+        .filter(os__empresa=empresa, os__talhao=talhao)
+        .select_related('os__safra', 'os__responsavel')
+        .order_by('-data_cadastro')[:20]
     )
 
     return render(request, 'cadastros/talhao/talhao_detail.html', {
@@ -3970,7 +3969,7 @@ def fornecedor_criar_acesso_portal(request, pk):
 
     def enviar_email_senha(email, senha, fornecedor_nome):
         assunto = 'Acesso ao Portal do Fornecedor'
-        mensagem = f"Olá {fornecedor_nome},\n\nSeu acesso ao Portal do Fornecedor foi criado.\n\nUsuário: {email}\nSenha provisória: {senha}\n\nAcesse o portal e troque sua senha no primeiro acesso pelo menu Perfil.\n\nAtenciosamente,\nEquipe ERP Agrícola"
+        mensagem = f"Olá {fornecedor_nome},\n\nSeu acesso ao Portal do Fornecedor foi criado.\n\nUsuário: {email}\nSenha provisória: {senha}\n\nAcesse o portal e troque sua senha no primeiro acesso pelo menu Perfil.\n\nAtenciosamente,\nEquipe Agrisdata"
         send_mail(
             assunto,
             mensagem,

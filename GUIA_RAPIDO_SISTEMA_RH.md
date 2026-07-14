@@ -3,7 +3,7 @@
 ## 🚀 Como Usar o Sistema RH
 
 ### Acessar o Dashboard RH
-1. Faça login no ERP Agrícola
+1. Faça login no Agrisdata
 2. Vá para: **URL: `/cadastros/rh/`**
 3. Você verá o dashboard com:
    - Total de funcionários ativos

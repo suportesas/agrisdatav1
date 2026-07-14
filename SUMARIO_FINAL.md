@@ -216,4 +216,4 @@ def _atualizar_estoque(self):
 
 **Sistema implementado e validado com sucesso!**
 
-*02/02/2026 - ERP Agrícola*
+*02/02/2026 - Agrisdata*

@@ -480,7 +480,7 @@ class AlertaEstoqueHistoricoAdmin(admin.ModelAdmin):
 
         <div class="footer">
             <p>Você recebeu este email porque é gerente/admin de {{ empresa.nome }}</p>
-            <p>ERP Agrícola © 2025</p>
+            <p>Agrisdata © 2025</p>
         </div>
     </div>
 </body>

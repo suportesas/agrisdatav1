@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ titulo }} | ERP Agrícola{% endblock %}
+{% block title %}{{ titulo }} | Agrisdata{% endblock %}
 {% block page_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
@@ -94,6 +94,63 @@
               <div class="col-12">
                 <label class="form-label fw-semibold">Observações</label>
                 {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transplantio -->
+        <div class="card border-0 shadow-sm mb-4" id="div_transplantio" style="display:none;">
+          <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #0dcaf0, #0aa2c0); border-radius: .5rem .5rem 0 0;">
+            <h5 class="mb-0"><i class="bi bi-arrow-right-square me-2"></i>Dados do Transplantio</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Lote de Mudas</label>
+                {{ transplantio_form.lote_muda }}
+                {% if transplantio_form.lote_muda.errors %}<div class="text-danger small mt-1">{{ transplantio_form.lote_muda.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Tipo</label>
+                {{ transplantio_form.tipo }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Quantidade Transplantada</label>
+                {{ transplantio_form.quantidade_transplantada }}
+                {% if transplantio_form.quantidade_transplantada.errors %}<div class="text-danger small mt-1">{{ transplantio_form.quantidade_transplantada.errors }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Replantio -->
+        <div class="card border-0 shadow-sm mb-4" id="div_replantio" style="display:none;">
+          <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #fd7e14, #d96a0c); border-radius: .5rem .5rem 0 0;">
+            <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>Dados do Replantio</h5>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Quantidade</label>
+                {{ replantio_form.quantidade }}
+                {% if replantio_form.quantidade.errors %}<div class="text-danger small mt-1">{{ replantio_form.quantidade.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Origem da Muda</label>
+                {{ replantio_form.origem_muda }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Lote de Mudas <small class="text-muted">(se Estufa Própria)</small></label>
+                {{ replantio_form.lote_muda }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Motivo da Perda</label>
+                {{ replantio_form.motivo_perda }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Custo Adicional (R$)</label>
+                {{ replantio_form.custo_adicional }}
               </div>
             </div>
           </div>
@@ -643,20 +700,41 @@ function populateSelect(sel, items, selectedId) {
   });
 }
 
+// ── Mostrar/ocultar blocos de Transplantio/Replantio conforme subtipo ────────
+let SUBTIPOS_ATUAIS = [];
+const divTransplantio = document.getElementById('div_transplantio');
+const divReplantio = document.getElementById('div_replantio');
+
+function toggleTransplantioReplantio() {
+  const subtipoId = subtipoSelect ? subtipoSelect.value : '';
+  const info = SUBTIPOS_ATUAIS.find(s => String(s.id) === String(subtipoId));
+  const legado = info ? info.subtipo_legado : '';
+  if (divTransplantio) divTransplantio.style.display = (legado === 'TRANSPLANTE') ? '' : 'none';
+  if (divReplantio) divReplantio.style.display = (legado === 'REPLANTIO') ? '' : 'none';
+}
+
 function loadOpcoes(tipoId, keepSubtipo, keepModalidade) {
   if (!tipoId) {
     if (subtipoSelect) subtipoSelect.innerHTML = '<option value="">---------</option>';
     if (subtipoHint) subtipoHint.textContent = 'Selecione o Tipo de Serviço primeiro';
+    SUBTIPOS_ATUAIS = [];
+    toggleTransplantioReplantio();
     return;
   }
   fetch(AJAX_URL + '?tipo_id=' + tipoId)
     .then(r => r.json())
     .then(data => {
+      SUBTIPOS_ATUAIS = data.subtipos;
       populateSelect(subtipoSelect, data.subtipos, keepSubtipo);
       populateSelect(modalidadeSelect, data.modalidades, keepModalidade);
       if (subtipoHint) subtipoHint.textContent = '';
+      toggleTransplantioReplantio();
     })
     .catch(() => {});
+}
+
+if (subtipoSelect) {
+  subtipoSelect.addEventListener('change', toggleTransplantioReplantio);
 }
 
 if (tipoSelect) {

@@ -1,9 +1,7 @@
-version: '3.9'
-
 services:
   app:
     build: .
-    container_name: erp_agricola_app
+    container_name: agrisdata_app
     env_file:
       - .env.docker
     volumes:
@@ -12,12 +10,12 @@ services:
     ports:
       - "8000:8000"
     depends_on: []
-    command: ["gunicorn", "erp_agricola.wsgi:application", "--bind", "0.0.0.0:8000"]
+    command: ["gunicorn", "core.wsgi:application", "--bind", "0.0.0.0:8000"]
 
   # Descomente para produção
   # nginx:
   #   image: nginx:alpine
-  #   container_name: erp_agricola_nginx
+  #   container_name: agrisdata_nginx
   #   ports:
   #     - "80:80"
   #   volumes:

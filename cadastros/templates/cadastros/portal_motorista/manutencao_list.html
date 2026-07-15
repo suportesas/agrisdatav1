@@ -42,7 +42,7 @@
           {% for item in itens %}
           <li class="d-flex justify-content-between" style="font-size:0.72rem;">
             <span class="text-muted">{{ item.descricao }}</span>
-            <span class="ms-2 text-nowrap">{{ item.quantidade|floatformat:2 }} {{ item.unidade_medida }} &nbsp;·&nbsp; R$ {{ item.custo_total|floatformat:2 }}</span>
+            <span class="ms-2 text-nowrap">{{ item.quantidade|floatformat:"2g" }} {{ item.unidade_medida }} &nbsp;·&nbsp; R$ {{ item.custo_total|floatformat:2 }}</span>
           </li>
           {% endfor %}
         </ul>

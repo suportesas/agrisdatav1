@@ -79,6 +79,17 @@ DEFAULT_TIPOS_USUARIO = [
         'permite_acessar_financeiro': True,
         'permite_fazer_vendas': False,
     },
+    {
+        'codigo': 'MOTORISTA',
+        'nome': 'Motorista',
+        'descricao': 'Login unificado do Portal do Motorista.',
+        'ordem': 70,
+        'protegido': True,
+        'administrador_empresa': False,
+        'permite_gerenciar_usuarios': False,
+        'permite_acessar_financeiro': False,
+        'permite_fazer_vendas': False,
+    },
 ]
 
 

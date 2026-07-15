@@ -160,7 +160,7 @@
                 {% if a.tipo_regra_desconto == 'VALOR_FIXO' %}
                 <small>Fixo: {{ a.moeda }} {{ a.valor_desconto_padrao|floatformat:2 }}/embarque</small>
                 {% else %}
-                <small>{{ a.percentual_desconto|floatformat:2 }}% da invoice</small>
+                <small>{{ a.percentual_desconto|floatformat:"2g" }}% da invoice</small>
                 {% endif %}
               </td>
               <td class="text-center">

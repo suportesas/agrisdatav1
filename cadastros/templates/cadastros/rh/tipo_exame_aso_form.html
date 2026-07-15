@@ -8,7 +8,6 @@
   <div class="row justify-content-center">
     <div class="col-lg-8">
 
-      <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -18,14 +17,21 @@
         </ol>
       </nav>
 
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 class="h3 mb-1"><i class="fas fa-vial me-2 text-primary"></i>{{ title }}</h1>
-          <p class="text-muted mb-0">Tipos ativos aparecem na seleção dos exames do ASO</p>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge"><i class="bi bi-eyedropper"></i></span>
+            <div>
+              <h2>{{ title }}</h2>
+              <p class="text-muted mb-0">Tipos ativos aparecem na seleção dos exames do ASO</p>
+            </div>
+          </div>
+          <div class="form-header-actions">
+            <a href="{% url 'rh:tipo_exame_aso_list' %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+          </div>
         </div>
-        <a href="{% url 'rh:tipo_exame_aso_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
-        </a>
       </div>
 
       <form method="post">
@@ -35,47 +41,50 @@
         <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <div class="card mb-3">
-          <div class="card-header bg-primary text-white">
-            <strong>Dados do Tipo de Exame</strong>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-eyedropper"></i></span>
+            <span class="title">Dados do Tipo de Exame</span>
           </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-8">
-                <label class="form-label">{{ form.nome.label }} <span class="text-danger">*</span></label>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-8{% if form.nome.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.nome.label }}<span class="req">*</span></label>
                 {{ form.nome|add_class:"form-control" }}
-                {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.codigo.label }} <span class="text-danger">*</span></label>
+              <div class="field col-4{% if form.codigo.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.codigo.label }}<span class="req">*</span></label>
                 {{ form.codigo|add_class:"form-control" }}
-                {% if form.codigo.errors %}<div class="text-danger small">{{ form.codigo.errors }}</div>{% endif %}
+                {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
               </div>
-
-              <div class="col-md-4">
+              <div class="field col-4{% if form.ordem.errors %} has-error{% endif %}">
                 <label class="form-label">{{ form.ordem.label }}</label>
                 {{ form.ordem|add_class:"form-control" }}
-                {% if form.ordem.errors %}<div class="text-danger small">{{ form.ordem.errors }}</div>{% endif %}
+                {% if form.ordem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ordem.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-8 d-flex align-items-end">
-                <div class="form-check mt-2">
-                  {{ form.ativo|add_class:"form-check-input" }}
-                  <label class="form-check-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+              <div class="field col-8">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativo|add_class:"" }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
                 </div>
               </div>
-
-              <div class="col-12">
+              <div class="field col-12">
                 <label class="form-label">{{ form.observacoes.label }}</label>
                 {{ form.observacoes|add_class:"form-control" }}
-                {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors }}</div>{% endif %}
+                {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
               </div>
             </div>
           </div>
         </div>
 
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'rh:tipo_exame_aso_list' %}" class="btn btn-outline-secondary btn-lg px-5">Cancelar</a>
-          <button type="submit" class="btn btn-success btn-lg px-5">Salvar</button>
+        <div class="app-footer-bar">
+          <a href="{% url 'rh:tipo_exame_aso_list' %}" class="btn btn-outline">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Salvar</button>
         </div>
       </form>
     </div>

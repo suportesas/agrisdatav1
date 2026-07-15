@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
@@ -14,233 +15,244 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-  <div class="d-flex align-items-center mb-4 gap-2">
-    <a href="{% url 'compras:planejamento_embalagem_list' %}" class="btn btn-sm btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div>
-      <h4 class="fw-bold mb-0">{{ titulo }}</h4>
-      <p class="text-muted small mb-0">Planejamento de Compras de Embalagens por Safra</p>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-box-seam"></i></span>
+        <div>
+          <h2>{{ titulo }}</h2>
+          <p class="text-muted mb-0">Planejamento de Compras de Embalagens por Safra</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'compras:planejamento_embalagem_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
   <form method="post" id="form-planejamento">
     {% csrf_token %}
 
-    <!-- CABEÇALHO -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--radius-card);">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-info-circle text-primary me-2"></i>Informações Gerais
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <nav class="section-nav">
+      <a href="#sec-info" data-tab="sec-info">Informações Gerais</a>
+      <a href="#sec-add-item" data-tab="sec-add-item">Adicionar Item</a>
+      <a href="#sec-itens" data-tab="sec-itens">Itens do Planejamento</a>
+    </nav>
+
+    <div class="complex-layout">
+      <div class="complex-main">
+
+        <div class="form-section" id="sec-info" data-tab-panel="sec-info">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+            <span class="title">Informações Gerais</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-8">
+                <label class="form-label">Nome do Planejamento<span class="req">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Safra</label>
+                {{ form.safra }}
+                {% if form.safra.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Início da Safra<span class="req">*</span></label>
+                {{ form.data_inicio }}
+                {% if form.data_inicio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_inicio.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Fim da Safra<span class="req">*</span></label>
+                {{ form.data_fim }}
+                {% if form.data_fim.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_fim.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Responsável<span class="req">*</span></label>
+                {{ form.responsavel }}
+                {% if form.responsavel.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.responsavel.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADICIONAR ITEM (formulário único) -->
+        <div class="form-section" id="sec-add-item" data-tab-panel="sec-add-item">
+          <div class="form-section-header">
+            <span class="icon-badge sm green"><i class="bi bi-plus-circle"></i></span>
+            <span class="title">Adicionar Item</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3" id="entry-produto-wrap">
+                <label class="form-label">Produto<span class="req">*</span></label>
+                <select id="entry-produto" class="form-select form-select-sm">
+                  <option value=""></option>
+                </select>
+              </div>
+              <div class="field col-2">
+                <label class="form-label">Categoria</label>
+                <div id="entry-categoria-display" class="form-control form-control-sm bg-light text-muted">—</div>
+              </div>
+              <div class="field col-2" data-entry-field="fase">
+                <label class="form-label">Fase</label>
+                {{ entry_form.fase }}
+              </div>
+              <div class="field col-2" data-entry-field="data_prevista">
+                <label class="form-label">Data Prevista<span class="req">*</span></label>
+                {{ entry_form.data_prevista }}
+              </div>
+              <div class="field col-3" data-entry-field="quantidade_planejada">
+                <label class="form-label">Qtd<span class="req">*</span></label>
+                {{ entry_form.quantidade_planejada }}
+              </div>
+
+              <div class="field col-2" data-entry-field="unidade_medida">
+                <label class="form-label">Unidade<span class="req">*</span></label>
+                {{ entry_form.unidade_medida }}
+              </div>
+              <div class="field col-2" data-entry-field="preco_estimado_unitario">
+                <label class="form-label">Preço Estimado<span class="req">*</span></label>
+                {{ entry_form.preco_estimado_unitario }}
+              </div>
+              <div class="field col-2" data-entry-field="preco_atual_unitario">
+                <label class="form-label">Preço Atual</label>
+                {{ entry_form.preco_atual_unitario }}
+              </div>
+              <div class="field col-3" data-entry-field="fornecedor_preferencial">
+                <label class="form-label">Fornecedor Preferencial</label>
+                {{ entry_form.fornecedor_preferencial }}
+              </div>
+              <div class="field col-3" data-entry-field="observacoes">
+                <label class="form-label">Observações</label>
+                {{ entry_form.observacoes }}
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <button type="button" id="btn-add-item" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i><span id="btn-add-item-label">Adicionar Item</span>
+              </button>
+              <button type="button" id="btn-cancel-edit-item" class="btn btn-outline-secondary btn-sm d-none">
+                Cancelar edição
+              </button>
+            </div>
+            <div id="entry-validation-msg" class="alert alert-danger mt-3 d-none"></div>
+          </div>
+        </div>
+
+        <!-- LISTA DE ITENS LANÇADOS -->
+        <div class="form-section" id="sec-itens" data-tab-panel="sec-itens">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-list-ul"></i></span>
+            <span class="title">Itens do Planejamento</span>
+          </div>
+          <div class="form-section-body">
+            {% if formset.non_form_errors %}
+              <div class="alert alert-danger">{{ formset.non_form_errors }}</div>
+            {% endif %}
+            <div class="items-table-wrap">
+              <table class="items-table" id="summary-table">
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Fase</th>
+                    <th>Data Prevista</th>
+                    <th>Qtd</th>
+                    <th>Unidade</th>
+                    <th>Preço Estimado</th>
+                    <th>Preço Atual</th>
+                    <th>Fornecedor Preferencial</th>
+                    <th>Subtotal</th>
+                    <th>Obs.</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="summary-body">
+                  <tr id="summary-empty-row">
+                    <td colspan="12" class="text-center text-muted py-4">Nenhum item adicionado ainda.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- FORMSET REAL (oculto — fonte de verdade enviada ao backend) -->
+          <div class="d-none" id="formset-wrapper" data-formset-prefix="{{ formset.prefix }}">
+            {{ formset.management_form }}
+            <table>
+              <tbody id="formset-body">
+                {% for f in formset %}
+                <tr class="formset-row" data-form-idx="{{ forloop.counter0 }}" data-has-pk="{% if f.instance.pk %}1{% else %}0{% endif %}">
+                  {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
+                  <td class="f-produto" data-produto-nome="{{ f.instance.produto|default:'' }}" data-categoria-nome="{{ f.instance.produto.categoria.nome|default:'' }}">{{ f.produto }}{% if f.produto.errors %}<div class="text-danger small">{{ f.produto.errors }}</div>{% endif %}</td>
+                  <td class="f-fase">{{ f.fase }}</td>
+                  <td class="f-data_prevista">{{ f.data_prevista }}{% if f.data_prevista.errors %}<div class="text-danger small">{{ f.data_prevista.errors }}</div>{% endif %}</td>
+                  <td class="f-quantidade_planejada">{{ f.quantidade_planejada }}{% if f.quantidade_planejada.errors %}<div class="text-danger small">{{ f.quantidade_planejada.errors }}</div>{% endif %}</td>
+                  <td class="f-unidade_medida">{{ f.unidade_medida }}</td>
+                  <td class="f-preco_estimado_unitario">{{ f.preco_estimado_unitario }}</td>
+                  <td class="f-preco_atual_unitario">{{ f.preco_atual_unitario }}</td>
+                  <td class="f-fornecedor_preferencial">{{ f.fornecedor_preferencial }}</td>
+                  <td class="f-observacoes">{{ f.observacoes }}</td>
+                  <td class="f-delete">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+
+            <table id="empty-row-template">
+              <tbody>
+                <tr class="formset-row" id="id_empty_row" data-has-pk="0">
+                  {% with f=formset.empty_form %}
+                  {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
+                  <td class="f-produto" data-produto-nome="" data-categoria-nome="">{{ f.produto }}</td>
+                  <td class="f-fase">{{ f.fase }}</td>
+                  <td class="f-data_prevista">{{ f.data_prevista }}</td>
+                  <td class="f-quantidade_planejada">{{ f.quantidade_planejada }}</td>
+                  <td class="f-unidade_medida">{{ f.unidade_medida }}</td>
+                  <td class="f-preco_estimado_unitario">{{ f.preco_estimado_unitario }}</td>
+                  <td class="f-preco_atual_unitario">{{ f.preco_atual_unitario }}</td>
+                  <td class="f-fornecedor_preferencial">{{ f.fornecedor_preferencial }}</td>
+                  <td class="f-observacoes">{{ f.observacoes }}</td>
+                  <td class="f-delete"></td>
+                  {% endwith %}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
-      <div class="card-body">
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Nome do Planejamento <span class="text-danger">*</span></label>
-            {{ form.nome }}
-            {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Safra</label>
-            {{ form.safra }}
-            {% if form.safra.errors %}<div class="text-danger small">{{ form.safra.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Início da Safra <span class="text-danger">*</span></label>
-            {{ form.data_inicio }}
-            {% if form.data_inicio.errors %}<div class="text-danger small">{{ form.data_inicio.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Fim da Safra <span class="text-danger">*</span></label>
-            {{ form.data_fim }}
-            {% if form.data_fim.errors %}<div class="text-danger small">{{ form.data_fim.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Responsável <span class="text-danger">*</span></label>
-            {{ form.responsavel }}
-            {% if form.responsavel.errors %}<div class="text-danger small">{{ form.responsavel.errors }}</div>{% endif %}
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Observações</label>
-            {{ form.observacoes }}
-          </div>
+
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4>Resumo de Custo</h4>
+          <div class="summary-row"><span>Total Estimado</span><span id="total-estimado">R$ 0,00</span></div>
+          <div class="summary-row"><span>Total Atual</span><span id="total-atual">R$ 0,00</span></div>
+          <div class="summary-total"><span>Variação</span><span id="total-variacao">—</span></div>
         </div>
       </div>
     </div>
 
-    <!-- ADICIONAR ITEM (formulário único) -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--radius-card);">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-plus-circle text-primary me-2"></i>Adicionar Item
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3" id="entry-produto-wrap">
-            <label class="form-label fw-semibold">Produto <span class="text-danger">*</span></label>
-            <select id="entry-produto" class="form-select form-select-sm">
-              <option value=""></option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Categoria</label>
-            <div id="entry-categoria-display" class="form-control form-control-sm bg-light text-muted">—</div>
-          </div>
-          <div class="col-md-2" data-entry-field="fase">
-            <label class="form-label fw-semibold">Fase</label>
-            {{ entry_form.fase }}
-          </div>
-          <div class="col-md-2" data-entry-field="data_prevista">
-            <label class="form-label fw-semibold">Data Prevista <span class="text-danger">*</span></label>
-            {{ entry_form.data_prevista }}
-          </div>
-          <div class="col-md-3" data-entry-field="quantidade_planejada">
-            <label class="form-label fw-semibold">Qtd <span class="text-danger">*</span></label>
-            {{ entry_form.quantidade_planejada }}
-          </div>
-
-          <div class="col-md-2" data-entry-field="unidade_medida">
-            <label class="form-label fw-semibold">Unidade <span class="text-danger">*</span></label>
-            {{ entry_form.unidade_medida }}
-          </div>
-          <div class="col-md-2" data-entry-field="preco_estimado_unitario">
-            <label class="form-label fw-semibold">Preço Estimado <span class="text-danger">*</span></label>
-            {{ entry_form.preco_estimado_unitario }}
-          </div>
-          <div class="col-md-2" data-entry-field="preco_atual_unitario">
-            <label class="form-label fw-semibold">Preço Atual</label>
-            {{ entry_form.preco_atual_unitario }}
-          </div>
-          <div class="col-md-3" data-entry-field="fornecedor_preferencial">
-            <label class="form-label fw-semibold">Fornecedor Preferencial</label>
-            {{ entry_form.fornecedor_preferencial }}
-          </div>
-          <div class="col-md-3" data-entry-field="observacoes">
-            <label class="form-label fw-semibold">Observações</label>
-            {{ entry_form.observacoes }}
-          </div>
-        </div>
-        <div class="d-flex gap-2 mt-3">
-          <button type="button" id="btn-add-item" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-circle me-1"></i><span id="btn-add-item-label">Adicionar Item</span>
-          </button>
-          <button type="button" id="btn-cancel-edit-item" class="btn btn-outline-secondary btn-sm d-none">
-            Cancelar edição
-          </button>
-        </div>
-        <div id="entry-validation-msg" class="alert alert-danger mt-3 d-none"></div>
-      </div>
-    </div>
-
-    <!-- LISTA DE ITENS LANÇADOS -->
-    <div class="card border-0 shadow-sm mb-4" style="border-radius: var(--radius-card);">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-list-ul text-primary me-2"></i>Itens do Planejamento
-      </div>
-      <div class="card-body p-0">
-        {% if formset.non_form_errors %}
-          <div class="alert alert-danger m-3">{{ formset.non_form_errors }}</div>
-        {% endif %}
-        <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0" id="summary-table">
-            <thead class="table-light">
-              <tr>
-                <th>Produto</th>
-                <th>Categoria</th>
-                <th>Fase</th>
-                <th>Data Prevista</th>
-                <th>Qtd</th>
-                <th>Unidade</th>
-                <th>Preço Estimado</th>
-                <th>Preço Atual</th>
-                <th>Fornecedor Preferencial</th>
-                <th>Subtotal</th>
-                <th>Obs.</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody id="summary-body">
-              <tr id="summary-empty-row">
-                <td colspan="12" class="text-center text-muted py-4">Nenhum item adicionado ainda.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- FORMSET REAL (oculto — fonte de verdade enviada ao backend) -->
-    <div class="d-none" id="formset-wrapper" data-formset-prefix="{{ formset.prefix }}">
-      {{ formset.management_form }}
-      <table>
-        <tbody id="formset-body">
-          {% for f in formset %}
-          <tr class="formset-row" data-form-idx="{{ forloop.counter0 }}" data-has-pk="{% if f.instance.pk %}1{% else %}0{% endif %}">
-            {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
-            <td class="f-produto" data-produto-nome="{{ f.instance.produto|default:'' }}" data-categoria-nome="{{ f.instance.produto.categoria.nome|default:'' }}">{{ f.produto }}{% if f.produto.errors %}<div class="text-danger small">{{ f.produto.errors }}</div>{% endif %}</td>
-            <td class="f-fase">{{ f.fase }}</td>
-            <td class="f-data_prevista">{{ f.data_prevista }}{% if f.data_prevista.errors %}<div class="text-danger small">{{ f.data_prevista.errors }}</div>{% endif %}</td>
-            <td class="f-quantidade_planejada">{{ f.quantidade_planejada }}{% if f.quantidade_planejada.errors %}<div class="text-danger small">{{ f.quantidade_planejada.errors }}</div>{% endif %}</td>
-            <td class="f-unidade_medida">{{ f.unidade_medida }}</td>
-            <td class="f-preco_estimado_unitario">{{ f.preco_estimado_unitario }}</td>
-            <td class="f-preco_atual_unitario">{{ f.preco_atual_unitario }}</td>
-            <td class="f-fornecedor_preferencial">{{ f.fornecedor_preferencial }}</td>
-            <td class="f-observacoes">{{ f.observacoes }}</td>
-            <td class="f-delete">{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-
-      <table id="empty-row-template">
-        <tbody>
-          <tr class="formset-row" id="id_empty_row" data-has-pk="0">
-            {% with f=formset.empty_form %}
-            {% for hidden in f.hidden_fields %} {{ hidden }} {% endfor %}
-            <td class="f-produto" data-produto-nome="" data-categoria-nome="">{{ f.produto }}</td>
-            <td class="f-fase">{{ f.fase }}</td>
-            <td class="f-data_prevista">{{ f.data_prevista }}</td>
-            <td class="f-quantidade_planejada">{{ f.quantidade_planejada }}</td>
-            <td class="f-unidade_medida">{{ f.unidade_medida }}</td>
-            <td class="f-preco_estimado_unitario">{{ f.preco_estimado_unitario }}</td>
-            <td class="f-preco_atual_unitario">{{ f.preco_atual_unitario }}</td>
-            <td class="f-fornecedor_preferencial">{{ f.fornecedor_preferencial }}</td>
-            <td class="f-observacoes">{{ f.observacoes }}</td>
-            <td class="f-delete"></td>
-            {% endwith %}
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Resumo de custo em tempo real -->
-    <div class="card border-0 shadow-sm mb-4 bg-primary-subtle" style="border-radius: var(--radius-card);">
-      <div class="card-body py-3">
-        <div class="row text-center">
-          <div class="col">
-            <div class="text-muted small">Total Estimado</div>
-            <div class="fw-bold fs-5" id="total-estimado">R$ 0,00</div>
-          </div>
-          <div class="col">
-            <div class="text-muted small">Total Atual</div>
-            <div class="fw-bold fs-5" id="total-atual">R$ 0,00</div>
-          </div>
-          <div class="col">
-            <div class="text-muted small">Variação</div>
-            <div class="fw-bold fs-5" id="total-variacao">—</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar Planejamento</button>
+    <div class="app-footer-bar">
       {% if planejamento %}
-        <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        <a href="{% url 'compras:planejamento_embalagem_detail' pk=planejamento.pk %}" class="btn btn-outline">Cancelar</a>
       {% else %}
-        <a href="{% url 'compras:planejamento_embalagem_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        <a href="{% url 'compras:planejamento_embalagem_list' %}" class="btn btn-outline">Cancelar</a>
       {% endif %}
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar Planejamento</button>
     </div>
 
   </form>
@@ -248,6 +260,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
@@ -558,7 +571,7 @@
       const var_ = ((atual - estimado) / estimado * 100).toFixed(1);
       const el = document.getElementById('total-variacao');
       el.textContent = (var_ >= 0 ? '+' : '') + var_ + '%';
-      el.className = 'fw-bold fs-5 ' + (var_ > 0 ? 'text-danger' : var_ < 0 ? 'text-success' : '');
+      el.className = (var_ > 0 ? 'text-danger' : var_ < 0 ? 'text-success' : '');
     } else {
       document.getElementById('total-variacao').textContent = '—';
     }

@@ -5,267 +5,262 @@
 {% block page_title %}{{ action }} Plano{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body p-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold text-secondary mb-0">
-          {% if plano %}
-            <i class="bi bi-pencil-square"></i> Editar Plano: {{ plano.nome }}
-          {% else %}
-            <i class="bi bi-plus-circle"></i> Novo Plano
-          {% endif %}
-        </h4>
-        {% if total_empresas %}
-        <span class="badge bg-info">
-          {{ total_empresas }} empresa{{ total_empresas|pluralize }} usando este plano
-        </span>
-        {% endif %}
+<div class="container-fluid py-4">
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if plano %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <h2>{% if plano %}Editar Plano: {{ plano.nome }}{% else %}Novo Plano{% endif %}</h2>
       </div>
+      <div class="form-header-actions">
+        {% if total_empresas %}
+        <span class="status-pill blue">{{ total_empresas }} empresa{{ total_empresas|pluralize }} usando este plano</span>
+        {% endif %}
+        <a href="{% url 'empresas:plano_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
 
-      <form method="post" novalidate>
-        {% csrf_token %}
+  <form method="post" novalidate>
+    {% csrf_token %}
 
-        <!-- SEÇÃO: Informações Básicas -->
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <h5 class="text-primary border-bottom pb-2">
-              <i class="bi bi-info-circle"></i> Informações Básicas
-            </h5>
+    <nav class="section-nav">
+      <a href="#sec-basicas" data-tab="sec-basicas">Informações Básicas</a>
+      <a href="#sec-valores" data-tab="sec-valores">Valores e Preços</a>
+      <a href="#sec-limites" data-tab="sec-limites">Limites de Recursos</a>
+      <a href="#sec-extras" data-tab="sec-extras">Funcionalidades Extras</a>
+    </nav>
+
+    <div class="complex-layout">
+      <div class="complex-main">
+
+        <div class="form-section" id="sec-basicas" data-tab-panel="sec-basicas">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+            <span class="title">Informações Básicas</span>
           </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <label class="form-label">Código do Plano</label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|join:", " }}</div>{% endif %}
+                <div class="helper-note">Identificador único</div>
+              </div>
 
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Código do Plano</label>
-            {{ form.codigo }}
-            {% if form.codigo.errors %}
-              <div class="text-danger small">{{ form.codigo.errors|join:", " }}</div>
-            {% endif %}
-            <small class="text-muted">Identificador único</small>
-          </div>
+              <div class="field col-5">
+                <label class="form-label">Nome do Plano</label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|join:", " }}</div>{% endif %}
+              </div>
 
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">Nome do Plano</label>
-            {{ form.nome }}
-            {% if form.nome.errors %}
-              <div class="text-danger small">{{ form.nome.errors|join:", " }}</div>
-            {% endif %}
-          </div>
+              <div class="field col-2">
+                <label class="form-label">Ícone</label>
+                {{ form.icone }}
+                <div class="helper-note">Ex: 🌱 🌾 🚜</div>
+              </div>
 
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Ícone</label>
-            {{ form.icone }}
-            <small class="text-muted">Ex: 🌱 🌾 🚜</small>
-          </div>
+              <div class="field col-2">
+                <label class="form-label">Ordem</label>
+                {{ form.ordem }}
+                <div class="helper-note">Ordem de exibição</div>
+              </div>
 
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Ordem</label>
-            {{ form.ordem }}
-            <small class="text-muted">Ordem de exibição</small>
-          </div>
+              <div class="field col-12">
+                <label class="form-label">Descrição</label>
+                {{ form.descricao }}
+                <div class="helper-note">Descrição detalhada do plano</div>
+              </div>
 
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Descrição</label>
-            {{ form.descricao }}
-            <small class="text-muted">Descrição detalhada do plano</small>
-          </div>
-
-          <div class="col-md-2">
-            <div class="form-check mt-4">
-              {{ form.ativo }}
-              <label class="form-check-label fw-semibold" for="id_ativo">
-                Plano Ativo
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- SEÇÃO: Valores e Preços -->
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <h5 class="text-success border-bottom pb-2">
-              <i class="bi bi-currency-dollar"></i> Valores e Preços
-            </h5>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Valor Mensal (R$)</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              {{ form.valor_mensal }}
-            </div>
-            {% if form.valor_mensal.errors %}
-              <div class="text-danger small">{{ form.valor_mensal.errors|join:", " }}</div>
-            {% endif %}
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Valor Anual (R$)</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              {{ form.valor_anual }}
-            </div>
-            <small class="text-muted">Deixe vazio para calcular automaticamente</small>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Desconto Anual (%)</label>
-            <div class="input-group">
-              {{ form.desconto_anual }}
-              <span class="input-group-text">%</span>
-            </div>
-            <small class="text-muted">Ex: 16.67% = 2 meses grátis</small>
-          </div>
-
-          <!-- Preview de Economia -->
-          <div class="col-12">
-            <div class="alert alert-info">
-              <strong>💡 Dica:</strong> 
-              Com <strong id="desconto-preview">16.67</strong>% de desconto anual, 
-              o cliente paga 10 meses e ganha 2 meses grátis!
-            </div>
-          </div>
-        </div>
-
-        <!-- SEÇÃO: Limites de Recursos -->
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <h5 class="text-warning border-bottom pb-2">
-              <i class="bi bi-speedometer2"></i> Limites de Recursos
-            </h5>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-geo-alt-fill text-primary"></i> Fazendas
-            </label>
-            {{ form.limite_fazendas }}
-            <small class="text-muted">999 = ilimitado</small>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-people-fill text-success"></i> Usuários
-            </label>
-            {{ form.limite_usuarios }}
-            <small class="text-muted">999 = ilimitado</small>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-grid-fill text-warning"></i> Talhões
-            </label>
-            {{ form.limite_talhoes }}
-            <small class="text-muted">999 = ilimitado</small>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-box-seam-fill text-info"></i> Produtos
-            </label>
-            {{ form.limite_produtos }}
-            <small class="text-muted">999 = ilimitado</small>
-          </div>
-        </div>
-
-        <!-- SEÇÃO: Funcionalidades Extras -->
-        <div class="row g-3 mb-4">
-          <div class="col-12">
-            <h5 class="text-info border-bottom pb-2">
-              <i class="bi bi-star-fill"></i> Funcionalidades Extras
-            </h5>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-check">
-              {{ form.acesso_relatorios_avancados }}
-              <label class="form-check-label" for="id_acesso_relatorios_avancados">
-                <i class="bi bi-graph-up text-primary"></i> Relatórios Avançados
-              </label>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-check">
-              {{ form.acesso_api }}
-              <label class="form-check-label" for="id_acesso_api">
-                <i class="bi bi-code-slash text-success"></i> Acesso à API
-              </label>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-check">
-              {{ form.acesso_app_mobile }}
-              <label class="form-check-label" for="id_acesso_app_mobile">
-                <i class="bi bi-phone text-info"></i> App Mobile
-              </label>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-check">
-              {{ form.acesso_suporte_prioritario }}
-              <label class="form-check-label" for="id_acesso_suporte_prioritario">
-                <i class="bi bi-headset text-warning"></i> Suporte Prioritário
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Preview do Plano -->
-        <div class="row mb-4">
-          <div class="col-12">
-            <div class="card bg-light">
-              <div class="card-body">
-                <h6 class="fw-bold mb-3">👀 Preview do Plano</h6>
-                <div class="row">
-                  <div class="col-md-6">
-                    <p class="mb-1">
-                      <strong id="preview-icone">{{ form.icone.value|default:"🌱" }}</strong>
-                      <strong id="preview-nome">{{ form.nome.value|default:"Nome do Plano" }}</strong>
-                    </p>
-                    <p class="text-muted mb-0">
-                      <span id="preview-mensal">R$ {{ form.valor_mensal.value|default:"0.00" }}</span>/mês
-                    </p>
-                  </div>
-                  <div class="col-md-6 text-end">
-                    <small class="text-muted">
-                      <span id="preview-fazendas">{{ form.limite_fazendas.value|default:"0" }}</span> fazendas • 
-                      <span id="preview-usuarios">{{ form.limite_usuarios.value|default:"0" }}</span> usuários • 
-                      <span id="preview-talhoes">{{ form.limite_talhoes.value|default:"0" }}</span> talhões
-                    </small>
-                  </div>
+              <div class="field col-3">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativo }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="id_ativo">Plano Ativo</label>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Aviso sobre Empresas Afetadas -->
+        <div class="form-section" id="sec-valores" data-tab-panel="sec-valores">
+          <div class="form-section-header">
+            <span class="icon-badge sm green"><i class="bi bi-currency-dollar"></i></span>
+            <span class="title">Valores e Preços</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Valor Mensal (R$)</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.valor_mensal }}
+                </div>
+                {% if form.valor_mensal.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_mensal.errors|join:", " }}</div>{% endif %}
+              </div>
+
+              <div class="field col-4">
+                <label class="form-label">Valor Anual (R$)</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.valor_anual }}
+                </div>
+                <div class="helper-note">Deixe vazio para calcular automaticamente</div>
+              </div>
+
+              <div class="field col-4">
+                <label class="form-label">Desconto Anual (%)</label>
+                <div class="input-group">
+                  {{ form.desconto_anual }}
+                  <span class="input-group-text">%</span>
+                </div>
+                <div class="helper-note">Ex: 16.67% = 2 meses grátis</div>
+              </div>
+
+              <div class="field col-12">
+                <div class="alert alert-info mb-0">
+                  <strong>💡 Dica:</strong>
+                  Com <strong id="desconto-preview">16.67</strong>% de desconto anual,
+                  o cliente paga 10 meses e ganha 2 meses grátis!
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-limites" data-tab-panel="sec-limites">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-speedometer2"></i></span>
+            <span class="title">Limites de Recursos</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <label class="form-label"><i class="bi bi-geo-alt-fill text-primary"></i> Fazendas</label>
+                {{ form.limite_fazendas }}
+                <div class="helper-note">999 = ilimitado</div>
+              </div>
+
+              <div class="field col-3">
+                <label class="form-label"><i class="bi bi-people-fill text-success"></i> Usuários</label>
+                {{ form.limite_usuarios }}
+                <div class="helper-note">999 = ilimitado</div>
+              </div>
+
+              <div class="field col-3">
+                <label class="form-label"><i class="bi bi-grid-fill text-warning"></i> Talhões</label>
+                {{ form.limite_talhoes }}
+                <div class="helper-note">999 = ilimitado</div>
+              </div>
+
+              <div class="field col-3">
+                <label class="form-label"><i class="bi bi-box-seam-fill text-info"></i> Produtos</label>
+                {{ form.limite_produtos }}
+                <div class="helper-note">999 = ilimitado</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-extras" data-tab-panel="sec-extras">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-star"></i></span>
+            <span class="title">Funcionalidades Extras</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.acesso_relatorios_avancados }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="id_acesso_relatorios_avancados"><i class="bi bi-graph-up text-primary"></i> Relatórios Avançados</label>
+                </div>
+              </div>
+
+              <div class="field col-3">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.acesso_api }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="id_acesso_api"><i class="bi bi-code-slash text-success"></i> Acesso à API</label>
+                </div>
+              </div>
+
+              <div class="field col-3">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.acesso_app_mobile }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="id_acesso_app_mobile"><i class="bi bi-phone text-info"></i> App Mobile</label>
+                </div>
+              </div>
+
+              <div class="field col-3">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.acesso_suporte_prioritario }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="id_acesso_suporte_prioritario"><i class="bi bi-headset text-warning"></i> Suporte Prioritário</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {% if plano and total_empresas > 0 %}
         <div class="alert alert-warning">
           <i class="bi bi-exclamation-triangle-fill"></i>
-          <strong>Atenção!</strong> 
-          Ao salvar, {{ total_empresas }} empresa{{ total_empresas|pluralize }} 
-          que usa{{ total_empresas|pluralize:"m,m" }} este plano 
+          <strong>Atenção!</strong>
+          Ao salvar, {{ total_empresas }} empresa{{ total_empresas|pluralize }}
+          que usa{{ total_empresas|pluralize:"m,m" }} este plano
           {{ total_empresas|pluralize:"terá,terão" }} os limites atualizados automaticamente.
         </div>
         {% endif %}
 
-        <!-- Botões -->
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'empresas:plano_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
-          </a>
-          <button type="submit" class="btn btn-success px-5">
-            <i class="bi bi-check-circle"></i> Salvar Plano
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+      </div>
 
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4>Preview do Plano</h4>
+          <div class="mb-2">
+            <strong id="preview-icone">{{ form.icone.value|default:"🌱" }}</strong>
+            <strong id="preview-nome">{{ form.nome.value|default:"Nome do Plano" }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Mensalidade</span>
+            <span id="preview-mensal">R$ {{ form.valor_mensal.value|default:"0.00" }}</span>
+          </div>
+          <hr class="my-2">
+          <div class="summary-row"><span>Fazendas</span><span id="preview-fazendas">{{ form.limite_fazendas.value|default:"0" }}</span></div>
+          <div class="summary-row"><span>Usuários</span><span id="preview-usuarios">{{ form.limite_usuarios.value|default:"0" }}</span></div>
+          <div class="summary-row"><span>Talhões</span><span id="preview-talhoes">{{ form.limite_talhoes.value|default:"0" }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'empresas:plano_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar Plano
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Adiciona classes aos campos
@@ -277,49 +272,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Preview dinâmico
   const updatePreview = () => {
-    document.getElementById('preview-nome').textContent = 
+    document.getElementById('preview-nome').textContent =
       document.getElementById('id_nome').value || 'Nome do Plano';
-    
-    document.getElementById('preview-icone').textContent = 
+
+    document.getElementById('preview-icone').textContent =
       document.getElementById('id_icone').value || '🌱';
-    
-    document.getElementById('preview-mensal').textContent = 
+
+    document.getElementById('preview-mensal').textContent =
       'R$ ' + (document.getElementById('id_valor_mensal').value || '0.00');
-    
-    document.getElementById('preview-fazendas').textContent = 
+
+    document.getElementById('preview-fazendas').textContent =
       document.getElementById('id_limite_fazendas').value || '0';
-    
-    document.getElementById('preview-usuarios').textContent = 
+
+    document.getElementById('preview-usuarios').textContent =
       document.getElementById('id_limite_usuarios').value || '0';
-    
-    document.getElementById('preview-talhoes').textContent = 
+
+    document.getElementById('preview-talhoes').textContent =
       document.getElementById('id_limite_talhoes').value || '0';
-    
-    document.getElementById('desconto-preview').textContent = 
+
+    document.getElementById('desconto-preview').textContent =
       document.getElementById('id_desconto_anual').value || '0';
   };
 
   // Atualiza preview ao digitar
-  ['id_nome', 'id_icone', 'id_valor_mensal', 'id_limite_fazendas', 
+  ['id_nome', 'id_icone', 'id_valor_mensal', 'id_limite_fazendas',
    'id_limite_usuarios', 'id_limite_talhoes', 'id_desconto_anual'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', updatePreview);
   });
 });
 </script>
-
-<style>
-  .form-control, .form-select {
-    border-radius: 8px;
-  }
-  .form-check-input {
-    width: 1.3em;
-    height: 1.3em;
-    margin-top: 0.2em;
-  }
-  .input-group-text {
-    background-color: #e9ecef;
-    border: 1px solid #ced4da;
-  }
-</style>
 {% endblock %}

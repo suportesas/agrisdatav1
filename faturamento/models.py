@@ -838,12 +838,19 @@ class ItemNotaFiscal(models.Model):
         elif not self.icms_motivo_desoneracao:
             self.icms_valor_desoneracao = _0
 
-        # IBS/CBS — Reforma Tributária (grupo_ibs_cbs: BC comum + alíquotas por ente)
+        # IBS/CBS — Reforma Tributária (grupo_ibs_cbs: BC comum + alíquotas por ente).
+        # ibs_percentual_reducao/cbs_percentual_reducao aplicam sobre a alíquota
+        # nominal para obter a alíquota efetiva (pAliqEfet) — a NT exige que
+        # vIBSUF/vIBSMun/vCBS sejam calculados com a alíquota EFETIVA quando há
+        # redução (ex: cClassTrib 200034/200036/200038 têm 60% de redução).
         if self.ibs_cbs_situacao_tributaria:
             self.ibs_cbs_base_calculo = self.valor_total
-            self.ibs_cbs_valor_uf = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_uf) / _100
-            self.ibs_cbs_valor_municipal = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_municipal) / _100
-            self.ibs_cbs_valor_cbs = self.ibs_cbs_base_calculo * d(self.ibs_cbs_aliquota_cbs) / _100
+            aliq_efet_uf = d(self.ibs_cbs_aliquota_uf) * (_100 - d(self.ibs_percentual_reducao)) / _100
+            aliq_efet_mun = d(self.ibs_cbs_aliquota_municipal) * (_100 - d(self.ibs_percentual_reducao)) / _100
+            aliq_efet_cbs = d(self.ibs_cbs_aliquota_cbs) * (_100 - d(self.cbs_percentual_reducao)) / _100
+            self.ibs_cbs_valor_uf = self.ibs_cbs_base_calculo * aliq_efet_uf / _100
+            self.ibs_cbs_valor_municipal = self.ibs_cbs_base_calculo * aliq_efet_mun / _100
+            self.ibs_cbs_valor_cbs = self.ibs_cbs_base_calculo * aliq_efet_cbs / _100
             if d(self.ibs_percentual_diferimento) > _0:
                 self.ibs_valor_diferido = (
                     (self.ibs_cbs_valor_uf + self.ibs_cbs_valor_municipal)
@@ -1356,27 +1363,64 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
         help_text='Preenchido automaticamente da transportadora selecionada. Edite apenas se precisar usar um RNTRC diferente.',
     )
 
-    # Reforma Tributária (IBS/CBS — NT 2024)
-    REFORMA_CST = [
-        ('',   '--- Não informado ---'),
-        ('01', '01 - Tributada integralmente'),
-        ('02', '02 - Isenta'),
-        ('03', '03 - Não tributada'),
-        ('04', '04 - Imune'),
-        ('05', '05 - Suspensa'),
-        ('06', '06 - Diferimento parcial'),
-        ('07', '07 - Diferimento integral'),
+    # ── Reforma Tributária — IBS/CBS (grupo IBSCBS do CT-e, NT 2025.001) ──
+    # Restrito aos cClassTrib confirmados para o escopo desta fazenda (transporte
+    # rodoviário de commodities agrícolas): tributação integral, transporte para/de
+    # Zona de Processamento de Exportação e exportação (imunidade). Sem diferimento
+    # nem crédito presumido — nenhum desses códigos exige esses grupos, e o
+    # crédito presumido foi removido do schema do CT-e pela própria NT (v1.10).
+    IBS_CBS_CST_CHOICES = [
+        ('',    '--- Não informado ---'),
+        ('000', '000 - Tributação integral'),
+        ('200', '200 - Alíquota zero'),
+        ('410', '410 - Imunidade e não incidência'),
     ]
-    REFORMA_CLASSIFICACAO = [
-        ('',  '--- Não informado ---'),
-        ('01', '01 - Serviço de transporte'),
-        ('02', '02 - Serviço sujeito a alíquota zero'),
-        ('03', '03 - Serviço isento'),
-        ('04', '04 - Serviço imune'),
-        ('05', '05 - Serviço não sujeito à tributação'),
+    IBS_CBS_CST_CCLASSTRIB_MAP = {
+        '000': [
+            ('000001', '000001 - Tributação integral (padrão)'),
+        ],
+        '200': [
+            ('200001', '200001 - Transporte de bens até/a partir de Zona de Processamento de Exportação'),
+        ],
+        '410': [
+            ('410004', '410004 - Exportações de bens e serviços'),
+            ('410015', '410015 - Fornecimento por transportador autônomo não contribuinte'),
+        ],
+    }
+    IBS_CBS_CCLASSTRIB_CHOICES = [('', '--- Não informado ---')] + [
+        par for pares in IBS_CBS_CST_CCLASSTRIB_MAP.values() for par in pares
     ]
-    reforma_cst             = models.CharField('CST Situação Tributária (Reforma)', max_length=2, choices=REFORMA_CST, blank=True, default='')
-    reforma_classificacao   = models.CharField('Classificação Tributária (Reforma)', max_length=2, choices=REFORMA_CLASSIFICACAO, blank=True, default='')
+    ibs_cbs_situacao_tributaria = models.CharField(
+        'CST IBS/CBS', max_length=3, blank=True, choices=IBS_CBS_CST_CHOICES,
+        help_text='Código de Situação Tributária do IBS/CBS (CST da Reforma Tributária).',
+    )
+    ibs_cbs_classificacao_tributaria = models.CharField(
+        'cClassTrib', max_length=6, blank=True, choices=IBS_CBS_CCLASSTRIB_CHOICES,
+        help_text='Código de Classificação Tributária do IBS e da CBS — 6 dígitos.',
+    )
+    ibs_cbs_base_calculo = models.DecimalField('BC IBS/CBS', max_digits=14, decimal_places=2, default=0)
+    ibs_cbs_aliquota_uf = models.DecimalField('Alíq. IBS Estadual (%)', max_digits=6, decimal_places=4, default=0)
+    ibs_cbs_valor_uf = models.DecimalField('Valor IBS Estadual', max_digits=14, decimal_places=2, default=0)
+    ibs_cbs_aliquota_municipal = models.DecimalField('Alíq. IBS Municipal (%)', max_digits=6, decimal_places=4, default=0)
+    ibs_cbs_valor_municipal = models.DecimalField('Valor IBS Municipal', max_digits=14, decimal_places=2, default=0)
+    ibs_cbs_aliquota_cbs = models.DecimalField('Alíq. CBS (%)', max_digits=6, decimal_places=4, default=0)
+    ibs_cbs_valor_cbs = models.DecimalField('Valor CBS', max_digits=14, decimal_places=2, default=0)
+    ibs_percentual_reducao = models.DecimalField(
+        'Percentual de Redução IBS (%)', max_digits=7, decimal_places=4, default=0,
+        help_text='pRedAliq — CST 200. Percentual de redução aplicado sobre a alíquota do IBS (100 para o cClassTrib 200001).',
+    )
+    cbs_percentual_reducao = models.DecimalField(
+        'Percentual de Redução CBS (%)', max_digits=7, decimal_places=4, default=0,
+        help_text='pRedAliq — CST 200. Percentual de redução aplicado sobre a alíquota da CBS (100 para o cClassTrib 200001).',
+    )
+    valor_ibs = models.DecimalField('Valor IBS', max_digits=14, decimal_places=2, default=0,
+        help_text='Soma de ibs_cbs_valor_uf + ibs_cbs_valor_municipal.')
+    valor_cbs = models.DecimalField('Valor CBS', max_digits=14, decimal_places=2, default=0,
+        help_text='Igual a ibs_cbs_valor_cbs.')
+    valor_total_dfe = models.DecimalField(
+        'Valor Total do DFe (vTotDFe)', max_digits=14, decimal_places=2, default=0,
+        help_text='vPrest + valor_ibs + valor_cbs. Exceção NT 2025.001 §7: em documentos de 2026 não soma IBS/CBS.',
+    )
 
     # Partilha do ICMS (operações interestaduais)
     partilha_bc_icms              = models.DecimalField('BC Partilha ICMS', max_digits=14, decimal_places=2, default=0)
@@ -1421,6 +1465,49 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     insucesso_motivo        = models.CharField('Motivo Insucesso', max_length=10, blank=True)
     insucesso_justificativa = models.CharField('Justificativa Insucesso', max_length=255, blank=True)
     insucesso_chave_nfe     = models.CharField('Chave NF-e Insucesso', max_length=44, blank=True)
+
+    def save(self, *args, **kwargs):
+        _0 = Decimal('0')
+        _100 = Decimal('100')
+
+        def d(val):
+            """Garante Decimal — evita Decimal * float."""
+            if val is None:
+                return _0
+            if isinstance(val, Decimal):
+                return val
+            return Decimal(str(val))
+
+        # IBS/CBS — Reforma Tributária (grupo_ibs_cbs: BC = valor da prestação de
+        # serviço). ibs_percentual_reducao/cbs_percentual_reducao aplicam sobre a
+        # alíquota nominal para obter a alíquota efetiva (pAliqEfet) — a NT exige
+        # que vIBSUF/vIBSMun/vCBS sejam calculados com a alíquota EFETIVA quando
+        # há redução (ex: cClassTrib 200001 tem 100% de redução → imposto zero).
+        if self.ibs_cbs_situacao_tributaria:
+            self.ibs_cbs_base_calculo = self.valor_servico
+            aliq_efet_uf = d(self.ibs_cbs_aliquota_uf) * (_100 - d(self.ibs_percentual_reducao)) / _100
+            aliq_efet_mun = d(self.ibs_cbs_aliquota_municipal) * (_100 - d(self.ibs_percentual_reducao)) / _100
+            aliq_efet_cbs = d(self.ibs_cbs_aliquota_cbs) * (_100 - d(self.cbs_percentual_reducao)) / _100
+            self.ibs_cbs_valor_uf = self.ibs_cbs_base_calculo * aliq_efet_uf / _100
+            self.ibs_cbs_valor_municipal = self.ibs_cbs_base_calculo * aliq_efet_mun / _100
+            self.ibs_cbs_valor_cbs = self.ibs_cbs_base_calculo * aliq_efet_cbs / _100
+            self.valor_ibs = self.ibs_cbs_valor_uf + self.ibs_cbs_valor_municipal
+            self.valor_cbs = self.ibs_cbs_valor_cbs
+        else:
+            self.ibs_cbs_base_calculo = _0
+            self.ibs_cbs_valor_uf = _0
+            self.ibs_cbs_valor_municipal = _0
+            self.ibs_cbs_valor_cbs = _0
+            self.valor_ibs = _0
+            self.valor_cbs = _0
+
+        # vTotDFe — NT 2025.001 §7: em 2026 não soma IBS/CBS (fase de transição)
+        if self.data_emissao and self.data_emissao.year <= 2026:
+            self.valor_total_dfe = self.valor_servico
+        else:
+            self.valor_total_dfe = self.valor_servico + self.valor_ibs + self.valor_cbs
+
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Conhecimento de Transporte (CT-e)'

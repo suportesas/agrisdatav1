@@ -4,72 +4,75 @@
 {% block page_title %}Editar Pesagem #{{ viagem.numero_viagem }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4" style="max-width:680px;">
-  <div class="card border-0 shadow-sm">
-    <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">
-        <i class="bi bi-speedometer me-2"></i>
-        Pesagem #{{ viagem.numero_viagem }} — {{ viagem.carrocao.numero_identificacao }}
-      </h5>
+<div class="container py-4" style="max-width:720px;">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-speedometer"></i></span>
+        <h2>Pesagem #{{ viagem.numero_viagem }} — {{ viagem.carrocao.numero_identificacao }}</h2>
+      </div>
     </div>
-    <div class="card-body">
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger small">{{ form.non_field_errors }}</div>
-        {% endif %}
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Peso Bruto (kg) <span class="text-danger">*</span></label>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger small">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Peso Bruto (kg)<span class="req">*</span></label>
             {{ form.peso_bruto_kg }}
-            {% if form.peso_bruto_kg.errors %}<div class="text-danger small">{{ form.peso_bruto_kg.errors }}</div>{% endif %}
+            {% if form.peso_bruto_kg.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_bruto_kg.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tara (kg) <span class="text-danger">*</span></label>
+          <div class="field col-4">
+            <label class="form-label">Tara (kg)<span class="req">*</span></label>
             {{ form.tara_usada_kg }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Desconto (kg)</label>
+          <div class="field col-4">
+            <label class="form-label">Desconto (kg)</label>
             {{ form.desconto_kg }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Umidade (%)</label>
+          <div class="field col-4">
+            <label class="form-label">Umidade (%)</label>
             {{ form.umidade_pct }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Impureza (%)</label>
+          <div class="field col-4">
+            <label class="form-label">Impureza (%)</label>
             {{ form.impureza_pct }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Saída do Campo</label>
+          <div class="field col-6">
+            <label class="form-label">Saída do Campo</label>
             {{ form.hora_saida_campo }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Chegada na Balança</label>
+          <div class="field col-6">
+            <label class="form-label">Chegada na Balança</label>
             {{ form.hora_chegada_balanca }}
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Foto do Romaneio</label>
+          <div class="field col-12">
+            <label class="form-label">Foto do Romaneio</label>
             {{ form.foto_romaneio }}
             {% if viagem.foto_romaneio %}
-              <div class="mt-1"><a href="{{ viagem.foto_romaneio.url }}" target="_blank">Ver foto atual</a></div>
+              <div class="helper-note"><a href="{{ viagem.foto_romaneio.url }}" target="_blank">Ver foto atual</a></div>
             {% endif %}
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Observações</label>
+          <div class="field col-12">
+            <label class="form-label">Observações</label>
             {{ form.observacoes }}
           </div>
         </div>
-        <hr>
-        <div class="d-flex justify-content-end gap-2">
-           <a href="{% url 'operacoes_campo:colheita_detalhe' os_pk=viagem.carrocao.frota.etapa.os_id etapa_pk=viagem.carrocao.frota.etapa.pk %}"
-             class="btn btn-secondary">Cancelar</a>
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-save me-1"></i>Salvar
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'operacoes_campo:colheita_detalhe' os_pk=viagem.carrocao.frota.etapa.os_id etapa_pk=viagem.carrocao.frota.etapa.pk %}"
+         class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Salvar
+      </button>
+    </div>
+  </form>
 </div>
 {% endblock %}

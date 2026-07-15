@@ -40,11 +40,24 @@
 </style>
 
 <div class="container-fluid py-4">
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <h3 class="mb-0">{{ title }}</h3>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge blue"><i class="bi bi-receipt"></i></span>
+        <div>
+          <h3 class="mb-0">{{ title }}</h3>
+          <p class="text-muted mb-0">Emissão de Nota Fiscal Eletrônica (NF-e)</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <span class="status-pill{% if nf.status == 'EMITIDA' %} green{% elif nf.status == 'CANCELADA' %} red{% else %} gray{% endif %}">
+          {% if nf %}{{ nf.get_status_display }}{% else %}Rascunho{% endif %}{% if nf.numero %} · Série {{ nf.serie }} nº {{ nf.numero }}{% endif %}
+        </span>
+        <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post" id="nf-form">
@@ -54,48 +67,66 @@
     {{ dup_formset.management_form }}
     {{ ref_formset.management_form }}
 
-    <div class="row g-3">
+    <nav class="section-nav" id="nf-section-nav">
+      <a href="#sec-principal" data-tab="sec-principal">Dados Gerais</a>
+      <a href="#sec-itens" data-tab="sec-itens">Itens <span class="count">{{ formset|length }}</span></a>
+      <a href="#sec-pagamentos" data-tab="sec-pagamentos">Pagamentos</a>
+      <a href="#sec-duplicatas" data-tab="sec-duplicatas">Duplicatas</a>
+      <a href="#sec-referencias" data-tab="sec-referencias">Referências</a>
+      <a href="#sec-complementares" data-tab="sec-complementares">Complementares</a>
+      <a href="#sec-transporte" data-tab="sec-transporte">Transporte</a>
+      <a href="#exportacao-section" data-tab="exportacao-section">Exportação</a>
+      <a href="#entrega-section" data-tab="entrega-section">Entrega</a>
+      <a href="#retirada-section" data-tab="retirada-section">Retirada</a>
+      <a href="#sec-agropecuario" data-tab="sec-agropecuario">Agropecuário</a>
+      <a href="#sec-produtor-rural" data-tab="sec-produtor-rural">Produtor Rural</a>
+    </nav>
+
+    <div class="complex-layout">
 
       <!-- ── Dados Principais ─────────────────────────────────────── -->
-      <div class="col-md-8 d-flex flex-column">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-header fw-semibold">Dados da Nota Fiscal</div>
-          <div class="card-body">
+      <div class="complex-main">
+        <div class="form-section" id="sec-principal" data-tab-panel="sec-principal">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+            <span class="title">Dados Gerais</span>
+          </div>
+          <div class="form-section-body">
             {% if form.non_field_errors %}
             <div class="alert alert-danger">{{ form.non_field_errors }}</div>
             {% endif %}
-            <div class="row g-3">
+            <div class="form-grid">
               <!-- Destinatário: Cliente (NF normal) ou Fornecedor (NF devolução) -->
-              <div class="col-md-8" id="campo-cliente"
+              <div class="field col-8" id="campo-cliente"
                    {% if nf and nf.fornecedor_id %}style="display:none"{% endif %}>
                 <label class="form-label">Cliente</label>
                 {{ form.cliente }}
-                {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+                {% if form.cliente.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cliente.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-8" id="campo-fornecedor"
+              <div class="field col-8" id="campo-fornecedor"
                    {% if not nf or not nf.fornecedor_id %}style="display:none"{% endif %}>
                 <label class="form-label">
                   Fornecedor
-                  <span id="badge-fornecedor-motivo" class="badge bg-warning text-dark ms-1" style="font-size:.7rem">{% if nf.finalidade_nfe == '4' %}Devolução{% else %}Entrada{% endif %}</span>
+                  <span id="badge-fornecedor-motivo" class="status-pill orange ms-1">{% if nf.finalidade_nfe == '4' %}Devolução{% else %}Entrada{% endif %}</span>
                 </label>
                 {{ form.fornecedor }}
-                {% if form.fornecedor.errors %}<div class="text-danger small">{{ form.fornecedor.errors }}</div>{% endif %}
-                <div id="hint-fornecedor" class="form-text">{% if nf.finalidade_nfe == '4' %}Destinatário em NF-e de devolução de compra (finalidade 4).{% else %}Destinatário em NF-e de entrada (CFOP 1xxx/2xxx/3xxx) — ex: compra de produtor rural sem nota fiscal.{% endif %}</div>
+                {% if form.fornecedor.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fornecedor.errors|striptags }}</div>{% endif %}
+                <div id="hint-fornecedor" class="helper-note">{% if nf.finalidade_nfe == '4' %}Destinatário em NF-e de devolução de compra (finalidade 4).{% else %}Destinatário em NF-e de entrada (CFOP 1xxx/2xxx/3xxx) — ex: compra de produtor rural sem nota fiscal.{% endif %}</div>
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Data de Emissão *</label>
+              <div class="field col-4">
+                <label class="form-label">Data de Emissão<span class="req">*</span></label>
                 {{ form.data_emissao }}
               </div>
               <!-- Tipo de Operação — Faturamento Agrupado -->
-              <div class="col-md-12">
-                <div class="border rounded p-3" style="background:#eaf5ec;border-color:#6ee7b7 !important;">
+              <div class="field col-12">
+                <div class="border rounded p-3" style="background:var(--pastel-green-bg);border-color:var(--pastel-green-border) !important;">
                   <div class="row g-2 align-items-center">
                     <div class="col-md-4">
                       <label class="form-label fw-semibold mb-1">
-                        <i class="bi bi-diagram-3 me-1" style="color:#1a7a3c;"></i>Tipo de Operação
+                        <i class="bi bi-diagram-3 me-1" style="color:var(--color-primary-dark);"></i>Tipo de Operação
                       </label>
                       {{ form.tipo_operacao }}
-                      {% if form.tipo_operacao.errors %}<div class="text-danger small">{{ form.tipo_operacao.errors }}</div>{% endif %}
+                      {% if form.tipo_operacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_operacao.errors|striptags }}</div>{% endif %}
                     </div>
                     <div class="col-md-8 d-flex align-items-center">
                       <small class="text-muted" id="tipo-op-hint">
@@ -108,15 +139,15 @@
                   </div>
                 </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Natureza da Operação *</label>
+              <div class="field col-6">
+                <label class="form-label">Natureza da Operação<span class="req">*</span></label>
                 {{ form.natureza_operacao }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">Finalidade NF-e</label>
                 {{ form.finalidade_nfe }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">CFOP Padrão
                   <span id="badge-tp-nf" class="badge ms-1 bg-secondary" style="font-size:.7rem;" title="Tipo NF derivado do CFOP (tpNF)">—</span>
                   <span id="icon-cfop-devolucao-ext" style="display:none"
@@ -128,17 +159,17 @@
                 </label>
                 {{ form.cfop }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">Data de Saída</label>
                 {{ form.data_saida }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">Presença do Comprador</label>
                 {{ form.presenca_comprador }}
               </div>
 
               <!-- ── Intermediador (indIntermed) — visível apenas para indPres não presencial ── -->
-              <div class="col-12" id="intermediador-section" style="display:none;">
+              <div class="field col-12" id="intermediador-section" style="display:none;">
                 <div class="border rounded p-2 mt-1 border-info-subtle bg-info-subtle bg-opacity-10">
                   <div class="row g-2 align-items-end">
                     <div class="col-12 mb-1">
@@ -170,380 +201,328 @@
                 </div>
               </div>
               <!-- ── / Intermediador ── -->
+            </div>
+          </div>
+        </div>
 
-              <!-- ── Frete / Transporte ── -->
-              <div class="col-12">
-                <div class="border rounded p-2 mt-1 border-primary-subtle bg-light bg-opacity-50">
-                  <div class="row g-2 align-items-end">
-                    <div class="col-12 mb-1">
-                      <span class="fw-semibold small">
-                        <i class="bi bi-truck text-primary me-1"></i>Transporte
-                      </span>
-                    </div>
-
-                    <div class="col-md-4">
-                      <label class="form-label mb-1 small fw-semibold">Modalidade de Frete</label>
-                      {{ form.modalidade_frete }}
-                    </div>
-                    <div class="col-md-8">
-                      <label class="form-label mb-1 small fw-semibold">Transportadora Padrão</label>
-                      {{ form.transportadora }}
-                    </div>
-
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small">CNPJ/CPF</label>
-                      {{ form.transp_cnpj }}
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label mb-1 small">Nome/Razão Social</label>
-                      {{ form.transp_nome }}
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label mb-1 small">Inscrição Estadual</label>
-                      {{ form.transp_ie }}
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label mb-1 small">Endereço</label>
-                      {{ form.transp_endereco }}
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label mb-1 small">Município</label>
-                      {{ form.transp_municipio }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small">UF</label>
-                      {{ form.transp_uf }}
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small">RNTC</label>
-                      {{ form.transp_rntc }}
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small">Placa do Veículo</label>
-                      {{ form.veic_placa }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small">UF da Placa</label>
-                      {{ form.veic_uf }}
-                    </div>
-                  </div>
-                </div>
+        <!-- ── Transporte ───────────────────────────────────────────── -->
+        <div class="form-section" id="sec-transporte" data-tab-panel="sec-transporte">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-truck"></i></span>
+            <span class="title">Transporte</span>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-4">
+                <label class="form-label mb-1 small fw-semibold">Modalidade de Frete</label>
+                {{ form.modalidade_frete }}
               </div>
-              <!-- ── / Transporte ── -->
+              <div class="col-md-8">
+                <label class="form-label mb-1 small fw-semibold">Transportadora Padrão</label>
+                {{ form.transportadora }}
+              </div>
 
+              <div class="col-md-3">
+                <label class="form-label mb-1 small">CNPJ/CPF</label>
+                {{ form.transp_cnpj }}
+              </div>
+              <div class="col-md-5">
+                <label class="form-label mb-1 small">Nome/Razão Social</label>
+                {{ form.transp_nome }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label mb-1 small">Inscrição Estadual</label>
+                {{ form.transp_ie }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1 small">Endereço</label>
+                {{ form.transp_endereco }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label mb-1 small">Município</label>
+                {{ form.transp_municipio }}
+              </div>
               <div class="col-md-2">
+                <label class="form-label mb-1 small">UF</label>
+                {{ form.transp_uf }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1 small">RNTC</label>
+                {{ form.transp_rntc }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1 small">Placa do Veículo</label>
+                {{ form.veic_placa }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label mb-1 small">UF da Placa</label>
+                {{ form.veic_uf }}
+              </div>
+            </div>
+
+            <hr class="my-3">
+            <div class="form-grid">
+              <div class="field col-2">
                 <label class="form-label">Quantidade</label>
                 {{ form.quantidade_volumes }}
               </div>
-              <div class="col-md-2">
+              <div class="field col-2">
                 <label class="form-label">Espécie</label>
                 {{ form.especie_volumes }}
               </div>
-              <div class="col-md-2">
+              <div class="field col-2">
                 <label class="form-label">Marca</label>
                 {{ form.marca_volumes }}
               </div>
-              <div class="col-md-2">
+              <div class="field col-2">
                 <label class="form-label">Numeração</label>
                 {{ form.numeracao_volumes }}
               </div>
-              <div class="col-md-2">
+              <div class="field col-2">
                 <label class="form-label">Peso Bruto (kg)</label>
                 {{ form.peso_bruto_kg }}
               </div>
-              <div class="col-md-2">
+              <div class="field col-2">
                 <label class="form-label">Peso Líquido (kg)</label>
                 {{ form.peso_liquido_kg }}
               </div>
-
-              <!-- ── Exportação — UF/Local de Embarque ── -->
-              <div class="col-12" id="exportacao-section" style="display:none;">
-                <div class="border rounded p-2 mt-1 border-warning-subtle bg-warning-subtle bg-opacity-10">
-                  <div class="row g-2 align-items-end">
-                    <div class="col-12 mb-1">
-                      <span class="fw-semibold small">
-                        <i class="bi bi-ship text-warning me-1"></i>
-                        Exportação — Embarque
-                        <small class="text-muted fw-normal ms-1">(Grupo ZA da NF-e — preencha para CFOP 7xxx)</small>
-                      </span>
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small fw-semibold">UF do Embarque</label>
-                      {{ form.embarque_uf }}
-                      <div class="form-text">Ex: CE, SP</div>
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label mb-1 small fw-semibold">Local do Embarque</label>
-                      {{ form.embarque_local }}
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label mb-1 small fw-semibold">Local do Despacho <small class="text-muted">(opcional)</small></label>
-                      {{ form.embarque_local_despacho }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- ── / Exportação ── -->
-
-              <!-- ── Endereço de Entrega ── -->
-              <div class="col-12">
-                <div class="border rounded p-2 mt-1" id="entrega-section">
-                  <div class="form-check mb-0">
-                    {{ form.entrega_ativo }}
-                    <label class="form-check-label fw-semibold" for="id_entrega_ativo">
-                      <i class="bi bi-geo-alt-fill text-primary me-1"></i>
-                      Endereço de Entrega diferente do Destinatário
-                      <small class="text-muted fw-normal ms-1">(Grupo G da NF-e — porto, obra, filial, drawback…)</small>
-                    </label>
-                  </div>
-
-                  <div id="entrega-fields" style="display:none;" class="mt-3">
-                    <div class="alert alert-info py-1 px-2 mb-2 small">
-                      <i class="bi bi-info-circle me-1"></i>
-                      Preencha quando a mercadoria for entregue em endereço <strong>diferente</strong> do cadastrado no destinatário.
-                      Obrigatório informar o CNPJ/CPF do local de entrega.
-                    </div>
-                    <div class="row g-2">
-                      <div class="col-md-4">
-                        <label class="form-label mb-1 small fw-semibold">CNPJ/CPF do Local <span class="text-danger">*</span></label>
-                        {{ form.entrega_cnpj_cpf }}
-                        <div class="form-text">Ex: porto, armazém, filial</div>
-                      </div>
-                      <div class="col-md-5">
-                        <label class="form-label mb-1 small fw-semibold">Logradouro <span class="text-danger">*</span></label>
-                        {{ form.entrega_logradouro }}
-                      </div>
-                      <div class="col-md-3">
-                        <label class="form-label mb-1 small fw-semibold">Número <span class="text-danger">*</span></label>
-                        {{ form.entrega_numero }}
-                      </div>
-                      <div class="col-md-4">
-                        <label class="form-label mb-1 small fw-semibold">Complemento</label>
-                        {{ form.entrega_complemento }}
-                      </div>
-                      <div class="col-md-4">
-                        <label class="form-label mb-1 small fw-semibold">Bairro <span class="text-danger">*</span></label>
-                        {{ form.entrega_bairro }}
-                      </div>
-                      <div class="col-md-3">
-                        <label class="form-label mb-1 small fw-semibold">Cód. IBGE <span class="text-danger">*</span></label>
-                        {{ form.entrega_codigo_municipio }}
-                      </div>
-                      <div class="col-md-7">
-                        <label class="form-label mb-1 small fw-semibold">Município <span class="text-danger">*</span></label>
-                        {{ form.entrega_nome_municipio }}
-                      </div>
-                      <div class="col-md-2">
-                        <label class="form-label mb-1 small fw-semibold">UF <span class="text-danger">*</span></label>
-                        {{ form.entrega_uf }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- ── / Endereço de Entrega ── -->
-
-              <!-- ── Local de Retirada ── -->
-              <div class="col-12">
-                <div class="border rounded p-2 mt-1" id="retirada-section">
-                  <div class="form-check mb-0">
-                    {{ form.retirada_ativo }}
-                    <label class="form-check-label fw-semibold" for="id_retirada_ativo">
-                      <i class="bi bi-geo-alt text-primary me-1"></i>
-                      Local de Retirada diferente do Destinatário
-                      <small class="text-muted fw-normal ms-1">(Grupo F da NF-e — armazém, silo, retirada no local…)</small>
-                    </label>
-                  </div>
-
-                  <div id="retirada-fields" style="display:none;" class="mt-3">
-                    <div class="row g-2">
-                      <div class="col-md-4">
-                        <label class="form-label mb-1 small fw-semibold">CNPJ/CPF do Local <span class="text-danger">*</span></label>
-                        {{ form.retirada_cnpj_cpf }}
-                      </div>
-                      <div class="col-md-5">
-                        <label class="form-label mb-1 small fw-semibold">Logradouro <span class="text-danger">*</span></label>
-                        {{ form.retirada_logradouro }}
-                      </div>
-                      <div class="col-md-3">
-                        <label class="form-label mb-1 small fw-semibold">Número <span class="text-danger">*</span></label>
-                        {{ form.retirada_numero }}
-                      </div>
-                      <div class="col-md-4">
-                        <label class="form-label mb-1 small fw-semibold">Complemento</label>
-                        {{ form.retirada_complemento }}
-                      </div>
-                      <div class="col-md-4">
-                        <label class="form-label mb-1 small fw-semibold">Bairro <span class="text-danger">*</span></label>
-                        {{ form.retirada_bairro }}
-                      </div>
-                      <div class="col-md-3">
-                        <label class="form-label mb-1 small fw-semibold">Cód. IBGE <span class="text-danger">*</span></label>
-                        {{ form.retirada_codigo_municipio }}
-                      </div>
-                      <div class="col-md-7">
-                        <label class="form-label mb-1 small fw-semibold">Município <span class="text-danger">*</span></label>
-                        {{ form.retirada_nome_municipio }}
-                      </div>
-                      <div class="col-md-2">
-                        <label class="form-label mb-1 small fw-semibold">UF <span class="text-danger">*</span></label>
-                        {{ form.retirada_uf }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- ── / Local de Retirada ── -->
-
-              <!-- ── Agropecuário — GTA e Defensivo Agrícola ── -->
-              <div class="col-12">
-                <div class="border rounded p-2 mt-1 border-success-subtle bg-success-subtle bg-opacity-10">
-                  <div class="row g-2 align-items-end">
-                    <div class="col-12 mb-1">
-                      <span class="fw-semibold small">
-                        <i class="bi bi-truck text-success me-1"></i>
-                        Agropecuário — Guia de Trânsito Animal / Defensivo Agrícola
-                        <small class="text-muted fw-normal ms-1">(preencher apenas quando aplicável)</small>
-                      </span>
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small fw-semibold">Tipo de Guia</label>
-                      {{ form.gta_tipo }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small fw-semibold">UF Emissão</label>
-                      {{ form.gta_uf }}
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small fw-semibold">Série da Guia</label>
-                      {{ form.gta_serie }}
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label mb-1 small fw-semibold">Número da Guia</label>
-                      {{ form.gta_numero }}
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label mb-1 small fw-semibold">Nº Receituário do Defensivo</label>
-                      {{ form.defensivo_numero_receituario }}
-                    </div>
-                    <div class="col-md-6">
-                      <label class="form-label mb-1 small fw-semibold">CPF do Responsável Técnico</label>
-                      {{ form.defensivo_cpf_responsavel }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- ── / Agropecuário ── -->
-
-              <!-- ── Nota de Produtor Rural (documento de origem) ── -->
-              <div class="col-12">
-                <div class="border rounded p-2 mt-1">
-                  <div class="row g-2 align-items-end">
-                    <div class="col-12 mb-1">
-                      <span class="fw-semibold small">
-                        <i class="bi bi-file-earmark-text text-primary me-1"></i>
-                        Nota de Produtor Rural (documento de origem)
-                        <small class="text-muted fw-normal ms-1">(preencher quando esta NF-e referenciar uma nota de produtor rural)</small>
-                      </span>
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small fw-semibold">UF</label>
-                      {{ form.produtor_rural_uf }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small fw-semibold">AAMM</label>
-                      {{ form.produtor_rural_anomes }}
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small fw-semibold">CNPJ Emitente</label>
-                      {{ form.produtor_rural_cnpj }}
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small fw-semibold">CPF Emitente</label>
-                      {{ form.produtor_rural_cpf }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small fw-semibold">Inscrição Estadual</label>
-                      {{ form.produtor_rural_ie }}
-                    </div>
-                    <div class="col-md-3">
-                      <label class="form-label mb-1 small fw-semibold">Modelo</label>
-                      {{ form.produtor_rural_modelo }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small fw-semibold">Série</label>
-                      {{ form.produtor_rural_serie }}
-                    </div>
-                    <div class="col-md-2">
-                      <label class="form-label mb-1 small fw-semibold">Número</label>
-                      {{ form.produtor_rural_numero }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- ── / Nota de Produtor Rural ── -->
-
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Totais ────────────────────────────────────────────────── -->
-      <div class="col-md-4 d-flex flex-column">
-        <div class="card border-0 shadow-sm h-100">
-          <div class="card-header fw-semibold">Valores</div>
-          <div class="card-body">
-            <div class="mb-2">
-              <label class="form-label mb-1">Frete (R$)</label>
-              {{ form.valor_frete }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label mb-1">Seguro (R$)</label>
-              {{ form.valor_seguro }}
-            </div>
-            <div class="mb-3">
-              <label class="form-label mb-1">Desconto NF (R$)</label>
-              {{ form.valor_desconto }}
-            </div>
-            <hr class="my-2">
-            <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>Subtotal Produtos</span><span id="resumo-produtos">R$ 0,00</span>
-            </div>
-            <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>+ IPI</span><span id="resumo-ipi">R$ 0,00</span>
-            </div>
-            <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>+ ICMS ST</span><span id="resumo-icms-st">R$ 0,00</span>
-            </div>
-            <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>+ Frete</span><span id="resumo-frete">R$ 0,00</span>
-            </div>
-            <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>+ Seguro</span><span id="resumo-seguro">R$ 0,00</span>
-            </div>
-            <div class="d-flex justify-content-between text-muted small mb-1">
-              <span>- Desconto NF</span><span id="resumo-desconto-nf" class="text-danger">R$ 0,00</span>
-            </div>
-            <div class="d-flex justify-content-between fw-bold border-top pt-2 mt-1 fs-6">
-              <span>Total NF</span><span id="resumo-total" class="text-success">R$ 0,00</span>
             </div>
           </div>
         </div>
 
-      </div>
+        <!-- ── Exportação — UF/Local de Embarque ── -->
+        <div class="form-section" id="exportacao-section" data-tab-panel="exportacao-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-ship"></i></span>
+            <span class="title">Exportação — Embarque</span>
+            <small class="text-muted fw-normal ms-1">(Grupo ZA da NF-e — preencha para CFOP 7xxx)</small>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">UF do Embarque</label>
+                {{ form.embarque_uf }}
+                <div class="form-text">Ex: CE, SP</div>
+              </div>
+              <div class="col-md-5">
+                <label class="form-label mb-1 small fw-semibold">Local do Embarque</label>
+                {{ form.embarque_local }}
+              </div>
+              <div class="col-md-5">
+                <label class="form-label mb-1 small fw-semibold">Local do Despacho <small class="text-muted">(opcional)</small></label>
+                {{ form.embarque_local_despacho }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Endereço de Entrega ── -->
+        <div class="form-section" id="entrega-section" data-tab-panel="entrega-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-geo-alt-fill"></i></span>
+            <span class="title">Endereço de Entrega</span>
+            <small class="text-muted fw-normal ms-1">(Grupo G da NF-e — porto, obra, filial, drawback…)</small>
+          </div>
+          <div class="form-section-body">
+            <div class="form-check mb-0">
+              {{ form.entrega_ativo }}
+              <label class="form-check-label fw-semibold" for="id_entrega_ativo">
+                Endereço de Entrega diferente do Destinatário
+              </label>
+            </div>
+
+            <div id="entrega-fields" style="display:none;" class="mt-3">
+              <div class="alert alert-info py-1 px-2 mb-2 small">
+                <i class="bi bi-info-circle me-1"></i>
+                Preencha quando a mercadoria for entregue em endereço <strong>diferente</strong> do cadastrado no destinatário.
+                Obrigatório informar o CNPJ/CPF do local de entrega.
+              </div>
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <label class="form-label mb-1 small fw-semibold">CNPJ/CPF do Local <span class="text-danger">*</span></label>
+                  {{ form.entrega_cnpj_cpf }}
+                  <div class="form-text">Ex: porto, armazém, filial</div>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label mb-1 small fw-semibold">Logradouro <span class="text-danger">*</span></label>
+                  {{ form.entrega_logradouro }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label mb-1 small fw-semibold">Número <span class="text-danger">*</span></label>
+                  {{ form.entrega_numero }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label mb-1 small fw-semibold">Complemento</label>
+                  {{ form.entrega_complemento }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label mb-1 small fw-semibold">Bairro <span class="text-danger">*</span></label>
+                  {{ form.entrega_bairro }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label mb-1 small fw-semibold">Cód. IBGE <span class="text-danger">*</span></label>
+                  {{ form.entrega_codigo_municipio }}
+                </div>
+                <div class="col-md-7">
+                  <label class="form-label mb-1 small fw-semibold">Município <span class="text-danger">*</span></label>
+                  {{ form.entrega_nome_municipio }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-1 small fw-semibold">UF <span class="text-danger">*</span></label>
+                  {{ form.entrega_uf }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Local de Retirada ── -->
+        <div class="form-section" id="retirada-section" data-tab-panel="retirada-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+            <span class="title">Local de Retirada</span>
+            <small class="text-muted fw-normal ms-1">(Grupo F da NF-e — armazém, silo, retirada no local…)</small>
+          </div>
+          <div class="form-section-body">
+            <div class="form-check mb-0">
+              {{ form.retirada_ativo }}
+              <label class="form-check-label fw-semibold" for="id_retirada_ativo">
+                Local de Retirada diferente do Destinatário
+              </label>
+            </div>
+
+            <div id="retirada-fields" style="display:none;" class="mt-3">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <label class="form-label mb-1 small fw-semibold">CNPJ/CPF do Local <span class="text-danger">*</span></label>
+                  {{ form.retirada_cnpj_cpf }}
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label mb-1 small fw-semibold">Logradouro <span class="text-danger">*</span></label>
+                  {{ form.retirada_logradouro }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label mb-1 small fw-semibold">Número <span class="text-danger">*</span></label>
+                  {{ form.retirada_numero }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label mb-1 small fw-semibold">Complemento</label>
+                  {{ form.retirada_complemento }}
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label mb-1 small fw-semibold">Bairro <span class="text-danger">*</span></label>
+                  {{ form.retirada_bairro }}
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label mb-1 small fw-semibold">Cód. IBGE <span class="text-danger">*</span></label>
+                  {{ form.retirada_codigo_municipio }}
+                </div>
+                <div class="col-md-7">
+                  <label class="form-label mb-1 small fw-semibold">Município <span class="text-danger">*</span></label>
+                  {{ form.retirada_nome_municipio }}
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label mb-1 small fw-semibold">UF <span class="text-danger">*</span></label>
+                  {{ form.retirada_uf }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Agropecuário — GTA e Defensivo Agrícola ── -->
+        <div class="form-section" id="sec-agropecuario" data-tab-panel="sec-agropecuario">
+          <div class="form-section-header">
+            <span class="icon-badge sm green"><i class="bi bi-truck"></i></span>
+            <span class="title">Agropecuário</span>
+            <small class="text-muted fw-normal ms-1">Guia de Trânsito Animal / Defensivo Agrícola — preencher apenas quando aplicável</small>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3">
+                <label class="form-label mb-1 small fw-semibold">Tipo de Guia</label>
+                {{ form.gta_tipo }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">UF Emissão</label>
+                {{ form.gta_uf }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1 small fw-semibold">Série da Guia</label>
+                {{ form.gta_serie }}
+              </div>
+              <div class="col-md-4">
+                <label class="form-label mb-1 small fw-semibold">Número da Guia</label>
+                {{ form.gta_numero }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1 small fw-semibold">Nº Receituário do Defensivo</label>
+                {{ form.defensivo_numero_receituario }}
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1 small fw-semibold">CPF do Responsável Técnico</label>
+                {{ form.defensivo_cpf_responsavel }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Nota de Produtor Rural (documento de origem) ── -->
+        <div class="form-section" id="sec-produtor-rural" data-tab-panel="sec-produtor-rural">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+            <span class="title">Nota de Produtor Rural</span>
+            <small class="text-muted fw-normal ms-1">documento de origem — preencher quando esta NF-e referenciar uma nota de produtor rural</small>
+          </div>
+          <div class="form-section-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">UF</label>
+                {{ form.produtor_rural_uf }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">AAMM</label>
+                {{ form.produtor_rural_anomes }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1 small fw-semibold">CNPJ Emitente</label>
+                {{ form.produtor_rural_cnpj }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1 small fw-semibold">CPF Emitente</label>
+                {{ form.produtor_rural_cpf }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Inscrição Estadual</label>
+                {{ form.produtor_rural_ie }}
+              </div>
+              <div class="col-md-3">
+                <label class="form-label mb-1 small fw-semibold">Modelo</label>
+                {{ form.produtor_rural_modelo }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Série</label>
+                {{ form.produtor_rural_serie }}
+              </div>
+              <div class="col-md-2">
+                <label class="form-label mb-1 small fw-semibold">Número</label>
+                {{ form.produtor_rural_numero }}
+              </div>
+            </div>
+          </div>
+        </div>
 
       <!-- ── Itens ──────────────────────────────────────────────────── -->
-      <div class="col-12">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-list-ul me-2 text-primary"></i>Itens da Nota Fiscal</span>
-            <button type="button" class="btn btn-sm btn-primary" id="add-item">
+      <div class="form-section" id="sec-itens" data-tab-panel="sec-itens">
+          <div class="section-toolbar">
+            <span class="title"><i class="bi bi-list-ul text-primary"></i>Itens da Nota Fiscal <span class="count-badge" id="items-count-badge">{{ formset|length }} itens</span></span>
+            <button type="button" class="btn btn-sm btn-outline" id="add-item">
               <i class="bi bi-plus-lg me-1"></i>Adicionar Item
             </button>
           </div>
           <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-sm table-bordered mb-0 align-middle" id="items-table">
+            <div class="items-table-wrap">
+              <table class="table table-sm table-bordered mb-0 align-middle items-table" id="items-table">
                 <thead class="table-light">
                   <tr>
                     <th style="width:40px" class="text-center">#</th>
@@ -605,10 +584,10 @@
                       <span class="item-total fw-semibold text-success">—</span>
                     </td>
                     <td class="text-center">
-                      <button type="button" class="btn btn-outline-secondary btn-toggle-fiscal btn-sm" title="Dados Fiscais">
+                      <button type="button" class="btn btn-outline-secondary btn-toggle-fiscal btn-sm row-action" title="Dados Fiscais">
                         <i class="bi bi-chevron-down"></i>
                       </button>
-                      <button type="button" class="btn btn-outline-danger remove-item btn-sm" title="Remover">
+                      <button type="button" class="btn btn-outline-danger remove-item btn-sm row-action danger" title="Remover">
                         <i class="bi bi-trash"></i>
                       </button>
                     </td>
@@ -1129,13 +1108,11 @@
             </div>
           </div>
         </div>
-      </div>
 
       <!-- ── Pagamentos ─────────────────────────────────────────────── -->
-      <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-credit-card me-2 text-success"></i>Formas de Pagamento</span>
+      <div class="form-section" id="sec-pagamentos" data-tab-panel="sec-pagamentos">
+          <div class="section-toolbar">
+            <span class="title"><i class="bi bi-credit-card text-success"></i>Formas de Pagamento</span>
             <button type="button" class="btn btn-sm btn-outline-success" id="add-pagamento">
               <i class="bi bi-plus-lg"></i>
             </button>
@@ -1146,8 +1123,8 @@
             {% for err in pag_formset.errors %}{% if err %}{{ err }}{% endif %}{% endfor %}
           </div>
           {% endif %}
-          <div class="card-body p-0">
-            <table class="table table-sm mb-0" id="pag-table">
+          <div class="items-table-wrap">
+            <table class="table table-sm mb-0 items-table" id="pag-table">
               <thead class="table-light">
                 <tr>
                   <th>Meio de Pagamento</th>
@@ -1165,7 +1142,7 @@
                   </td>
                   <td>{{ pf.valor }}</td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-pag" style="padding:1px 6px">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-pag row-action danger" style="padding:1px 6px">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -1174,17 +1151,15 @@
               </tbody>
             </table>
           </div>
-          <div class="card-footer text-muted small">
+          <div class="form-section-footer">
             <i class="bi bi-info-circle me-1"></i>Se nenhum pagamento for adicionado, a NF será enviada como "Outros (90)".
           </div>
-        </div>
       </div>
 
       <!-- ── Duplicatas ─────────────────────────────────────────────── -->
-      <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-calendar-check me-2 text-warning"></i>Duplicatas / Parcelas</span>
+      <div class="form-section" id="sec-duplicatas" data-tab-panel="sec-duplicatas">
+          <div class="section-toolbar">
+            <span class="title"><i class="bi bi-calendar-check text-warning"></i>Duplicatas / Parcelas</span>
             <button type="button" class="btn btn-sm btn-outline-warning" id="add-duplicata">
               <i class="bi bi-plus-lg"></i>
             </button>
@@ -1195,8 +1170,8 @@
             {% for err in dup_formset.errors %}{% if err %}{{ err }}{% endif %}{% endfor %}
           </div>
           {% endif %}
-          <div class="card-body p-0">
-            <table class="table table-sm mb-0" id="dup-table">
+          <div class="items-table-wrap">
+            <table class="table table-sm mb-0 items-table" id="dup-table">
               <thead class="table-light">
                 <tr>
                   <th style="width:80px">Nº Dup.</th>
@@ -1216,7 +1191,7 @@
                   <td>{{ df.vencimento }}</td>
                   <td>{{ df.valor }}</td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-dup" style="padding:1px 6px">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-dup row-action danger" style="padding:1px 6px">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -1225,17 +1200,15 @@
               </tbody>
             </table>
           </div>
-          <div class="card-footer text-muted small">
+          <div class="form-section-footer">
             <i class="bi bi-info-circle me-1"></i>Duplicatas são enviadas à SEFAZ no bloco de cobrança da NF-e.
           </div>
-        </div>
       </div>
 
       <!-- ── Documentos Referenciados ────────────────────────────────── -->
-      <div class="col-12">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-link-45deg me-2" style="color:#1a7a3c"></i>Documentos Referenciados <small class="text-muted fw-normal ms-1">(NFref — SEFAZ)</small></span>
+      <div class="form-section" id="sec-referencias" data-tab-panel="sec-referencias">
+          <div class="section-toolbar">
+            <span class="title"><i class="bi bi-link-45deg"></i>Documentos Referenciados <small class="text-muted fw-normal ms-1">(NFref — SEFAZ)</small></span>
             <button type="button" class="btn btn-sm btn-outline-secondary" id="add-referencia" title="Adicionar referência">
               <i class="bi bi-plus-lg"></i> Adicionar
             </button>
@@ -1246,8 +1219,8 @@
             {% for err in ref_formset.errors %}{% if err %}{{ err }}{% endif %}{% endfor %}
           </div>
           {% endif %}
-          <div class="card-body p-0">
-            <table class="table table-sm mb-0" id="ref-table">
+          <div class="items-table-wrap">
+            <table class="table table-sm mb-0 items-table" id="ref-table">
               <thead class="table-light">
                 <tr>
                   <th>Chave de Acesso NF-e Referenciada <small class="text-muted fw-normal">(44 dígitos)</small></th>
@@ -1263,12 +1236,12 @@
                   <td>
                     <div class="d-none">{{ rf.DELETE }}</div>
                     {{ rf.chave_acesso_referenciada }}
-                    {% if rf.chave_acesso_referenciada.errors %}<div class="text-danger" style="font-size:.7rem">{{ rf.chave_acesso_referenciada.errors }}</div>{% endif %}
+                    {% if rf.chave_acesso_referenciada.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ rf.chave_acesso_referenciada.errors|striptags }}</div>{% endif %}
                   </td>
                   <td>{{ rf.numero_referenciado }}</td>
                   <td>{{ rf.data_emissao_referenciada }}</td>
                   <td class="text-center">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-ref" style="padding:1px 6px" title="Remover">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-ref row-action danger" style="padding:1px 6px" title="Remover">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -1277,41 +1250,82 @@
               </tbody>
             </table>
           </div>
-          <div class="card-footer text-muted small">
+          <div class="form-section-footer">
             <i class="bi bi-info-circle me-1"></i>
             Referências são enviadas no bloco <code>&lt;NFref&gt;</code> da SEFAZ — obrigatório para devolução e NF-e de faturamento agrupado.
           </div>
-        </div>
       </div>
 
       <!-- ── Informações Complementares ──────────────────────────────── -->
-      <div class="col-12">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold">
-            <i class="bi bi-chat-left-text me-2 text-secondary"></i>Informações Complementares
+      <div class="form-section" id="sec-complementares" data-tab-panel="sec-complementares">
+          <div class="form-section-header">
+            <span class="icon-badge sm gray"><i class="bi bi-chat-left-text"></i></span>
+            <span class="title">Informações Complementares</span>
           </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
                 <label class="form-label small text-muted mb-1">Inf. Complementares (infCpl)</label>
                 {{ form.informacoes_complementares }}
               </div>
-              <div class="col-md-6">
+              <div class="field col-6">
                 <label class="form-label small text-muted mb-1">Inf. para o Fisco (infAdFisco)</label>
                 {{ form.informacoes_fisco }}
               </div>
             </div>
           </div>
+      </div>
+
+      </div><!-- /complex-main -->
+
+      <!-- ── Totais ────────────────────────────────────────────────── -->
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4>Resumo de Valores</h4>
+          <div class="field mb-2">
+            <label class="form-label mb-1">Frete (R$)</label>
+            {{ form.valor_frete }}
+          </div>
+          <div class="field mb-2">
+            <label class="form-label mb-1">Seguro (R$)</label>
+            {{ form.valor_seguro }}
+          </div>
+          <div class="field mb-3">
+            <label class="form-label mb-1">Desconto NF (R$)</label>
+            {{ form.valor_desconto }}
+          </div>
+          <hr class="my-2">
+          <div class="summary-row">
+            <span>Subtotal Produtos</span><span id="resumo-produtos">R$ 0,00</span>
+          </div>
+          <div class="summary-row">
+            <span>+ IPI</span><span id="resumo-ipi">R$ 0,00</span>
+          </div>
+          <div class="summary-row">
+            <span>+ ICMS ST</span><span id="resumo-icms-st">R$ 0,00</span>
+          </div>
+          <div class="summary-row">
+            <span>+ Frete</span><span id="resumo-frete">R$ 0,00</span>
+          </div>
+          <div class="summary-row">
+            <span>+ Seguro</span><span id="resumo-seguro">R$ 0,00</span>
+          </div>
+          <div class="summary-row negative">
+            <span>- Desconto NF</span><span id="resumo-desconto-nf">R$ 0,00</span>
+          </div>
+          <div class="summary-total">
+            <span>Total NF</span><span id="resumo-total">R$ 0,00</span>
+          </div>
         </div>
       </div>
 
-    </div><!-- /row -->
+    </div><!-- /complex-layout -->
 
-    <div class="d-flex gap-2 mt-4">
+    <div class="app-footer-bar">
+      <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline">Cancelar</a>
       <button type="button" class="btn btn-primary" id="btn-salvar-nf">
         <i class="bi bi-check-circle me-1"></i>Salvar
       </button>
-      <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary">Cancelar</a>
     </div>
   </form>
 </div>
@@ -1339,6 +1353,140 @@
     </div>
   </div>
 </div>
+
+<script>
+// ── Toggles CST-driven (Desoneração ICMS / Natureza da Receita PIS-COFINS) ──
+// Declaradas fora de qualquer IIFE, e ANTES do script principal abaixo —
+// precisam estar definidas antes da inicialização das linhas existentes
+// (que já chama calcPisCofins/calcIcmsGroup de forma síncrona no load).
+const CST_DESON = new Set(['20','30','40','41','50','51','60','70','90','300','400','500','900']);
+
+function toggleDeson(container, cst) {
+  if (!container) return;
+  const wrap = container.querySelector('.deson-wrap');
+  if (wrap) wrap.style.display = CST_DESON.has(String(cst).padStart ? String(cst) : '') ? '' : 'none';
+}
+
+// CSTs de PIS/COFINS que exigem Natureza da Receita. No escopo restrito desta
+// fazenda (01/06/08/09), nenhum exige: CST 01 usa BC+alíquota+valor (grupo
+// Aliq); CST 06/08/09 usam apenas o CST (grupo NT, sem nenhum campo extra).
+// Mantido genérico (04/05/49/99) apenas para não quebrar se o escopo de CSTs
+// for ampliado no futuro — hoje esses códigos não aparecem no dropdown.
+const CST_NAT = new Set(['04','05','49','99']);
+
+function toggleNatureza(container) {
+  if (!container) return;
+  const cstPis    = container.querySelector('[name$="-cst_pis"]')?.value || '';
+  const cstCofins = container.querySelector('[name$="-cst_cofins"]')?.value || '';
+  container.querySelectorAll('.nat-receita-wrap').forEach((wrap, i) => {
+    const cst = i === 0 ? cstPis : cstCofins;
+    wrap.style.display = CST_NAT.has(cst) ? '' : 'none';
+  });
+}
+
+// CST 01 = grupo PISAliq/COFINSAliq (BC + alíquota + valor). CST 06/08/09 =
+// grupo PISNT/COFINSNT — só o CST é enviado na NF-e, sem BC/alíquota/valor.
+const CST_PIS_COFINS_ALIQ = new Set(['01']);
+
+function togglePisCofinsAliq(container) {
+  if (!container) return;
+  const cstPis    = container.querySelector('[name$="-cst_pis"]')?.value || '';
+  const cstCofins = container.querySelector('[name$="-cst_cofins"]')?.value || '';
+  const showPis    = CST_PIS_COFINS_ALIQ.has(cstPis);
+  const showCofins = CST_PIS_COFINS_ALIQ.has(cstCofins);
+  container.querySelectorAll('.pis-aliq-wrap').forEach(wrap => { wrap.style.display = showPis ? '' : 'none'; });
+  container.querySelectorAll('.cofins-aliq-wrap').forEach(wrap => { wrap.style.display = showCofins ? '' : 'none'; });
+  // CST 06/08/09 não têm alíquota (grupo NT) — zera para não submeter um
+  // percentual residual de quando o CST era 01 (evita cobrar PIS/COFINS
+  // indevidamente após o usuário trocar o CST sem apagar a alíquota).
+  if (!showPis) {
+    const el = container.querySelector('[name$="-aliquota_pis"]');
+    if (el) el.value = '0';
+  }
+  if (!showCofins) {
+    const el = container.querySelector('[name$="-aliquota_cofins"]');
+    if (el) el.value = '0';
+  }
+}
+
+// Recalcula BC/Valor de PIS e COFINS ao vivo (espelha ItemNotaFiscal.save()):
+// base = valor_total do item; valor = base * alíquota / 100.
+function calcPisCofins(mainRow, fiscalRow) {
+  if (!mainRow) return;
+  const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
+  const qtd  = parseFloat(mainRow.querySelector('[name$="-quantidade"]')?.value) || 0;
+  const vu   = parseFloat(mainRow.querySelector('[name$="-valor_unitario"]')?.value) || 0;
+  const desc = parseFloat(mainRow.querySelector('[name$="-valor_desconto"]')?.value) || 0;
+  const base = Math.max(0, qtd * vu - desc);
+  const aliqPis    = parseFloat(src.querySelector('[name$="-aliquota_pis"]')?.value) || 0;
+  const aliqCofins = parseFloat(src.querySelector('[name$="-aliquota_cofins"]')?.value) || 0;
+  const bcPisEl    = src.querySelector('[name$="-pis_base_calculo"]');
+  const valorPisEl = src.querySelector('[name$="-valor_pis"]');
+  const bcCofinsEl    = src.querySelector('[name$="-cofins_base_calculo"]');
+  const valorCofinsEl = src.querySelector('[name$="-valor_cofins"]');
+  if (bcPisEl)    bcPisEl.value    = base.toFixed(2);
+  if (valorPisEl) valorPisEl.value = (base * aliqPis / 100).toFixed(2);
+  if (bcCofinsEl)    bcCofinsEl.value    = base.toFixed(2);
+  if (valorCofinsEl) valorCofinsEl.value = (base * aliqCofins / 100).toFixed(2);
+}
+
+// CST 00 (tributada integralmente) e 51 (diferimento) = grupos ICMS00/ICMS51:
+// modBC + BC + alíquota + valor. CST 40/41 (isenta/não tributada) = grupo
+// ICMS40 — nenhum desses campos existe na NF-e, só CST + desoneração opcional.
+const CST_ICMS_ALIQ = new Set(['00', '51']);
+// Redução de BC e diferimento só se aplicam ao grupo ICMS51.
+const CST_ICMS_DIF = new Set(['51']);
+
+function toggleIcmsGroups(container) {
+  if (!container) return;
+  const cst = container.querySelector('[name$="-cst_icms"]')?.value || '';
+  const showAliq = CST_ICMS_ALIQ.has(cst);
+  const showDif  = CST_ICMS_DIF.has(cst);
+  container.querySelectorAll('.icms-aliq-wrap').forEach(wrap => { wrap.style.display = showAliq ? '' : 'none'; });
+  container.querySelectorAll('.icms-dif-wrap').forEach(wrap => { wrap.style.display = showDif ? '' : 'none'; });
+  // CST 40/41 não têm alíquota nem diferimento (grupo ICMS40) — zera para não
+  // submeter um percentual residual de quando o CST era 00/51.
+  if (!showAliq) {
+    const el = container.querySelector('[name$="-aliquota_icms"]');
+    if (el) el.value = '0';
+  }
+  if (!showDif) {
+    const redEl = container.querySelector('[name$="-icms_reducao_base"]');
+    if (redEl) redEl.value = '0';
+    const difEl = container.querySelector('[name$="-icms_percentual_diferimento"]');
+    if (difEl) difEl.value = '0';
+  }
+}
+
+// Recalcula BC/Valor/Diferido de ICMS ao vivo (espelha ItemNotaFiscal.save()).
+// ICMS-ST e FCP fora de escopo desta fazenda — ver nota no formulário.
+function calcIcmsGroup(mainRow, fiscalRow) {
+  if (!mainRow) return;
+  const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
+  const qtd  = parseFloat(mainRow.querySelector('[name$="-quantidade"]')?.value) || 0;
+  const vu   = parseFloat(mainRow.querySelector('[name$="-valor_unitario"]')?.value) || 0;
+  const desc = parseFloat(mainRow.querySelector('[name$="-valor_desconto"]')?.value) || 0;
+  const total = Math.max(0, qtd * vu - desc);
+
+  const reducao = parseFloat(src.querySelector('[name$="-icms_reducao_base"]')?.value) || 0;
+  const aliq    = parseFloat(src.querySelector('[name$="-aliquota_icms"]')?.value) || 0;
+  const cst     = src.querySelector('[name$="-cst_icms"]')?.value || '';
+  const pDif    = parseFloat(src.querySelector('[name$="-icms_percentual_diferimento"]')?.value) || 0;
+  const bcIcms = total * (100 - reducao) / 100;
+  let valorIcms = bcIcms * aliq / 100;
+  let diferido = 0;
+  if (cst === '51' && pDif > 0) {
+    diferido = valorIcms * pDif / 100;
+    valorIcms -= diferido;
+  }
+  const bcEl = src.querySelector('[name$="-icms_base_calculo"]');
+  const valorEl = src.querySelector('[name$="-valor_icms"]');
+  const difEl = src.querySelector('[name$="-icms_valor_diferido"]');
+  if (bcEl)    bcEl.value    = bcIcms.toFixed(2);
+  if (valorEl) valorEl.value = valorIcms.toFixed(2);
+  if (difEl)   difEl.value   = diferido.toFixed(2);
+}
+</script>
 
 <script>
 (function () {
@@ -1553,6 +1701,8 @@
         n++;
       }
     });
+    const countBadge = document.getElementById('items-count-badge');
+    if (countBadge) countBadge.textContent = (n - 1) + ' itens';
   }
 
   // ── Cálculo de totais ─────────────────────────────────────────────
@@ -1937,7 +2087,7 @@
         </td>
         <td><input type="number" name="pagamentos-${idx}-valor" class="form-control form-control-sm" step="0.01" value="${saldo}"></td>
         <td class="text-center">
-          <button type="button" class="btn btn-outline-danger btn-sm remove-pag" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
+          <button type="button" class="btn btn-outline-danger btn-sm remove-pag row-action danger" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
         </td>`;
       pagBody.appendChild(tr);
       attachRemovePag(tr);
@@ -1994,7 +2144,7 @@
         <td><input type="date" name="duplicatas-${idx}-vencimento" class="form-control form-control-sm" value="${defaultVenc}"></td>
         <td><input type="number" name="duplicatas-${idx}-valor" class="form-control form-control-sm" step="0.01" value="${saldo}"></td>
         <td class="text-center">
-          <button type="button" class="btn btn-outline-danger btn-sm remove-dup" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
+          <button type="button" class="btn btn-outline-danger btn-sm remove-dup row-action danger" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
         </td>`;
       dupBody.appendChild(tr);
       attachRemoveDup(tr);
@@ -2051,7 +2201,7 @@
           <td><input type="date" name="referencias-${idx}-data_emissao_referenciada"
                      class="form-control form-control-sm"></td>
           <td class="text-center">
-            <button type="button" class="btn btn-outline-danger btn-sm remove-ref" style="padding:1px 6px" title="Remover">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-ref row-action danger" style="padding:1px 6px" title="Remover">
               <i class="bi bi-trash"></i>
             </button>
           </td>`;
@@ -2137,140 +2287,6 @@
   });
 
 })();
-</script>
-
-<script>
-// ── Toggles CST-driven (Desoneração ICMS / Natureza da Receita PIS-COFINS) ──
-// Declaradas fora de qualquer IIFE — precisam ser chamáveis tanto daqui
-// quanto de applyTributacao(), que vive em outro <script> (escopo separado).
-const CST_DESON = new Set(['20','30','40','41','50','51','60','70','90','300','400','500','900']);
-
-function toggleDeson(container, cst) {
-  if (!container) return;
-  const wrap = container.querySelector('.deson-wrap');
-  if (wrap) wrap.style.display = CST_DESON.has(String(cst).padStart ? String(cst) : '') ? '' : 'none';
-}
-
-// CSTs de PIS/COFINS que exigem Natureza da Receita. No escopo restrito desta
-// fazenda (01/06/08/09), nenhum exige: CST 01 usa BC+alíquota+valor (grupo
-// Aliq); CST 06/08/09 usam apenas o CST (grupo NT, sem nenhum campo extra).
-// Mantido genérico (04/05/49/99) apenas para não quebrar se o escopo de CSTs
-// for ampliado no futuro — hoje esses códigos não aparecem no dropdown.
-const CST_NAT = new Set(['04','05','49','99']);
-
-function toggleNatureza(container) {
-  if (!container) return;
-  const cstPis    = container.querySelector('[name$="-cst_pis"]')?.value || '';
-  const cstCofins = container.querySelector('[name$="-cst_cofins"]')?.value || '';
-  container.querySelectorAll('.nat-receita-wrap').forEach((wrap, i) => {
-    const cst = i === 0 ? cstPis : cstCofins;
-    wrap.style.display = CST_NAT.has(cst) ? '' : 'none';
-  });
-}
-
-// CST 01 = grupo PISAliq/COFINSAliq (BC + alíquota + valor). CST 06/08/09 =
-// grupo PISNT/COFINSNT — só o CST é enviado na NF-e, sem BC/alíquota/valor.
-const CST_PIS_COFINS_ALIQ = new Set(['01']);
-
-function togglePisCofinsAliq(container) {
-  if (!container) return;
-  const cstPis    = container.querySelector('[name$="-cst_pis"]')?.value || '';
-  const cstCofins = container.querySelector('[name$="-cst_cofins"]')?.value || '';
-  const showPis    = CST_PIS_COFINS_ALIQ.has(cstPis);
-  const showCofins = CST_PIS_COFINS_ALIQ.has(cstCofins);
-  container.querySelectorAll('.pis-aliq-wrap').forEach(wrap => { wrap.style.display = showPis ? '' : 'none'; });
-  container.querySelectorAll('.cofins-aliq-wrap').forEach(wrap => { wrap.style.display = showCofins ? '' : 'none'; });
-  // CST 06/08/09 não têm alíquota (grupo NT) — zera para não submeter um
-  // percentual residual de quando o CST era 01 (evita cobrar PIS/COFINS
-  // indevidamente após o usuário trocar o CST sem apagar a alíquota).
-  if (!showPis) {
-    const el = container.querySelector('[name$="-aliquota_pis"]');
-    if (el) el.value = '0';
-  }
-  if (!showCofins) {
-    const el = container.querySelector('[name$="-aliquota_cofins"]');
-    if (el) el.value = '0';
-  }
-}
-
-// Recalcula BC/Valor de PIS e COFINS ao vivo (espelha ItemNotaFiscal.save()):
-// base = valor_total do item; valor = base * alíquota / 100.
-function calcPisCofins(mainRow, fiscalRow) {
-  if (!mainRow) return;
-  const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
-  const qtd  = parseFloat(mainRow.querySelector('[name$="-quantidade"]')?.value) || 0;
-  const vu   = parseFloat(mainRow.querySelector('[name$="-valor_unitario"]')?.value) || 0;
-  const desc = parseFloat(mainRow.querySelector('[name$="-valor_desconto"]')?.value) || 0;
-  const base = Math.max(0, qtd * vu - desc);
-  const aliqPis    = parseFloat(src.querySelector('[name$="-aliquota_pis"]')?.value) || 0;
-  const aliqCofins = parseFloat(src.querySelector('[name$="-aliquota_cofins"]')?.value) || 0;
-  const bcPisEl    = src.querySelector('[name$="-pis_base_calculo"]');
-  const valorPisEl = src.querySelector('[name$="-valor_pis"]');
-  const bcCofinsEl    = src.querySelector('[name$="-cofins_base_calculo"]');
-  const valorCofinsEl = src.querySelector('[name$="-valor_cofins"]');
-  if (bcPisEl)    bcPisEl.value    = base.toFixed(2);
-  if (valorPisEl) valorPisEl.value = (base * aliqPis / 100).toFixed(2);
-  if (bcCofinsEl)    bcCofinsEl.value    = base.toFixed(2);
-  if (valorCofinsEl) valorCofinsEl.value = (base * aliqCofins / 100).toFixed(2);
-}
-
-// CST 00 (tributada integralmente) e 51 (diferimento) = grupos ICMS00/ICMS51:
-// modBC + BC + alíquota + valor. CST 40/41 (isenta/não tributada) = grupo
-// ICMS40 — nenhum desses campos existe na NF-e, só CST + desoneração opcional.
-const CST_ICMS_ALIQ = new Set(['00', '51']);
-// Redução de BC e diferimento só se aplicam ao grupo ICMS51.
-const CST_ICMS_DIF = new Set(['51']);
-
-function toggleIcmsGroups(container) {
-  if (!container) return;
-  const cst = container.querySelector('[name$="-cst_icms"]')?.value || '';
-  const showAliq = CST_ICMS_ALIQ.has(cst);
-  const showDif  = CST_ICMS_DIF.has(cst);
-  container.querySelectorAll('.icms-aliq-wrap').forEach(wrap => { wrap.style.display = showAliq ? '' : 'none'; });
-  container.querySelectorAll('.icms-dif-wrap').forEach(wrap => { wrap.style.display = showDif ? '' : 'none'; });
-  // CST 40/41 não têm alíquota nem diferimento (grupo ICMS40) — zera para não
-  // submeter um percentual residual de quando o CST era 00/51.
-  if (!showAliq) {
-    const el = container.querySelector('[name$="-aliquota_icms"]');
-    if (el) el.value = '0';
-  }
-  if (!showDif) {
-    const redEl = container.querySelector('[name$="-icms_reducao_base"]');
-    if (redEl) redEl.value = '0';
-    const difEl = container.querySelector('[name$="-icms_percentual_diferimento"]');
-    if (difEl) difEl.value = '0';
-  }
-}
-
-// Recalcula BC/Valor/Diferido de ICMS ao vivo (espelha ItemNotaFiscal.save()).
-// Recalcula BC/Valor/Diferido de ICMS ao vivo (espelha ItemNotaFiscal.save()).
-// ICMS-ST e FCP fora de escopo desta fazenda — ver nota no formulário.
-function calcIcmsGroup(mainRow, fiscalRow) {
-  if (!mainRow) return;
-  const src = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : mainRow;
-  const qtd  = parseFloat(mainRow.querySelector('[name$="-quantidade"]')?.value) || 0;
-  const vu   = parseFloat(mainRow.querySelector('[name$="-valor_unitario"]')?.value) || 0;
-  const desc = parseFloat(mainRow.querySelector('[name$="-valor_desconto"]')?.value) || 0;
-  const total = Math.max(0, qtd * vu - desc);
-
-  const reducao = parseFloat(src.querySelector('[name$="-icms_reducao_base"]')?.value) || 0;
-  const aliq    = parseFloat(src.querySelector('[name$="-aliquota_icms"]')?.value) || 0;
-  const cst     = src.querySelector('[name$="-cst_icms"]')?.value || '';
-  const pDif    = parseFloat(src.querySelector('[name$="-icms_percentual_diferimento"]')?.value) || 0;
-  const bcIcms = total * (100 - reducao) / 100;
-  let valorIcms = bcIcms * aliq / 100;
-  let diferido = 0;
-  if (cst === '51' && pDif > 0) {
-    diferido = valorIcms * pDif / 100;
-    valorIcms -= diferido;
-  }
-  const bcEl = src.querySelector('[name$="-icms_base_calculo"]');
-  const valorEl = src.querySelector('[name$="-valor_icms"]');
-  const difEl = src.querySelector('[name$="-icms_valor_diferido"]');
-  if (bcEl)    bcEl.value    = bcIcms.toFixed(2);
-  if (valorEl) valorEl.value = valorIcms.toFixed(2);
-  if (difEl)   difEl.value   = diferido.toFixed(2);
-}
 </script>
 
 <script>
@@ -2529,20 +2545,45 @@ function calcIcmsGroup(mainRow, fiscalRow) {
   toggleSection();
 })();
 
-// ── Exportação — só visível quando CFOP começa com 7 ─────────────────────
+// ── Exportação — aba sempre acessível; badge indica quando o CFOP é 7xxx ──
 (function () {
-  const cfopInput     = document.getElementById('id_cfop');
-  const exportSection = document.getElementById('exportacao-section');
-  if (!cfopInput || !exportSection) return;
+  const cfopInput   = document.getElementById('id_cfop');
+  const exportLink  = document.querySelector('#nf-section-nav a[data-tab="exportacao-section"]');
+  if (!cfopInput || !exportLink) return;
 
-  function toggleExportacao() {
+  function toggleExportacaoHint() {
     const cfop = cfopInput.value.trim();
-    exportSection.style.display = cfop.startsWith('7') ? '' : 'none';
+    exportLink.classList.toggle('has-hint', cfop.startsWith('7'));
   }
 
-  cfopInput.addEventListener('input',  toggleExportacao);
-  cfopInput.addEventListener('change', toggleExportacao);
-  toggleExportacao(); // estado inicial (edição de NF já salva)
+  cfopInput.addEventListener('input',  toggleExportacaoHint);
+  cfopInput.addEventListener('change', toggleExportacaoHint);
+  toggleExportacaoHint(); // estado inicial (edição de NF já salva)
+})();
+
+// ── Navegação por abas (Principal/Transporte/Exportação/Entrega/Retirada/Agropecuário/Produtor Rural) ──
+(function () {
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('#nf-section-nav a[data-tab]'));
+  var panels   = Array.prototype.slice.call(document.querySelectorAll('.form-section[data-tab-panel]'));
+  if (!navLinks.length || !panels.length) return;
+
+  function activateTab(tabId) {
+    panels.forEach(function (p) {
+      p.classList.toggle('tab-hidden', p.getAttribute('data-tab-panel') !== tabId);
+    });
+    navLinks.forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('data-tab') === tabId);
+    });
+  }
+
+  navLinks.forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      activateTab(a.getAttribute('data-tab'));
+    });
+  });
+
+  activateTab(navLinks[0].getAttribute('data-tab'));
 })();
 </script>
 

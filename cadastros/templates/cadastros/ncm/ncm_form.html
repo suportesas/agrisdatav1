@@ -1,34 +1,56 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-3">
-  <h1>{{ action }} NCM</h1>
+<div class="container py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-upc-scan"></i></span>
+        <h2>{{ action }} NCM</h2>
+      </div>
+    </div>
+  </div>
+
   <form method="post">
     {% csrf_token %}
-    <div class="mb-3">
-      {{ form.codigo.label_tag }}
-      {{ form.codigo }}
-      {% if form.codigo.errors %}<div class="text-danger">{{ form.codigo.errors }}</div>{% endif %}
-    </div>
-    <div class="mb-3">
-      {{ form.nome.label_tag }}
-      {{ form.nome }}
-      {% if form.nome.errors %}<div class="text-danger">{{ form.nome.errors }}</div>{% endif %}
-    </div>
-    <div class="mb-3">
-      {{ form.cest.label_tag }}
-      {{ form.cest }}
-    </div>
-    <div class="mb-3">
-      {{ form.descricao.label_tag }}
-      {{ form.descricao }}
-    </div>
-    <div class="mb-3 form-check">
-      {{ form.ativo }} {{ form.ativo.label_tag }}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">{{ form.codigo.label }}</label>
+            {{ form.codigo }}
+            {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-8">
+            <label class="form-label">{{ form.nome.label }}</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.cest.label }}</label>
+            {{ form.cest }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">{{ form.descricao.label }}</label>
+            {{ form.descricao }}
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <button class="btn btn-primary">Salvar</button>
-    <a class="btn btn-secondary ms-2" href="{% url 'cadastros:ncm_list' %}">Cancelar</a>
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:ncm_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
   </form>
 </div>
 {% endblock %}

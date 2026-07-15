@@ -3,76 +3,80 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-shopping-cart"></i> {{ title }}</h2>
-        <a href="{% url 'compras:cotacao_list' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Voltar
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-cart"></i></span>
+        <h2>{{ title }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'compras:cotacao_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
         </a>
+      </div>
     </div>
-    
-    <form method="post">
-        {% csrf_token %}
-        
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5>Dados da Cotação</h5>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <strong>Solicitação:</strong> {{ solicitacao.numero }}<br>
-                    <strong>Itens selecionados:</strong> {{ itens_selecionados.count }}
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        {{ form.data_limite_resposta.label_tag }}
-                        {{ form.data_limite_resposta }}
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        {{ form.observacoes.label_tag }}
-                        {{ form.observacoes }}
-                    </div>
-                </div>
-            </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-text"></i></span>
+        <span class="title">Dados da Cotação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="alert alert-info">
+          <strong>Solicitação:</strong> {{ solicitacao.numero }}<br>
+          <strong>Itens selecionados:</strong> {{ itens_selecionados.count }}
         </div>
-        
-        <!-- Itens selecionados -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5>Itens que serão incluídos na cotação</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Produto</th>
-                                <th>Quantidade</th>
-                                <th>Especificação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in itens_selecionados %}
-                            <tr>
-                                <td>{{ item.produto.nome }}</td>
-                                <td>{{ item.quantidade }} {{ item.unidade_medida.sigla }}</td>
-                                <td>{{ item.especificacao|default:"-" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">{{ form.data_limite_resposta.label }}</label>
+            {{ form.data_limite_resposta }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+          </div>
         </div>
-        
-        <div class="text-end">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Criar Cotação
-            </button>
-        </div>
-    </form>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm blue"><i class="bi bi-list-ul"></i></span>
+        <span class="title">Itens que serão incluídos na cotação</span>
+      </div>
+      <div class="items-table-wrap">
+        <table class="table table-sm mb-0 items-table">
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Quantidade</th>
+              <th>Especificação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in itens_selecionados %}
+            <tr>
+              <td>{{ item.produto.nome }}</td>
+              <td>{{ item.quantidade }} {{ item.unidade_medida.sigla }}</td>
+              <td>{{ item.especificacao|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Criar Cotação
+      </button>
+    </div>
+  </form>
 </div>
 {% endblock %}

@@ -1,116 +1,134 @@
 {% extends 'base.html' %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{% url 'energia:lancamento_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h1 class="mb-0 fs-4">{{ titulo }}</h1>
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-plug-fill"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'energia:lancamento_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post">
     {% csrf_token %}
-    <div class="row g-4">
-      <div class="col-lg-8">
 
-        <!-- Identificação -->
-        <div class="card mb-4">
-          <div class="card-header"><i class="bi bi-plug-fill text-info me-1"></i> UC e Período</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.unidade_consumidora.label }} *</label>
-                {{ form.unidade_consumidora }}
-                {% if form.unidade_consumidora.errors %}<div class="text-danger small">{{ form.unidade_consumidora.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-3">
-                <label class="form-label">{{ form.mes_referencia.label }} *</label>
-                {{ form.mes_referencia }}
-                <small class="text-muted">Dia 1 do mês de referência</small>
-                {% if form.mes_referencia.errors %}<div class="text-danger small">{{ form.mes_referencia.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-3">
-                <label class="form-label">{{ form.num_dias.label }}</label>
-                {{ form.num_dias }}
-              </div>
-              <div class="col-sm-3">
-                <label class="form-label">{{ form.data_leitura_anterior.label }}</label>
-                {{ form.data_leitura_anterior }}
-              </div>
-              <div class="col-sm-3">
-                <label class="form-label">{{ form.data_leitura_atual.label }}</label>
-                {{ form.data_leitura_atual }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Energia (kWh) -->
-        <div class="card mb-4">
-          <div class="card-header"><i class="bi bi-lightning text-warning me-1"></i> Energia (kWh)</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.consumo_registrado_kwh.label }}</label>
-                {{ form.consumo_registrado_kwh }}
-              </div>
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.energia_faturada_kwh.label }}</label>
-                {{ form.energia_faturada_kwh }}
-              </div>
-              <div class="col-sm-4 campo-solar">
-                <label class="form-label">{{ form.energia_compensada_kwh.label }}</label>
-                {{ form.energia_compensada_kwh }}
-              </div>
-              <div class="col-sm-4 campo-solar">
-                <label class="form-label">{{ form.energia_injetada_kwh.label }}</label>
-                {{ form.energia_injetada_kwh }}
-                <small class="text-muted">Somente UC geradora</small>
-              </div>
-              <div class="col-sm-4 campo-solar">
-                <label class="form-label">{{ form.credito_anterior_kwh.label }}</label>
-                {{ form.credito_anterior_kwh }}
-              </div>
-              <div class="col-sm-4 campo-solar">
-                <label class="form-label">{{ form.credito_acumulado_kwh.label }}</label>
-                {{ form.credito_acumulado_kwh }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Financeiro -->
-        <div class="card mb-4">
-          <div class="card-header"><i class="bi bi-currency-dollar text-success me-1"></i> Financeiro (R$)</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.valor_faturado_rs.label }}</label>
-                {{ form.valor_faturado_rs }}
-              </div>
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.valor_economizado_rs.label }}</label>
-                {{ form.valor_economizado_rs }}
-              </div>
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.desconto_incondicional_rs.label }}</label>
-                {{ form.desconto_incondicional_rs }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">Observações</div>
-          <div class="card-body">{{ form.observacoes }}</div>
-        </div>
-
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-plug-fill"></i></span>
+        <span class="title">UC e Período</span>
       </div>
-      <div class="col-lg-4">
-        <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-          <a href="{% url 'energia:lancamento_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.unidade_consumidora.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.unidade_consumidora.label }}<span class="req">*</span></label>
+            {{ form.unidade_consumidora }}
+            {% if form.unidade_consumidora.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_consumidora.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-3{% if form.mes_referencia.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.mes_referencia.label }}<span class="req">*</span></label>
+            {{ form.mes_referencia }}
+            <div class="helper-note">Dia 1 do mês de referência</div>
+            {% if form.mes_referencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.mes_referencia.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">{{ form.num_dias.label }}</label>
+            {{ form.num_dias }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">{{ form.data_leitura_anterior.label }}</label>
+            {{ form.data_leitura_anterior }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">{{ form.data_leitura_atual.label }}</label>
+            {{ form.data_leitura_atual }}
+          </div>
         </div>
       </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm orange"><i class="bi bi-lightning"></i></span>
+        <span class="title">Energia (kWh)</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">{{ form.consumo_registrado_kwh.label }}</label>
+            {{ form.consumo_registrado_kwh }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.energia_faturada_kwh.label }}</label>
+            {{ form.energia_faturada_kwh }}
+          </div>
+          <div class="field col-4 campo-solar">
+            <label class="form-label">{{ form.energia_compensada_kwh.label }}</label>
+            {{ form.energia_compensada_kwh }}
+          </div>
+          <div class="field col-4 campo-solar">
+            <label class="form-label">{{ form.energia_injetada_kwh.label }}</label>
+            {{ form.energia_injetada_kwh }}
+            <div class="helper-note">Somente UC geradora</div>
+          </div>
+          <div class="field col-4 campo-solar">
+            <label class="form-label">{{ form.credito_anterior_kwh.label }}</label>
+            {{ form.credito_anterior_kwh }}
+          </div>
+          <div class="field col-4 campo-solar">
+            <label class="form-label">{{ form.credito_acumulado_kwh.label }}</label>
+            {{ form.credito_acumulado_kwh }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm green"><i class="bi bi-currency-dollar"></i></span>
+        <span class="title">Financeiro (R$)</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">{{ form.valor_faturado_rs.label }}</label>
+            {{ form.valor_faturado_rs }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.valor_economizado_rs.label }}</label>
+            {{ form.valor_economizado_rs }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.desconto_incondicional_rs.label }}</label>
+            {{ form.desconto_incondicional_rs }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm gray"><i class="bi bi-chat-left-text"></i></span>
+        <span class="title">Observações</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12">
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'energia:lancamento_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
     </div>
   </form>
 </div>

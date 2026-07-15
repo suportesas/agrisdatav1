@@ -5,15 +5,20 @@
 {% block content %}
 <div class="container-fluid py-4" style="max-width:800px">
 
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div>
-      <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square text-info me-2"></i>Carta de Correção (CC-e)</h4>
-      <small class="text-muted">
-        NF {{ nf.numero|stringformat:"09d" }}/{{ nf.serie|stringformat:"03d" }} — {{ nf.cliente.razao_social }}
-      </small>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge blue"><i class="bi bi-pencil-square"></i></span>
+        <div>
+          <h2>Carta de Correção (CC-e)</h2>
+          <p class="text-muted mb-0">NF {{ nf.numero|stringformat:"09d" }}/{{ nf.serie|stringformat:"03d" }} — {{ nf.cliente.razao_social }}</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
@@ -31,43 +36,40 @@
   {% endfor %}
   {% endif %}
 
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header fw-semibold">
-      Enviar CC-e nº {{ proxima_sequencia }}
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm blue"><i class="bi bi-send"></i></span>
+      <span class="title">Enviar CC-e nº {{ proxima_sequencia }}</span>
     </div>
-    <div class="card-body">
-      <form method="post">
+    <div class="form-section-body">
+      <form method="post" id="cce-form">
         {% csrf_token %}
-        <div class="mb-3">
-          <label class="form-label fw-semibold" for="id_correcao_text">
-            Texto da Correção
-            <span class="text-danger">*</span>
-          </label>
-          {{ form.correcao }}
-          {% if form.correcao.errors %}
-          <div class="invalid-feedback d-block">{{ form.correcao.errors.0 }}</div>
-          {% endif %}
-          <div class="d-flex justify-content-between mt-1">
-            <small class="text-muted">Mínimo 15, máximo 1000 caracteres.</small>
-            <small class="text-muted" id="char-count">0 / 1000</small>
+        <div class="form-grid">
+          <div class="field col-12">
+            <label class="form-label" for="id_correcao_text">
+              Texto da Correção<span class="req">*</span>
+            </label>
+            {{ form.correcao }}
+            {% if form.correcao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.correcao.errors.0 }}</div>{% endif %}
+            <div class="d-flex justify-content-between mt-1">
+              <small class="text-muted">Mínimo 15, máximo 1000 caracteres.</small>
+              <small class="text-muted" id="char-count">0 / 1000</small>
+            </div>
           </div>
-        </div>
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-info text-white">
-            <i class="bi bi-send me-1"></i>Enviar Carta de Correção
-          </button>
-          <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary">Cancelar</a>
         </div>
       </form>
     </div>
   </div>
 
   {% if cartas %}
-  <div class="card border-0 shadow-sm">
-    <div class="card-header fw-semibold">Histórico de Cartas de Correção</div>
-    <div class="card-body p-0">
-      <table class="table table-sm mb-0">
-        <thead class="table-light">
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm gray"><i class="bi bi-clock-history"></i></span>
+      <span class="title">Histórico de Cartas de Correção</span>
+    </div>
+    <div class="items-table-wrap">
+      <table class="table table-sm mb-0 items-table">
+        <thead>
           <tr>
             <th>Seq.</th>
             <th>Data</th>
@@ -79,18 +81,18 @@
         <tbody>
           {% for cc in cartas %}
           <tr>
-            <td><span class="badge bg-secondary">{{ cc.sequencia }}</span></td>
+            <td><span class="count-badge">{{ cc.sequencia }}</span></td>
             <td>{{ cc.criado_em|date:"d/m/Y H:i" }}</td>
             <td><code class="small">{{ cc.protocolo|default:"—" }}</code></td>
             <td class="text-muted small">{{ cc.correcao|truncatechars:120 }}</td>
             <td class="text-nowrap">
               <a href="{% url 'faturamento:nfe_cce_print' nf.pk cc.pk %}" target="_blank"
-                 class="btn btn-sm btn-outline-secondary py-0 px-2" title="Imprimir CC-e">
+                 class="row-action" title="Imprimir CC-e">
                 <i class="bi bi-printer"></i>
               </a>
               {% if cc.protocolo %}
               <a href="{% url 'faturamento:nfe_cce_xml' nf.pk cc.pk %}"
-                 class="btn btn-sm btn-outline-success py-0 px-2 ms-1" title="Baixar XML CC-e">
+                 class="row-action" title="Baixar XML CC-e">
                 <i class="bi bi-file-earmark-code"></i>
               </a>
               {% endif %}
@@ -102,6 +104,13 @@
     </div>
   </div>
   {% endif %}
+
+  <div class="app-footer-bar">
+    <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline">Cancelar</a>
+    <button type="submit" form="cce-form" class="btn btn-primary">
+      <i class="bi bi-send me-1"></i>Enviar Carta de Correção
+    </button>
+  </div>
 
 </div>
 

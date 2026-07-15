@@ -63,7 +63,7 @@
     <div class="col-6 col-md-2">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Área</div>
-        <div class="fw-bold text-primary">{{ talhao.area_hac|floatformat:2 }} ha</div>
+        <div class="fw-bold text-primary">{{ talhao.area_hac|floatformat:"2g" }} ha</div>
       </div>
     </div>
     <div class="col-6 col-md-2">
@@ -301,7 +301,7 @@
               <dl class="row mb-0 small">
                 <dt class="col-5 text-muted">Nome</dt><dd class="col-7">{{ talhao.nome }}</dd>
                 <dt class="col-5 text-muted">Código</dt><dd class="col-7">{{ talhao.codigo|default:"—" }}</dd>
-                <dt class="col-5 text-muted">Área (ha)</dt><dd class="col-7">{{ talhao.area_hac|floatformat:2 }}</dd>
+                <dt class="col-5 text-muted">Área (ha)</dt><dd class="col-7">{{ talhao.area_hac|floatformat:"2g" }}</dd>
                 <dt class="col-5 text-muted">Fazenda</dt>
                 <dd class="col-7"><a href="{% url 'cadastros:fazenda_detail' talhao.fazenda.pk %}">{{ talhao.fazenda.nome }}</a></dd>
                 <dt class="col-5 text-muted">Área</dt>
@@ -364,7 +364,7 @@
                     <td class="fw-semibold">{{ hist.cultura.nome }}{% if hist.variedade %}<div class="text-muted small">{{ hist.variedade }}</div>{% endif %}</td>
                     <td class="small">{{ hist.data_plantio|date:"d/m/Y" }}{% if hist.data_colheita %} → {{ hist.data_colheita|date:"d/m/Y" }}{% else %} <span class="text-info small">(ativo)</span>{% endif %}</td>
                     <td class="text-end">{{ hist.producao_real|default:"—" }}</td>
-                    <td class="text-end">{{ hist.produtividade|floatformat:2|default:"—" }}</td>
+                    <td class="text-end">{{ hist.produtividade|floatformat:"2g"|default:"—" }}</td>
                     <td>
                       <a href="{% url 'cadastros:historico_detail' hist.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1"><i class="bi bi-eye"></i></a>
                     </td>
@@ -423,7 +423,7 @@
                 <tr>
                   <td class="fw-semibold">{{ c.safra_label }}</td>
                   <td class="text-end">{{ c.qtd_os }}</td>
-                  <td class="text-end small">{{ c.total_area|default:0|floatformat:2 }}</td>
+                  <td class="text-end small">{{ c.total_area|default:0|floatformat:"2g" }}</td>
                   <td class="text-end small">R$ {{ c.total_mao_obra|default:0|floatformat:2 }}</td>
                   <td class="text-end small">R$ {{ c.total_maquinario|default:0|floatformat:2 }}</td>
                   <td class="text-end small">R$ {{ c.total_insumos|default:0|floatformat:2 }}</td>
@@ -478,7 +478,7 @@
                 <td class="small text-muted">{{ reg.safra.nome|default:"—" }}</td>
                 <td>
                   {% for ins in reg.insumos_utilizados.all %}
-                    <span class="badge bg-warning text-dark" style="font-size:.65rem;">{{ ins.produto.nome|truncatechars:12 }} {{ ins.quantidade|floatformat:2 }}</span>
+                    <span class="badge bg-warning text-dark" style="font-size:.65rem;">{{ ins.produto.nome|truncatechars:12 }} {{ ins.quantidade|floatformat:"2g" }}</span>
                   {% empty %}<span class="text-muted small">—</span>{% endfor %}
                 </td>
                 <td>
@@ -658,7 +658,7 @@ document.querySelector('[href="#tab-mapa"]').addEventListener('shown.bs.tab', fu
     attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
   }).addTo(map);
   L.marker([{{ talhao.latitude }}, {{ talhao.longitude }}])
-    .bindPopup('<strong>{{ talhao.nome }}</strong><br>{{ talhao.area_hac|floatformat:2 }} ha')
+    .bindPopup('<strong>{{ talhao.nome }}</strong><br>{{ talhao.area_hac|floatformat:"2g" }} ha')
     .addTo(map).openPopup();
 });
 </script>

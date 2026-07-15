@@ -4,134 +4,146 @@
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
   <div class="row justify-content-center">
     <div class="col-lg-10">
 
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-patch-check text-success"></i> {{ title }}</h6>
-        </div>
-        <div class="card-body">
-          <form method="post" enctype="multipart/form-data" novalidate>
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-
-            <!-- Seção: Localização -->
-            <h6 class="text-uppercase text-muted fw-bold small mb-3 mt-2 border-bottom pb-2">
-              <i class="bi bi-map"></i> Localização e Identificação
-            </h6>
-            <div class="row g-3 mb-4">
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Talhão <span class="text-danger">*</span></label>
-                {{ form.talhao }}
-                {% if form.talhao.errors %}<div class="text-danger small">{{ form.talhao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Safra</label>
-                {{ form.safra }}
-                {% if form.safra.errors %}<div class="text-danger small">{{ form.safra.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Ordem de Serviço</label>
-                {{ form.os }}
-                {% if form.os.errors %}<div class="text-danger small">{{ form.os.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Data da Inspeção <span class="text-danger">*</span></label>
-                {{ form.data_inspecao }}
-                {% if form.data_inspecao.errors %}<div class="text-danger small">{{ form.data_inspecao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Tipo de Inspeção <span class="text-danger">*</span></label>
-                {{ form.tipo_inspecao }}
-                {% if form.tipo_inspecao.errors %}<div class="text-danger small">{{ form.tipo_inspecao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Responsável <span class="text-danger">*</span></label>
-                {{ form.responsavel }}
-                {% if form.responsavel.errors %}<div class="text-danger small">{{ form.responsavel.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Estágio da Cultura</label>
-                {{ form.estagio_cultura }}
-                {% if form.estagio_cultura.errors %}<div class="text-danger small">{{ form.estagio_cultura.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Coloração</label>
-                {{ form.coloracao }}
-                {% if form.coloracao.errors %}<div class="text-danger small">{{ form.coloracao.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <!-- Seção: Parâmetros Técnicos -->
-            <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">
-              <i class="bi bi-graph-up"></i> Parâmetros Técnicos
-            </h6>
-            <div class="row g-3 mb-4">
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Brix (°Bx)</label>
-                {{ form.brix }}
-                {% if form.brix.errors %}<div class="text-danger small">{{ form.brix.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Peso Médio Fruto (g)</label>
-                {{ form.peso_medio_fruto_g }}
-                {% if form.peso_medio_fruto_g.errors %}<div class="text-danger small">{{ form.peso_medio_fruto_g.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">% Defeitos</label>
-                {{ form.percentual_defeitos }}
-                {% if form.percentual_defeitos.errors %}<div class="text-danger small">{{ form.percentual_defeitos.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Previsão Colheita (dias)</label>
-                {{ form.previsao_colheita_dias }}
-                {% if form.previsao_colheita_dias.errors %}<div class="text-danger small">{{ form.previsao_colheita_dias.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <!-- Seção: Resultado -->
-            <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">
-              <i class="bi bi-award"></i> Resultado e Documentação
-            </h6>
-            <div class="row g-3 mb-4">
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Resultado <span class="text-danger">*</span></label>
-                {{ form.resultado }}
-                {% if form.resultado.errors %}<div class="text-danger small">{{ form.resultado.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Foto</label>
-                {{ form.fotos }}
-                {% if form.fotos.errors %}<div class="text-danger small">{{ form.fotos.errors }}</div>{% endif %}
-                {% if obj and obj.fotos %}
-                  <div class="mt-1">
-                    <small class="text-muted">Atual: <a href="{{ obj.fotos.url }}" target="_blank">ver foto</a></small>
-                  </div>
-                {% endif %}
-              </div>
-              <div class="col-md-12">
-                <label class="form-label fw-semibold">Observações</label>
-                {{ form.observacoes }}
-                {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <div class="d-flex gap-2 mt-3">
-              <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-lg"></i> Salvar Inspeção
-              </button>
-              <a href="{% url 'operacoes_campo:qualidade_campo_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-x"></i> Cancelar
-              </a>
-            </div>
-          </form>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge green"><i class="bi bi-patch-check"></i></span>
+            <h2>{{ title }}</h2>
+          </div>
         </div>
       </div>
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-map"></i></span>
+            <span class="title">Localização e Identificação</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Talhão<span class="req">*</span></label>
+                {{ form.talhao }}
+                {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Safra</label>
+                {{ form.safra }}
+                {% if form.safra.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Ordem de Serviço</label>
+                {{ form.os }}
+                {% if form.os.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.os.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Data da Inspeção<span class="req">*</span></label>
+                {{ form.data_inspecao }}
+                {% if form.data_inspecao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_inspecao.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Tipo de Inspeção<span class="req">*</span></label>
+                {{ form.tipo_inspecao }}
+                {% if form.tipo_inspecao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_inspecao.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Responsável<span class="req">*</span></label>
+                {{ form.responsavel }}
+                {% if form.responsavel.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.responsavel.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Estágio da Cultura</label>
+                {{ form.estagio_cultura }}
+                {% if form.estagio_cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.estagio_cultura.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Coloração</label>
+                {{ form.coloracao }}
+                {% if form.coloracao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.coloracao.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-graph-up"></i></span>
+            <span class="title">Parâmetros Técnicos</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <label class="form-label">Brix (°Bx)</label>
+                {{ form.brix }}
+                {% if form.brix.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.brix.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Peso Médio Fruto (g)</label>
+                {{ form.peso_medio_fruto_g }}
+                {% if form.peso_medio_fruto_g.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_medio_fruto_g.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">% Defeitos</label>
+                {{ form.percentual_defeitos }}
+                {% if form.percentual_defeitos.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.percentual_defeitos.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Previsão Colheita (dias)</label>
+                {{ form.previsao_colheita_dias }}
+                {% if form.previsao_colheita_dias.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.previsao_colheita_dias.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm gray"><i class="bi bi-award"></i></span>
+            <span class="title">Resultado e Documentação</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Resultado<span class="req">*</span></label>
+                {{ form.resultado }}
+                {% if form.resultado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.resultado.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Foto</label>
+                {{ form.fotos }}
+                {% if form.fotos.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fotos.errors|striptags }}</div>{% endif %}
+                {% if obj and obj.fotos %}
+                  <div class="helper-note">Atual: <a href="{{ obj.fotos.url }}" target="_blank">ver foto</a></div>
+                {% endif %}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-footer-bar">
+          <a href="{% url 'operacoes_campo:qualidade_campo_list' %}" class="btn btn-outline">
+            <i class="bi bi-x"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> Salvar Inspeção
+          </button>
+        </div>
+      </form>
 
     </div>
   </div>

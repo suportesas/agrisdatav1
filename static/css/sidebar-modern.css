@@ -419,8 +419,9 @@
   background: rgba(0,0,0,.35);
   backdrop-filter: blur(2px);
   z-index: 1035; opacity: 0; transition: opacity .3s;
+  pointer-events: none;
 }
-.sidebar-overlay.active { opacity: 1; }
+.sidebar-overlay.active { opacity: 1; pointer-events: auto; }
 
 /* ── FLYOUT SUBMENUS (sidebar recolhida) ── */
 .sidebar-modern.collapsed .nav-item.has-submenu {
@@ -472,8 +473,12 @@
   opacity: 1;
 }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 768px) {
+/* ── RESPONSIVE ──
+   Aligned with base.css's own .main-content margin reset (@media max-width:992px)
+   — a mismatched breakpoint here previously left the sidebar in fixed desktop
+   position between 769-992px while content lost its offset margin, causing
+   the sidebar to visually overlap (and block clicks on) the page content. */
+@media (max-width: 992px) {
   .sidebar-modern { transform: translateX(-100%); }
   .sidebar-modern.mobile-open { transform: translateX(0); }
   .sidebar-overlay { display: block; }
@@ -489,6 +494,6 @@
 .sidebar-modern.collapsed ~ .main-content {
   margin-left: var(--sidebar-collapsed-width);
 }
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .main-content { margin-left: 0; }
 }

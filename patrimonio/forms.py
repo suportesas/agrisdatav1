@@ -5,6 +5,7 @@ Formulários do módulo Patrimônio
 from django import forms
 from django.core.exceptions import ValidationError
 from decimal import Decimal
+from core.widgets import MoneyBRInput
 from .models import Patrimonio, PatrimonioMovimentacao, PatrimonioAuditoria, PatrimonioAuditoriaItem
 from frota.models import Vehicle
 from cadastros.models import Fazenda
@@ -21,8 +22,8 @@ class PatrimonioForm(forms.ModelForm):
             'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do bem'}),
             'categoria': forms.Select(attrs={'class': 'form-select'}),
             'veiculo': forms.Select(attrs={'class': 'form-select'}),
-            'valor_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'valor_residual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'valor_inicial': MoneyBRInput(),
+            'valor_residual': MoneyBRInput(),
             'tipo_depreciacao': forms.Select(attrs={'class': 'form-select'}),
             'vida_util_anos': forms.NumberInput(attrs={'class': 'form-control'}),
             'percentual_depreciacao_anual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -98,7 +99,7 @@ class PatrimonioVeiculoExportForm(forms.Form):
         label='Valor do Veículo (R$)',
         max_digits=12,
         decimal_places=2,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+        widget=MoneyBRInput()
     )
     data_aquisicao = forms.DateField(
         label='Data de Aquisição',

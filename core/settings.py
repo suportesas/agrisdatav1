@@ -108,6 +108,7 @@ MIDDLEWARE = [
     'core.middleware.role_enforcement.RoleEnforcementMiddleware',
     'core.middleware.fornecedor_portal_only.FornecedorPortalOnlyMiddleware',
     'core.middleware.restrito_produtor.RestrictProdutorMiddleware',
+    'core.middleware.restrito_motorista.RestrictMotoristaMiddleware',
     'core.middleware.portal_cliente.PortalClienteMiddleware',
 ]
 

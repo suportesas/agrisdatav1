@@ -3,13 +3,15 @@
 {% block title %}{{ titulo }} — {{ request.user.empresa.nome }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center">
-        <h1><i class="bi bi-bank"></i> {{ titulo }}</h1>
-        <a href="{% url 'bancario:conta_bancaria_list' %}" class="btn btn-outline-secondary">
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-bank"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'bancario:conta_bancaria_list' %}" class="btn btn-ghost">
           <i class="bi bi-arrow-left"></i> Voltar
         </a>
       </div>
@@ -18,42 +20,44 @@
 
   <form method="post" novalidate>
     {% csrf_token %}
-    <div class="row">
+    <div class="row g-4">
 
-      <!-- Dados bancários -->
       <div class="col-lg-7">
-        <div class="card mb-4">
-          <div class="card-header"><strong><i class="bi bi-building-fill-check"></i> Dados Bancários</strong></div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-8">
-                <label class="form-label">Banco <span class="text-danger">*</span></label>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-building-fill-check"></i></span>
+            <span class="title">Dados Bancários</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-8{% if form.banco.errors %} has-error{% endif %}">
+                <label class="form-label">Banco<span class="req">*</span></label>
                 {{ form.banco }}
-                {% if form.banco.errors %}<div class="invalid-feedback d-block">{{ form.banco.errors|join:", " }}</div>{% endif %}
+                {% if form.banco.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.banco.errors|join:", " }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">Código do Banco</label>
                 {{ form.codigo_banco }}
               </div>
-              <div class="col-md-5">
-                <label class="form-label">Agência <span class="text-danger">*</span></label>
+              <div class="field col-5{% if form.agencia.errors %} has-error{% endif %}">
+                <label class="form-label">Agência<span class="req">*</span></label>
                 {{ form.agencia }}
-                {% if form.agencia.errors %}<div class="invalid-feedback d-block">{{ form.agencia.errors|join:", " }}</div>{% endif %}
+                {% if form.agencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.agencia.errors|join:", " }}</div>{% endif %}
               </div>
-              <div class="col-md-2">
+              <div class="field col-2">
                 <label class="form-label">Dígito</label>
                 {{ form.agencia_digito }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">Tipo de Conta</label>
                 {{ form.tipo_conta }}
               </div>
-              <div class="col-md-5">
-                <label class="form-label">Conta <span class="text-danger">*</span></label>
+              <div class="field col-5{% if form.conta.errors %} has-error{% endif %}">
+                <label class="form-label">Conta<span class="req">*</span></label>
                 {{ form.conta }}
-                {% if form.conta.errors %}<div class="invalid-feedback d-block">{{ form.conta.errors|join:", " }}</div>{% endif %}
+                {% if form.conta.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.conta.errors|join:", " }}</div>{% endif %}
               </div>
-              <div class="col-md-2">
+              <div class="field col-2">
                 <label class="form-label">Dígito</label>
                 {{ form.conta_digito }}
               </div>
@@ -61,52 +65,47 @@
           </div>
         </div>
 
-        <!-- Saldo inicial -->
-        <div class="card mb-4">
-          <div class="card-header"><strong><i class="bi bi-currency-dollar"></i> Saldo de Abertura</strong></div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-5">
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm green"><i class="bi bi-currency-dollar"></i></span>
+            <span class="title">Saldo de Abertura</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-5">
                 <label class="form-label">Saldo Inicial (R$)</label>
                 {{ form.saldo_inicial }}
-                <small class="text-muted">Saldo na data de início do controle</small>
+                <div class="helper-note">Saldo na data de início do controle</div>
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">Data do Saldo</label>
                 {{ form.data_saldo_inicial }}
               </div>
             </div>
           </div>
         </div>
-
-        <div class="d-flex gap-2 mb-4">
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-circle"></i> Salvar
-          </button>
-          <a href="{% if conta %}{% url 'bancario:conta_bancaria_detail' conta.pk %}{% else %}{% url 'bancario:conta_bancaria_list' %}{% endif %}" class="btn btn-outline-secondary">
-            Cancelar
-          </a>
-        </div>
       </div>
 
-      <!-- Coluna direita: PIX + opções -->
       <div class="col-lg-5">
-        <!-- PIX -->
-        <div class="card mb-4">
-          <div class="card-header"><strong><i class="bi bi-qr-code"></i> PIX</strong></div>
-          <div class="card-body">
-            <div class="form-check mb-3">
-              {{ form.pix_habilitado }}
-              <label class="form-check-label" for="{{ form.pix_habilitado.id_for_label }}">
-                PIX Habilitado nesta conta
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-qr-code"></i></span>
+            <span class="title">PIX</span>
+          </div>
+          <div class="form-section-body">
+            <div class="switch-row mb-3">
+              <label class="switch">
+                {{ form.pix_habilitado }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.pix_habilitado.id_for_label }}">PIX Habilitado nesta conta</label>
             </div>
-            <div id="pix-campos" style="display: none;">
-              <div class="mb-3">
+            <div id="pix-campos" class="form-grid" style="display: none;">
+              <div class="field col-12">
                 <label class="form-label">Tipo de Chave</label>
                 {{ form.tipo_chave_pix }}
               </div>
-              <div class="mb-0">
+              <div class="field col-12">
                 <label class="form-label">Chave PIX</label>
                 {{ form.chave_pix }}
               </div>
@@ -114,24 +113,30 @@
           </div>
         </div>
 
-        <!-- Observações e controles -->
-        <div class="card mb-4">
-          <div class="card-header"><strong><i class="bi bi-gear"></i> Configurações</strong></div>
-          <div class="card-body">
-            <div class="form-check mb-2">
-              {{ form.conta_principal }}
-              <label class="form-check-label" for="{{ form.conta_principal.id_for_label }}">
-                Conta Principal
-                <small class="text-muted d-block">Apenas uma conta pode ser principal por empresa</small>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm gray"><i class="bi bi-gear"></i></span>
+            <span class="title">Configurações</span>
+          </div>
+          <div class="form-section-body">
+            <div class="switch-row mb-2">
+              <label class="switch">
+                {{ form.conta_principal }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.conta_principal.id_for_label }}">Conta Principal</label>
             </div>
+            <div class="helper-note mb-3">Apenas uma conta pode ser principal por empresa</div>
             {% if conta %}
-            <div class="form-check mb-3">
-              {{ form.ativa }}
-              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">Conta Ativa</label>
+            <div class="switch-row mb-3">
+              <label class="switch">
+                {{ form.ativa }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.ativa.id_for_label }}">Conta Ativa</label>
             </div>
             {% endif %}
-            <div class="mb-0">
+            <div class="field">
               <label class="form-label">Observações</label>
               {{ form.observacoes }}
             </div>
@@ -139,6 +144,15 @@
         </div>
       </div>
 
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% if conta %}{% url 'bancario:conta_bancaria_detail' conta.pk %}{% else %}{% url 'bancario:conta_bancaria_list' %}{% endif %}" class="btn btn-outline">
+        Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar
+      </button>
     </div>
   </form>
 

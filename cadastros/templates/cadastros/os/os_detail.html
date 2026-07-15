@@ -308,7 +308,7 @@
                       <td>{{ iv.inicio|date:"d/m/Y" }}</td>
                       <td>{{ iv.inicio|time:"H:i" }}</td>
                       <td>{{ iv.fim|time:"H:i"|default:"—" }}</td>
-                      <td class="text-end">{% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:2 }}h{% else %}—{% endif %}</td>
+                      <td class="text-end">{% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:"2g" }}h{% else %}—{% endif %}</td>
                       <td class="text-end fw-semibold text-primary">R$ {{ iv.custo_calculado|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
@@ -334,7 +334,7 @@
                         {% else %}—{% endif %}
                       </td>
                       <td>{{ f.hora_fim|time:"H:i"|default:"—" }}</td>
-                      <td class="text-end">{{ f.horas_trabalhadas|floatformat:2 }}h</td>
+                      <td class="text-end">{{ f.horas_trabalhadas|floatformat:"2g" }}h</td>
                       <td class="text-end fw-semibold text-primary">R$ {{ f.custo_calculado|floatformat:2 }}</td>
                     </tr>
                     {% endif %}
@@ -389,7 +389,7 @@
                           <span class="text-muted">{{ os.data_inicio|time:"H:i" }}</span>
                         {% else %}—{% endif %}
                       </td>
-                      <td class="text-end">{{ m.horas_trabalhadas|floatformat:2 }}h</td>
+                      <td class="text-end">{{ m.horas_trabalhadas|floatformat:"2g" }}h</td>
                       <td class="text-end">{{ m.litros_consumidos|floatformat:1 }}L</td>
                       <td class="text-end fw-semibold text-info">R$ {{ m.custo_calculado|floatformat:2 }}</td>
                     </tr>
@@ -820,7 +820,7 @@
                   {% endif %}
                 </td>
                 <td class="text-end text-muted small">
-                  {% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:2 }}h{% else %}—{% endif %}
+                  {% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:"2g" }}h{% else %}—{% endif %}
                 </td>
                 <td class="text-center">
                   {% if iv.tem_gps %}

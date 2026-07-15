@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         function atualizarTotal() {
             let precoUnit = parseMoedaBR(precoUnitInput{{ proposta.pk }}.value);
-            const quantidade = parseFloat("{{ item.quantidade|floatformat:2 }}".replace(',', '.'));
+            const quantidade = parseMoedaBR("{{ item.quantidade|floatformat:"2g" }}");
             let total = precoUnit * quantidade;
             if (!isNaN(total)) {
                 totalInput{{ proposta.pk }}.value = formatMoedaBR(total);

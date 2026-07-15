@@ -1,123 +1,112 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Contato | Armador{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-header {
-    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px 10px 0 0;
-    margin-bottom: 0;
-  }
-  .form-section {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    margin-bottom: 1rem;
-  }
-  .form-section-body { padding: 1.25rem; }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_detail' armador.id %}">{{ armador.nome }}</a></li>
-      <li class="breadcrumb-item active">{% if form.instance.id %}Editar{% else %}Novo{% endif %} Contato</li>
-    </ol>
-  </nav>
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
-        {% if form.instance.id %}Editar Contato{% else %}Novo Contato{% endif %}
-      </h2>
-      <p class="text-muted mb-0">Armador: <strong>{{ armador.nome }}</strong></p>
-    </div>
-    <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
-  </div>
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_detail' armador.id %}">{{ armador.nome }}</a></li>
+          <li class="breadcrumb-item active">{% if form.instance.id %}Editar{% else %}Novo{% endif %} Contato</li>
+        </ol>
+      </nav>
 
-  <form method="post" enctype="multipart/form-data" id="contatoForm">
-    {% csrf_token %}
-
-    <div class="form-section">
-      <div class="section-header">
-        <h5 class="mb-0">Informações do Contato</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nome *</label>
-            {{ form.nome }}
-            {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Cargo</label>
-            {{ form.cargo }}
-            {% if form.cargo.errors %}<div class="invalid-feedback d-block">{{ form.cargo.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo *</label>
-            {{ form.tipo }}
-            {% if form.tipo.errors %}<div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Email</label>
-            {{ form.email }}
-            {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Telefone</label>
-            {{ form.telefone }}
-            {% if form.telefone.errors %}<div class="invalid-feedback d-block">{{ form.telefone.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Celular</label>
-            {{ form.celular }}
-            {% if form.celular.errors %}<div class="invalid-feedback d-block">{{ form.celular.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <div class="form-check form-switch">
-              {{ form.preferencial }}
-              <label class="form-check-label" for="{{ form.preferencial.id_for_label }}">
-                <strong>Contato Preferencial</strong>
-              </label>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge"><i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+            <div>
+              <h2>{% if form.instance.id %}Editar Contato{% else %}Novo Contato{% endif %}</h2>
+              <p class="text-muted mb-0">Armador: <strong>{{ armador.nome }}</strong></p>
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="form-check form-switch">
-              {{ form.whatsapp }}
-              <label class="form-check-label" for="{{ form.whatsapp.id_for_label }}">
-                <strong>Possui WhatsApp</strong>
-              </label>
-            </div>
+          <div class="form-header-actions">
+            <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary btn-lg px-5">
-        <i class="bi bi-x-circle"></i> Cancelar
-      </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
-        <i class="bi bi-check-circle"></i> Salvar Contato
-      </button>
+      <form method="post" enctype="multipart/form-data" id="contatoForm">
+        {% csrf_token %}
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-person"></i></span>
+            <span class="title">Informações do Contato</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <label class="form-label">Nome<span class="req">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Cargo</label>
+                {{ form.cargo }}
+                {% if form.cargo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cargo.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-6">
+                <label class="form-label">Tipo<span class="req">*</span></label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.email.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-6">
+                <label class="form-label">Telefone</label>
+                {{ form.telefone }}
+                {% if form.telefone.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.telefone.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Celular</label>
+                {{ form.celular }}
+                {% if form.celular.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.celular.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-6">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.preferencial }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.preferencial.id_for_label }}">Contato Preferencial</label>
+                </div>
+              </div>
+              <div class="field col-6">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.whatsapp }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.whatsapp.id_for_label }}">Possui WhatsApp</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-footer-bar">
+          <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline">Cancelar</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar Contato
+          </button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </div>
 {% endblock %}
-

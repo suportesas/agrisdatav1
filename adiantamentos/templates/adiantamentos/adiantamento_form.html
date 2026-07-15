@@ -1,153 +1,177 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
 
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="d-flex align-items-center gap-2">
-        <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-arrow-left"></i>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-file-earmark-text"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
         </a>
-        <h1 class="mb-0 fs-4">{{ titulo }}</h1>
       </div>
     </div>
   </div>
 
   <form method="post">
     {% csrf_token %}
-    <div class="row g-4">
 
-      <!-- Coluna esquerda: dados principais -->
-      <div class="col-lg-8">
-        <div class="card mb-4">
-          <div class="card-header"><i class="bi bi-file-earmark-text"></i> Dados do Adiantamento</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.numero_referencia.label }} <span class="text-danger">*</span></label>
-                {{ form.numero_referencia }}
-                {% if form.numero_referencia.errors %}<div class="text-danger small">{{ form.numero_referencia.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.data_adiantamento.label }} <span class="text-danger">*</span></label>
-                {{ form.data_adiantamento }}
-                {% if form.data_adiantamento.errors %}<div class="text-danger small">{{ form.data_adiantamento.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-8">
-                <label class="form-label">{{ form.cliente.label }} <span class="text-danger">*</span></label>
-                {{ form.cliente }}
-                {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.status.label }}</label>
-                {{ form.status }}
-              </div>
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.safra_referencia.label }} <span class="text-danger">*</span></label>
-                {{ form.safra_referencia }}
-                {% if form.safra_referencia.errors %}<div class="text-danger small">{{ form.safra_referencia.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-8">
-                <label class="form-label">{{ form.safra.label }}</label>
-                {{ form.safra }}
-                <small class="text-muted">Opcional — vincule a uma safra cadastrada no sistema</small>
-              </div>
-              <div class="col-12">
-                <label class="form-label">{{ form.invoice_origem.label }}</label>
-                {{ form.invoice_origem }}
-                <small class="text-muted">Invoice de referência que originou este adiantamento (opcional)</small>
-              </div>
-            </div>
-          </div>
+    <nav class="section-nav">
+      <a href="#sec-dados" data-tab="sec-dados">Dados do Adiantamento</a>
+      <a href="#sec-valores" data-tab="sec-valores">Valores</a>
+      <a href="#sec-desconto" data-tab="sec-desconto">Regra de Desconto</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+          <span class="title">Dados do Adiantamento</span>
         </div>
-
-        <!-- Valores -->
-        <div class="card mb-4">
-          <div class="card-header"><i class="bi bi-currency-dollar"></i> Valores</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-sm-3">
-                <label class="form-label">{{ form.moeda.label }} <span class="text-danger">*</span></label>
-                {{ form.moeda }}
-              </div>
-              <div class="col-sm-3">
-                <label class="form-label">{{ form.valor_estrangeiro.label }} <span class="text-danger">*</span></label>
-                {{ form.valor_estrangeiro }}
-                {% if form.valor_estrangeiro.errors %}<div class="text-danger small">{{ form.valor_estrangeiro.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-3">
-                <label class="form-label d-flex justify-content-between">
-                  {{ form.taxa_cambio.label }}
-                  <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
-                    <i class="bi bi-bank me-1"></i>Buscar BCB
-                  </button>
-                </label>
-                {{ form.taxa_cambio }}
-                <div id="info-cotacao" class="form-text text-success mt-1" style="display:none"></div>
-              </div>
-              <div class="col-sm-3">
-                <label class="form-label">{{ form.valor_brl.label }}</label>
-                {{ form.valor_brl }}
-                <small class="text-muted">Calculado automaticamente</small>
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.data_prevista_reembolso.label }}</label>
-                {{ form.data_prevista_reembolso }}
-              </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">{{ form.numero_referencia.label }}<span class="req">*</span></label>
+              {{ form.numero_referencia }}
+              {% if form.numero_referencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_referencia.errors.0 }}</div>{% endif %}
             </div>
-          </div>
-        </div>
-
-        <!-- Regra de desconto -->
-        <div class="card">
-          <div class="card-header"><i class="bi bi-percent"></i> Regra de Desconto por Embarque</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label">{{ form.tipo_regra_desconto.label }} <span class="text-danger">*</span></label>
-                {{ form.tipo_regra_desconto }}
-              </div>
-              <div class="col-sm-6" id="campo-valor-fixo">
-                <label class="form-label">{{ form.valor_desconto_padrao.label }}</label>
-                {{ form.valor_desconto_padrao }}
-                {% if form.valor_desconto_padrao.errors %}<div class="text-danger small">{{ form.valor_desconto_padrao.errors.0 }}</div>{% endif %}
-                <small class="text-muted">Valor em moeda estrangeira</small>
-              </div>
-              <div class="col-sm-6" id="campo-percentual" style="display:none">
-                <label class="form-label">{{ form.percentual_desconto.label }}</label>
-                {{ form.percentual_desconto }}
-                {% if form.percentual_desconto.errors %}<div class="text-danger small">{{ form.percentual_desconto.errors.0 }}</div>{% endif %}
-                <small class="text-muted">% sobre o valor total da invoice</small>
-              </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.data_adiantamento.label }}<span class="req">*</span></label>
+              {{ form.data_adiantamento }}
+              {% if form.data_adiantamento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_adiantamento.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-8">
+              <label class="form-label">{{ form.cliente.label }}<span class="req">*</span></label>
+              {{ form.cliente }}
+              {% if form.cliente.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cliente.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.status.label }}</label>
+              {{ form.status }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.safra_referencia.label }}<span class="req">*</span></label>
+              {{ form.safra_referencia }}
+              {% if form.safra_referencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra_referencia.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-8">
+              <label class="form-label">{{ form.safra.label }}</label>
+              {{ form.safra }}
+              <div class="helper-note">Opcional — vincule a uma safra cadastrada no sistema</div>
+            </div>
+            <div class="field col-12">
+              <label class="form-label">{{ form.invoice_origem.label }}</label>
+              {{ form.invoice_origem }}
+              <div class="helper-note">Invoice de referência que originou este adiantamento (opcional)</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Coluna direita -->
-      <div class="col-lg-4">
-        <div class="card mb-4">
-          <div class="card-header"><i class="bi bi-chat-text"></i> Observações</div>
-          <div class="card-body">
-            {{ form.observacoes }}
+      <div class="form-section" id="sec-valores" data-tab-panel="sec-valores">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-currency-dollar"></i></span>
+          <span class="title">Valores</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-3">
+              <label class="form-label">{{ form.moeda.label }}<span class="req">*</span></label>
+              {{ form.moeda }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">{{ form.valor_estrangeiro.label }}<span class="req">*</span></label>
+              {{ form.valor_estrangeiro }}
+              {% if form.valor_estrangeiro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_estrangeiro.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label class="form-label d-flex justify-content-between">
+                {{ form.taxa_cambio.label }}
+                <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
+                  <i class="bi bi-bank me-1"></i>Buscar BCB
+                </button>
+              </label>
+              {{ form.taxa_cambio }}
+              <div id="info-cotacao" class="helper-note text-success" style="display:none"></div>
+            </div>
+            <div class="field col-3">
+              <label class="form-label">{{ form.valor_brl.label }}</label>
+              {{ form.valor_brl }}
+              <div class="helper-note">Calculado automaticamente</div>
+            </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.data_prevista_reembolso.label }}</label>
+              {{ form.data_prevista_reembolso }}
+            </div>
           </div>
         </div>
+      </div>
 
-        <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i class="bi bi-check-lg"></i> Salvar Adiantamento
-          </button>
-          <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      <div class="form-section" id="sec-desconto" data-tab-panel="sec-desconto">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-percent"></i></span>
+          <span class="title">Regra de Desconto por Embarque</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label class="form-label">{{ form.tipo_regra_desconto.label }}<span class="req">*</span></label>
+              {{ form.tipo_regra_desconto }}
+            </div>
+            <div class="field col-6" id="campo-valor-fixo">
+              <label class="form-label">{{ form.valor_desconto_padrao.label }}</label>
+              {{ form.valor_desconto_padrao }}
+              {% if form.valor_desconto_padrao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_desconto_padrao.errors.0 }}</div>{% endif %}
+              <div class="helper-note">Valor em moeda estrangeira</div>
+            </div>
+            <div class="field col-6" id="campo-percentual" style="display:none">
+              <label class="form-label">{{ form.percentual_desconto.label }}</label>
+              {{ form.percentual_desconto }}
+              {% if form.percentual_desconto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.percentual_desconto.errors.0 }}</div>{% endif %}
+              <div class="helper-note">% sobre o valor total da invoice</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-chat-text"></i></span>
+          <span class="title">Observações</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              {{ form.observacoes }}
+            </div>
+          </div>
         </div>
       </div>
 
     </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'adiantamentos:adiantamento_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> Salvar Adiantamento
+      </button>
+    </div>
   </form>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
   const tipoRegra = document.getElementById('id_tipo_regra_desconto');
   const campoFixo = document.getElementById('campo-valor-fixo');

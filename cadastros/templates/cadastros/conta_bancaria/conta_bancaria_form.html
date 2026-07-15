@@ -7,133 +7,169 @@
 {% block title %}{{ action }} Conta Bancária | Agrisdata{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      {% if fornecedor %}
-        <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.nome }}</a></li>
-      {% elif cliente %}
-        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_detail' cliente.pk %}">{{ cliente.razao_social }}</a></li>
-      {% elif fazenda %}
-        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
-      {% else %}
-        <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
-      {% endif %}
-      <li class="breadcrumb-item active">{{ action }} Conta Bancária</li>
-    </ol>
-  </nav>
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-header bg-success text-white">
-      <h5 class="mb-0"><i class="bi bi-bank"></i> {{ action }} Conta Bancária</h5>
-    </div>
-    <div class="card-body p-4">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          {% if fornecedor %}
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}">{{ fornecedor.nome }}</a></li>
+          {% elif cliente %}
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_detail' cliente.pk %}">{{ cliente.razao_social }}</a></li>
+          {% elif fazenda %}
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}">{{ fazenda.nome }}</a></li>
+          {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
+          {% endif %}
+          <li class="breadcrumb-item active">{{ action }} Conta Bancária</li>
+        </ol>
+      </nav>
+
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge"><i class="bi bi-bank"></i></span>
+            <h2>{{ action }} Conta Bancária</h2>
+          </div>
+        </div>
+      </div>
+
       <form method="post">
         {% csrf_token %}
-        
-        <!-- Seção: Dados Bancários -->
-        <h6 class="fw-bold text-primary mb-3 border-bottom pb-2">Dados Bancários</h6>
-        <div class="row g-3 mb-4">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Banco *</label>
-            {{ form.banco }}
-            {% if form.banco.errors %}
-              <div class="text-danger small">{{ form.banco.errors|striptags }}</div>
-            {% endif %}
-          </div>
 
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Agência</label>
-            {{ form.agencia }}
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-bank"></i></span>
+            <span class="title">Dados Bancários</span>
           </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Banco<span class="req">*</span></label>
+                {{ form.banco }}
+                {% if form.banco.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.banco.errors|striptags }}</div>{% endif %}
+              </div>
 
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Conta</label>
-            <div class="input-group">
-              {{ form.conta }}
-              <span class="input-group-text">-</span>
-              {{ form.conta_digito }}
+              <div class="field col-2">
+                <label class="form-label">Agência</label>
+                {{ form.agencia }}
+              </div>
+
+              <div class="field col-3">
+                <label class="form-label">Conta</label>
+                <div class="input-group">
+                  {{ form.conta }}
+                  <span class="input-group-text">-</span>
+                  {{ form.conta_digito }}
+                </div>
+              </div>
+
+              <div class="field col-3">
+                <label class="form-label">Tipo de Conta</label>
+                {{ form.tipo_conta }}
+              </div>
             </div>
           </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Conta</label>
-            {{ form.tipo_conta }}
-          </div>
         </div>
 
-        <!-- Seção: Internacional -->
-        <h6 class="fw-bold text-warning mb-3 border-bottom pb-2">Dados Internacionais (Exportação)</h6>
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Código SWIFT/BIC</label>
-            {{ form.swift }}
-            <small class="text-muted d-block">Para transferências internacionais</small>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-globe"></i></span>
+            <span class="title">Dados Internacionais (Exportação)</span>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">IBAN</label>
-            {{ form.iban }}
-          </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Dados Adicionais</label>
-            {{ form.dados_adicionais }}
-            <small class="text-muted d-block">Informações complementares para transferências</small>
-          </div>
-        </div>
-
-        <!-- Seção: PIX -->
-        <div id="pix-options" class="row g-3 mt-3">
-          <div class="col-md-3">
-            <div class="form-check form-switch mt-2">
-              {{ form.pix_habilitado }} <label class="form-check-label" for="{{ form.pix_habilitado.id_for_label }}">PIX Habilitado</label>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <label class="form-label">Código SWIFT/BIC</label>
+                {{ form.swift }}
+                <div class="helper-note">Para transferências internacionais</div>
+              </div>
+              <div class="field col-6">
+                <label class="form-label">IBAN</label>
+                {{ form.iban }}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">Dados Adicionais</label>
+                {{ form.dados_adicionais }}
+                <div class="helper-note">Informações complementares para transferências</div>
+              </div>
             </div>
           </div>
-          <div id="tipo_chave_pix_field" class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Chave PIX</label>
-            {{ form.tipo_chave_pix }}
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-qr-code"></i></span>
+            <span class="title">PIX</span>
           </div>
-          <div id="chave_pix_field" class="col-md-6">
-            <label class="form-label fw-semibold">Chave PIX</label>
-            {{ form.chave_pix }}
+          <div class="form-section-body">
+            <div class="form-grid" id="pix-options">
+              <div class="field col-3">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.pix_habilitado }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.pix_habilitado.id_for_label }}">PIX Habilitado</label>
+                </div>
+              </div>
+              <div class="field col-3" id="tipo_chave_pix_field">
+                <label class="form-label">Tipo de Chave PIX</label>
+                {{ form.tipo_chave_pix }}
+              </div>
+              <div class="field col-6" id="chave_pix_field">
+                <label class="form-label">Chave PIX</label>
+                {{ form.chave_pix }}
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Configurações -->
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="form-check form-switch">
-              {{ form.conta_principal }}
-              <label class="form-check-label" for="{{ form.conta_principal.id_for_label }}">
-                Definir como Conta Principal
-              </label>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm gray"><i class="bi bi-gear"></i></span>
+            <span class="title">Configurações</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.conta_principal }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.conta_principal.id_for_label }}">Definir como Conta Principal</label>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         <script src="{% static 'js/cadastros_banking.js' %}"></script>
 
-        <div class="d-flex justify-content-between gap-3 mt-4">
-            {% if fornecedor %}
-            <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
+        <div class="app-footer-bar">
+          {% if fornecedor %}
+            <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% elif cliente %}
-            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline-secondary">
+            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% elif fazenda %}
-            <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
+            <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% else %}
-            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
+            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline">
               <i class="bi bi-arrow-left"></i> Cancelar
             </a>
           {% endif %}
-          <button type="submit" class="btn btn-success">
+          <button type="submit" class="btn btn-primary">
             <i class="bi bi-check-circle"></i> Salvar Conta
           </button>
         </div>

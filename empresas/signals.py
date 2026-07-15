@@ -209,7 +209,7 @@ def seed_tipos_exame_aso_on_create(sender, instance, created, **kwargs):
         return
 
     try:
-        from cadastros.models import TipoExameASO
+        from rh.models import TipoExameASO
 
         exames_padrao = [
             ('AUDIOMETRIA', 'Audiometria', 10),
@@ -250,7 +250,7 @@ def seed_categorias_risco_ambiental_on_create(sender, instance, created, **kwarg
         return
 
     try:
-        from cadastros.models import CategoriaRiscoAmbiental
+        from rh.models import CategoriaRiscoAmbiental
         CategoriaRiscoAmbiental.criar_categorias_padrao_empresa(instance)
     except Exception:
         # Nao deve bloquear criacao de empresa

@@ -1,6 +1,7 @@
 from django import forms
 from django.utils import timezone
 
+from core.widgets import MoneyBRInput
 from .models import AdiantamentoInternacional, DescontoAdiantamento
 
 
@@ -69,7 +70,7 @@ class AplicarDescontoForm(forms.Form):
         min_value=0,
         max_digits=15,
         decimal_places=2,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        widget=MoneyBRInput(),
     )
     taxa_cambio_aplicada = forms.DecimalField(
         label='Taxa de Câmbio Aplicada',

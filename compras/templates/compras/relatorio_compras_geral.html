@@ -101,7 +101,7 @@
             <div class="card text-bg-light">
                 <div class="card-body">
                     <div class="text-muted">Itens / Qtde</div>
-                    <div class="fs-6 fw-bold">{{ total_itens }} itens • {{ total_qtd|floatformat:2 }}</div>
+                    <div class="fs-6 fw-bold">{{ total_itens }} itens • {{ total_qtd|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -186,7 +186,7 @@
                                 {% for p in top_produtos %}
                                     <tr>
                                         <td>{{ p.produto__nome }}</td>
-                                        <td>{{ p.qtd|floatformat:2 }} {{ p.produto__unidade_medida__sigla }}</td>
+                                        <td>{{ p.qtd|floatformat:"2g" }} {{ p.produto__unidade_medida__sigla }}</td>
                                         <td>R$ {{ p.valor|floatformat:2 }}</td>
                                     </tr>
                                 {% empty %}

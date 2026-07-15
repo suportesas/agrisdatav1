@@ -5,210 +5,240 @@
 {% block page_title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-  <div class="row justify-content-center">
-    <div class="col-xl-10">
+<div class="container-fluid py-4">
 
-      <form method="post" enctype="multipart/form-data" novalidate id="os-form">
-        {% csrf_token %}
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-clipboard-plus"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger rounded-3 mb-4">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
-        </div>
-        {% endif %}
-        {% if func_formset.non_form_errors %}
-        <div class="alert alert-danger rounded-3 mb-4">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Mão de Obra:</strong>
-          {% for error in func_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
-        </div>
-        {% endif %}
-        {% if maq_formset.non_form_errors %}
-        <div class="alert alert-danger rounded-3 mb-4">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Maquinário:</strong>
-          {% for error in maq_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
-        </div>
-        {% endif %}
+  <form method="post" enctype="multipart/form-data" novalidate id="os-form">
+    {% csrf_token %}
 
-        <!-- Identificação -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header text-white py-3"
-               style="background: linear-gradient(135deg, #10b981, #059669); border-radius: .5rem .5rem 0 0;">
-            <h5 class="mb-0"><i class="bi bi-clipboard-plus me-2"></i>Identificação da OS</h5>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Tipo de Serviço <span class="text-danger">*</span></label>
-                {{ form.tipo_servico }}
-                {% if form.tipo_servico.errors %}<div class="text-danger small mt-1">{{ form.tipo_servico.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Operação</label>
-                {{ form.subtipo_servico }}
-                {% if form.subtipo_servico.errors %}<div class="text-danger small mt-1">{{ form.subtipo_servico.errors }}</div>{% endif %}
-                <div class="form-text text-muted" id="subtipo-hint">Selecione o Tipo de Serviço primeiro</div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Modalidade de Execução</label>
-                {{ form.modalidade_execucao }}
-                {% if form.modalidade_execucao.errors %}<div class="text-danger small mt-1">{{ form.modalidade_execucao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Talhão <span class="text-danger">*</span></label>
-                {{ form.talhao }}
-                {% if form.talhao.errors %}<div class="text-danger small mt-1">{{ form.talhao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Safra <small class="text-muted">(auto-preenchida)</small></label>
-                {{ form.safra }}
-              </div>
-              <div class="col-md-4" id="div_poco" style="display:none;">
-                <label class="form-label fw-semibold">
-                  <i class="bi bi-water text-primary me-1"></i>Poço / Bomba
-                  <small class="text-muted">(Irrigação/Fertirrigação)</small>
-                </label>
-                {{ form.poco }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Cultura Atual <small class="text-muted">(do talhão)</small></label>
-                <input type="text" id="id_cultura_display" class="form-control" disabled placeholder="—">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Responsável pela Execução</label>
-                {{ form.responsavel }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Data Prevista</label>
-                {{ form.data_prevista }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Área Executada (ha)</label>
-                {{ form.area_executada_ha }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Requisição de Insumos</label>
-                {{ form.requisicao }}
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold">Observações</label>
-                {{ form.observacoes }}
-              </div>
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger rounded-3 mb-4">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+    {% endif %}
+    {% if func_formset.non_form_errors %}
+    <div class="alert alert-danger rounded-3 mb-4">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Mão de Obra:</strong>
+      {% for error in func_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+    {% endif %}
+    {% if maq_formset.non_form_errors %}
+    <div class="alert alert-danger rounded-3 mb-4">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i><strong>Maquinário:</strong>
+      {% for error in maq_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+    {% endif %}
+
+    <nav class="section-nav" id="os-section-nav">
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-transplantio" data-tab="sec-transplantio" class="d-none">Transplantio</a>
+      <a href="#sec-replantio" data-tab="sec-replantio" class="d-none">Replantio</a>
+      <a href="#sec-servico-externo" data-tab="sec-servico-externo">Serviço Externo</a>
+      <a href="#sec-mao-obra" data-tab="sec-mao-obra">Mão de Obra</a>
+      <a href="#sec-maquinario" data-tab="sec-maquinario">Maquinário</a>
+      <a href="#sec-custo-estimado" data-tab="sec-custo-estimado">Custo Estimado</a>
+      <a href="#sec-evidencia" data-tab="sec-evidencia">Evidência Fotográfica</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <!-- Identificação -->
+      <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-clipboard-plus"></i></span>
+          <span class="title">Identificação da OS</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">Tipo de Serviço<span class="req">*</span></label>
+              {{ form.tipo_servico }}
+              {% if form.tipo_servico.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_servico.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Operação</label>
+              {{ form.subtipo_servico }}
+              {% if form.subtipo_servico.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.subtipo_servico.errors|striptags }}</div>{% endif %}
+              <div class="helper-note" id="subtipo-hint">Selecione o Tipo de Serviço primeiro</div>
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Modalidade de Execução</label>
+              {{ form.modalidade_execucao }}
+              {% if form.modalidade_execucao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.modalidade_execucao.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Talhão<span class="req">*</span></label>
+              {{ form.talhao }}
+              {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Safra <small class="text-muted">(auto-preenchida)</small></label>
+              {{ form.safra }}
+            </div>
+            <div class="field col-4" id="div_poco" style="display:none;">
+              <label class="form-label">
+                <i class="bi bi-water text-primary me-1"></i>Poço / Bomba
+                <small class="text-muted">(Irrigação/Fertirrigação)</small>
+              </label>
+              {{ form.poco }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Cultura Atual <small class="text-muted">(do talhão)</small></label>
+              <input type="text" id="id_cultura_display" class="form-control" disabled placeholder="—">
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Responsável pela Execução</label>
+              {{ form.responsavel }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Data Prevista</label>
+              {{ form.data_prevista }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Área Executada (ha)</label>
+              {{ form.area_executada_ha }}
+            </div>
+            <div class="field col-6">
+              <label class="form-label">Requisição de Insumos</label>
+              {{ form.requisicao }}
+            </div>
+            <div class="field col-12">
+              <label class="form-label">Observações</label>
+              {{ form.observacoes }}
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Transplantio -->
-        <div class="card border-0 shadow-sm mb-4" id="div_transplantio" style="display:none;">
-          <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #0dcaf0, #0aa2c0); border-radius: .5rem .5rem 0 0;">
-            <h5 class="mb-0"><i class="bi bi-arrow-right-square me-2"></i>Dados do Transplantio</h5>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Lote de Mudas</label>
-                {{ transplantio_form.lote_muda }}
-                {% if transplantio_form.lote_muda.errors %}<div class="text-danger small mt-1">{{ transplantio_form.lote_muda.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Tipo</label>
-                {{ transplantio_form.tipo }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Quantidade Transplantada</label>
-                {{ transplantio_form.quantidade_transplantada }}
-                {% if transplantio_form.quantidade_transplantada.errors %}<div class="text-danger small mt-1">{{ transplantio_form.quantidade_transplantada.errors }}</div>{% endif %}
-              </div>
+      <!-- Transplantio -->
+      <div class="form-section" id="div_transplantio" data-tab-panel="sec-transplantio" style="display:none;">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-arrow-right-square"></i></span>
+          <span class="title">Dados do Transplantio</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">Lote de Mudas</label>
+              {{ transplantio_form.lote_muda }}
+              {% if transplantio_form.lote_muda.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ transplantio_form.lote_muda.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">Tipo</label>
+              {{ transplantio_form.tipo }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">Quantidade Transplantada</label>
+              {{ transplantio_form.quantidade_transplantada }}
+              {% if transplantio_form.quantidade_transplantada.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ transplantio_form.quantidade_transplantada.errors|striptags }}</div>{% endif %}
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Replantio -->
-        <div class="card border-0 shadow-sm mb-4" id="div_replantio" style="display:none;">
-          <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #fd7e14, #d96a0c); border-radius: .5rem .5rem 0 0;">
-            <h5 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>Dados do Replantio</h5>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Quantidade</label>
-                {{ replantio_form.quantidade }}
-                {% if replantio_form.quantidade.errors %}<div class="text-danger small mt-1">{{ replantio_form.quantidade.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Origem da Muda</label>
-                {{ replantio_form.origem_muda }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Lote de Mudas <small class="text-muted">(se Estufa Própria)</small></label>
-                {{ replantio_form.lote_muda }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Motivo da Perda</label>
-                {{ replantio_form.motivo_perda }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Custo Adicional (R$)</label>
-                {{ replantio_form.custo_adicional }}
-              </div>
+      <!-- Replantio -->
+      <div class="form-section" id="div_replantio" data-tab-panel="sec-replantio" style="display:none;">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-arrow-repeat"></i></span>
+          <span class="title">Dados do Replantio</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-3">
+              <label class="form-label">Quantidade</label>
+              {{ replantio_form.quantidade }}
+              {% if replantio_form.quantidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ replantio_form.quantidade.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">Origem da Muda</label>
+              {{ replantio_form.origem_muda }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">Lote de Mudas <small class="text-muted">(se Estufa Própria)</small></label>
+              {{ replantio_form.lote_muda }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">Motivo da Perda</label>
+              {{ replantio_form.motivo_perda }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Custo Adicional (R$)</label>
+              {{ replantio_form.custo_adicional }}
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Serviço Externo -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light py-3">
-            <h5 class="mb-0 text-secondary"><i class="bi bi-building me-2"></i>Serviço Terceirizado <small class="text-muted fw-normal">(Opcional)</small></h5>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-5">
-                <label class="form-label fw-semibold">Fornecedor do Serviço</label>
-                {{ form.fornecedor_servico }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Valor do Serviço (R$)</label>
-                {{ form.valor_servico_externo }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Unidade de Cobrança</label>
-                {{ form.unidade_cobranca }}
-              </div>
+      <!-- Serviço Externo -->
+      <div class="form-section" id="sec-servico-externo" data-tab-panel="sec-servico-externo">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-building"></i></span>
+          <span class="title">Serviço Terceirizado <small class="text-muted fw-normal">(Opcional)</small></span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-5">
+              <label class="form-label">Fornecedor do Serviço</label>
+              {{ form.fornecedor_servico }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Valor do Serviço (R$)</label>
+              {{ form.valor_servico_externo }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">Unidade de Cobrança</label>
+              {{ form.unidade_cobranca }}
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- ══════════════════════════════════
-             MÃO DE OBRA
-             ══════════════════════════════════ -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-secondary"><i class="bi bi-people me-2"></i>Mão de Obra <span id="func-badge" class="badge bg-secondary ms-2 d-none">0</span></h5>
-            <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalFunc">
-              <i class="bi bi-plus-lg me-1"></i>Adicionar Funcionário
-            </button>
+      <!-- ══════════════════════════════════
+           MÃO DE OBRA
+           ══════════════════════════════════ -->
+      <div class="form-section" id="sec-mao-obra" data-tab-panel="sec-mao-obra">
+        <div class="section-toolbar">
+          <span class="title"><i class="bi bi-people text-primary"></i>Mão de Obra
+            <span id="func-badge" class="count-badge d-none">0</span></span>
+          <button type="button" class="btn btn-sm btn-outline" data-bs-toggle="modal" data-bs-target="#modalFunc">
+            <i class="bi bi-plus-lg me-1"></i>Adicionar Funcionário
+          </button>
+        </div>
+        <div class="form-section-body">
+          <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            Horários são registrados automaticamente pelo portal ao <strong>Iniciar</strong>, <strong>Pausar</strong> e <strong>Concluir</strong> a OS.
           </div>
-          <div class="card-body">
-            <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
-              <i class="bi bi-info-circle me-1"></i>
-              Horários são registrados automaticamente pelo portal ao <strong>Iniciar</strong>, <strong>Pausar</strong> e <strong>Concluir</strong> a OS.
-            </div>
 
-            <!-- Formset management + dados existentes (submetidos com o form) -->
-            {{ func_formset.management_form }}
-            <div id="func-existing-data" style="display:none">
-              {% for f in func_formset %}{{ f.id }}{% if func_formset.can_delete %}<span class="func-del-wrap" data-idx="{{ forloop.counter0 }}">{{ f.DELETE }}</span>{% endif %}{{ f.funcionario }}{{ f.data_execucao }}{{ f.hora_inicio }}{{ f.hora_fim }}{{ f.observacoes }}{% endfor %}
-            </div>
-            <!-- Novos itens adicionados via modal (hidden inputs) -->
-            <div id="func-new-inputs"></div>
+          <!-- Formset management + dados existentes (submetidos com o form) -->
+          {{ func_formset.management_form }}
+          <div id="func-existing-data" style="display:none">
+            {% for f in func_formset %}{{ f.id }}{% if func_formset.can_delete %}<span class="func-del-wrap" data-idx="{{ forloop.counter0 }}">{{ f.DELETE }}</span>{% endif %}{{ f.funcionario }}{{ f.data_execucao }}{{ f.hora_inicio }}{{ f.hora_fim }}{{ f.observacoes }}{% endfor %}
+          </div>
+          <!-- Novos itens adicionados via modal (hidden inputs) -->
+          <div id="func-new-inputs"></div>
 
-            <!-- Lista de itens -->
-            <p id="func-empty-msg" class="text-center text-muted small py-3 mb-0{% if func_formset.initial_forms %} d-none{% endif %}">
-              <i class="bi bi-person-plus me-1"></i>Nenhum funcionário adicionado ainda.
-            </p>
-            <table id="func-table" class="table table-sm table-hover align-middle mb-0{% if not func_formset.initial_forms %} d-none{% endif %}">
-              <thead class="table-light">
+          <!-- Lista de itens -->
+          <p id="func-empty-msg" class="text-center text-muted small py-3 mb-0{% if func_formset.initial_forms %} d-none{% endif %}">
+            <i class="bi bi-person-plus me-1"></i>Nenhum funcionário adicionado ainda.
+          </p>
+          <div class="items-table-wrap">
+            <table id="func-table" class="items-table mb-0{% if not func_formset.initial_forms %} d-none{% endif %}">
+              <thead>
                 <tr>
                   <th>Funcionário</th>
                   <th>Data</th>
@@ -227,7 +257,7 @@
                   <td class="text-muted small">{{ f.instance.hora_inicio|time:"H:i"|default:"—" }}</td>
                   <td class="text-muted small">{{ f.instance.hora_fim|time:"H:i"|default:"—" }}</td>
                   <td class="text-muted small">{{ f.instance.observacoes|default:"—" }}</td>
-                  <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 func-remove-existing" data-idx="{{ forloop.counter0 }}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+                  <td><button type="button" class="row-action danger func-remove-existing" data-idx="{{ forloop.counter0 }}"><i class="bi bi-trash"></i></button></td>
                 </tr>
                 {% endif %}
                 {% endfor %}
@@ -235,32 +265,35 @@
             </table>
           </div>
         </div>
+      </div>
 
-        <!-- ══════════════════════════════════
-             MAQUINÁRIO
-             ══════════════════════════════════ -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-secondary"><i class="bi bi-truck me-2"></i>Maquinário Utilizado <span id="maq-badge" class="badge bg-secondary ms-2 d-none">0</span></h5>
-            <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#modalMaq">
-              <i class="bi bi-plus-lg me-1"></i>Adicionar Máquina
-            </button>
+      <!-- ══════════════════════════════════
+           MAQUINÁRIO
+           ══════════════════════════════════ -->
+      <div class="form-section" id="sec-maquinario" data-tab-panel="sec-maquinario">
+        <div class="section-toolbar">
+          <span class="title"><i class="bi bi-truck text-primary"></i>Maquinário Utilizado
+            <span id="maq-badge" class="count-badge d-none">0</span></span>
+          <button type="button" class="btn btn-sm btn-outline" data-bs-toggle="modal" data-bs-target="#modalMaq">
+            <i class="bi bi-plus-lg me-1"></i>Adicionar Máquina
+          </button>
+        </div>
+        <div class="form-section-body">
+          <!-- Formset management + dados existentes -->
+          {{ maq_formset.management_form }}
+          <div id="maq-existing-data" style="display:none">
+            {% for m in maq_formset %}{{ m.id }}{% if maq_formset.can_delete %}<span class="maq-del-wrap" data-idx="{{ forloop.counter0 }}">{{ m.DELETE }}</span>{% endif %}{{ m.veiculo }}{{ m.operador }}{{ m.data_execucao }}{{ m.horimetro_inicial }}{{ m.horimetro_final }}{{ m.custo_hora_config }}{{ m.observacoes }}{% endfor %}
           </div>
-          <div class="card-body">
-            <!-- Formset management + dados existentes -->
-            {{ maq_formset.management_form }}
-            <div id="maq-existing-data" style="display:none">
-              {% for m in maq_formset %}{{ m.id }}{% if maq_formset.can_delete %}<span class="maq-del-wrap" data-idx="{{ forloop.counter0 }}">{{ m.DELETE }}</span>{% endif %}{{ m.veiculo }}{{ m.operador }}{{ m.data_execucao }}{{ m.horimetro_inicial }}{{ m.horimetro_final }}{{ m.custo_hora_config }}{{ m.observacoes }}{% endfor %}
-            </div>
-            <!-- Novos itens -->
-            <div id="maq-new-inputs"></div>
+          <!-- Novos itens -->
+          <div id="maq-new-inputs"></div>
 
-            <!-- Lista de itens -->
-            <p id="maq-empty-msg" class="text-center text-muted small py-3 mb-0{% if maq_formset.initial_forms %} d-none{% endif %}">
-              <i class="bi bi-truck me-1"></i>Nenhuma máquina adicionada ainda.
-            </p>
-            <table id="maq-table" class="table table-sm table-hover align-middle mb-0{% if not maq_formset.initial_forms %} d-none{% endif %}">
-              <thead class="table-light">
+          <!-- Lista de itens -->
+          <p id="maq-empty-msg" class="text-center text-muted small py-3 mb-0{% if maq_formset.initial_forms %} d-none{% endif %}">
+            <i class="bi bi-truck me-1"></i>Nenhuma máquina adicionada ainda.
+          </p>
+          <div class="items-table-wrap">
+            <table id="maq-table" class="items-table mb-0{% if not maq_formset.initial_forms %} d-none{% endif %}">
+              <thead>
                 <tr>
                   <th>Veículo/Máquina</th>
                   <th>Operador</th>
@@ -279,7 +312,7 @@
                   <td class="text-muted small">{{ m.instance.data_execucao|date:"d/m/Y"|default:"—" }}</td>
                   <td class="text-muted small">{{ m.instance.horimetro_inicial|default:"—" }}</td>
                   <td class="text-muted small">{{ m.instance.horimetro_final|default:"—" }}</td>
-                  <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 maq-remove-existing" data-idx="{{ forloop.counter0 }}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+                  <td><button type="button" class="row-action danger maq-remove-existing" data-idx="{{ forloop.counter0 }}"><i class="bi bi-trash"></i></button></td>
                 </tr>
                 {% endif %}
                 {% endfor %}
@@ -287,73 +320,68 @@
             </table>
           </div>
         </div>
+      </div>
 
-        <!-- Custo Estimado (Orçamento) -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light py-3" role="button" data-bs-toggle="collapse" data-bs-target="#custo-estimado-body" aria-expanded="{% if form.instance.tem_custo_estimado %}true{% else %}false{% endif %}">
-            <h5 class="mb-0 text-secondary d-flex align-items-center justify-content-between">
-              <span><i class="bi bi-calculator me-2"></i>Custo Estimado <small class="text-muted fw-normal">(Orçamento — Opcional)</small></span>
-              <i class="bi bi-chevron-down small text-muted"></i>
-            </h5>
-          </div>
-          <div class="collapse {% if form.instance.tem_custo_estimado %}show{% endif %}" id="custo-estimado-body">
-            <div class="card-body">
-              <p class="text-muted small mb-3">
-                <i class="bi bi-info-circle me-1"></i>Preencha para comparar o orçamento com o custo realizado ao encerrar a OS.
-              </p>
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Mão de Obra (R$)</label>
-                  {{ form.custo_estimado_mao_obra }}
-                  {% if form.custo_estimado_mao_obra.errors %}<div class="text-danger small mt-1">{{ form.custo_estimado_mao_obra.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Maquinário (R$)</label>
-                  {{ form.custo_estimado_maquinario }}
-                  {% if form.custo_estimado_maquinario.errors %}<div class="text-danger small mt-1">{{ form.custo_estimado_maquinario.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Insumos (R$)</label>
-                  {{ form.custo_estimado_insumos }}
-                  {% if form.custo_estimado_insumos.errors %}<div class="text-danger small mt-1">{{ form.custo_estimado_insumos.errors }}</div>{% endif %}
-                </div>
+      <!-- Custo Estimado (Orçamento) -->
+      <div class="form-section" id="sec-custo-estimado" data-tab-panel="sec-custo-estimado">
+        <div class="form-section-header" role="button" data-bs-toggle="collapse" data-bs-target="#custo-estimado-body" aria-expanded="{% if form.instance.tem_custo_estimado %}true{% else %}false{% endif %}">
+          <span class="icon-badge sm gray"><i class="bi bi-calculator"></i></span>
+          <span class="title">Custo Estimado <small class="text-muted fw-normal">(Orçamento — Opcional)</small></span>
+          <i class="bi bi-chevron-down small text-muted ms-auto"></i>
+        </div>
+        <div class="collapse {% if form.instance.tem_custo_estimado %}show{% endif %}" id="custo-estimado-body">
+          <div class="form-section-body">
+            <p class="text-muted small mb-3">
+              <i class="bi bi-info-circle me-1"></i>Preencha para comparar o orçamento com o custo realizado ao encerrar a OS.
+            </p>
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Mão de Obra (R$)</label>
+                {{ form.custo_estimado_mao_obra }}
+                {% if form.custo_estimado_mao_obra.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.custo_estimado_mao_obra.errors|striptags }}</div>{% endif %}
               </div>
-              {% if form.instance.tem_custo_estimado %}
-              <div class="mt-3 p-2 bg-light rounded-3 text-end small fw-semibold text-secondary">
-                Total estimado: R$ {{ form.instance.custo_estimado_total|floatformat:2 }}
+              <div class="field col-4">
+                <label class="form-label">Maquinário (R$)</label>
+                {{ form.custo_estimado_maquinario }}
+                {% if form.custo_estimado_maquinario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.custo_estimado_maquinario.errors|striptags }}</div>{% endif %}
               </div>
-              {% endif %}
+              <div class="field col-4">
+                <label class="form-label">Insumos (R$)</label>
+                {{ form.custo_estimado_insumos }}
+                {% if form.custo_estimado_insumos.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.custo_estimado_insumos.errors|striptags }}</div>{% endif %}
+              </div>
             </div>
+            {% if form.instance.tem_custo_estimado %}
+            <div class="mt-3 p-2 bg-light rounded-3 text-end small fw-semibold text-secondary">
+              Total estimado: R$ {{ form.instance.custo_estimado_total|floatformat:2 }}
+            </div>
+            {% endif %}
           </div>
         </div>
+      </div>
 
-        <!-- Evidência Fotográfica -->
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-header bg-light py-3">
-            <h5 class="mb-0 text-secondary">
-              <i class="bi bi-camera me-2"></i>Evidência Fotográfica
-              <small class="text-muted fw-normal">(Obrigatória para conclusão — RN-03)</small>
-            </h5>
-          </div>
-          <div class="card-body">
-            {{ form.foto_evidencia }}
-            {% if form.foto_evidencia.errors %}<div class="text-danger small mt-1">{{ form.foto_evidencia.errors }}</div>{% endif %}
-          </div>
+      <!-- Evidência Fotográfica -->
+      <div class="form-section" id="sec-evidencia" data-tab-panel="sec-evidencia">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-camera"></i></span>
+          <span class="title">Evidência Fotográfica <small class="text-muted fw-normal">(Obrigatória para conclusão — RN-03)</small></span>
         </div>
-
-        <!-- Botões -->
-        <div class="d-flex gap-2 justify-content-end">
-          <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-secondary">
-            <i class="bi bi-x-circle me-1"></i>Cancelar
-          </a>
-          <button type="submit" class="btn btn-success px-4">
-            <i class="bi bi-check-circle me-1"></i>{{ action }} OS
-          </button>
+        <div class="form-section-body">
+          {{ form.foto_evidencia }}
+          {% if form.foto_evidencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.foto_evidencia.errors|striptags }}</div>{% endif %}
         </div>
+      </div>
 
-      </form>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'operacoes_campo:os_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> {{ action }} OS
+      </button>
+    </div>
+
+  </form>
 </div>
 
 <!-- ══════════════════════════════════
@@ -460,6 +488,11 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 // ── Copia opções de um select (por seletor CSS) para um select de modal ──────
 function copyOptionsFromSelector(srcSelector, targetId) {
@@ -555,7 +588,7 @@ document.getElementById('btn-func-add').addEventListener('click', function () {
     <td class="text-muted small">${ini || '—'}</td>
     <td class="text-muted small">${fim || '—'}</td>
     <td class="text-muted small">${obs || '—'}</td>
-    <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 func-remove-new" data-idx="${idx}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+    <td><button type="button" class="row-action danger func-remove-new" data-idx="${idx}"><i class="bi bi-trash"></i></button></td>
   `;
   document.getElementById('func-tbody').appendChild(tr);
   tr.querySelector('.func-remove-new').addEventListener('click', function () {
@@ -634,7 +667,7 @@ document.getElementById('btn-maq-add').addEventListener('click', function () {
     <td class="text-muted small">${data ? formatDate(data) : '—'}</td>
     <td class="text-muted small">${hini || '—'}</td>
     <td class="text-muted small">${hfim || '—'}</td>
-    <td><button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-0 maq-remove-new" data-idx="${idx}" style="width:28px;height:28px;"><i class="bi bi-trash" style="font-size:.75rem;"></i></button></td>
+    <td><button type="button" class="row-action danger maq-remove-new" data-idx="${idx}"><i class="bi bi-trash"></i></button></td>
   `;
   document.getElementById('maq-tbody').appendChild(tr);
   tr.querySelector('.maq-remove-new').addEventListener('click', function () {
@@ -709,8 +742,14 @@ function toggleTransplantioReplantio() {
   const subtipoId = subtipoSelect ? subtipoSelect.value : '';
   const info = SUBTIPOS_ATUAIS.find(s => String(s.id) === String(subtipoId));
   const legado = info ? info.subtipo_legado : '';
-  if (divTransplantio) divTransplantio.style.display = (legado === 'TRANSPLANTE') ? '' : 'none';
-  if (divReplantio) divReplantio.style.display = (legado === 'REPLANTIO') ? '' : 'none';
+  const showTransplantio = legado === 'TRANSPLANTE';
+  const showReplantio = legado === 'REPLANTIO';
+  if (divTransplantio) divTransplantio.style.display = showTransplantio ? '' : 'none';
+  if (divReplantio) divReplantio.style.display = showReplantio ? '' : 'none';
+  if (window.SectionNav) {
+    window.SectionNav.setTabVisible('sec-transplantio', showTransplantio);
+    window.SectionNav.setTabVisible('sec-replantio', showReplantio);
+  }
 }
 
 function loadOpcoes(tipoId, keepSubtipo, keepModalidade) {

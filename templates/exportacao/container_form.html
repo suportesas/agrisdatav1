@@ -1,246 +1,275 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{{ action }}{% endblock %}
 {% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-box-seam"></i></span>
+        <h2>{{ action }}</h2>
+      </div>
+    </div>
+  </div>
+
   <form method="post" id="container-form">
     {% csrf_token %}
     <input type="hidden" name="ordem_coleta_id" id="ordem_coleta_id_hidden">
 
-    <!-- Booking -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-bookmarks me-2 text-primary"></i>Booking
-      </div>
-      <div class="card-body">
-        <div class="mb-0">
-          <label class="form-label fw-semibold">{{ form.booking.label }}</label>
-          {{ form.booking }}
-          {% if form.booking.errors %}<div class="text-danger small mt-1">{{ form.booking.errors }}</div>{% endif %}
-        </div>
-      </div>
-    </div>
+    <nav class="section-nav">
+      <a href="#sec-booking" data-tab="sec-booking">Booking</a>
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-coleta" data-tab="sec-coleta">Dados da Coleta</a>
+      <a href="#sec-portos" data-tab="sec-portos">Portos</a>
+      <a href="#sec-armador" data-tab="sec-armador">Armador / Transporte</a>
+      <a href="#sec-pesos" data-tab="sec-pesos">Pesos e Genset</a>
+      <a href="#sec-lacres" data-tab="sec-lacres">Lacres</a>
+      <a href="#sec-reefer" data-tab="sec-reefer" class="d-none">Parâmetros de Reefer</a>
+      <a href="#sec-realizacao" data-tab="sec-realizacao">Realização e Observações</a>
+    </nav>
 
-    <!-- Botão + painel de Ordens de Coleta -->
-    <div id="bloco-ordens" style="display:none;" class="mb-4">
-      <button type="button" id="btn-toggle-ordens" class="btn btn-outline-primary w-100"
-              onclick="togglePainelOrdens()">
-        <i class="bi bi-clipboard-list me-2"></i>Selecionar Ordem de Coleta
-        <span id="oc-selecionada-badge" class="badge bg-primary ms-2" style="display:none;"></span>
-      </button>
-      <div class="card border-0 shadow-sm mt-2" id="painel-ordens" style="display:none;">
-        <div class="card-header bg-white border-bottom fw-semibold d-flex justify-content-between align-items-center">
-          <span><i class="bi bi-clipboard-list me-2 text-primary"></i>Ordens de Coleta</span>
-          <button type="button" class="btn-close" onclick="togglePainelOrdens()"></button>
-        </div>
-        <div id="lista-ordens"></div>
-      </div>
-    </div>
+    <div class="complex-main">
 
-    <!-- Identificação -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-box-seam me-2 text-secondary"></i>Identificação
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.numero_container.label }} <span class="text-danger">*</span></label>
-            {{ form.numero_container }}
-            {% if form.numero_container.errors %}<div class="text-danger small mt-1">{{ form.numero_container.errors }}</div>{% endif %}
+      <div class="form-section" id="sec-booking" data-tab-panel="sec-booking">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-bookmarks"></i></span>
+          <span class="title">Booking</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label class="form-label">{{ form.booking.label }}</label>
+              {{ form.booking }}
+              {% if form.booking.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.booking.errors }}</div>{% endif %}
+            </div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.tipo_container.label }}</label>
-            {{ form.tipo_container }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.status.label }}</label>
-            {{ form.status }}
+
+          <!-- Botão + painel de Ordens de Coleta -->
+          <div id="bloco-ordens" style="display:none;" class="mt-3">
+            <button type="button" id="btn-toggle-ordens" class="btn btn-outline w-100"
+                    onclick="togglePainelOrdens()">
+              <i class="bi bi-clipboard-list me-2"></i>Selecionar Ordem de Coleta
+              <span id="oc-selecionada-badge" class="count-badge ms-2" style="display:none;"></span>
+            </button>
+            <div class="card border-0 shadow-sm mt-2" id="painel-ordens" style="display:none;">
+              <div class="card-header bg-white border-bottom fw-semibold d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clipboard-list me-2 text-primary"></i>Ordens de Coleta</span>
+                <button type="button" class="btn-close" onclick="togglePainelOrdens()"></button>
+              </div>
+              <div id="lista-ordens"></div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Dados da Coleta -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-calendar-check me-2 text-success"></i>Dados da Coleta
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.cultura.label }}</label>
-            {{ form.cultura }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.data_coleta_prevista.label }}</label>
-            {{ form.data_coleta_prevista }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.hora_coleta_realizada.label }}</label>
-            {{ form.hora_coleta_realizada }}
+      <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-box"></i></span>
+          <span class="title">Identificação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.numero_container.label }}<span class="req">*</span></label>
+              {{ form.numero_container }}
+              {% if form.numero_container.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_container.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.tipo_container.label }}</label>
+              {{ form.tipo_container }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.status.label }}</label>
+              {{ form.status }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Portos -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-geo-alt me-2 text-info"></i>Portos
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.porto_origem.label }}</label>
-            {{ form.porto_origem }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.porto_destino.label }}</label>
-            {{ form.porto_destino }}
+      <div class="form-section" id="sec-coleta" data-tab-panel="sec-coleta">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-calendar-check"></i></span>
+          <span class="title">Dados da Coleta</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.cultura.label }}</label>
+              {{ form.cultura }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.data_coleta_prevista.label }}</label>
+              {{ form.data_coleta_prevista }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.hora_coleta_realizada.label }}</label>
+              {{ form.hora_coleta_realizada }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Armador / Transporte -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-truck me-2 text-warning"></i>Armador / Transporte
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.armador.label }}</label>
-            {{ form.armador }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.transportadora.label }}</label>
-            {{ form.transportadora }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.motorista.label }}</label>
-            {{ form.motorista }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.placa_principal.label }}</label>
-            {{ form.placa_principal }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.placa_reboque.label }}</label>
-            {{ form.placa_reboque }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Veículo</label>
-            <div id="veiculo_info" class="form-control bg-light text-muted">—</div>
+      <div class="form-section" id="sec-portos" data-tab-panel="sec-portos">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-geo-alt"></i></span>
+          <span class="title">Portos</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">{{ form.porto_origem.label }}</label>
+              {{ form.porto_origem }}
+            </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.porto_destino.label }}</label>
+              {{ form.porto_destino }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Pesos e Genset -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-box me-2 text-secondary"></i>Pesos e Genset
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.peso_bruto_kg.label }}</label>
-            {{ form.peso_bruto_kg }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.tara_container.label }}</label>
-            {{ form.tara_container }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.numero_genset.label }}</label>
-            {{ form.numero_genset }}
+      <div class="form-section" id="sec-armador" data-tab-panel="sec-armador">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-truck"></i></span>
+          <span class="title">Armador / Transporte</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.armador.label }}</label>
+              {{ form.armador }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.transportadora.label }}</label>
+              {{ form.transportadora }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.motorista.label }}</label>
+              {{ form.motorista }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.placa_principal.label }}</label>
+              {{ form.placa_principal }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.placa_reboque.label }}</label>
+              {{ form.placa_reboque }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Veículo</label>
+              <div id="veiculo_info" class="form-control bg-light text-muted">—</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Lacres -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-shield-lock me-2 text-danger"></i>Lacres
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.lacre_armador.label }}</label>
-            {{ form.lacre_armador }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.lacre_fiscal.label }}</label>
-            {{ form.lacre_fiscal }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.lacre_terminal.label }}</label>
-            {{ form.lacre_terminal }}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.lacre_g7.label }}</label>
-            {{ form.lacre_g7 }}
+      <div class="form-section" id="sec-pesos" data-tab-panel="sec-pesos">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-box"></i></span>
+          <span class="title">Pesos e Genset</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.peso_bruto_kg.label }}</label>
+              {{ form.peso_bruto_kg }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.tara_container.label }}</label>
+              {{ form.tara_container }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.numero_genset.label }}</label>
+              {{ form.numero_genset }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Parâmetros de Reefer -->
-    <div class="card border-0 shadow-sm mb-4" id="bloco-reefer">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-thermometer-snow me-2 text-primary"></i>Parâmetros de Reefer
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">{{ form.temperatura_setpoint_c.label }}</label>
-            {{ form.temperatura_setpoint_c }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">{{ form.ventilacao_air_exchange.label }}</label>
-            {{ form.ventilacao_air_exchange }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">{{ form.umidade_setpoint_pct.label }}</label>
-            {{ form.umidade_setpoint_pct }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">{{ form.drain_position.label }}</label>
-            {{ form.drain_position }}
+      <div class="form-section" id="sec-lacres" data-tab-panel="sec-lacres">
+        <div class="form-section-header">
+          <span class="icon-badge sm red"><i class="bi bi-shield-lock"></i></span>
+          <span class="title">Lacres</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.lacre_armador.label }}</label>
+              {{ form.lacre_armador }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.lacre_fiscal.label }}</label>
+              {{ form.lacre_fiscal }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.lacre_terminal.label }}</label>
+              {{ form.lacre_terminal }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.lacre_g7.label }}</label>
+              {{ form.lacre_g7 }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Realização e Observações -->
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-header bg-white border-bottom fw-semibold">
-        <i class="bi bi-check2-circle me-2 text-success"></i>Realização e Observações
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.data_coleta_realizada.label }}</label>
-            {{ form.data_coleta_realizada }}
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">{{ form.observacoes.label }}</label>
-            {{ form.observacoes }}
+      <div class="form-section" id="sec-reefer" data-tab-panel="sec-reefer">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-thermometer-snow"></i></span>
+          <span class="title">Parâmetros de Reefer</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-3">
+              <label class="form-label">{{ form.temperatura_setpoint_c.label }}</label>
+              {{ form.temperatura_setpoint_c }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">{{ form.ventilacao_air_exchange.label }}</label>
+              {{ form.ventilacao_air_exchange }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">{{ form.umidade_setpoint_pct.label }}</label>
+              {{ form.umidade_setpoint_pct }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">{{ form.drain_position.label }}</label>
+              {{ form.drain_position }}
+            </div>
           </div>
         </div>
       </div>
+
+      <div class="form-section" id="sec-realizacao" data-tab-panel="sec-realizacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-check2-circle"></i></span>
+          <span class="title">Realização e Observações</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.data_coleta_realizada.label }}</label>
+              {{ form.data_coleta_realizada }}
+            </div>
+            <div class="field col-12">
+              <label class="form-label">{{ form.observacoes.label }}</label>
+              {{ form.observacoes }}
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary px-4">
-        <i class="bi bi-floppy me-1"></i>Salvar
-      </button>
+    <div class="app-footer-bar">
       <a href="{% if booking %}{% url 'exportacao:booking_detail' booking.pk %}{% else %}{% url 'exportacao:container_list' %}{% endif %}"
-         class="btn btn-outline-secondary">Cancelar</a>
+         class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-floppy"></i> Salvar
+      </button>
     </div>
 
   </form>
@@ -248,6 +277,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 (function () {
 
@@ -390,10 +420,8 @@
   /* ── Mostra o bloco de Reefer só quando o tipo de contêiner for REEFER ── */
   function toggleBlocoReefer() {
     var tipoSelect = document.getElementById('id_tipo_container');
-    var bloco = document.getElementById('bloco-reefer');
-    if (tipoSelect && bloco) {
-      bloco.style.display = (tipoSelect.value === 'REEFER') ? '' : 'none';
-    }
+    var isReefer = tipoSelect && tipoSelect.value === 'REEFER';
+    if (window.SectionNav) window.SectionNav.setTabVisible('sec-reefer', !!isReefer);
   }
   var tipoContainerSelect = document.getElementById('id_tipo_container');
   if (tipoContainerSelect) {

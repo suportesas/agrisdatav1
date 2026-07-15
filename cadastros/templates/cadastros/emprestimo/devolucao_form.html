@@ -3,58 +3,71 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="mb-0"><i class="bi bi-arrow-return-left me-2"></i>{{ titulo }}</h2>
-    <a href="{% url 'emprestimos:emprestimo_extrato' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left me-1"></i>Voltar ao Extrato
-    </a>
-  </div>
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
 
-  <div class="card">
-    <div class="card-body">
-      <form method="post" enctype="multipart/form-data" class="row g-3">
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge"><i class="bi bi-arrow-return-left"></i></span>
+            <h2>{{ titulo }}</h2>
+          </div>
+          <div class="form-header-actions">
+            <a href="{% url 'emprestimos:emprestimo_extrato' %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar ao Extrato
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
-        <div class="col-md-12">
-          <label class="form-label">Empréstimo</label>
-          {{ form.emprestimo }}
-          {% if form.emprestimo.errors %}<div class="text-danger small">{{ form.emprestimo.errors }}</div>{% endif %}
+        <div class="form-section">
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <label class="form-label">Empréstimo</label>
+                {{ form.emprestimo }}
+                {% if form.emprestimo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.emprestimo.errors|striptags }}</div>{% endif %}
+              </div>
+
+              <div class="field col-4">
+                <label class="form-label">Quantidade Devolvida</label>
+                {{ form.quantidade }}
+                {% if form.quantidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade.errors|striptags }}</div>{% endif %}
+              </div>
+
+              <div class="field col-4">
+                <label class="form-label">Data da Devolução</label>
+                {{ form.data_movimento }}
+                {% if form.data_movimento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_movimento.errors|striptags }}</div>{% endif %}
+              </div>
+
+              <div class="field col-4">
+                <label class="form-label">Comprovante</label>
+                {{ form.comprovante }}
+                {% if form.comprovante.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.comprovante.errors|striptags }}</div>{% endif %}
+              </div>
+
+              <div class="field col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label">Quantidade Devolvida</label>
-          {{ form.quantidade }}
-          {% if form.quantidade.errors %}<div class="text-danger small">{{ form.quantidade.errors }}</div>{% endif %}
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label">Data da Devolução</label>
-          {{ form.data_movimento }}
-          {% if form.data_movimento.errors %}<div class="text-danger small">{{ form.data_movimento.errors }}</div>{% endif %}
-        </div>
-
-        <div class="col-md-4">
-          <label class="form-label">Comprovante</label>
-          {{ form.comprovante }}
-          {% if form.comprovante.errors %}<div class="text-danger small">{{ form.comprovante.errors }}</div>{% endif %}
-        </div>
-
-        <div class="col-md-12">
-          <label class="form-label">Observações</label>
-          {{ form.observacoes }}
-          {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors }}</div>{% endif %}
-        </div>
-
-        {% if form.non_field_errors %}
-        <div class="col-md-12">
-          <div class="alert alert-danger mb-0">{{ form.non_field_errors }}</div>
-        </div>
-        {% endif %}
-
-        <div class="col-md-12 text-end">
+        <div class="app-footer-bar">
+          <a href="{% url 'emprestimos:emprestimo_extrato' %}" class="btn btn-outline">Cancelar</a>
           <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-circle me-1"></i>Salvar Devolução
+            <i class="bi bi-check-circle"></i> Salvar Devolução
           </button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ title }}{% endblock %}
 
@@ -24,257 +25,262 @@
 {% endblock %}
 
 {% block content %}
-<div class="alert alert-primary mx-3 mt-3">
+<div class="container-fluid py-4">
+
+  <div class="alert alert-primary">
     <i class="bi bi-clipboard-plus"></i> <strong>Nova Solicitação de Compra:</strong> Adicione os produtos que precisa comprar. Após criar, você poderá gerar cotações com fornecedores.
-</div>
+  </div>
 
-{% if messages %}
-<div class="container-fluid">
-    {% for message in messages %}
-    <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags == 'warning' %}warning{% elif message.tags == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-cart-plus"></i></span>
+        <h2>{{ title }}</h2>
+      </div>
     </div>
-    {% endfor %}
-</div>
-{% endif %}
+  </div>
 
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <h2 class="mb-4">{{ title }}</h2>
-            <form method="post" id="solicitacao-form">
-                {% csrf_token %}
-                
-                {{ form.management_form }}
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5>Dados da Solicitação</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        {{ form.data_necessidade.label_tag }}
-                        {{ form.data_necessidade }}
-                        {% if form.data_necessidade.errors %}
-                        <div class="text-danger">{{ form.data_necessidade.errors }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6">
-                        {{ form.departamento.label_tag }}
-                        {{ form.departamento }}
-                    </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        {{ form.justificativa.label_tag }}
-                        {{ form.justificativa }}
-                        {% if form.justificativa.errors %}
-                        <div class="text-danger">{{ form.justificativa.errors }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-                <!-- Compra Emergencial -->
-                {% if perms.compras.criar_solicitacao_emergencial or user.is_admin_empresa %}
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="alert alert-warning border-warning">
-                            <h6 class="alert-heading">
-                                <i class="bi bi-info-circle"></i> Sobre Compras Emergenciais
-                            </h6>
-                            <p class="mb-2">
-                                <strong>Use apenas para situações reais de emergência.</strong>
-                                Compras emergenciais são aprovadas automaticamente e pulam o processo formal de aprovação.
-                            </p>
-                            <hr>
-                            <p class="mb-1"><strong>Exemplo de Uso Correto:</strong></p>
-                            <div class="bg-white p-2 rounded small">
-                                <strong>Situação:</strong> Quebra do trator T-001 às 14h durante preparo do solo.<br>
-                                <strong>Impacto:</strong> Produção parada, 50 hectares aguardando plantio.<br>
-                                <strong>Urgência:</strong> Janela de plantio fecha em 3 dias.<br>
-                                <strong>Perda:</strong> R$ 45.000 se perder a janela de plantio.<br>
-                                <strong>Justificativa:</strong> Necessário peça urgente para reparo amanhã. Não pode aguardar aprovação formal (48h).
-                            </div>
-                        </div>
+  <form method="post" id="solicitacao-form">
+    {% csrf_token %}
+    {{ form.management_form }}
 
-                        <div class="form-check form-switch">
-                            {{ form.emergencial }}
-                            <label class="form-check-label" for="id_emergencial">
-                                <strong>{{ form.emergencial.label }}</strong>
-                                <span class="badge bg-danger ms-2">Pula Aprovação</span>
-                            </label>
-                            <div class="form-text">
-                                Marque esta opção para compras urgentes que não podem aguardar aprovação formal.
-                                Será aprovada automaticamente pelo solicitante.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+    <nav class="section-nav">
+      <a href="#sec-dados" data-tab="sec-dados">Dados da Solicitação</a>
+      <a href="#sec-itens" data-tab="sec-itens">Itens da Solicitação</a>
+    </nav>
 
-                <div class="row mt-3" id="justificativa-emergencial-field" style="display: none;">
-                    <div class="col-12">
-                        {{ form.justificativa_emergencial.label_tag }}
-                        {{ form.justificativa_emergencial }}
-                        {% if form.justificativa_emergencial.errors %}
-                        <div class="text-danger">{{ form.justificativa_emergencial.errors }}</div>
-                        {% endif %}
-                        <div class="form-text text-danger">
-                            <strong>Obrigatório:</strong> Explique detalhadamente o motivo da emergência.
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mt-3">
-                    <div class="col-12">
-                        {{ form.observacoes.label_tag }}
-                        {{ form.observacoes }}
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Itens da Solicitação -->
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-list-ul"></i> Itens da Solicitação
-                    <span class="badge bg-primary ms-2" id="item-count">1 item</span>
-                </h5>
-                <button type="button" class="btn btn-success btn-sm" id="add-item">
-                    <i class="bi bi-plus-circle"></i> Adicionar Item
-                </button>
-            </div>
-            <div class="card-body">
-                {{ formset.management_form }}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle" id="items-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Produto *</th>
-                                <th>Estoque Atual</th>
-                                <th>Quantidade *</th>
-                                <th>Unidade *</th>
-                                <th>Especificação</th>
-                                <th class="text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="item-forms">
-                            {% for form in formset %}
-                            <tr class="item-form" data-form-index="{{ forloop.counter0 }}">
-                                <td class="text-center">
-                                    <strong class="item-number">{{ forloop.counter }}</strong>
-                                    {{ form.id }}
-                                </td>
-                                <td>
-                                    {{ form.produto }}
-                                    {% if form.produto.errors %}
-                                    <div class="text-danger small">{{ form.produto.errors }}</div>
-                                    {% endif %}
-                                </td>
-                                <td class="estoque-atual-cell">
-                                    <span class="estoque-atual-value">-</span>
-                                </td>
-                                <td>
-                                    {{ form.quantidade }}
-                                    {% if form.quantidade.errors %}
-                                    <div class="text-danger small">{{ form.quantidade.errors }}</div>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {{ form.unidade_medida }}
-                                </td>
-                                <td>
-                                    {{ form.especificacao }}
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-danger remove-item" 
-                                            title="Remover item">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    {{ form.DELETE }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <!-- Template para novo item (usado pelo JavaScript) -->
-                        <tbody id="empty-form-container" class="d-none" style="display: none !important;">
-                            <tr class="item-form empty-form" data-form-index="__prefix__">
-                                <td class="text-center">
-                                    <strong class="item-number">X</strong>
-                                    <input type="hidden" name="itens-__prefix__-id">
-                                </td>
-                                <td>
-                                    <select name="itens-__prefix__-produto" class="form-select form-select-sm produto-select">
-                                        <option value="">Selecione um produto</option>
-                                        {% for produto in produtos %}
-                                            <option value="{{ produto.id }}">{{ produto.nome }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td class="estoque-atual-cell">
-                                    <span class="estoque-atual-value">-</span>
-                                </td>
-                                <td>
-                                    <input type="number" name="itens-__prefix__-quantidade" class="form-control form-control-sm quantidade-input" step="0.001" min="0.001" placeholder="0,000">
-                                </td>
-                                <td>
-                                    <select name="itens-__prefix__-unidade_medida" class="form-select form-select-sm unidade-select">
-                                        <option value="">Selecione uma unidade</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <textarea name="itens-__prefix__-especificacao" class="form-control form-control-sm especificacao-textarea" rows="2" placeholder="Detalhes técnicos, marca, modelo..."></textarea>
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-danger remove-item" title="Remover item">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                    <input type="hidden" name="itens-__prefix__-DELETE">
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="alert alert-info mt-3">
-                    <i class="bi bi-info-circle"></i> 
-                    <strong>Dica:</strong> Clique em "Adicionar Item" para incluir mais produtos à solicitação.
-                    Você pode adicionar quantos itens forem necessários.
-                </div>
-            </div>
-        </div>
-        <div class="text-end">
-            <button type="submit" class="btn btn-primary" id="btn-salvar-solicitacao">
-                <i class="fas fa-save"></i> Salvar Solicitação
-            </button>
-            <div class="small text-muted mt-2">
-                <i class="bi bi-shield-check"></i>
-                Ao clicar em salvar, sera solicitada confirmacao.
-            </div>
-        </div>
-    </form>
+    <div class="complex-main">
 
-    <div class="modal fade" id="confirmarSalvarSolicitacaoModal" tabindex="-1" aria-labelledby="confirmarSalvarSolicitacaoModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmarSalvarSolicitacaoModalLabel">Confirmar salvamento</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                </div>
-                <div class="modal-body">
-                    Deseja salvar a solicitação agora ou continuar editando para incluir mais produtos?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Continuar editando</button>
-                    <button type="button" class="btn btn-primary" id="confirmar-salvar-solicitacao">Salvar solicitação</button>
-                </div>
-            </div>
+      <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+          <span class="title">Dados da Solicitação</span>
         </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">{{ form.data_necessidade.label }}</label>
+              {{ form.data_necessidade }}
+              {% if form.data_necessidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_necessidade.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.departamento.label }}</label>
+              {{ form.departamento }}
+            </div>
+            <div class="field col-12">
+              <label class="form-label">{{ form.justificativa.label }}</label>
+              {{ form.justificativa }}
+              {% if form.justificativa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.justificativa.errors }}</div>{% endif %}
+            </div>
+
+            {% if perms.compras.criar_solicitacao_emergencial or user.is_admin_empresa %}
+            <div class="field col-12">
+              <div class="alert alert-warning border-warning mb-2">
+                <h6 class="alert-heading">
+                  <i class="bi bi-info-circle"></i> Sobre Compras Emergenciais
+                </h6>
+                <p class="mb-2">
+                  <strong>Use apenas para situações reais de emergência.</strong>
+                  Compras emergenciais são aprovadas automaticamente e pulam o processo formal de aprovação.
+                </p>
+                <hr>
+                <p class="mb-1"><strong>Exemplo de Uso Correto:</strong></p>
+                <div class="bg-white p-2 rounded small">
+                  <strong>Situação:</strong> Quebra do trator T-001 às 14h durante preparo do solo.<br>
+                  <strong>Impacto:</strong> Produção parada, 50 hectares aguardando plantio.<br>
+                  <strong>Urgência:</strong> Janela de plantio fecha em 3 dias.<br>
+                  <strong>Perda:</strong> R$ 45.000 se perder a janela de plantio.<br>
+                  <strong>Justificativa:</strong> Necessário peça urgente para reparo amanhã. Não pode aguardar aprovação formal (48h).
+                </div>
+              </div>
+
+              <div class="switch-row">
+                <label class="switch">
+                  {{ form.emergencial }}
+                  <span class="slider"></span>
+                </label>
+                <label class="switch-label" for="id_emergencial">
+                  {{ form.emergencial.label }}
+                  <span class="status-pill red ms-2">Pula Aprovação</span>
+                </label>
+              </div>
+              <div class="helper-note">
+                Marque esta opção para compras urgentes que não podem aguardar aprovação formal.
+                Será aprovada automaticamente pelo solicitante.
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="field col-12" id="justificativa-emergencial-field" style="display: none;">
+              <label class="form-label">{{ form.justificativa_emergencial.label }}</label>
+              {{ form.justificativa_emergencial }}
+              {% if form.justificativa_emergencial.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.justificativa_emergencial.errors }}</div>{% endif %}
+              <div class="helper-note text-danger">
+                <strong>Obrigatório:</strong> Explique detalhadamente o motivo da emergência.
+              </div>
+            </div>
+
+            <div class="field col-12">
+              <label class="form-label">{{ form.observacoes.label }}</label>
+              {{ form.observacoes }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens da Solicitação -->
+      <div class="form-section" id="sec-itens" data-tab-panel="sec-itens">
+        <div class="section-toolbar">
+          <span class="title"><i class="bi bi-list-ul text-primary"></i> Itens da Solicitação
+            <span class="count-badge" id="item-count">1 item</span></span>
+          <button type="button" class="btn btn-sm btn-outline" id="add-item">
+            <i class="bi bi-plus-circle"></i> Adicionar Item
+          </button>
+        </div>
+        <div class="form-section-body">
+          {{ formset.management_form }}
+          <div class="items-table-wrap">
+            <table class="items-table" id="items-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Produto *</th>
+                  <th>Estoque Atual</th>
+                  <th>Quantidade *</th>
+                  <th>Unidade *</th>
+                  <th>Especificação</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="item-forms">
+                {% for form in formset %}
+                <tr class="item-form" data-form-index="{{ forloop.counter0 }}">
+                  <td class="text-center">
+                    <strong class="item-number">{{ forloop.counter }}</strong>
+                    {{ form.id }}
+                  </td>
+                  <td>
+                    {{ form.produto }}
+                    {% if form.produto.errors %}
+                    <div class="text-danger small">{{ form.produto.errors }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="estoque-atual-cell">
+                    <span class="estoque-atual-value">-</span>
+                  </td>
+                  <td>
+                    {{ form.quantidade }}
+                    {% if form.quantidade.errors %}
+                    <div class="text-danger small">{{ form.quantidade.errors }}</div>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {{ form.unidade_medida }}
+                  </td>
+                  <td>
+                    {{ form.especificacao }}
+                  </td>
+                  <td class="text-center">
+                    <button type="button" class="row-action danger remove-item"
+                            title="Remover item">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                    {{ form.DELETE }}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <!-- Template para novo item (usado pelo JavaScript) -->
+              <tbody id="empty-form-container" class="d-none" style="display: none !important;">
+                <tr class="item-form empty-form" data-form-index="__prefix__">
+                  <td class="text-center">
+                    <strong class="item-number">X</strong>
+                    <input type="hidden" name="itens-__prefix__-id">
+                  </td>
+                  <td>
+                    <select name="itens-__prefix__-produto" class="form-select form-select-sm produto-select">
+                      <option value="">Selecione um produto</option>
+                      {% for produto in produtos %}
+                        <option value="{{ produto.id }}">{{ produto.nome }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                  <td class="estoque-atual-cell">
+                    <span class="estoque-atual-value">-</span>
+                  </td>
+                  <td>
+                    <input type="number" name="itens-__prefix__-quantidade" class="form-control form-control-sm quantidade-input" step="0.001" min="0.001" placeholder="0,000">
+                  </td>
+                  <td>
+                    <select name="itens-__prefix__-unidade_medida" class="form-select form-select-sm unidade-select">
+                      <option value="">Selecione uma unidade</option>
+                    </select>
+                  </td>
+                  <td>
+                    <textarea name="itens-__prefix__-especificacao" class="form-control form-control-sm especificacao-textarea" rows="2" placeholder="Detalhes técnicos, marca, modelo..."></textarea>
+                  </td>
+                  <td class="text-center">
+                    <button type="button" class="row-action danger remove-item" title="Remover item">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                    <input type="hidden" name="itens-__prefix__-DELETE">
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle"></i>
+            <strong>Dica:</strong> Clique em "Adicionar Item" para incluir mais produtos à solicitação.
+            Você pode adicionar quantos itens forem necessários.
+          </div>
+        </div>
+      </div>
+
     </div>
+
+    <div class="app-footer-bar">
+      <div class="small text-muted me-auto">
+        <i class="bi bi-shield-check"></i>
+        Ao clicar em salvar, sera solicitada confirmacao.
+      </div>
+      <button type="submit" class="btn btn-primary" id="btn-salvar-solicitacao">
+        <i class="bi bi-save"></i> Salvar Solicitação
+      </button>
+    </div>
+  </form>
+
+  <div class="modal fade" id="confirmarSalvarSolicitacaoModal" tabindex="-1" aria-labelledby="confirmarSalvarSolicitacaoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmarSalvarSolicitacaoModalLabel">Confirmar salvamento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          Deseja salvar a solicitação agora ou continuar editando para incluir mais produtos?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Continuar editando</button>
+          <button type="button" class="btn btn-primary" id="confirmar-salvar-solicitacao">Salvar solicitação</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
@@ -282,18 +288,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Dados de unidades por produto (será preenchido quando necessário)
     const unidadesPorProduto = {};
     let unidadesEmpresa = null; // Cache de todas as unidades da empresa
-    
+
     // Carregar todas as unidades da empresa (uma única vez)
     async function carregarUnidadesEmpresa() {
         if (unidadesEmpresa !== null) {
             return unidadesEmpresa;
         }
-        
+
         try {
             console.log('Carregando unidades da empresa via API...');
             const response = await fetch('/compras/api/empresa/unidades/');
             const data = await response.json();
-            
+
             if (data.success && data.unidades) {
                 unidadesEmpresa = data.unidades;
                 console.log('✓ Unidades da empresa carregadas:', unidadesEmpresa.length, 'unidades');
@@ -305,20 +311,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return [];
     }
-    
+
     // Preencher select de unidade com todas as opcões disponíveis
     function preencherSelectUnidade(unidadeSelect) {
         if (!unidadeSelect || !unidadesEmpresa) {
             return;
         }
-        
+
         console.log('Preenchendo select de unidade com', unidadesEmpresa.length, 'opções');
-        
+
         // Limpar opções existentes, exceto a primeira (vazia)
         while (unidadeSelect.options.length > 1) {
             unidadeSelect.remove(1);
         }
-        
+
         // Adicionar todas as unidades da empresa
         unidadesEmpresa.forEach(unidade => {
             const option = document.createElement('option');
@@ -326,31 +332,31 @@ document.addEventListener('DOMContentLoaded', function() {
             option.text = `${unidade.nome} (${unidade.sigla})`;
             unidadeSelect.appendChild(option);
         });
-        
+
         console.log('Select de unidade preenchido com', unidadeSelect.options.length - 1, 'opções');
     }
-    
+
     // API para buscar unidades de um produto
     async function carregarUnidadesMedida(produtoId) {
         if (unidadesPorProduto[produtoId]) {
             console.log('Dados em cache para produto:', produtoId);
             return unidadesPorProduto[produtoId];
         }
-        
+
         try {
             const url = '/compras/api/produto/' + produtoId + '/unidades/';
             console.log('Buscando dados do produto:', url);
-            
+
             const response = await fetch(url);
             console.log('Response status:', response.status);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
             console.log('Dados completos da API:', data);
-            
+
             if (data.success) {
                 // Armazenar o objeto completo, não apenas array
                 unidadesPorProduto[produtoId] = {
@@ -369,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         }
     }
-    
+
     // Atualizar select de unidades e estoque quando produto muda
     async function atualizarAoMudarProduto(select) {
         const row = select.closest('tr.item-form');
@@ -377,11 +383,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('Linha do item não encontrada');
             return;
         }
-        
+
         const produtoId = select.value;
         console.log('=== Produto selecionado ===');
         console.log('Produto ID:', produtoId);
-        
+
         // Encontrar o select de unidade
         let unidadeSelect = row.querySelector('select[name$="unidade_medida"]');
         if (!unidadeSelect) {
@@ -390,13 +396,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 unidadeSelect = selects[1];
             }
         }
-        
+
         const estoqueCell = row.querySelector('.estoque-atual-cell');
         const estoqueValue = estoqueCell ? estoqueCell.querySelector('.estoque-atual-value') : null;
-        
+
         console.log('Select unidade encontrado:', !!unidadeSelect);
         console.log('Estoque cell encontrado:', !!estoqueCell);
-        
+
         if (!produtoId) {
             // Limpar
             if (unidadeSelect) {
@@ -407,20 +413,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             return;
         }
-        
+
         // Carregar dados do produto (incluindo unidade padrão)
         try {
             const dadosProduto = await carregarUnidadesMedida(produtoId);
             console.log('Dados do produto:', dadosProduto);
-            
+
             if (unidadeSelect && dadosProduto && dadosProduto.unidade_padrao_id) {
                 // Garantir que o select tem todas as opções disponíveis
                 preencherSelectUnidade(unidadeSelect);
-                
+
                 // Setar a unidade padrão do produto
                 unidadeSelect.value = dadosProduto.unidade_padrao_id;
                 console.log('Unidade padrão selecionada:', dadosProduto.unidade_padrao_nome, '(ID:', dadosProduto.unidade_padrao_id + ')');
-                
+
                 // Trigger change event para Select2 atualizar visualmente
                 if ($(unidadeSelect).data('select2')) {
                     $(unidadeSelect).trigger('change');
@@ -432,7 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Erro ao carregar dados do produto:', error);
         }
-        
+
         // Buscar e mostrar estoque
         try {
             const response = await fetch('/compras/api/produto/' + produtoId + '/estoque/');
@@ -446,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erro ao buscar estoque:', error);
         }
     }
-    
+
     const produtoAjaxUrl = '{% url "produtos:ajax_buscar_produtos" %}';
 
     function initProdutoSelect2(element) {
@@ -494,49 +500,49 @@ document.addEventListener('DOMContentLoaded', function() {
             initProdutoSelect2(this);
         });
     }
-    
+
     // Event listener para mudança de produto (compatível com Select2 e selects dinâmicos)
     $(document).on('change', '[name$="produto"]', function() {
         console.log('\n>>> CHANGE EVENT DETECTADO - Produto foi alterado');
         console.log('Select element:', this.name);
         console.log('Valor selecionado:', this.value);
-        
+
         if (this.value) {
             atualizarAoMudarProduto(this);
         } else {
             console.log('Valor vazio - limpando campos');
         }
     });
-    
+
     // Adicionar item
     document.getElementById('add-item').addEventListener('click', function() {
         const totalFormsInput = document.getElementById('id_itens-TOTAL_FORMS');
         const formCount = totalFormsInput ? parseInt(totalFormsInput.value, 10) : 0;
         const emptyFormContainer = document.getElementById('empty-form-container');
         const tbody = document.getElementById('item-forms');
-        
+
         console.log('Adicionando novo item - formCount:', formCount);
-        
+
         if (emptyFormContainer && tbody) {
             const emptyForm = emptyFormContainer.querySelector('.empty-form');
             if (emptyForm) {
                 // Clone profundo apenas da linha (tr)
                 const newForm = emptyForm.cloneNode(true);
-                
+
                 // Remover classe 'empty-form' IMEDIATAMENTE após clone
                 newForm.classList.remove('empty-form');
                 newForm.setAttribute('data-form-index', formCount);
-                
+
                 // Atualizar índices de todos os campos
                 const fieldsToUpdate = [
-                    'id', 'produto', 'quantidade', 'unidade_medida', 
+                    'id', 'produto', 'quantidade', 'unidade_medida',
                     'especificacao', 'DELETE'
                 ];
-                
+
                 fieldsToUpdate.forEach(fieldName => {
                     const newName = `itens-${formCount}-${fieldName}`;
                     const elements = newForm.querySelectorAll(`[name*="__prefix__-${fieldName}"]`);
-                    
+
                     elements.forEach(el => {
                         const oldName = el.name;
                         if (oldName && oldName.includes('__prefix__')) {
@@ -545,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                 });
-                
+
                 // Atualizar número do item
                 const itemNumber = newForm.querySelector('.item-number');
                 if (itemNumber) {
@@ -557,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 newForm.querySelectorAll('input:not([type="hidden"]), textarea').forEach(field => {
                     field.value = '';
                 });
-                
+
                 // Adicionar atributo required aos campos obrigatórios
                 const quantidadeInput = newForm.querySelector('input[name$="quantidade"]');
                 const unidadeSelect = newForm.querySelector('select[name$="unidade_medida"]');
@@ -592,25 +598,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (removeBtn) {
                     removeBtn.addEventListener('click', removerItem);
                 }
-                
+
                 console.log(`Item ${formCount} adicionado com sucesso`);
             }
         }
     });
-    
+
     // Remover item
     function removerItem(e) {
         e.preventDefault();
         const row = e.target.closest('tr.item-form');
         const deleteCheckbox = row.querySelector('[name$="DELETE"]');
-        
+
         if (deleteCheckbox) {
             deleteCheckbox.checked = true;
             row.style.display = 'none';
             atualizarTotalItens();
         }
     }
-    
+
     // Atualizar contador de itens
     function atualizarTotalItens() {
         const visibleItems = document.querySelectorAll(
@@ -621,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
             itemCount.textContent = visibleItems + ' item' + (visibleItems !== 1 ? 'ns' : '');
         }
     }
-    
+
     // Inicializar evento de emergencial
     const emergencialCheckbox = document.getElementById('id_emergencial');
     if (emergencialCheckbox) {
@@ -632,13 +638,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Inicializar
     initSelect2();
     document.querySelectorAll('.remove-item').forEach(btn => {
         btn.addEventListener('click', removerItem);
     });
-    
+
     atualizarTotalItens();
 
     // PRIMEIRO: Carregar unidades da empresa
@@ -649,20 +655,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (unidades && unidades.length > 0) {
             unidadesEmpresa = unidades;
             console.log('✓ Unidades da empresa carregadas:', unidades.length);
-            
+
             // Pré-preencher TODOS os selects de unidade com as opções disponíveis
             document.querySelectorAll('select[name$="unidade_medida"]').forEach(select => {
                 preencherSelectUnidade(select);
             });
         }
-        
+
         // DEPOIS: verificar se há items e adicionar um vazio se necessário
         const visibleItems = document.querySelectorAll(
             'tr.item-form:not(.empty-form):not(.d-none):not([style*="display: none"])'
         ).length;
-        
+
         console.log('Items visíveis após carregar unidades:', visibleItems);
-        
+
         if (visibleItems === 0) {
             console.log('Adicionando primeiro item...');
             document.getElementById('add-item').click();
@@ -691,7 +697,7 @@ document.addEventListener('DOMContentLoaded', function() {
         solicitacaoForm.addEventListener('submit', function(e) {
             console.log('\n========== VALIDAÇÃO DO FORMULÁRIO ==========');
             const erros = [];
-            
+
             // ===== VALIDAÇÕES DA SOLICITAÇÃO =====
             const dataNecessidade = document.getElementById('id_data_necessidade');
             const justificativa = document.getElementById('id_justificativa');
@@ -719,40 +725,40 @@ document.addEventListener('DOMContentLoaded', function() {
             // ===== VALIDAÇÕES DOS ITENS =====
             const tbody = document.getElementById('item-forms');
             const allRows = tbody ? tbody.querySelectorAll('tr') : [];
-            
+
             console.log('Total de linhas no tbody:', allRows.length);
 
             let itemVisivel = 0;
             let itemsValidos = [];
-            
+
             allRows.forEach((row, idx) => {
                 // Verificar se é o empty-form
                 if (row.classList.contains('empty-form')) {
                     console.log(`Linha ${idx}: empty-form (ignorada)`);
                     return;
                 }
-                
+
                 // Verificar se está visível e não está deletada
                 const isHidden = row.style.display === 'none' || row.classList.contains('d-none');
                 const deleteCheckbox = row.querySelector('input[name$="DELETE"]');
                 const isDeleted = deleteCheckbox && deleteCheckbox.checked;
-                
+
                 console.log(`Linha ${idx}: visível=${!isHidden}, deletada=${isDeleted}`);
-                
+
                 if (isHidden || isDeleted) {
                     return;
                 }
-                
+
                 itemVisivel++;
                 const itemNum = itemVisivel;
                 const produto = row.querySelector('select[name$="produto"]');
                 const quantidade = row.querySelector('input[name$="quantidade"]');
                 const unidade = row.querySelector('select[name$="unidade_medida"]');
-                
+
                 const produtoVal = produto?.value || '';
                 const qtdVal = quantidade?.value || '';
                 const unidadeVal = unidade?.value || '';
-                
+
                 console.log(`Item ${itemNum}: Produto='${produtoVal}', Qtd='${qtdVal}', Unidade='${unidadeVal}'`);
 
                 if (!produtoVal) {
@@ -773,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     itemsValidos.push('unidade');
                 }
             });
-            
+
             console.log(`\nTotal items visíveis: ${itemVisivel}`);
             console.log(`Campos válidos: ${itemsValidos.length}`);
 
@@ -784,11 +790,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Mostrar erros
             console.log(`\n❌ ERROS ENCONTRADOS: ${erros.length}`);
             erros.forEach(e => console.log('   - ' + e));
-            
+
             if (erros.length > 0) {
                 confirmarSalvarAprovado = false;
                 e.preventDefault();
-                const mensagem = 'Verifique os seguintes campos:\n\n' + 
+                const mensagem = 'Verifique os seguintes campos:\n\n' +
                                 erros.map(e => '• ' + e).join('\n');
                 alert(mensagem);
                 console.log('\n⛔ SUBMISSÃO BLOQUEADA\n');

@@ -14,66 +14,74 @@
     </ol>
   </nav>
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-header bg-warning text-dark">
-      <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Anexar Documento</h5>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge orange"><i class="bi bi-file-earmark-arrow-up"></i></span>
+        <h2>Anexar Documento</h2>
+      </div>
     </div>
-    <div class="card-body p-4">
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de Documento *</label>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Tipo de Documento<span class="req">*</span></label>
             {{ form.tipo|add_class:'form-select' }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Número do Documento</label>
+          <div class="field col-6">
+            <label class="form-label">Número do Documento</label>
             {{ form.numero_documento|add_class:'form-control' }}
           </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Título/Descrição *</label>
+          <div class="field col-12">
+            <label class="form-label">Título/Descrição<span class="req">*</span></label>
             {{ form.titulo|add_class:'form-control' }}
           </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Arquivo *</label>
+          <div class="field col-12">
+            <label class="form-label">Arquivo<span class="req">*</span></label>
             {{ form.arquivo|add_class:'form-control' }}
-            <small class="text-muted d-block">PDF, JPG, PNG, DOC, XLS (máx 10MB)</small>
+            <div class="helper-note">PDF, JPG, PNG, DOC, XLS (máx 10MB)</div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Data de Emissão</label>
+          <div class="field col-6">
+            <label class="form-label">Data de Emissão</label>
             {{ form.data_emissao|add_class:'form-control' }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Data de Validade</label>
+          <div class="field col-6">
+            <label class="form-label">Data de Validade</label>
             {{ form.data_validade|add_class:'form-control' }}
           </div>
-          <div class="col-md-6">
-            <div class="form-check form-switch mt-2">
-              {{ form.gerar_alerta_vencimento|add_class:'form-check-input' }}
-              <label class="form-check-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">
-                Gerar Alerta de Vencimento
+          <div class="field col-6">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.gerar_alerta_vencimento|add_class:'' }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">Gerar Alerta de Vencimento</label>
             </div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Dias de Antecedência</label>
+          <div class="field col-6">
+            <label class="form-label">Dias de Antecedência</label>
             {{ form.dias_antecedencia_alerta|add_class:'form-control' }}
           </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Observações</label>
+          <div class="field col-12">
+            <label class="form-label">Observações</label>
             {{ form.observacoes|add_class:'form-control' }}
           </div>
         </div>
-        <div class="d-flex justify-content-between gap-3 mt-4">
-          <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Cancelar
-          </a>
-          <button type="submit" class="btn btn-success">
-            <i class="bi bi-check-circle"></i> Anexar Documento
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'rh:funcionario_detail' funcionario.pk %}" class="btn btn-outline">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Anexar Documento
+      </button>
+    </div>
+  </form>
 </div>
 {% endblock %}

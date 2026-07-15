@@ -5,47 +5,58 @@
 {% block page_title %}Nova Chave de API{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body p-4">
-      <h4 class="fw-bold text-secondary mb-4">
-        <i class="bi bi-key"></i> Nova Chave de API
-      </h4>
-
-      {% if raw_key %}
-      <div class="alert alert-warning">
-        <strong><i class="bi bi-exclamation-triangle-fill"></i> Copie sua chave agora.</strong>
-        Ela não será exibida novamente.
-        <div class="input-group mt-2">
-          <input type="text" class="form-control font-monospace" value="{{ raw_key }}" id="raw-key-field" readonly>
-          <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('raw-key-field').value)">
-            <i class="bi bi-clipboard"></i> Copiar
-          </button>
-        </div>
+<div class="container py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-key"></i></span>
+        <h2>Nova Chave de API</h2>
       </div>
-      {% endif %}
-
-      <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Nome/Descrição</label>
-          {{ form.nome }}
-          {% if form.nome.errors %}
-            <div class="text-danger small">{{ form.nome.errors|join:", " }}</div>
-          {% endif %}
-          <small class="text-muted">Um nome para identificar onde esta chave será usada.</small>
-        </div>
-
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'empresas:api_key_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
-          </a>
-          <button type="submit" class="btn btn-success px-5">
-            <i class="bi bi-check-circle"></i> Gerar Chave
-          </button>
-        </div>
-      </form>
+      <div class="form-header-actions">
+        <a href="{% url 'empresas:api_key_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
+
+  {% if raw_key %}
+  <div class="alert alert-warning">
+    <strong><i class="bi bi-exclamation-triangle-fill"></i> Copie sua chave agora.</strong>
+    Ela não será exibida novamente.
+    <div class="input-group mt-2">
+      <input type="text" class="form-control font-monospace" value="{{ raw_key }}" id="raw-key-field" readonly>
+      <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('raw-key-field').value)">
+        <i class="bi bi-clipboard"></i> Copiar
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12{% if form.nome.errors %} has-error{% endif %}">
+            <label class="form-label">Nome/Descrição</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|join:", " }}</div>{% endif %}
+            <div class="helper-note">Um nome para identificar onde esta chave será usada.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'empresas:api_key_list' %}" class="btn btn-outline">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Gerar Chave
+      </button>
+    </div>
+  </form>
 </div>
 {% endblock %}

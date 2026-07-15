@@ -705,6 +705,9 @@ class Lote(models.Model):
         # Sempre recalcula estoque_atual do produto após salvar lote
         if hasattr(self.produto, 'recalcular_estoque'):
             self.produto.recalcular_estoque()
+        # Recalcula o custo médio ponderado do produto com base nos lotes ativos
+        if hasattr(self.produto, 'recalcular_custo_medio'):
+            self.produto.recalcular_custo_medio()
     
     def esta_vencido(self):
         """Verifica se o lote está vencido"""

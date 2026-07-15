@@ -1,12 +1,61 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container py-4">
-  <h3>{{ title|default:'Nova Comissão' }}</h3>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-percent"></i></span>
+        <h2>{{ title|default:'Nova Comissão' }}</h2>
+      </div>
+    </div>
+  </div>
+
   <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
-    <a href="{% url 'cadastros:comissao_list' %}" class="btn btn-secondary">Cancelar</a>
-    <button type="submit" class="btn btn-primary">Salvar</button>
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.vendedor.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.vendedor.label }}</label>
+            {{ form.vendedor }}
+            {% if form.vendedor.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.vendedor.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6{% if form.referencia_mes.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.referencia_mes.label }}</label>
+            {{ form.referencia_mes }}
+            {% if form.referencia_mes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.referencia_mes.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4{% if form.valor_base.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.valor_base.label }}</label>
+            {{ form.valor_base }}
+            {% if form.valor_base.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_base.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4{% if form.percentual.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.percentual.label }}</label>
+            {{ form.percentual }}
+            {% if form.percentual.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.percentual.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4{% if form.status.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12{% if form.observacoes.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:comissao_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
   </form>
 </div>
 {% endblock %}

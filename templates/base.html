@@ -11,6 +11,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Painel de Controle{% endblock %}</title>
 
+  <!-- Favicon -->
+  <link rel="icon" href="{% static 'img/favicon.ico' %}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+
   <!-- Google Fonts: Inter (não-bloqueante) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,9 +26,13 @@
   <!-- Bootstrap e ícones (auto-hospedado) -->
   <link href="{% static 'vendor/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'vendor/bootstrap-icons.css' %}" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=4">
-  <link rel="stylesheet" href="{% static 'css/sidebar-modern.css' %}?v=4">
-  
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=9">
+  <link rel="stylesheet" href="{% static 'css/sidebar-modern.css' %}?v=5">
+
+  <!-- Máscara BR para campos de valor monetário (money-mask-input) — carregada cedo para
+       registrar seu listener de DOMContentLoaded antes de qualquer script inline de página -->
+  <script src="{% static 'js/money-mask.js' %}"></script>
+
   {% block extra_css %}{% endblock %}
 </head>
 

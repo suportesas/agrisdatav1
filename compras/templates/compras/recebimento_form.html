@@ -7,182 +7,182 @@
 {% include 'compras/includes/fluxo_compras.html' with etapa_atual='recebimento' solicitacao=pedido.cotacao.solicitacao cotacao=pedido.cotacao pedido=pedido %}
 {% include 'compras/includes/instrucoes_etapa.html' with etapa='recebimento' %}
 
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
 
-    <div class="row mb-4">
-        <div class="col">
-            <h2><i class="bi bi-inbox-fill me-2"></i>Receber Mercadorias</h2>
-            <p class="text-muted">Pedido: <strong>{{ pedido.numero }}</strong> — {{ pedido.fornecedor.get_nome_exibicao }}</p>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-inbox-fill"></i></span>
+        <div>
+          <h2>Receber Mercadorias</h2>
+          <p class="text-muted mb-0">Pedido: <strong>{{ pedido.numero }}</strong> — {{ pedido.fornecedor.get_nome_exibicao }}</p>
         </div>
-        <div class="col-auto">
-            <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Voltar ao Pedido
-            </a>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar ao Pedido
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" id="recebimentoForm" onsubmit="return validarSubmit()">
+    {% csrf_token %}
+    <input type="hidden" name="pedido" value="{{ pedido.pk }}">
+
+    <nav class="section-nav">
+      <a href="#sec-nfe" data-tab="sec-nfe">Dados da Nota Fiscal</a>
+      <a href="#sec-itens" data-tab="sec-itens">Itens do Pedido</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-nfe" data-tab-panel="sec-nfe">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-receipt"></i></span>
+          <span class="title">Dados da Nota Fiscal</span>
         </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-3">
+              <label class="form-label">{{ form.nota_fiscal.label }}<span class="req">*</span></label>
+              {{ form.nota_fiscal }}
+              {% if form.nota_fiscal.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nota_fiscal.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-2">
+              <label class="form-label">{{ form.serie_nota.label }}</label>
+              {{ form.serie_nota }}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.chave_nfe.label }}</label>
+              {{ form.chave_nfe }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">{{ form.data_emissao_nf.label }}<span class="req">*</span></label>
+              {{ form.data_emissao_nf }}
+              {% if form.data_emissao_nf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_emissao_nf.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">{{ form.data_recebimento.label }}<span class="req">*</span></label>
+              {{ form.data_recebimento }}
+              {% if form.data_recebimento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_recebimento.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-2">
+              <label class="form-label">{{ form.hora_recebimento.label }}<span class="req">*</span></label>
+              {{ form.hora_recebimento }}
+            </div>
+            <div class="field col-3">
+              <label class="form-label">Valor Total NF</label>
+              <input type="number" name="valor_total_nf" id="valor_total_nf"
+                     class="form-control" step="0.01" readonly value="0.00"
+                     style="background: #f8f9fa;">
+              <div class="helper-note">Calculado automaticamente</div>
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.arquivo_nfe.label }}</label>
+              {{ form.arquivo_nfe }}
+              <div class="helper-note">Arquivo XML da NF-e (opcional)</div>
+            </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.observacoes.label }}</label>
+              {{ form.observacoes }}
+            </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.divergencias.label }}</label>
+              {{ form.divergencias }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens do Pedido -->
+      <div class="form-section" id="sec-itens" data-tab-panel="sec-itens">
+        <div class="section-toolbar">
+          <span class="title"><i class="bi bi-box-seam text-primary"></i> Itens do Pedido
+            <span id="contadorConfirmados" class="count-badge">0 de {{ itens_pendentes|length }} confirmados</span></span>
+          <span class="fw-bold">Total NF: <span id="totalNFDisplay" class="text-success">R$ 0,00</span></span>
+        </div>
+        <div class="items-table-wrap">
+          <table class="items-table mb-0" id="tabelaItens">
+            <thead>
+              <tr>
+                <th style="width: 35%;">Produto</th>
+                <th class="text-end">Qtd. Pedida</th>
+                <th class="text-end">Já Recebido</th>
+                <th class="text-end">Pendente</th>
+                <th class="text-center" style="width: 160px;">Status</th>
+                <th class="text-center" style="width: 110px;">Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in itens_pendentes %}
+              <tr id="row-{{ forloop.counter0 }}"
+                  data-index="{{ forloop.counter0 }}"
+                  data-item-id="{{ item.pk }}"
+                  data-produto="{{ item.produto.nome }}"
+                  data-pendente="{{ item.quantidade_pendente|unlocalize }}"
+                  data-unidade="{{ item.unidade_medida.sigla }}"
+                  data-preco="{{ item.preco_unitario|default:0|unlocalize }}"
+                  data-desconto="{{ item.valor_desconto|default:0|unlocalize }}">
+                <td>
+                  <div class="fw-semibold">{{ item.produto.nome }}</div>
+                  {% if item.produto.codigo %}
+                  <small class="text-muted">Cód: {{ item.produto.codigo }}</small>
+                  {% endif %}
+                </td>
+                <td class="text-end text-nowrap">
+                  {{ item.quantidade_pedida }} {{ item.unidade_medida.sigla }}
+                </td>
+                <td class="text-end text-nowrap text-muted">
+                  {{ item.quantidade_recebida }} {{ item.unidade_medida.sigla }}
+                </td>
+                <td class="text-end text-nowrap">
+                  <strong>{{ item.quantidade_pendente }} {{ item.unidade_medida.sigla }}</strong>
+                </td>
+                <td class="text-center">
+                  <span id="badge-{{ forloop.counter0 }}" class="badge bg-secondary">Pendente</span>
+                </td>
+                <td class="text-center">
+                  <button type="button"
+                          id="btn-{{ forloop.counter0 }}"
+                          class="btn btn-sm btn-outline"
+                          onclick="abrirModal(this)">
+                    <i class="bi bi-check-circle"></i> Receber
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
-    {% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- Inputs ocultos preenchidos pelo JS no submit -->
+    <div id="hiddenItens"></div>
+
+    <div class="alert alert-warning d-flex align-items-start mt-3">
+      <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0 mt-1"></i>
+      <span><strong>Atenção:</strong> Ao registrar o recebimento, a entrada será automaticamente lançada no estoque no local especificado.</span>
     </div>
-    {% endfor %}
-    {% endif %}
 
-    <form method="post" enctype="multipart/form-data" id="recebimentoForm" onsubmit="return validarSubmit()">
-        {% csrf_token %}
-        <input type="hidden" name="pedido" value="{{ pedido.pk }}">
-
-        <!-- Dados da Nota Fiscal -->
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Dados da Nota Fiscal</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.nota_fiscal.label }} <span class="text-danger">*</span></label>
-                        {{ form.nota_fiscal }}
-                        {% if form.nota_fiscal.errors %}<div class="text-danger small mt-1">{{ form.nota_fiscal.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">{{ form.serie_nota.label }}</label>
-                        {{ form.serie_nota }}
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.chave_nfe.label }}</label>
-                        {{ form.chave_nfe }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.data_emissao_nf.label }} <span class="text-danger">*</span></label>
-                        {{ form.data_emissao_nf }}
-                        {% if form.data_emissao_nf.errors %}<div class="text-danger small mt-1">{{ form.data_emissao_nf.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">{{ form.data_recebimento.label }} <span class="text-danger">*</span></label>
-                        {{ form.data_recebimento }}
-                        {% if form.data_recebimento.errors %}<div class="text-danger small mt-1">{{ form.data_recebimento.errors }}</div>{% endif %}
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">{{ form.hora_recebimento.label }} <span class="text-danger">*</span></label>
-                        {{ form.hora_recebimento }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Valor Total NF</label>
-                        <input type="number" name="valor_total_nf" id="valor_total_nf"
-                               class="form-control" step="0.01" readonly value="0.00"
-                               style="background: #f8f9fa;">
-                        <small class="text-muted">Calculado automaticamente</small>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">{{ form.arquivo_nfe.label }}</label>
-                        {{ form.arquivo_nfe }}
-                        <small class="text-muted">Arquivo XML da NF-e (opcional)</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">{{ form.observacoes.label }}</label>
-                        {{ form.observacoes }}
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">{{ form.divergencias.label }}</label>
-                        {{ form.divergencias }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Itens do Pedido -->
-        <div class="card mb-4">
-            <div class="card-header bg-warning">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h5 class="mb-0">
-                        <i class="bi bi-box-seam me-2"></i>Itens do Pedido
-                    </h5>
-                    <div class="d-flex align-items-center gap-3">
-                        <span id="contadorConfirmados" class="badge bg-secondary fs-6">
-                            0 de {{ itens_pendentes|length }} confirmados
-                        </span>
-                        <span class="fw-bold">
-                            Total NF: <span id="totalNFDisplay" class="text-success">R$ 0,00</span>
-                        </span>
-                    </div>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="tabelaItens">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-3" style="width: 35%;">Produto</th>
-                                <th class="text-end">Qtd. Pedida</th>
-                                <th class="text-end">Já Recebido</th>
-                                <th class="text-end">Pendente</th>
-                                <th class="text-center" style="width: 160px;">Status</th>
-                                <th class="text-center" style="width: 110px;">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in itens_pendentes %}
-                            <tr id="row-{{ forloop.counter0 }}"
-                                data-index="{{ forloop.counter0 }}"
-                                data-item-id="{{ item.pk }}"
-                                data-produto="{{ item.produto.nome }}"
-                                data-pendente="{{ item.quantidade_pendente|unlocalize }}"
-                                data-unidade="{{ item.unidade_medida.sigla }}"
-                                data-preco="{{ item.preco_unitario|default:0|unlocalize }}"
-                                data-desconto="{{ item.valor_desconto|default:0|unlocalize }}">
-                                <td class="ps-3">
-                                    <div class="fw-semibold">{{ item.produto.nome }}</div>
-                                    {% if item.produto.codigo %}
-                                    <small class="text-muted">Cód: {{ item.produto.codigo }}</small>
-                                    {% endif %}
-                                </td>
-                                <td class="text-end text-nowrap">
-                                    {{ item.quantidade_pedida }} {{ item.unidade_medida.sigla }}
-                                </td>
-                                <td class="text-end text-nowrap text-muted">
-                                    {{ item.quantidade_recebida }} {{ item.unidade_medida.sigla }}
-                                </td>
-                                <td class="text-end text-nowrap">
-                                    <strong>{{ item.quantidade_pendente }} {{ item.unidade_medida.sigla }}</strong>
-                                </td>
-                                <td class="text-center">
-                                    <span id="badge-{{ forloop.counter0 }}" class="badge bg-secondary">Pendente</span>
-                                </td>
-                                <td class="text-center">
-                                    <button type="button"
-                                            id="btn-{{ forloop.counter0 }}"
-                                            class="btn btn-sm btn-success"
-                                            onclick="abrirModal(this)">
-                                        <i class="bi bi-check-circle me-1"></i>Receber
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Inputs ocultos preenchidos pelo JS no submit -->
-        <div id="hiddenItens"></div>
-
-        <div class="alert alert-warning d-flex align-items-start mb-4">
-            <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0 mt-1"></i>
-            <span><strong>Atenção:</strong> Ao registrar o recebimento, a entrada será automaticamente lançada no estoque no local especificado.</span>
-        </div>
-
-        <div class="d-flex justify-content-between mb-5">
-            <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-secondary btn-lg">
-                <i class="bi bi-x-circle me-2"></i>Cancelar
-            </a>
-            <button type="submit" class="btn btn-success btn-lg">
-                <i class="bi bi-check-circle me-2"></i>Registrar Recebimento
-            </button>
-        </div>
-    </form>
+    <div class="app-footer-bar">
+      <a href="{% url 'compras:pedido_detail' pedido.pk %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Registrar Recebimento
+      </button>
+    </div>
+  </form>
 </div>
 
 <!-- Modal de Recebimento de Item -->
@@ -267,7 +267,10 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 'use strict';
 
@@ -385,7 +388,6 @@ function atualizarTotaisGlobais() {
     const tot = {{ itens_pendentes|length }};
     const badge = document.getElementById('contadorConfirmados');
     badge.textContent = n + ' de ' + tot + ' confirmados';
-    badge.className   = n > 0 ? 'badge bg-success fs-6' : 'badge bg-secondary fs-6';
 }
 
 function validarSubmit() {

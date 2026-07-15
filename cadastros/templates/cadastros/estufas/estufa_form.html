@@ -4,73 +4,84 @@
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
   <div class="row justify-content-center">
     <div class="col-lg-8">
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-house-door text-success"></i> {{ title }}</h6>
-        </div>
-        <div class="card-body">
-          <form method="post" novalidate>
-            {% csrf_token %}
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Fazenda <span class="text-danger">*</span></label>
-                {{ form.fazenda }}
-                {% if form.fazenda.errors %}<div class="text-danger small">{{ form.fazenda.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
-                {{ form.nome }}
-                {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Código <span class="text-danger">*</span></label>
-                {{ form.codigo }}
-                {% if form.codigo.errors %}<div class="text-danger small">{{ form.codigo.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
-                {{ form.tipo }}
-                {% if form.tipo.errors %}<div class="text-danger small">{{ form.tipo.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Área (m²)</label>
-                {{ form.area_m2 }}
-                {% if form.area_m2.errors %}<div class="text-danger small">{{ form.area_m2.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Capacidade (bandejas)</label>
-                {{ form.capacidade_bandejas }}
-                {% if form.capacidade_bandejas.errors %}<div class="text-danger small">{{ form.capacidade_bandejas.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4 d-flex align-items-end">
-                <div class="form-check ms-2">
-                  {{ form.ativo }}
-                  <label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">Ativa</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold">Observações</label>
-                {{ form.observacoes }}
-                {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors }}</div>{% endif %}
-              </div>
-            </div>
-            <div class="d-flex gap-2 mt-4">
-              <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Salvar</button>
-              {% if obj %}
-                <a href="{% url 'estufas:estufa_detail' obj.pk %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
-              {% else %}
-                <a href="{% url 'estufas:estufa_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x"></i> Cancelar</a>
-              {% endif %}
-            </div>
-          </form>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge green"><i class="bi bi-house-door"></i></span>
+            <h2>{{ title }}</h2>
+          </div>
         </div>
       </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <div class="form-section">
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <label class="form-label">Fazenda<span class="req">*</span></label>
+                {{ form.fazenda }}
+                {% if form.fazenda.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fazenda.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Nome<span class="req">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Código<span class="req">*</span></label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Tipo<span class="req">*</span></label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Área (m²)</label>
+                {{ form.area_m2 }}
+                {% if form.area_m2.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area_m2.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Capacidade (bandejas)</label>
+                {{ form.capacidade_bandejas }}
+                {% if form.capacidade_bandejas.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.capacidade_bandejas.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativo }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.ativo.id_for_label }}">Ativa</label>
+                </div>
+              </div>
+              <div class="field col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-footer-bar">
+          {% if obj %}
+            <a href="{% url 'estufas:estufa_detail' obj.pk %}" class="btn btn-outline"><i class="bi bi-x"></i> Cancelar</a>
+          {% else %}
+            <a href="{% url 'estufas:estufa_list' %}" class="btn btn-outline"><i class="bi bi-x"></i> Cancelar</a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

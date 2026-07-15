@@ -1,6 +1,3 @@
-<!-- ========================================== -->
-<!-- ARQUIVO 3: documento_form.html -->
-<!-- ========================================== -->
 {% extends 'base.html' %}
 
 {% block title %}Anexar Documento | Agrisdata{% endblock %}
@@ -25,80 +22,88 @@
     </ol>
   </nav>
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-header bg-warning text-dark">
-      <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Anexar Documento</h5>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge orange"><i class="bi bi-file-earmark-arrow-up"></i></span>
+        <h2>Anexar Documento</h2>
+      </div>
     </div>
-    <div class="card-body p-4">
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de Documento *</label>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Tipo de Documento<span class="req">*</span></label>
             {{ form.tipo }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Número do Documento</label>
+          <div class="field col-6">
+            <label class="form-label">Número do Documento</label>
             {{ form.numero_documento }}
           </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Título/Descrição *</label>
+          <div class="field col-12">
+            <label class="form-label">Título/Descrição<span class="req">*</span></label>
             {{ form.titulo }}
           </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Arquivo *</label>
+          <div class="field col-12">
+            <label class="form-label">Arquivo<span class="req">*</span></label>
             {{ form.arquivo }}
-            <small class="text-muted d-block">PDF, JPG, PNG, DOC, XLS (máx 10MB)</small>
+            <div class="helper-note">PDF, JPG, PNG, DOC, XLS (máx 10MB)</div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Data de Emissão</label>
+          <div class="field col-6">
+            <label class="form-label">Data de Emissão</label>
             {{ form.data_emissao }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Data de Validade</label>
+          <div class="field col-6">
+            <label class="form-label">Data de Validade</label>
             {{ form.data_validade }}
           </div>
-          <div class="col-md-6">
-            <div class="form-check form-switch mt-2">
-              {{ form.gerar_alerta_vencimento }}
-              <label class="form-check-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">
-                Gerar Alerta de Vencimento
+          <div class="field col-6">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.gerar_alerta_vencimento }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">Gerar Alerta de Vencimento</label>
             </div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Dias de Antecedência</label>
+          <div class="field col-6">
+            <label class="form-label">Dias de Antecedência</label>
             {{ form.dias_antecedencia_alerta }}
           </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Observações</label>
+          <div class="field col-12">
+            <label class="form-label">Observações</label>
             {{ form.observacoes }}
           </div>
         </div>
-        <div class="d-flex justify-content-between gap-3 mt-4">
-          {% if fornecedor %}
-            <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% elif cliente %}
-            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% elif fazenda %}
-            <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% else %}
-            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% endif %}
-          <button type="submit" class="btn btn-success">
-            <i class="bi bi-check-circle"></i> Anexar Documento
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      {% if fornecedor %}
+        <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+      {% elif cliente %}
+        <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+      {% elif fazenda %}
+        <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+      {% else %}
+        <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Anexar Documento
+      </button>
+    </div>
+  </form>
 </div>
 {% endblock %}

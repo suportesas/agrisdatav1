@@ -4,7 +4,6 @@
 
 {% block content %}
 <div class="container py-4">
-  <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -14,16 +13,23 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">Registrar como Patrimônio</h2>
-      <p class="text-muted mb-0">Veículo: <strong>{{ veiculo.descricao }}</strong></p>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-house-fill"></i></span>
+        <div>
+          <h2>Registrar como Patrimônio</h2>
+          <p class="text-muted mb-0">Veículo: <strong>{{ veiculo.descricao }}</strong></p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
-    <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-outline-secondary">Voltar</a>
   </div>
 
-  <!-- Info Box -->
   <div class="alert alert-info mb-4">
     <i class="bi bi-info-circle"></i>
     <strong>Informações importantes:</strong>
@@ -33,125 +39,101 @@
     </p>
   </div>
 
-  <!-- Card -->
-  <div class="row">
-    <!-- Formulário -->
+  <div class="row g-4">
     <div class="col-md-7">
-      <div class="card p-4">
-        <form method="post">
-          {% csrf_token %}
+      <div class="form-section">
+        <div class="form-section-body">
+          <form method="post">
+            {% csrf_token %}
 
-          <div class="row g-3">
-            <!-- Número de Patrimônio -->
-            <div class="col-12">
-              {{ form.numero_patrimonio.label_tag }}
-              {{ form.numero_patrimonio }}
-              <small class="text-muted d-block mt-1">Código único do ativo (ex: VEI-0001, PAT-250-2024)</small>
-              {% if form.numero_patrimonio.errors %}
-              <div class="invalid-feedback d-block">{{ form.numero_patrimonio.errors }}</div>
-              {% endif %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <div class="form-grid">
+              <div class="field col-12{% if form.numero_patrimonio.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.numero_patrimonio.label }}</label>
+                {{ form.numero_patrimonio }}
+                <div class="helper-note">Código único do ativo (ex: VEI-0001, PAT-250-2024)</div>
+                {% if form.numero_patrimonio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_patrimonio.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6{% if form.valor_inicial.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.valor_inicial.label }}</label>
+                {{ form.valor_inicial }}
+                {% if form.valor_inicial.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_inicial.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6{% if form.data_aquisicao.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.data_aquisicao.label }}</label>
+                {{ form.data_aquisicao }}
+                {% if form.data_aquisicao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_aquisicao.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6{% if form.vida_util_anos.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.vida_util_anos.label }}</label>
+                {{ form.vida_util_anos }}
+                <div class="helper-note">Para calcular a depreciação</div>
+                {% if form.vida_util_anos.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.vida_util_anos.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-12{% if form.fazenda.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.fazenda.label }}</label>
+                {{ form.fazenda }}
+                <div class="helper-note">Selecione a fazenda onde o ativo será localizado</div>
+                {% if form.fazenda.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fazenda.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-12{% if form.localizacao_detalhada.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.localizacao_detalhada.label }}</label>
+                {{ form.localizacao_detalhada }}
+                <div class="helper-note">Informações adicionais (ex: Galpão A, Campo Norte)</div>
+                {% if form.localizacao_detalhada.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.localizacao_detalhada.errors|striptags }}</div>{% endif %}
+              </div>
             </div>
 
-            <!-- Valor Inicial -->
-            <div class="col-md-6">
-              {{ form.valor_inicial.label_tag }}
-              {{ form.valor_inicial }}
-              {% if form.valor_inicial.errors %}
-              <div class="invalid-feedback d-block">{{ form.valor_inicial.errors }}</div>
-              {% endif %}
-            </div>
-
-            <!-- Data de Aquisição -->
-            <div class="col-md-6">
-              {{ form.data_aquisicao.label_tag }}
-              {{ form.data_aquisicao }}
-              {% if form.data_aquisicao.errors %}
-              <div class="invalid-feedback d-block">{{ form.data_aquisicao.errors }}</div>
-              {% endif %}
-            </div>
-
-            <!-- Vida Útil -->
-            <div class="col-md-6">
-              {{ form.vida_util_anos.label_tag }}
-              {{ form.vida_util_anos }}
-              <small class="text-muted d-block mt-1">Para calcular a depreciação</small>
-              {% if form.vida_util_anos.errors %}
-              <div class="invalid-feedback d-block">{{ form.vida_util_anos.errors }}</div>
-              {% endif %}
-            </div>
-
-            <!-- Localização (Fazenda) -->
-            <div class="col-12">
-              {{ form.fazenda.label_tag }}
-              {{ form.fazenda }}
-              <small class="text-muted d-block mt-1">Selecione a fazenda onde o ativo será localizado</small>
-              {% if form.fazenda.errors %}
-              <div class="invalid-feedback d-block">{{ form.fazenda.errors }}</div>
-              {% endif %}
-            </div>
-
-            <!-- Localização Detalhada -->
-            <div class="col-12">
-              {{ form.localizacao_detalhada.label_tag }}
-              {{ form.localizacao_detalhada }}
-              <small class="text-muted d-block mt-1">Informações adicionais (ex: Galpão A, Campo Norte)</small>
-              {% if form.localizacao_detalhada.errors %}
-              <div class="invalid-feedback d-block">{{ form.localizacao_detalhada.errors }}</div>
-              {% endif %}
-            </div>
-
-            <!-- Botões -->
-            <div class="col-12 d-flex justify-content-end gap-2 mt-4">
-              <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-outline-secondary">Cancelar</a>
-              <button type="submit" class="btn btn-success">
+            <div class="d-flex justify-content-end gap-2 mt-4">
+              <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-outline">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-circle"></i> Registrar como Patrimônio
               </button>
             </div>
-          </div>
-
-          {% if form.non_field_errors %}
-          <div class="alert alert-danger mt-3">
-            {{ form.non_field_errors }}
-          </div>
-          {% endif %}
-        </form>
+          </form>
+        </div>
       </div>
     </div>
 
-    <!-- Resumo do Veículo -->
     <div class="col-md-5">
-      <div class="card p-4">
-        <h6 class="text-muted mb-3">Dados do Veículo</h6>
+      <div class="form-section">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-truck"></i></span>
+          <span class="title">Dados do Veículo</span>
+        </div>
+        <div class="form-section-body">
+          <dl class="row small mb-0">
+            <dt class="col-6 fw-bold">Marca</dt>
+            <dd class="col-6">{{ veiculo.marca }}</dd>
 
-        <dl class="row small">
-          <dt class="col-6 fw-bold">Marca</dt>
-          <dd class="col-6">{{ veiculo.marca }}</dd>
+            <dt class="col-6 fw-bold">Modelo</dt>
+            <dd class="col-6">{{ veiculo.modelo }}</dd>
 
-          <dt class="col-6 fw-bold">Modelo</dt>
-          <dd class="col-6">{{ veiculo.modelo }}</dd>
+            <dt class="col-6 fw-bold">Tipo</dt>
+            <dd class="col-6">{{ veiculo.get_tipo_display }}</dd>
 
-          <dt class="col-6 fw-bold">Tipo</dt>
-          <dd class="col-6">{{ veiculo.get_tipo_display }}</dd>
+            <dt class="col-6 fw-bold">Descrição</dt>
+            <dd class="col-6">{{ veiculo.descricao|default:"—" }}</dd>
 
-          <dt class="col-6 fw-bold">Descrição</dt>
-          <dd class="col-6">{{ veiculo.descricao|default:"—" }}</dd>
+            <dt class="col-6 fw-bold">Placa Atual</dt>
+            <dd class="col-6">{{ veiculo.get_current_plate|default:"—" }}</dd>
 
-          <dt class="col-6 fw-bold">Placa Atual</dt>
-          <dd class="col-6">{{ veiculo.get_current_plate|default:"—" }}</dd>
+            {% if veiculo.valor_atual %}
+            <dt class="col-6 fw-bold">Valor</dt>
+            <dd class="col-6">R$ {{ veiculo.valor_atual|floatformat:"2g" }}</dd>
+            {% endif %}
 
-          {% if veiculo.valor_atual %}
-          <dt class="col-6 fw-bold">Valor</dt>
-          <dd class="col-6">R$ {{ veiculo.valor_atual|floatformat:2 }}</dd>
-          {% endif %}
-
-          {% if veiculo.codigo_patrimonio %}
-          <dt class="col-6 fw-bold">Código</dt>
-          <dd class="col-6">{{ veiculo.codigo_patrimonio }}</dd>
-          {% endif %}
-        </dl>
+            {% if veiculo.codigo_patrimonio %}
+            <dt class="col-6 fw-bold">Código</dt>
+            <dd class="col-6">{{ veiculo.codigo_patrimonio }}</dd>
+            {% endif %}
+          </dl>
+        </div>
       </div>
 
-      <!-- Dica -->
       <div class="alert alert-light border mt-3 p-3">
         <h6 class="text-primary mb-2"><i class="bi bi-lightbulb"></i> Dica</h6>
         <small>

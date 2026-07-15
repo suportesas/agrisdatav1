@@ -184,7 +184,7 @@
                   </td>
                   <td class="text-center text-mono">
                     {% if produto.estoque_total %}
-                      <strong class="text-primary">{{ produto.estoque_total|floatformat:2 }}</strong>
+                      <strong class="text-primary">{{ produto.estoque_total|floatformat:"2g" }}</strong>
                     {% else %}
                       <span class="text-danger fw-bold">0,00</span>
                     {% endif %}
@@ -192,21 +192,21 @@
                   </td>
                   <td class="text-center text-mono">
                     {% if produto.estoque_reservado %}
-                      <span class="text-warning fw-bold">{{ produto.estoque_reservado|floatformat:2 }}</span>
+                      <span class="text-warning fw-bold">{{ produto.estoque_reservado|floatformat:"2g" }}</span>
                     {% else %}
                       <span class="text-muted">0,00</span>
                     {% endif %}
                   </td>
                   <td class="text-center text-mono">
                     <strong class="{% if produto.estoque_disponivel <= 0 %}text-danger{% else %}text-success{% endif %}">
-                      {{ produto.estoque_disponivel|floatformat:2 }}
+                      {{ produto.estoque_disponivel|floatformat:"2g" }}
                     </strong>
                   </td>
                   <td class="text-center text-muted text-mono">
-                    {{ produto.estoque_minimo|floatformat:2 }}
+                    {{ produto.estoque_minimo|floatformat:"2g" }}
                   </td>
                   <td class="text-center text-muted text-mono">
-                    {{ produto.estoque_maximo|floatformat:2 }}
+                    {{ produto.estoque_maximo|floatformat:"2g" }}
                   </td>
                   <td class="text-center">
                     {% if produto.alerta_tipo == 'critico' %}

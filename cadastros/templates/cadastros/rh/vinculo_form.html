@@ -8,7 +8,6 @@
   <div class="row justify-content-center">
     <div class="col-lg-10">
 
-      <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -18,14 +17,21 @@
         </ol>
       </nav>
 
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 class="h3 mb-1"><i class="fas fa-id-card me-2 text-primary"></i>{{ title }}</h1>
-          <p class="text-muted mb-0">Cada contratação ou recontratação deve gerar um novo vínculo.</p>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge"><i class="bi bi-person-badge"></i></span>
+            <div>
+              <h2>{{ title }}</h2>
+              <p class="text-muted mb-0">Cada contratação ou recontratação deve gerar um novo vínculo.</p>
+            </div>
+          </div>
+          <div class="form-header-actions">
+            <a href="{% url 'rh:vinculo_list' %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+          </div>
         </div>
-        <a href="{% url 'rh:vinculo_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
-        </a>
       </div>
 
       <form method="post">
@@ -34,66 +40,68 @@
         <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <div class="card mb-3">
-          <div class="card-header bg-primary text-white"><strong>Dados do Vínculo</strong></div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-person-badge"></i></span>
+            <span class="title">Dados do Vínculo</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6{% if form.funcionario.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.funcionario.label }}<span class="req">*</span></label>
                 {{ form.funcionario|add_class:"form-select" }}
-                {% if form.funcionario.errors %}<div class="text-danger small">{{ form.funcionario.errors }}</div>{% endif %}
+                {% if form.funcionario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcionario.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-6">
+              <div class="field col-6">
                 <label class="form-label">{{ form.funcao.label }}</label>
                 {{ form.funcao|add_class:"form-select" }}
-                {% if form.funcao.errors %}<div class="text-danger small">{{ form.funcao.errors }}</div>{% endif %}
+                {% if form.funcao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcao.errors|striptags }}</div>{% endif %}
               </div>
-
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">{{ form.matricula.label }}</label>
                 {{ form.matricula|add_class:"form-control" }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">{{ form.tipo_contrato.label }}</label>
                 {{ form.tipo_contrato|add_class:"form-select" }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">{{ form.origem.label }}</label>
                 {{ form.origem|add_class:"form-select" }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">{{ form.status.label }}</label>
                 {{ form.status|add_class:"form-select" }}
               </div>
-
-              <div class="col-md-4">
-                <label class="form-label">{{ form.data_inicio.label }} <span class="text-danger">*</span></label>
+              <div class="field col-4{% if form.data_inicio.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.data_inicio.label }}<span class="req">*</span></label>
                 {{ form.data_inicio|add_class:"form-control" }}
-                {% if form.data_inicio.errors %}<div class="text-danger small">{{ form.data_inicio.errors }}</div>{% endif %}
+                {% if form.data_inicio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_inicio.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4{% if form.data_fim_prevista.errors %} has-error{% endif %}">
                 <label class="form-label">{{ form.data_fim_prevista.label }}</label>
                 {{ form.data_fim_prevista|add_class:"form-control" }}
-                {% if form.data_fim_prevista.errors %}<div class="text-danger small">{{ form.data_fim_prevista.errors }}</div>{% endif %}
+                {% if form.data_fim_prevista.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_fim_prevista.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.salario.label }}</label>
                 {{ form.salario|add_class:"form-control" }}
               </div>
-
-              <div class="col-md-4">
-                <div class="form-check mt-4 pt-2">
-                  {{ form.periodo_experiencia|add_class:"form-check-input" }}
-                  <label class="form-check-label" for="{{ form.periodo_experiencia.id_for_label }}">
-                    {{ form.periodo_experiencia.label }}
+              <div class="field col-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.periodo_experiencia|add_class:"" }}
+                    <span class="slider"></span>
                   </label>
+                  <label class="switch-label" for="{{ form.periodo_experiencia.id_for_label }}">{{ form.periodo_experiencia.label }}</label>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.data_fim_experiencia.label }}</label>
                 {{ form.data_fim_experiencia|add_class:"form-control" }}
               </div>
-              <div class="col-md-12">
+              <div class="field col-12">
                 <label class="form-label">{{ form.observacoes.label }}</label>
                 {{ form.observacoes|add_class:"form-control" }}
               </div>
@@ -101,9 +109,9 @@
           </div>
         </div>
 
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-outline-secondary btn-lg px-5">Cancelar</a>
-          <button type="submit" class="btn btn-success btn-lg px-5">Salvar Vínculo</button>
+        <div class="app-footer-bar">
+          <a href="{% url 'rh:vinculo_list' %}" class="btn btn-outline">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Salvar Vínculo</button>
         </div>
       </form>
     </div>

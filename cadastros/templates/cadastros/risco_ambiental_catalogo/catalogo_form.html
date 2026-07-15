@@ -12,61 +12,66 @@
     </ol>
   </nav>
 
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">{{ action }} Item de Catálogo</h5>
-        </div>
-        <div class="card-body">
-          <form method="post">
-            {% csrf_token %}
-
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">{{ form.categoria.label }}</label>
-                {{ form.categoria }}
-                {% if form.categoria.errors %}<div class="invalid-feedback d-block">{{ form.categoria.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">{{ form.intensidade_padrao.label }}</label>
-                {{ form.intensidade_padrao }}
-                {% if form.intensidade_padrao.errors %}<div class="invalid-feedback d-block">{{ form.intensidade_padrao.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-12">
-                <label class="form-label">{{ form.nome.label }}</label>
-                {{ form.nome }}
-                {% if form.nome.errors %}<div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-12">
-                <label class="form-label">{{ form.epi_padrao.label }}</label>
-                {{ form.epi_padrao }}
-                {% if form.epi_padrao.errors %}<div class="invalid-feedback d-block">{{ form.epi_padrao.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-12">
-                <label class="form-label">{{ form.observacoes.label }}</label>
-                {{ form.observacoes }}
-              </div>
-              <div class="col-12">
-                <div class="form-check form-switch">
-                  {{ form.ativo }}
-                  <label class="form-check-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="d-flex justify-content-between border-top pt-3 mt-4">
-              <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-outline-secondary btn-lg px-5">Cancelar</a>
-              <button type="submit" class="btn btn-success btn-lg px-5">Salvar</button>
-            </div>
-          </form>
-        </div>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge orange"><i class="bi bi-exclamation-diamond"></i></span>
+        <h2>{{ action }} Item de Catálogo</h2>
       </div>
     </div>
   </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.categoria.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.categoria.label }}</label>
+            {{ form.categoria }}
+            {% if form.categoria.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.categoria.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-6{% if form.intensidade_padrao.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.intensidade_padrao.label }}</label>
+            {{ form.intensidade_padrao }}
+            {% if form.intensidade_padrao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.intensidade_padrao.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-12{% if form.nome.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.nome.label }}</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-12{% if form.epi_padrao.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.epi_padrao.label }}</label>
+            {{ form.epi_padrao }}
+            {% if form.epi_padrao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.epi_padrao.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

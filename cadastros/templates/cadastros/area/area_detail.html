@@ -75,7 +75,7 @@
         <div id="map-area" style="height:350px;border-radius:10px 10px 0 0;"></div>
         <div class="card-body text-center">
           <h5 class="mb-0">{{ area.nome }}</h5>
-          <p class="text-muted mb-0">{{ area.area_total|floatformat:2 }} ha</p>
+          <p class="text-muted mb-0">{{ area.area_total|floatformat:"2g" }} ha</p>
         </div>
       </div>
 
@@ -98,7 +98,7 @@
         <div class="col-md-3">
           <div class="stat-item">
             <i class="bi bi-rulers text-success fs-3"></i>
-            <h4 class="mt-2">{{ area.area_total|floatformat:2 }}</h4>
+            <h4 class="mt-2">{{ area.area_total|floatformat:"2g" }}</h4>
             <small>Área Total (ha)</small>
           </div>
         </div>
@@ -106,7 +106,7 @@
         <div class="col-md-3">
           <div class="stat-item">
             <i class="bi bi-exclamation-triangle text-warning fs-3"></i>
-            <h4 class="mt-2">{{ area.area_reserva|default:0|floatformat:2 }}</h4>
+            <h4 class="mt-2">{{ area.area_reserva|default:0|floatformat:"2g" }}</h4>
             <small>Reserva (ha)</small>
           </div>
         </div>
@@ -114,7 +114,7 @@
         <div class="col-md-3">
           <div class="stat-item">
             <i class="bi bi-tree text-info fs-3"></i>
-            <h4 class="mt-2">{{ area.area_plantavel|default:0|floatformat:2 }}</h4>
+            <h4 class="mt-2">{{ area.area_plantavel|default:0|floatformat:"2g" }}</h4>
             <small>Plantável (ha)</small>
           </div>
         </div>
@@ -122,7 +122,7 @@
             <div class="col-md-3">
           <div class="stat-item">
             <i class="bi bi-bar-chart-line text-primary fs-3"></i>
-            <h4 class="mt-2">{{ area.get_area_disponivel|floatformat:2 }}</h4>
+            <h4 class="mt-2">{{ area.get_area_disponivel|floatformat:"2g" }}</h4>
             <small>Disponível (ha)</small>
           </div>
         </div>
@@ -199,7 +199,7 @@
                   {% for t in talhoes %}
                   <tr>
                     <td><a href="{% url 'cadastros:talhao_detail' t.pk %}">{{ t.nome }}</a></td>
-                    <td class="text-end">{{ t.area_hac|floatformat:2 }} ha</td>
+                    <td class="text-end">{{ t.area_hac|floatformat:"2g" }} ha</td>
                     <td class="text-center">{{ t.get_status_display }}</td>
                     <td class="text-center"><a href="{% url 'cadastros:talhao_update' t.pk %}" class="btn btn-sm btn-outline-primary">Editar</a></td>
                   </tr>

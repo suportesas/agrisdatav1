@@ -296,8 +296,16 @@ class Motorista(models.Model):
     motivo_inativacao = models.TextField('Motivo da Inativação', blank=True)
     data_inativacao = models.DateField('Data Inativação', null=True, blank=True)
 
-    matricula = models.CharField('Matrícula', max_length=50, blank=True, help_text='Usada para login no Portal do Motorista')
-    pin = models.CharField('PIN (portal)', max_length=128, blank=True, help_text='PIN numérico hashado — definido pelo gestor')
+    matricula = models.CharField('Matrícula', max_length=50, blank=True, help_text='Usada como login (username) do motorista no sistema')
+    pin = models.CharField(
+        'PIN (legado)', max_length=128, blank=True,
+        help_text='Legado — pré-migração para login unificado via Usuario. Não usado para autenticação após a migração.'
+    )
+    usuario_vinculado = models.OneToOneField(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='motorista_profile', verbose_name='Usuário do Portal',
+        help_text='Conta de login (django.contrib.auth) vinculada a este motorista'
+    )
 
     data_criacao = models.DateTimeField('Data de Criação', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
@@ -326,7 +334,12 @@ class Motorista(models.Model):
             models.CheckConstraint(
                 condition=~models.Q(tipo__in=['TERCEIRO', 'AGREGADO']) | models.Q(transportadora__isnull=False),
                 name='motorista_terceiro_agregado_requer_transportadora'
-            )
+            ),
+            models.UniqueConstraint(
+                fields=['empresa', 'matricula'],
+                condition=~models.Q(matricula=''),
+                name='motorista_empresa_matricula_unique',
+            ),
         ]
 
     def __str__(self):

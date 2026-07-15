@@ -5,13 +5,20 @@
 {% block content %}
 <div class="container-fluid py-4" style="max-width:700px">
 
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'faturamento:mdfe_detail' mdfe.pk %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div>
-      <h4 class="mb-0 fw-bold"><i class="bi bi-person-plus text-info me-2"></i>Incluir Condutor</h4>
-      <small class="text-muted">MDF-e {{ mdfe.numero|stringformat:"09d" }}/{{ mdfe.serie }} — {{ mdfe.motorista.nome }}</small>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge blue"><i class="bi bi-person-plus"></i></span>
+        <div>
+          <h2>Incluir Condutor</h2>
+          <p class="text-muted mb-0">MDF-e {{ mdfe.numero|stringformat:"09d" }}/{{ mdfe.serie }} — {{ mdfe.motorista.nome }}</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'faturamento:mdfe_detail' mdfe.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
@@ -24,38 +31,37 @@
   <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 mb-3">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
   {% endfor %}{% endif %}
 
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header fw-semibold">Dados do Novo Condutor</div>
-    <div class="card-body">
-      <form method="post">
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm blue"><i class="bi bi-person-plus"></i></span>
+      <span class="title">Dados do Novo Condutor</span>
+    </div>
+    <div class="form-section-body">
+      <form method="post" id="condutor-form">
         {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">CPF <span class="text-danger">*</span></label>
+        <div class="form-grid">
+          <div class="field col-5">
+            <label class="form-label">CPF<span class="req">*</span></label>
             <input type="text" name="cpf" class="form-control" placeholder="000.000.000-00" maxlength="14" required>
           </div>
-          <div class="col-md-7">
-            <label class="form-label fw-semibold">Nome Completo <span class="text-danger">*</span></label>
+          <div class="field col-7">
+            <label class="form-label">Nome Completo<span class="req">*</span></label>
             <input type="text" name="nome" class="form-control" placeholder="Nome do condutor" maxlength="100" required>
           </div>
-        </div>
-        <div class="d-flex gap-2 mt-3">
-          <button type="submit" class="btn btn-info text-white"
-                  onclick="return confirm('Confirma a inclusão do condutor no MDF-e na SEFAZ?')">
-            <i class="bi bi-person-plus me-1"></i>Incluir Condutor
-          </button>
-          <a href="{% url 'faturamento:mdfe_detail' mdfe.pk %}" class="btn btn-outline-secondary">Cancelar</a>
         </div>
       </form>
     </div>
   </div>
 
   {% if condutores %}
-  <div class="card border-0 shadow-sm">
-    <div class="card-header fw-semibold">Histórico de Condutores Incluídos</div>
-    <div class="card-body p-0">
-      <table class="table table-sm mb-0">
-        <thead class="table-light"><tr><th>Nome</th><th>CPF</th><th>Data</th><th>Protocolo</th></tr></thead>
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm gray"><i class="bi bi-clock-history"></i></span>
+      <span class="title">Histórico de Condutores Incluídos</span>
+    </div>
+    <div class="items-table-wrap">
+      <table class="table table-sm mb-0 items-table">
+        <thead><tr><th>Nome</th><th>CPF</th><th>Data</th><th>Protocolo</th></tr></thead>
         <tbody>
           {% for c in condutores %}
           <tr>
@@ -70,5 +76,13 @@
     </div>
   </div>
   {% endif %}
+
+  <div class="app-footer-bar">
+    <a href="{% url 'faturamento:mdfe_detail' mdfe.pk %}" class="btn btn-outline">Cancelar</a>
+    <button type="submit" form="condutor-form" class="btn btn-primary"
+            onclick="return confirm('Confirma a inclusão do condutor no MDF-e na SEFAZ?')">
+      <i class="bi bi-person-plus me-1"></i>Incluir Condutor
+    </button>
+  </div>
 </div>
 {% endblock %}

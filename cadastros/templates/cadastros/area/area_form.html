@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="container py-4">
-  <nav aria-label="breadcrumb" class="mb-4">
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'cadastros:area_list' %}">Áreas</a></li>
@@ -14,17 +14,21 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if area %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
-        {{ title }}
-      </h2>
-      <p class="text-muted mb-0">{% if area %}Atualize os dados da área{% else %}Cadastre uma nova área vinculada a uma fazenda{% endif %}</p>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if area %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <div>
+          <h2>{{ title }}</h2>
+          <p class="text-muted mb-0">{% if area %}Atualize os dados da área{% else %}Cadastre uma nova área vinculada a uma fazenda{% endif %}</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:area_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
-    <a href="{% url 'cadastros:area_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
   </div>
 
   {% if form.non_field_errors %}
@@ -36,93 +40,117 @@
   <form method="post" novalidate>
     {% csrf_token %}
 
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-      <div class="card-body p-4">
-        <h5 class="mb-3 text-primary border-bottom pb-2"><i class="bi bi-info-circle"></i> Identificação</h5>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.fazenda.label }} <span class="text-danger">*</span></label>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+        <span class="title">Identificação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.fazenda.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.fazenda.label }}<span class="req">*</span></label>
             {{ form.fazenda }}
-            {% if form.fazenda.errors %}<div class="text-danger small mt-1">{{ form.fazenda.errors|striptags }}</div>{% endif %}
+            {% if form.fazenda.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fazenda.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.nome.label }} <span class="text-danger">*</span></label>
+          <div class="field col-6{% if form.nome.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.nome.label }}<span class="req">*</span></label>
             {{ form.nome }}
-            {% if form.nome.errors %}<div class="text-danger small mt-1">{{ form.nome.errors|striptags }}</div>{% endif %}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.codigo_interno.label }}</label>
+          <div class="field col-6{% if form.codigo_interno.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.codigo_interno.label }}</label>
             {{ form.codigo_interno }}
-            {% if form.codigo_interno.errors %}<div class="text-danger small mt-1">{{ form.codigo_interno.errors|striptags }}</div>{% endif %}
+            {% if form.codigo_interno.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_interno.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.tipo_area.label }}</label>
+          <div class="field col-6{% if form.tipo_area.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.tipo_area.label }}</label>
             {{ form.tipo_area }}
-            {% if form.tipo_area.errors %}<div class="text-danger small mt-1">{{ form.tipo_area.errors|striptags }}</div>{% endif %}
+            {% if form.tipo_area.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_area.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.status.label }}</label>
+          <div class="field col-6{% if form.status.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.status.label }}</label>
             {{ form.status }}
-            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors|striptags }}</div>{% endif %}
+            {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-6 d-flex align-items-center">
-            <div class="form-check form-switch mt-4">
-              {{ form.ativa }}
-              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">{{ form.ativa.label }}</label>
+          <div class="field col-6">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativa }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.ativa.id_for_label }}">{{ form.ativa.label }}</label>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-      <div class="card-body p-4">
-        <h5 class="mb-3 text-success border-bottom pb-2"><i class="bi bi-rulers"></i> Medidas</h5>
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.area_total.label }} <span class="text-danger">*</span></label>
-            <div class="input-group">
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm blue"><i class="bi bi-rulers"></i></span>
+        <span class="title">Medidas</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4{% if form.area_total.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.area_total.label }}<span class="req">*</span></label>
+            <div class="input-suffix">
               {{ form.area_total }}
-              <span class="input-group-text">ha</span>
+              <span class="suffix-text">ha</span>
             </div>
-            {% if form.area_total.errors %}<div class="text-danger small mt-1">{{ form.area_total.errors|striptags }}</div>{% endif %}
+            {% if form.area_total.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area_total.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.area_reserva.label }}</label>
-            <div class="input-group">
+          <div class="field col-4{% if form.area_reserva.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.area_reserva.label }}</label>
+            <div class="input-suffix">
               {{ form.area_reserva }}
-              <span class="input-group-text">ha</span>
+              <span class="suffix-text">ha</span>
             </div>
-            {% if form.area_reserva.errors %}<div class="text-danger small mt-1">{{ form.area_reserva.errors|striptags }}</div>{% endif %}
+            {% if form.area_reserva.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area_reserva.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.area_plantavel.label }}</label>
-            <div class="input-group">
+          <div class="field col-4{% if form.area_plantavel.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.area_plantavel.label }}</label>
+            <div class="input-suffix">
               {{ form.area_plantavel }}
-              <span class="input-group-text">ha</span>
+              <span class="suffix-text">ha</span>
             </div>
-            {% if form.area_plantavel.errors %}<div class="text-danger small mt-1">{{ form.area_plantavel.errors|striptags }}</div>{% endif %}
-            <small class="text-muted d-block mt-1">Calculado automaticamente como Área Total - Área de Reserva.</small>
+            {% if form.area_plantavel.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area_plantavel.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Calculado automaticamente como Área Total - Área de Reserva.</div>
+          </div>
+
+          <div class="field col-12">
+            <div class="measure-bar">
+              <span class="segment plantavel" id="measure-segment-plantavel" style="width: 0%"></span>
+              <span class="segment reserva" id="measure-segment-reserva" style="width: 0%"></span>
+            </div>
+            <div class="measure-legend">
+              <span><span class="dot" style="background:var(--color-primary)"></span>Plantável</span>
+              <span><span class="dot" style="background:var(--color-warning)"></span>Reserva</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-      <div class="card-body p-4">
-        <h5 class="mb-3 text-info border-bottom pb-2"><i class="bi bi-geo-alt"></i> Geolocalização</h5>
-        <div class="row g-3">
-          <div class="col-12">
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Geolocalização</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12">
             <div class="d-flex align-items-center gap-2 mb-1">
-              <label class="form-label fw-semibold mb-0" for="id_busca_local">Buscar local</label>
-              <span class="badge rounded-pill text-bg-info" id="badge-busca-automatica">Busca automática ativa</span>
+              <label class="form-label mb-0" for="id_busca_local">Buscar local</label>
+              <span class="status-pill blue" id="badge-busca-automatica">Busca automática ativa</span>
             </div>
             <div class="input-group">
               <input type="text" id="id_busca_local" class="form-control" placeholder="Digite cidade, fazenda, bairro, endereço...">
@@ -133,90 +161,107 @@
                 <i class="bi bi-search"></i> Buscar
               </button>
             </div>
-            <small class="text-muted">Digite o local e clique em Buscar para preencher latitude e longitude automaticamente.</small>
+            <div class="helper-note">Digite o local e clique em Buscar para preencher latitude e longitude automaticamente.</div>
           </div>
 
-          <div class="col-12 d-none" id="container-resultados-local">
-            <label class="form-label fw-semibold" for="id_resultado_localizacao">Resultados encontrados</label>
+          <div class="field col-12 d-none" id="container-resultados-local">
+            <label class="form-label" for="id_resultado_localizacao">Resultados encontrados</label>
             <select id="id_resultado_localizacao" class="form-select"></select>
           </div>
 
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.latitude.label }}</label>
+          <div class="field col-6{% if form.latitude.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.latitude.label }}</label>
             {{ form.latitude }}
-            {% if form.latitude.errors %}<div class="text-danger small mt-1">{{ form.latitude.errors|striptags }}</div>{% endif %}
+            {% if form.latitude.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.latitude.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.longitude.label }}</label>
+          <div class="field col-6{% if form.longitude.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.longitude.label }}</label>
             {{ form.longitude }}
-            {% if form.longitude.errors %}<div class="text-danger small mt-1">{{ form.longitude.errors|striptags }}</div>{% endif %}
+            {% if form.longitude.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.longitude.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-12">
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="id_mostrar_mapa">
-              <label class="form-check-label" for="id_mostrar_mapa">Mostrar mapa</label>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="id_mostrar_mapa">
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="id_mostrar_mapa">Mostrar mapa</label>
             </div>
-            <div id="feedback-geolocalizacao" class="small mt-2 text-muted"></div>
+            <div id="feedback-geolocalizacao" class="helper-note mt-2"></div>
           </div>
 
-          <div class="col-12 d-none" id="container-mapa-area">
-            <div id="map-area-form" style="height: 320px; border-radius: 10px; border: 1px solid #dfe3e8;"></div>
+          <div class="field col-12 d-none" id="container-mapa-area">
+            <div id="map-area-form" style="height: 320px; border-radius: var(--radius-card); border: 1px solid var(--color-border);"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-      <div class="card-body p-4">
-        <h5 class="mb-3 text-warning border-bottom pb-2"><i class="bi bi-droplet"></i> Solo e Irrigação</h5>
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.tipo_solo.label }}</label>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm orange"><i class="bi bi-droplet"></i></span>
+        <span class="title">Solo e Irrigação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4{% if form.tipo_solo.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.tipo_solo.label }}</label>
             {{ form.tipo_solo }}
-            {% if form.tipo_solo.errors %}<div class="text-danger small mt-1">{{ form.tipo_solo.errors|striptags }}</div>{% endif %}
+            {% if form.tipo_solo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_solo.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.ph_solo.label }}</label>
+          <div class="field col-4{% if form.ph_solo.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.ph_solo.label }}</label>
             {{ form.ph_solo }}
-            {% if form.ph_solo.errors %}<div class="text-danger small mt-1">{{ form.ph_solo.errors|striptags }}</div>{% endif %}
+            {% if form.ph_solo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ph_solo.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.topografia.label }}</label>
+          <div class="field col-4{% if form.topografia.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.topografia.label }}</label>
             {{ form.topografia }}
-            {% if form.topografia.errors %}<div class="text-danger small mt-1">{{ form.topografia.errors|striptags }}</div>{% endif %}
+            {% if form.topografia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.topografia.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-4 d-flex align-items-center">
-            <div class="form-check form-switch mt-3">
-              {{ form.possui_irrigacao }}
-              <label class="form-check-label" for="{{ form.possui_irrigacao.id_for_label }}">{{ form.possui_irrigacao.label }}</label>
+          <div class="field col-4">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.possui_irrigacao }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.possui_irrigacao.id_for_label }}">{{ form.possui_irrigacao.label }}</label>
             </div>
           </div>
 
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">{{ form.tipo_irrigacao.label }}</label>
+          <div class="field col-8 dependent-field{% if form.tipo_irrigacao.errors %} has-error{% endif %}" id="wrap-tipo-irrigacao">
+            <label class="form-label">{{ form.tipo_irrigacao.label }}</label>
             {{ form.tipo_irrigacao }}
-            {% if form.tipo_irrigacao.errors %}<div class="text-danger small mt-1">{{ form.tipo_irrigacao.errors|striptags }}</div>{% endif %}
+            {% if form.tipo_irrigacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_irrigacao.errors|striptags }}</div>{% endif %}
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card shadow-sm border-0 rounded-4 mb-4">
-      <div class="card-body p-4">
-        <h5 class="mb-3 text-secondary border-bottom pb-2"><i class="bi bi-chat-left-text"></i> Observações</h5>
-        <label class="form-label fw-semibold">{{ form.observacoes.label }}</label>
-        {{ form.observacoes }}
-        {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors|striptags }}</div>{% endif %}
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm gray"><i class="bi bi-chat-left-text"></i></span>
+        <span class="title">Observações</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12{% if form.observacoes.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="d-flex justify-content-between gap-3">
-      <a href="{% url 'cadastros:area_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:area_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Área
       </button>
     </div>
@@ -236,6 +281,22 @@ document.addEventListener('DOMContentLoaded', function () {
   var areaTotalInput = document.getElementById('id_area_total');
   var areaReservaInput = document.getElementById('id_area_reserva');
   var areaPlantavelInput = document.getElementById('id_area_plantavel');
+  var measureSegmentPlantavel = document.getElementById('measure-segment-plantavel');
+  var measureSegmentReserva = document.getElementById('measure-segment-reserva');
+
+  function updateMeasureBar() {
+    if (!measureSegmentPlantavel || !measureSegmentReserva) return;
+    var total = parseFloat((areaTotalInput.value || '').replace(',', '.')) || 0;
+    var reserva = parseFloat((areaReservaInput.value || '').replace(',', '.')) || 0;
+    var plantavel = parseFloat((areaPlantavelInput.value || '').replace(',', '.')) || 0;
+    if (total <= 0) {
+      measureSegmentPlantavel.style.width = '0%';
+      measureSegmentReserva.style.width = '0%';
+      return;
+    }
+    measureSegmentPlantavel.style.width = Math.max(0, Math.min(100, (plantavel / total) * 100)) + '%';
+    measureSegmentReserva.style.width = Math.max(0, Math.min(100, (reserva / total) * 100)) + '%';
+  }
 
   function calculateAreaPlantavel() {
     if (!areaTotalInput || !areaReservaInput || !areaPlantavelInput) return;
@@ -245,21 +306,27 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!isNaN(plantavel) && plantavel >= 0) {
       areaPlantavelInput.value = plantavel.toFixed(2);
     }
+    updateMeasureBar();
   }
 
   if (areaTotalInput && areaReservaInput && areaPlantavelInput) {
     areaTotalInput.addEventListener('input', calculateAreaPlantavel);
     areaReservaInput.addEventListener('input', calculateAreaPlantavel);
+    updateMeasureBar();
   }
 
   var possuiIrrigacao = document.getElementById('id_possui_irrigacao');
   var tipoIrrigacao = document.getElementById('id_tipo_irrigacao');
+  var tipoIrrigacaoWrap = document.getElementById('wrap-tipo-irrigacao');
 
   function toggleTipoIrrigacao() {
     if (!possuiIrrigacao || !tipoIrrigacao) return;
     tipoIrrigacao.disabled = !possuiIrrigacao.checked;
     if (!possuiIrrigacao.checked) {
       tipoIrrigacao.value = '';
+    }
+    if (tipoIrrigacaoWrap) {
+      tipoIrrigacaoWrap.classList.toggle('is-hidden', !possuiIrrigacao.checked);
     }
   }
 

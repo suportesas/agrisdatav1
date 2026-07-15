@@ -5,15 +5,20 @@
 {% block content %}
 <div class="container-fluid py-4" style="max-width:640px">
 
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div>
-      <h4 class="mb-0 fw-bold"><i class="bi bi-chat-square-check text-secondary me-2"></i>Manifestação do Destinatário</h4>
-      <small class="text-muted">
-        NF {{ nf.numero|stringformat:"09d" }}/{{ nf.serie|stringformat:"03d" }} — {{ nf.cliente.razao_social }}
-      </small>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge gray"><i class="bi bi-chat-square-check"></i></span>
+        <div>
+          <h2>Manifestação do Destinatário</h2>
+          <p class="text-muted mb-0">NF {{ nf.numero|stringformat:"09d" }}/{{ nf.serie|stringformat:"03d" }} — {{ nf.cliente.razao_social }}</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
@@ -31,38 +36,46 @@
   {% endfor %}
   {% endif %}
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-header fw-semibold">Registrar Manifestação</div>
-    <div class="card-body">
-      <form method="post">
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm gray"><i class="bi bi-chat-square-check"></i></span>
+      <span class="title">Registrar Manifestação</span>
+    </div>
+    <div class="form-section-body">
+      <form method="post" id="manifestacao-form">
         {% csrf_token %}
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Tipo de Manifestação <span class="text-danger">*</span></label>
-          {{ form.tipo }}
-          {% if form.tipo.errors %}<div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>{% endif %}
-          <small class="text-muted d-block mt-1">
-            <strong>Ciência da Operação:</strong> ciente da operação antes do recebimento.<br>
-            <strong>Confirmação:</strong> confirma a operação e o recebimento da mercadoria.<br>
-            <strong>Desconhecimento:</strong> não reconhece a operação informada.<br>
-            <strong>Operação Não Realizada:</strong> reconhece a operação mas a mercadoria não foi entregue.
-          </small>
-        </div>
-        <div class="mb-3" id="campo-justificativa" style="display:none">
-          <label class="form-label fw-semibold">Justificativa <span class="text-danger">*</span></label>
-          {{ form.justificativa }}
-          {% if form.justificativa.errors %}<div class="invalid-feedback d-block">{{ form.justificativa.errors.0 }}</div>{% endif %}
-        </div>
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger py-2 px-3 mb-3">{{ form.non_field_errors.0 }}</div>
-        {% endif %}
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-secondary">
-            <i class="bi bi-chat-square-check me-1"></i>Registrar Manifestação
-          </button>
-          <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        <div class="form-grid">
+          <div class="field col-12">
+            <label class="form-label">Tipo de Manifestação<span class="req">*</span></label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors.0 }}</div>{% endif %}
+            <div class="helper-note">
+              <strong>Ciência da Operação:</strong> ciente da operação antes do recebimento.<br>
+              <strong>Confirmação:</strong> confirma a operação e o recebimento da mercadoria.<br>
+              <strong>Desconhecimento:</strong> não reconhece a operação informada.<br>
+              <strong>Operação Não Realizada:</strong> reconhece a operação mas a mercadoria não foi entregue.
+            </div>
+          </div>
+          <div class="field col-12" id="campo-justificativa" style="display:none">
+            <label class="form-label">Justificativa<span class="req">*</span></label>
+            {{ form.justificativa }}
+            {% if form.justificativa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.justificativa.errors.0 }}</div>{% endif %}
+          </div>
+          {% if form.non_field_errors %}
+          <div class="field col-12">
+            <div class="alert alert-danger py-2 px-3 mb-0">{{ form.non_field_errors.0 }}</div>
+          </div>
+          {% endif %}
         </div>
       </form>
     </div>
+  </div>
+
+  <div class="app-footer-bar">
+    <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline">Cancelar</a>
+    <button type="submit" form="manifestacao-form" class="btn btn-primary">
+      <i class="bi bi-chat-square-check me-1"></i>Registrar Manifestação
+    </button>
   </div>
 
 </div>

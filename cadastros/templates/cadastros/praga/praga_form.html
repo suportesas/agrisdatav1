@@ -6,83 +6,62 @@
 <div class="container py-4">
   <div class="row justify-content-center">
     <div class="col-md-8">
-      
-      <!-- Header -->
-      <div class="d-flex align-items-center mb-4">
-        <a href="{% url 'cadastros:praga_list' %}" class="btn btn-outline-secondary me-3">
-          <i class="bi bi-arrow-left"></i>
-        </a>
-        <div>
-          <h2 class="fw-bold mb-0">
-            <i class="bi bi-bug text-danger"></i> {{ action }} Praga
-          </h2>
-          <p class="text-muted mb-0">Preencha os dados da praga/doença</p>
+
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge red"><i class="bi bi-bug"></i></span>
+            <div>
+              <h2>{{ action }} Praga</h2>
+              <p class="text-muted mb-0">Preencha os dados da praga/doença</p>
+            </div>
+          </div>
+          <div class="form-header-actions">
+            <a href="{% url 'cadastros:praga_list' %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+          </div>
         </div>
       </div>
 
-      <!-- Form Card -->
-      <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-          <form method="post" enctype="multipart/form-data" novalidate>
-            {% csrf_token %}
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
 
-            <!-- Dados Básicos -->
-            <div class="mb-4">
-              <h5 class="fw-bold border-bottom pb-2 mb-3">
-                <i class="bi bi-info-circle text-primary"></i> Dados Básicos
-              </h5>
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
 
-              <div class="mb-3">
-                <label for="{{ form.nome_comum.id_for_label }}" class="form-label fw-bold">
-                  Nome Comum <span class="text-danger">*</span>
-                </label>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+            <span class="title">Dados Básicos</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12{% if form.nome_comum.errors %} has-error{% endif %}">
+                <label class="form-label" for="{{ form.nome_comum.id_for_label }}">Nome Comum<span class="req">*</span></label>
                 {{ form.nome_comum }}
-                {% if form.nome_comum.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.nome_comum.errors }}
-                  </div>
-                {% endif %}
-                <small class="form-text text-muted">Ex: Lagarta-do-cartucho, Mosca-branca, Ferrugem</small>
+                {% if form.nome_comum.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome_comum.errors|striptags }}</div>{% endif %}
+                <div class="helper-note">Ex: Lagarta-do-cartucho, Mosca-branca, Ferrugem</div>
               </div>
-
-              <div class="mb-3">
-                <label for="{{ form.nome_cientifico.id_for_label }}" class="form-label fw-bold">
-                  Nome Científico
-                </label>
+              <div class="field col-12{% if form.nome_cientifico.errors %} has-error{% endif %}">
+                <label class="form-label" for="{{ form.nome_cientifico.id_for_label }}">Nome Científico</label>
                 {{ form.nome_cientifico }}
-                {% if form.nome_cientifico.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.nome_cientifico.errors }}
-                  </div>
-                {% endif %}
-                <small class="form-text text-muted">Nome científico da espécie (opcional)</small>
+                {% if form.nome_cientifico.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome_cientifico.errors|striptags }}</div>{% endif %}
+                <div class="helper-note">Nome científico da espécie (opcional)</div>
               </div>
-
-              <div class="mb-3">
-                <label for="{{ form.tipo_praga.id_for_label }}" class="form-label fw-bold">
-                  Tipo de Praga <span class="text-danger">*</span>
-                </label>
+              <div class="field col-12{% if form.tipo_praga.errors %} has-error{% endif %}">
+                <label class="form-label" for="{{ form.tipo_praga.id_for_label }}">Tipo de Praga<span class="req">*</span></label>
                 {{ form.tipo_praga }}
-                {% if form.tipo_praga.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.tipo_praga.errors }}
-                  </div>
-                {% endif %}
-                <small class="form-text text-muted">Classifique conforme a natureza da praga</small>
+                {% if form.tipo_praga.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_praga.errors|striptags }}</div>{% endif %}
+                <div class="helper-note">Classifique conforme a natureza da praga</div>
               </div>
-
-              <div class="mb-3">
-                <label for="{{ form.foto.id_for_label }}" class="form-label fw-bold">
-                  <i class="bi bi-image text-info"></i> Foto da Praga
-                </label>
+              <div class="field col-12{% if form.foto.errors %} has-error{% endif %}">
+                <label class="form-label" for="{{ form.foto.id_for_label }}"><i class="bi bi-image"></i> Foto da Praga</label>
                 {{ form.foto }}
-                {% if form.foto.errors %}
-                  <div class="invalid-feedback d-block">
-                    {{ form.foto.errors }}
-                  </div>
-                {% endif %}
-                <small class="form-text text-muted">Upload de imagem identificativa (JPG, PNG) - máximo 5MB</small>
-                
+                {% if form.foto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.foto.errors|striptags }}</div>{% endif %}
+                <div class="helper-note">Upload de imagem identificativa (JPG, PNG) - máximo 5MB</div>
+
                 {% if form.instance.foto %}
                   <div class="mt-3">
                     <div class="alert alert-info d-flex align-items-center">
@@ -93,41 +72,29 @@
                   </div>
                 {% endif %}
               </div>
-
-              <div class="mb-3">
-                <div class="form-check form-switch">
-                  {{ form.ativa }}
-                  <label class="form-check-label fw-bold" for="{{ form.ativa.id_for_label }}">
-                    Praga Ativa
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativa }}
+                    <span class="slider"></span>
                   </label>
-                  {% if form.ativa.errors %}
-                    <div class="invalid-feedback d-block">
-                      {{ form.ativa.errors }}
-                    </div>
-                  {% endif %}
+                  <label class="switch-label" for="{{ form.ativa.id_for_label }}">Praga Ativa</label>
                 </div>
+                {% if form.ativa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ativa.errors|striptags }}</div>{% endif %}
               </div>
             </div>
-
-            <!-- Erros Gerais -->
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger">
-                {{ form.non_field_errors }}
-              </div>
-            {% endif %}
-
-            <!-- Botões -->
-            <div class="d-flex gap-2 justify-content-end">
-              <a href="{% url 'cadastros:praga_list' %}" class="btn btn-secondary">
-                <i class="bi bi-x-circle"></i> Cancelar
-              </a>
-              <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-circle"></i> Salvar Praga
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
+
+        <div class="app-footer-bar">
+          <a href="{% url 'cadastros:praga_list' %}" class="btn btn-outline">
+            <i class="bi bi-x-circle"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar Praga
+          </button>
+        </div>
+      </form>
 
     </div>
   </div>

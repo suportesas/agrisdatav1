@@ -5,13 +5,20 @@
 {% block content %}
 <div class="container-fluid py-4" style="max-width:800px">
 
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div>
-      <h4 class="mb-0 fw-bold"><i class="bi bi-slash-circle text-secondary me-2"></i>Inutilização de Numeração</h4>
-      <small class="text-muted">Bloqueia um intervalo de números de NF-e não utilizados na SEFAZ.</small>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge gray"><i class="bi bi-slash-circle"></i></span>
+        <div>
+          <h2>Inutilização de Numeração</h2>
+          <p class="text-muted mb-0">Bloqueia um intervalo de números de NF-e não utilizados na SEFAZ.</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
@@ -29,60 +36,60 @@
   {% endfor %}
   {% endif %}
 
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header fw-semibold">Dados da Inutilização</div>
-    <div class="card-body">
-      <form method="post">
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm gray"><i class="bi bi-slash-circle"></i></span>
+      <span class="title">Dados da Inutilização</span>
+    </div>
+    <div class="form-section-body">
+      <form method="post" id="inutilizacao-form">
         {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Série <span class="text-danger">*</span></label>
+        <div class="form-grid">
+          <div class="field col-2{% if form.serie.errors %} has-error{% endif %}">
+            <label class="form-label">Série<span class="req">*</span></label>
             {{ form.serie }}
-            {% if form.serie.errors %}<div class="invalid-feedback d-block">{{ form.serie.errors.0 }}</div>{% endif %}
+            {% if form.serie.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.serie.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Nº Inicial <span class="text-danger">*</span></label>
+          <div class="field col-3{% if form.numero_ini.errors %} has-error{% endif %}">
+            <label class="form-label">Nº Inicial<span class="req">*</span></label>
             {{ form.numero_ini }}
-            {% if form.numero_ini.errors %}<div class="invalid-feedback d-block">{{ form.numero_ini.errors.0 }}</div>{% endif %}
+            {% if form.numero_ini.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_ini.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Nº Final <span class="text-danger">*</span></label>
+          <div class="field col-3{% if form.numero_fim.errors %} has-error{% endif %}">
+            <label class="form-label">Nº Final<span class="req">*</span></label>
             {{ form.numero_fim }}
-            {% if form.numero_fim.errors %}<div class="invalid-feedback d-block">{{ form.numero_fim.errors.0 }}</div>{% endif %}
+            {% if form.numero_fim.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_fim.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Ano <span class="text-danger">*</span></label>
+          <div class="field col-4{% if form.ano.errors %} has-error{% endif %}">
+            <label class="form-label">Ano<span class="req">*</span></label>
             {{ form.ano }}
-            {% if form.ano.errors %}<div class="invalid-feedback d-block">{{ form.ano.errors.0 }}</div>{% endif %}
+            {% if form.ano.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ano.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Justificativa <span class="text-danger">*</span></label>
+          <div class="field col-12{% if form.justificativa.errors %} has-error{% endif %}">
+            <label class="form-label">Justificativa<span class="req">*</span></label>
             {{ form.justificativa }}
-            {% if form.justificativa.errors %}<div class="invalid-feedback d-block">{{ form.justificativa.errors.0 }}</div>{% endif %}
-            <small class="text-muted">Mínimo 15 caracteres.</small>
+            {% if form.justificativa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.justificativa.errors.0 }}</div>{% endif %}
+            <div class="helper-note">Mínimo 15 caracteres.</div>
           </div>
           {% if form.non_field_errors %}
-          <div class="col-12">
-            <div class="alert alert-danger py-2 px-3">{{ form.non_field_errors.0 }}</div>
+          <div class="field col-12">
+            <div class="alert alert-danger py-2 px-3 mb-0">{{ form.non_field_errors.0 }}</div>
           </div>
           {% endif %}
-        </div>
-        <div class="d-flex gap-2 mt-4">
-          <button type="submit" class="btn btn-danger">
-            <i class="bi bi-slash-circle me-1"></i>Confirmar Inutilização
-          </button>
-          <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary">Cancelar</a>
         </div>
       </form>
     </div>
   </div>
 
   {% if historico %}
-  <div class="card border-0 shadow-sm">
-    <div class="card-header fw-semibold">Histórico de Inutilizações</div>
-    <div class="card-body p-0">
-      <table class="table table-sm mb-0">
-        <thead class="table-light">
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm gray"><i class="bi bi-clock-history"></i></span>
+      <span class="title">Histórico de Inutilizações</span>
+    </div>
+    <div class="items-table-wrap">
+      <table class="table table-sm mb-0 items-table">
+        <thead>
           <tr>
             <th>Data</th>
             <th>Série</th>
@@ -110,6 +117,13 @@
     </div>
   </div>
   {% endif %}
+
+  <div class="app-footer-bar">
+    <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline">Cancelar</a>
+    <button type="submit" form="inutilizacao-form" class="btn btn-primary">
+      <i class="bi bi-slash-circle me-1"></i>Confirmar Inutilização
+    </button>
+  </div>
 
 </div>
 {% endblock %}

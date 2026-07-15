@@ -1,189 +1,162 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{% if form.instance.id %}Editar{% else %}Nova{% endif %} Conta Bancária | Armador{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-header {
-    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px 10px 0 0;
-    margin-bottom: 0;
-  }
-  .form-section {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    margin-bottom: 1rem;
-  }
-  .form-section-body { padding: 1.25rem; }
-  
-  /* Garantir visibilidade dos campos */
-  input[name="codigo_banco"],
-  input[name="nome_banco"],
-  input[name="agencia"],
-  input[name="agencia_dv"],
-  input[name="conta"],
-  input[name="conta_dv"],
-  input[name="nome_titular"],
-  input[name="cpf_cnpj_titular"],
-  input[name="chave_pix"],
-  select[name="tipo_conta"],
-  select[name="tipo_pix"] {
-    display: block !important;
-    visibility: visible !important;
-    width: 100%;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_detail' armador.id %}">{{ armador.nome }}</a></li>
-      <li class="breadcrumb-item active">{% if form.instance.id %}Editar{% else %}Nova{% endif %} Conta Bancária</li>
-    </ol>
-  </nav>
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
-        {% if form.instance.id %}Editar Conta Bancária{% else %}Nova Conta Bancária{% endif %}
-      </h2>
-      <p class="text-muted mb-0">Armador: <strong>{{ armador.nome }}</strong></p>
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
+          <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_detail' armador.id %}">{{ armador.nome }}</a></li>
+          <li class="breadcrumb-item active">{% if form.instance.id %}Editar{% else %}Nova{% endif %} Conta Bancária</li>
+        </ol>
+      </nav>
+
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge"><i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+            <div>
+              <h2>{% if form.instance.id %}Editar Conta Bancária{% else %}Nova Conta Bancária{% endif %}</h2>
+              <p class="text-muted mb-0">Armador: <strong>{{ armador.nome }}</strong></p>
+            </div>
+          </div>
+          <div class="form-header-actions">
+            <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" id="bancoForm">
+        {% csrf_token %}
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-bank"></i></span>
+            <span class="title">Informações Bancárias</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Código do Banco<span class="req">*</span></label>
+                {{ form.codigo_banco }}
+                {% if form.codigo_banco.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_banco.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-8">
+                <label class="form-label">Nome do Banco<span class="req">*</span></label>
+                {{ form.nome_banco }}
+                {% if form.nome_banco.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome_banco.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-6">
+                <label class="form-label">Agência<span class="req">*</span></label>
+                {{ form.agencia }}
+                {% if form.agencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.agencia.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-2">
+                <label class="form-label">DV Agência</label>
+                {{ form.agencia_dv }}
+                {% if form.agencia_dv.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.agencia_dv.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Tipo de Conta<span class="req">*</span></label>
+                {{ form.tipo_conta }}
+                {% if form.tipo_conta.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_conta.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-6">
+                <label class="form-label">Número da Conta<span class="req">*</span></label>
+                {{ form.conta }}
+                {% if form.conta.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.conta.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-2">
+                <label class="form-label">DV Conta</label>
+                {{ form.conta_dv }}
+                {% if form.conta_dv.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.conta_dv.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.padrao }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.padrao.id_for_label }}">Conta padrão</label>
+                </div>
+              </div>
+
+              <div class="field col-12">
+                <label class="form-label">Nome do Titular<span class="req">*</span></label>
+                {{ form.nome_titular }}
+                {% if form.nome_titular.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome_titular.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-6">
+                <label class="form-label">CPF/CNPJ Titular</label>
+                {{ form.cpf_cnpj_titular }}
+                {% if form.cpf_cnpj_titular.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cpf_cnpj_titular.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-6">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativo }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.ativo.id_for_label }}">Conta ativa</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-qr-code"></i></span>
+            <span class="title">Chaves PIX</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.tem_pix }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.tem_pix.id_for_label }}">Possui chaves PIX</label>
+                </div>
+              </div>
+
+              <div class="field col-6">
+                <label class="form-label">Tipo de PIX</label>
+                {{ form.tipo_pix }}
+                {% if form.tipo_pix.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_pix.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-12">
+                <label class="form-label">Chave PIX</label>
+                {{ form.chave_pix }}
+                <div class="helper-note"><i class="bi bi-info-circle"></i> Digite a chave PIX (CPF, CNPJ, Email, Telefone ou Chave Aleatória)</div>
+                {% if form.chave_pix.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.chave_pix.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-footer-bar">
+          <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline">Cancelar</a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar Conta Bancária
+          </button>
+        </div>
+      </form>
     </div>
-    <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
   </div>
-
-  <form method="post" enctype="multipart/form-data" id="bancoForm">
-    {% csrf_token %}
-
-    <div class="form-section">
-      <div class="section-header">
-        <h5 class="mb-0">Informações Bancárias</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Código do Banco *</label>
-            {{ form.codigo_banco }}
-            {% if form.codigo_banco.errors %}<div class="invalid-feedback d-block">{{ form.codigo_banco.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Nome do Banco *</label>
-            {{ form.nome_banco }}
-            {% if form.nome_banco.errors %}<div class="invalid-feedback d-block">{{ form.nome_banco.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Agência *</label>
-            {{ form.agencia }}
-            {% if form.agencia.errors %}<div class="invalid-feedback d-block">{{ form.agencia.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">DV Agência</label>
-            {{ form.agencia_dv }}
-            {% if form.agencia_dv.errors %}<div class="invalid-feedback d-block">{{ form.agencia_dv.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo de Conta *</label>
-            {{ form.tipo_conta }}
-            {% if form.tipo_conta.errors %}<div class="invalid-feedback d-block">{{ form.tipo_conta.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Número da Conta *</label>
-            {{ form.conta }}
-            {% if form.conta.errors %}<div class="invalid-feedback d-block">{{ form.conta.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">DV Conta</label>
-            {{ form.conta_dv }}
-            {% if form.conta_dv.errors %}<div class="invalid-feedback d-block">{{ form.conta_dv.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <div class="form-check form-switch mt-4">
-              {{ form.padrao }}
-              <label class="form-check-label" for="{{ form.padrao.id_for_label }}">
-                <strong>Conta padrão</strong>
-              </label>
-            </div>
-          </div>
-
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Nome do Titular *</label>
-            {{ form.nome_titular }}
-            {% if form.nome_titular.errors %}<div class="invalid-feedback d-block">{{ form.nome_titular.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">CPF/CNPJ Titular</label>
-            {{ form.cpf_cnpj_titular }}
-            {% if form.cpf_cnpj_titular.errors %}<div class="invalid-feedback d-block">{{ form.cpf_cnpj_titular.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-6">
-            <div class="form-check form-switch mt-4">
-              {{ form.ativo }}
-              <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
-                <strong>Conta ativa</strong>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-qr-code"></i> Chaves PIX</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="form-check form-switch">
-              {{ form.tem_pix }}
-              <label class="form-check-label" for="{{ form.tem_pix.id_for_label }}">
-                <strong>Possui chaves PIX</strong>
-              </label>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de PIX</label>
-            {{ form.tipo_pix }}
-            {% if form.tipo_pix.errors %}<div class="invalid-feedback d-block">{{ form.tipo_pix.errors.0 }}</div>{% endif %}
-          </div>
-
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Chave PIX</label>
-            {{ form.chave_pix }}
-            <small class="form-text text-muted d-block mt-2">
-              <i class="bi bi-info-circle"></i> Digite a chave PIX (CPF, CNPJ, Email, Telefone ou Chave Aleatória)
-            </small>
-            {% if form.chave_pix.errors %}<div class="invalid-feedback d-block">{{ form.chave_pix.errors.0 }}</div>{% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary btn-lg px-5">
-        <i class="bi bi-x-circle"></i> Cancelar
-      </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
-        <i class="bi bi-check-circle"></i> Salvar Conta Bancária
-      </button>
-    </div>
-  </form>
 </div>
 {% endblock %}

@@ -1,31 +1,58 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container mt-4">
-    <h2>{% if forma %}Editar{% else %}Nova{% endif %} Forma de Pagamento</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="nome" class="form-label">Nome *</label>
+<div class="container py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-credit-card"></i></span>
+        <h2>{% if forma %}Editar{% else %}Nova{% endif %} Forma de Pagamento</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'compras:forma_pagamento_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12">
+            <label for="nome" class="form-label">Nome<span class="req">*</span></label>
             <input type="text" class="form-control" id="nome" name="nome" value="{{ forma.nome|default:'' }}" required>
-        </div>
-        <div class="mb-3">
+          </div>
+          <div class="field col-4">
             <label for="ordem_exibicao" class="form-label">Ordem de Exibição</label>
             <input type="number" class="form-control" id="ordem_exibicao" name="ordem_exibicao" value="{{ forma.ordem_exibicao|default:'0' }}">
-        </div>
-        <div class="mb-3">
+          </div>
+          <div class="field col-4">
             <label for="dias_processamento" class="form-label">Dias de Processamento</label>
             <input type="number" class="form-control" id="dias_processamento" name="dias_processamento" value="{{ forma.dias_processamento|default:'0' }}">
-        </div>
-        <div class="mb-3">
+          </div>
+          <div class="field col-4">
             <label for="taxa_administrativa" class="form-label">Taxa Administrativa (%)</label>
             <input type="number" class="form-control" id="taxa_administrativa" name="taxa_administrativa" value="{{ forma.taxa_administrativa|default:'0' }}" step="0.01">
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="ativo" name="ativo" {% if forma.ativo or not forma %}checked{% endif %}>
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="ativo">Ativo</label>
+            </div>
+          </div>
         </div>
-        <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="ativo" name="ativo" {% if forma.ativo or not forma %}checked{% endif %}>
-            <label class="form-check-label" for="ativo">Ativo</label>
-        </div>
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <a href="{% url 'compras:forma_pagamento_list' %}" class="btn btn-secondary">Cancelar</a>
-    </form>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'compras:forma_pagamento_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

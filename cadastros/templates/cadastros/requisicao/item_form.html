@@ -3,75 +3,79 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-list-check"></i> {{ titulo }}
-            </h1>
+<div class="container-fluid py-4">
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-list-check"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:requisicao_detail' requisicao.id %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" id="form-requisicao-item">
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Produto</label>
+            {{ form.produto }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Unidade</label>
+            {{ form.unidade_medida }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Qtd. Solicitada</label>
+            {{ form.quantidade_solicitada }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Qtd. Atendida</label>
+            {{ form.quantidade_atendida }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">
+              {% if requisicao.tipo == 'EMPRESTIMO' %}
+              Valor do Produto (Venda)
+              {% else %}
+              Custo Estimado
+              {% endif %}
+            </label>
+            {{ form.custo_estimado }}
+            {% if requisicao.tipo == 'EMPRESTIMO' %}
+            <div class="helper-note">Valor sugerido automaticamente. Pode ser ajustado.</div>
+            {% endif %}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Observacoes</label>
+            {{ form.observacoes }}
+          </div>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:requisicao_detail' requisicao.id %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mt-3">
+          <strong>Verifique os campos:</strong>
+          {{ form.errors }}
         </div>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <form method="post" id="form-requisicao-item">
-                {% csrf_token %}
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Produto</label>
-                        {{ form.produto }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Unidade</label>
-                        {{ form.unidade_medida }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Qtd. Solicitada</label>
-                        {{ form.quantidade_solicitada }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Qtd. Atendida</label>
-                        {{ form.quantidade_atendida }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">
-                            {% if requisicao.tipo == 'EMPRESTIMO' %}
-                            Valor do Produto (Venda)
-                            {% else %}
-                            Custo Estimado
-                            {% endif %}
-                        </label>
-                        {{ form.custo_estimado }}
-                        {% if requisicao.tipo == 'EMPRESTIMO' %}
-                        <small class="text-muted d-block mt-1">Valor sugerido automaticamente. Pode ser ajustado.</small>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label">Observacoes</label>
-                        {{ form.observacoes }}
-                    </div>
-                </div>
-
-                {% if form.errors %}
-                <div class="alert alert-danger mt-3">
-                    <strong>Verifique os campos:</strong>
-                    {{ form.errors }}
-                </div>
-                {% endif %}
-
-                <div class="mt-4 text-end">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle"></i> Salvar
-                    </button>
-                </div>
-            </form>
-        </div>
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:requisicao_detail' requisicao.id %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar
+      </button>
     </div>
+  </form>
 </div>
 
 <script>

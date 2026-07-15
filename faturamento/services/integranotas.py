@@ -1135,71 +1135,58 @@ class IntegranNotasClient:
             cofins_block['valor'] = '0.00'
         impostos['cofins'] = cofins_block
 
-        # IBS/CBS — Reforma Tributária (NT 2024/2025, grupo_ibs_cbs)
+        # IBS/CBS — Reforma Tributária (NT 2024/2025, grupo_ibs_cbs). Estrutura
+        # conforme o schema real do endpoint /nfe da IntegraNotas: percentual_reducao,
+        # aliquota_reducao_base_calculo_efetiva, percentual_diferimento e
+        # valor_diferimento ficam DENTRO de cada bloco (ibs_estadual/ibs_municipal/
+        # cbs) — não em grupos "reducao_ibs"/"reducao_cbs"/"diferimento_ibs"/
+        # "diferimento_cbs" à parte. Não existe grupo de crédito presumido dentro
+        # de ibs_cbs no schema real (removido pela própria NT) — não enviar.
         cst_reforma = (getattr(item, 'ibs_cbs_situacao_tributaria', '') or '').strip()
         if cst_reforma:
             cclasstrib = (getattr(item, 'ibs_cbs_classificacao_tributaria', '') or '').strip()
+
+            def _bloco_tributo(aliquota, percentual_reducao, valor, percentual_diferimento=0, valor_diferimento=0):
+                bloco = {'aliquota': str(aliquota), 'valor': str(valor)}
+                pred = float(percentual_reducao or 0)
+                if pred > 0:
+                    aliq_efet = float(aliquota or 0) * (1 - pred / 100)
+                    bloco['percentual_reducao'] = str(percentual_reducao)
+                    bloco['aliquota_reducao_base_calculo_efetiva'] = f'{aliq_efet:.4f}'
+                pdif = float(percentual_diferimento or 0)
+                if pdif > 0:
+                    bloco['percentual_diferimento'] = str(percentual_diferimento)
+                    bloco['valor_diferimento'] = str(valor_diferimento or 0)
+                return bloco
+
+            # O model só guarda UM percentual/valor de diferimento combinado para
+            # IBS (UF + Município juntos) — rateado aqui proporcionalmente ao
+            # valor de cada competência, já que o schema exige os dois separados.
+            pdif_ibs = float(getattr(item, 'ibs_percentual_diferimento', 0) or 0)
+            valor_dif_uf = valor_dif_mun = 0
+            if pdif_ibs > 0:
+                valor_dif_uf = float(item.ibs_cbs_valor_uf or 0) * pdif_ibs / 100
+                valor_dif_mun = float(item.ibs_cbs_valor_municipal or 0) * pdif_ibs / 100
+
+            valor_total_ibs = float(item.ibs_cbs_valor_uf or 0) + float(item.ibs_cbs_valor_municipal or 0)
+
             impostos['ibs_cbs'] = {
                 'situacao_tributaria': cst_reforma,
                 'classificacao_tributaria': cclasstrib,
                 'grupo_ibs_cbs': {
                     'valor_base_calculo': str(item.ibs_cbs_base_calculo),
-                    'ibs_estadual': {
-                        'aliquota': str(item.ibs_cbs_aliquota_uf),
-                        'valor': str(item.ibs_cbs_valor_uf),
-                    },
-                    'ibs_municipal': {
-                        'aliquota': str(item.ibs_cbs_aliquota_municipal),
-                        'valor': str(item.ibs_cbs_valor_municipal),
-                    },
-                    'cbs': {
-                        'aliquota': str(item.ibs_cbs_aliquota_cbs),
-                        'valor': str(item.ibs_cbs_valor_cbs),
-                    },
+                    'valor_total_ibs': str(valor_total_ibs),
+                    'ibs_estadual': _bloco_tributo(
+                        item.ibs_cbs_aliquota_uf, item.ibs_percentual_reducao, item.ibs_cbs_valor_uf,
+                        pdif_ibs, valor_dif_uf),
+                    'ibs_municipal': _bloco_tributo(
+                        item.ibs_cbs_aliquota_municipal, item.ibs_percentual_reducao, item.ibs_cbs_valor_municipal,
+                        pdif_ibs, valor_dif_mun),
+                    'cbs': _bloco_tributo(
+                        item.ibs_cbs_aliquota_cbs, item.cbs_percentual_reducao, item.ibs_cbs_valor_cbs,
+                        item.cbs_percentual_diferimento, item.cbs_valor_diferido),
                 },
             }
-
-            # gRed — redução de alíquota (CST 200/515), independente para IBS e
-            # CBS. Nomes de campo a confirmar contra o schema real da
-            # IntegraNotas antes de produção.
-            pred_ibs = float(getattr(item, 'ibs_percentual_reducao', 0) or 0)
-            if pred_ibs > 0:
-                impostos['ibs_cbs']['grupo_ibs_cbs']['reducao_ibs'] = {
-                    'percentual_reducao_aliquota': str(pred_ibs),
-                }
-            pred_cbs = float(getattr(item, 'cbs_percentual_reducao', 0) or 0)
-            if pred_cbs > 0:
-                impostos['ibs_cbs']['grupo_ibs_cbs']['reducao_cbs'] = {
-                    'percentual_reducao_aliquota': str(pred_cbs),
-                }
-
-            # gDif — diferimento (CST 515), independente para IBS e CBS.
-            pdif_ibs = float(getattr(item, 'ibs_percentual_diferimento', 0) or 0)
-            if pdif_ibs > 0:
-                impostos['ibs_cbs']['grupo_ibs_cbs']['diferimento_ibs'] = {
-                    'percentual_diferimento': str(pdif_ibs),
-                    'valor_diferido': str(getattr(item, 'ibs_valor_diferido', 0) or 0),
-                }
-            pdif_cbs = float(getattr(item, 'cbs_percentual_diferimento', 0) or 0)
-            if pdif_cbs > 0:
-                impostos['ibs_cbs']['grupo_ibs_cbs']['diferimento_cbs'] = {
-                    'percentual_diferimento': str(pdif_cbs),
-                    'valor_diferido': str(getattr(item, 'cbs_valor_diferido', 0) or 0),
-                }
-
-            # gCredPresOper — crédito presumido (ex.: cCredPres=1, aquisição de
-            # produtor rural não contribuinte). Subgrupo do próprio bloco
-            # IBS/CBS, distinto do crédito presumido de ICMS (que é um
-            # benefício estadual independente do CST, ver creditos_presumido
-            # em _build_item).
-            credpres_cod = (getattr(item, 'ibs_cbs_credito_presumido_codigo', '') or '').strip()
-            credpres_pct = float(getattr(item, 'ibs_cbs_credito_presumido_percentual', 0) or 0)
-            if credpres_cod and credpres_pct > 0:
-                impostos['ibs_cbs']['grupo_credito_presumido'] = {
-                    'codigo_credito_presumido': credpres_cod,
-                    'percentual': str(item.ibs_cbs_credito_presumido_percentual),
-                    'valor': str(item.ibs_cbs_credito_presumido_valor),
-                }
 
         return impostos
 
@@ -1471,7 +1458,7 @@ class IntegranNotasClient:
             'serie': str(ct.serie),
             'numero': str(ct.numero),
             'data_emissao': data_emissao_str,
-            'tipo_operacao': '0',                     # CT-e Normal
+            'tipo_operacao': ct.tipo_cte,              # bloqueado em '0'-Normal por _validar_cte
             'cfop': ct.cfop,
             'natureza_operacao': ct.natureza_operacao,
             'tipo_servico': tipo_servico,
@@ -1592,7 +1579,40 @@ class IntegranNotasClient:
                 'valor_fcp_uf_fim': str(ct.partilha_valor_fcp_uf_fim),
             }
 
-        return {'icms': icms}
+        impostos: dict = {'icms': icms}
+
+        # IBS/CBS — Reforma Tributária (NT 2025.001, grupo_ibs_cbs). BC = valor
+        # da prestação de serviço (o CT-e não tem itens, ao contrário da NF-e).
+        # Estrutura conforme o schema real do endpoint /cte da IntegraNotas:
+        # percentual_reducao e aliquota_reducao_base_calculo_efetiva (pAliqEfet)
+        # ficam DENTRO de cada bloco (ibs_estadual/ibs_municipal/cbs), não como
+        # um grupo "reducao_ibs"/"reducao_cbs" à parte.
+        cst_reforma = (getattr(ct, 'ibs_cbs_situacao_tributaria', '') or '').strip()
+        if cst_reforma:
+            cclasstrib = (getattr(ct, 'ibs_cbs_classificacao_tributaria', '') or '').strip()
+
+            def _bloco_tributo(aliquota, percentual_reducao, valor):
+                bloco = {'aliquota': str(aliquota), 'valor': str(valor)}
+                pred = float(percentual_reducao or 0)
+                if pred > 0:
+                    aliq_efet = float(aliquota or 0) * (1 - pred / 100)
+                    bloco['percentual_reducao'] = str(percentual_reducao)
+                    bloco['aliquota_reducao_base_calculo_efetiva'] = f'{aliq_efet:.4f}'
+                return bloco
+
+            impostos['ibs_cbs'] = {
+                'situacao_tributaria': cst_reforma,
+                'classificacao_tributaria': cclasstrib,
+                'grupo_ibs_cbs': {
+                    'valor_base_calculo': str(ct.ibs_cbs_base_calculo),
+                    'valor_total_ibs': str(ct.valor_ibs),
+                    'ibs_estadual': _bloco_tributo(ct.ibs_cbs_aliquota_uf, ct.ibs_percentual_reducao, ct.ibs_cbs_valor_uf),
+                    'ibs_municipal': _bloco_tributo(ct.ibs_cbs_aliquota_municipal, ct.ibs_percentual_reducao, ct.ibs_cbs_valor_municipal),
+                    'cbs': _bloco_tributo(ct.ibs_cbs_aliquota_cbs, ct.cbs_percentual_reducao, ct.ibs_cbs_valor_cbs),
+                },
+            }
+
+        return impostos
 
     def _build_parte_cte(self, cliente) -> dict:
         parte: dict = {'razao_social': cliente.razao_social, 'nome': cliente.razao_social}

@@ -2,45 +2,45 @@
   <div class="alert alert-danger">{{ form.non_field_errors }}</div>
 {% endif %}
 
-<div class="row g-3">
-  <div class="col-12"><h6 class="text-muted border-bottom pb-1">Área e Datas</h6></div>
-  <div class="col-md-4">
+<div class="form-grid">
+  <div class="field col-12"><h6 class="text-muted border-bottom pb-1">Área e Datas</h6></div>
+  <div class="field col-4">
     <label class="form-label">Área Planejada (ha)</label>
     {{ form.planned_area }}
-    {% if form.planned_area.errors %}<div class="invalid-feedback d-block">{{ form.planned_area.errors }}</div>{% endif %}
+    {% if form.planned_area.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.planned_area.errors|striptags }}</div>{% endif %}
   </div>
-  <div class="col-md-4">
+  <div class="field col-4">
     <label class="form-label">Plantio Previsto</label>
     {{ form.planned_plantio }}
-    {% if form.planned_plantio.errors %}<div class="invalid-feedback d-block">{{ form.planned_plantio.errors }}</div>{% endif %}
+    {% if form.planned_plantio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.planned_plantio.errors|striptags }}</div>{% endif %}
   </div>
-  <div class="col-md-4">
+  <div class="field col-4">
     <label class="form-label">Colheita Prevista</label>
     {{ form.planned_colheita }}
-    {% if form.planned_colheita.errors %}<div class="invalid-feedback d-block">{{ form.planned_colheita.errors }}</div>{% endif %}
+    {% if form.planned_colheita.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.planned_colheita.errors|striptags }}</div>{% endif %}
   </div>
 
-  <div class="col-12 mt-2"><h6 class="text-muted border-bottom pb-1">Produção</h6></div>
-  <div class="col-md-6">
+  <div class="field col-12 mt-2"><h6 class="text-muted border-bottom pb-1">Produção</h6></div>
+  <div class="field col-6">
     <label class="form-label">Produção Planejada (ton)</label>
     {{ form.planned_production }}
-    {% if form.planned_production.errors %}<div class="invalid-feedback d-block">{{ form.planned_production.errors }}</div>{% endif %}
+    {% if form.planned_production.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.planned_production.errors|striptags }}</div>{% endif %}
   </div>
-  <div class="col-md-6">
+  <div class="field col-6">
     <label class="form-label">Produtividade Esperada (sc/ha)</label>
     {{ form.produtividade_esperada }}
-    {% if form.produtividade_esperada.errors %}<div class="invalid-feedback d-block">{{ form.produtividade_esperada.errors }}</div>{% endif %}
+    {% if form.produtividade_esperada.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produtividade_esperada.errors|striptags }}</div>{% endif %}
   </div>
 
-  <div class="col-12 mt-2"><h6 class="text-muted border-bottom pb-1">Financeiro</h6></div>
-  <div class="col-md-6">
+  <div class="field col-12 mt-2"><h6 class="text-muted border-bottom pb-1">Financeiro</h6></div>
+  <div class="field col-6">
     <label class="form-label">Preço Meta (R$/sc)</label>
     {{ form.preco_meta_saca }}
-    {% if form.preco_meta_saca.errors %}<div class="invalid-feedback d-block">{{ form.preco_meta_saca.errors }}</div>{% endif %}
+    {% if form.preco_meta_saca.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.preco_meta_saca.errors|striptags }}</div>{% endif %}
   </div>
-  <div class="col-md-6">
+  <div class="field col-6">
     <label class="form-label">Custo Meta (R$/ha)</label>
     {{ form.custo_meta_ha }}
-    {% if form.custo_meta_ha.errors %}<div class="invalid-feedback d-block">{{ form.custo_meta_ha.errors }}</div>{% endif %}
+    {% if form.custo_meta_ha.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.custo_meta_ha.errors|striptags }}</div>{% endif %}
   </div>
 </div>

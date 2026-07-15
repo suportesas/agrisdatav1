@@ -173,21 +173,21 @@
 
               <!-- Área Total -->
               <td class="text-end">
-                <strong>{{ area.area_total|floatformat:2 }}</strong> ha
+                <strong>{{ area.area_total|floatformat:"2g" }}</strong> ha
               </td>
 
               <!-- Área de Reserva -->
               <td class="text-end">
                 <span class="text-warning">
                   <i class="bi bi-exclamation-triangle"></i>
-                  {{ area.area_reserva|floatformat:2 }} ha
+                  {{ area.area_reserva|floatformat:"2g" }} ha
                 </span>
               </td>
 
               <!-- Disponível -->
               <td class="text-end">
                 <span class="text-success">
-                  {{ area.area_disponivel|floatformat:2 }} ha
+                  {{ area.area_disponivel|floatformat:"2g" }} ha
                 </span>
               </td>
 

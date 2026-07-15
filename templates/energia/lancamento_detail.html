@@ -20,17 +20,17 @@
         <div class="card-body">
           <dl class="row mb-0">
             <dt class="col-7 text-muted">Consumo Registrado</dt>
-            <dd class="col-5 font-monospace fw-semibold">{{ obj.consumo_registrado_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace fw-semibold">{{ obj.consumo_registrado_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Energia Compensada</dt>
-            <dd class="col-5 font-monospace text-success">{{ obj.energia_compensada_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace text-success">{{ obj.energia_compensada_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Energia Faturada</dt>
-            <dd class="col-5 font-monospace">{{ obj.energia_faturada_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace">{{ obj.energia_faturada_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Energia Injetada</dt>
-            <dd class="col-5 font-monospace text-info">{{ obj.energia_injetada_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace text-info">{{ obj.energia_injetada_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Crédito Anterior</dt>
-            <dd class="col-5 font-monospace">{{ obj.credito_anterior_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace">{{ obj.credito_anterior_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Crédito Acumulado</dt>
-            <dd class="col-5 font-monospace">{{ obj.credito_acumulado_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace">{{ obj.credito_acumulado_kwh|floatformat:"2g" }} kWh</dd>
           </dl>
         </div>
       </div>

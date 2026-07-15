@@ -1186,8 +1186,10 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'partilha_percentual_fcp_uf_fim', 'partilha_valor_fcp_uf_fim',
             # Modal rodoviário
             'placa_veiculo_override', 'rntrc_override',
-            # Reforma tributária
-            'reforma_cst', 'reforma_classificacao',
+            # Reforma tributária (IBS/CBS)
+            'ibs_cbs_situacao_tributaria', 'ibs_cbs_classificacao_tributaria',
+            'ibs_cbs_aliquota_uf', 'ibs_cbs_aliquota_municipal', 'ibs_cbs_aliquota_cbs',
+            'ibs_percentual_reducao', 'cbs_percentual_reducao',
             # Fatura
             'fatura_numero', 'fatura_valor_original', 'fatura_valor_desconto',
             'observacoes',
@@ -1249,9 +1251,14 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             # Modal rodoviário
             'placa_veiculo_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Preenchida ao selecionar o veículo'}),
             'rntrc_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Preenchido ao selecionar a transportadora'}),
-            # Reforma tributária
-            'reforma_cst':           forms.Select(attrs={'class': 'form-select'}),
-            'reforma_classificacao': forms.Select(attrs={'class': 'form-select'}),
+            # Reforma tributária (IBS/CBS)
+            'ibs_cbs_situacao_tributaria':      forms.Select(attrs={'class': 'form-select ibs-cbs-cst'}),
+            'ibs_cbs_classificacao_tributaria': forms.Select(attrs={'class': 'form-select ibs-cbs-cclasstrib'}),
+            'ibs_cbs_aliquota_uf':        forms.NumberInput(attrs=_dec4),
+            'ibs_cbs_aliquota_municipal': forms.NumberInput(attrs=_dec4),
+            'ibs_cbs_aliquota_cbs':       forms.NumberInput(attrs=_dec4),
+            'ibs_percentual_reducao':     forms.NumberInput(attrs=_dec4),
+            'cbs_percentual_reducao':     forms.NumberInput(attrs=_dec4),
             # Fatura
             'fatura_numero':         forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 001'}),
             'fatura_valor_original': forms.NumberInput(attrs=_dec2),
@@ -1286,6 +1293,21 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
         cleaned = super().clean()
         if cleaned.get('tipo_tomador') == '4' and not cleaned.get('tomador'):
             self.add_error('tomador', 'Informe o Tomador quando "Tomador do Serviço" for "4 - Outros".')
+
+        # cClassTrib deve formar um par válido com o CST IBS/CBS escolhido
+        cst_reforma = cleaned.get('ibs_cbs_situacao_tributaria')
+        cclasstrib = cleaned.get('ibs_cbs_classificacao_tributaria')
+        if cst_reforma:
+            validos = {c for c, _ in ConhecimentoTransporte.IBS_CBS_CST_CCLASSTRIB_MAP.get(cst_reforma, [])}
+            if not cclasstrib:
+                self.add_error('ibs_cbs_classificacao_tributaria',
+                                'cClassTrib obrigatório quando CST IBS/CBS é informado.')
+            elif cclasstrib not in validos:
+                self.add_error('ibs_cbs_classificacao_tributaria',
+                                f'cClassTrib "{cclasstrib}" não é válido para o CST IBS/CBS {cst_reforma}.')
+        elif cclasstrib:
+            self.add_error('ibs_cbs_classificacao_tributaria',
+                            'cClassTrib informado sem CST IBS/CBS selecionado.')
         return cleaned
 
 

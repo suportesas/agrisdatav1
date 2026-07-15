@@ -1,11 +1,20 @@
 {% extends 'base.html' %}
 {% block title %}Migrar Adiantamento — {{ adiantamento.numero_referencia }}{% endblock %}
 {% block content %}
-<div class="container" style="max-width:620px;margin-top:2rem">
+<div class="container py-4" style="max-width:620px">
 
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h1 class="mb-0 fs-4"><i class="bi bi-arrow-right-circle"></i> Migrar Saldo para Próxima Safra</h1>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge blue"><i class="bi bi-arrow-right-circle"></i></span>
+        <h2>Migrar Saldo para Próxima Safra</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <div class="alert alert-info">
@@ -14,33 +23,33 @@
     <small class="text-muted">Um novo adiantamento será criado na safra de destino com o saldo atual. O adiantamento original ficará marcado como <em>Migrado</em>.</small>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <form method="post">
-        {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-sm-5">
-            <label class="form-label">{{ form.safra_referencia_destino.label }} <span class="text-danger">*</span></label>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-5{% if form.safra_referencia_destino.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.safra_referencia_destino.label }}<span class="req">*</span></label>
             {{ form.safra_referencia_destino }}
-            {% if form.safra_referencia_destino.errors %}<div class="text-danger small">{{ form.safra_referencia_destino.errors.0 }}</div>{% endif %}
+            {% if form.safra_referencia_destino.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra_referencia_destino.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-sm-4">
+          <div class="field col-4">
             <label class="form-label">{{ form.data_migracao.label }}</label>
             {{ form.data_migracao }}
           </div>
-          <div class="col-12">
-            <label class="form-label">{{ form.motivo.label }} <span class="text-danger">*</span></label>
+          <div class="field col-12{% if form.motivo.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.motivo.label }}<span class="req">*</span></label>
             {{ form.motivo }}
-            {% if form.motivo.errors %}<div class="text-danger small">{{ form.motivo.errors.0 }}</div>{% endif %}
+            {% if form.motivo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.motivo.errors.0 }}</div>{% endif %}
           </div>
         </div>
-        <hr>
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-info"><i class="bi bi-arrow-right-circle"></i> Confirmar Migração</button>
-          <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-arrow-right-circle"></i> Confirmar Migração</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

@@ -1605,7 +1605,14 @@ class ItemRecebimento(models.Model):
                     import logging
                     logging.error(f"Nenhum armazém disponível para criar lote. Empresa: {self.recebimento.empresa}")
                     raise ValidationError("Nenhum armazém disponível. Configure um armazém para a empresa.")
-                
+
+                # Preço unitário de compra deste item, usado como custo do lote
+                preco_compra = None
+                if self.item_pedido and self.item_pedido.preco_unitario:
+                    preco_compra = self.item_pedido.preco_unitario
+                elif self.preco_unitario:
+                    preco_compra = self.preco_unitario
+
                 # Cria o lote
                 self.lote = Lote.objects.create(
                     empresa=self.recebimento.empresa,
@@ -1619,6 +1626,7 @@ class ItemRecebimento(models.Model):
                     data_validade=self.data_validade,
                     status='DISPONIVEL',
                     unidade_medida=unidade_medida,
+                    valor_unitario=preco_compra,
                     fornecedor=self.recebimento.fornecedor if hasattr(self.recebimento, 'fornecedor') else None,
                     nota_fiscal=self.recebimento.nota_fiscal,
                 )
@@ -1662,6 +1670,13 @@ class ItemRecebimento(models.Model):
                 logging.info(f"Movimentação já registrada para ItemRecebimento #{self.id}")
                 return
             
+            # Preço unitário de compra deste item, usado como custo do lote
+            preco_compra = None
+            if self.item_pedido and self.item_pedido.preco_unitario:
+                preco_compra = self.item_pedido.preco_unitario
+            elif self.preco_unitario:
+                preco_compra = self.preco_unitario
+
             # Se chegou aqui, é a PRIMEIRA chamada para este item
             # Apenas cria lote se não existir
             if not self.lote:
@@ -1685,10 +1700,15 @@ class ItemRecebimento(models.Model):
                     data_validade=self.data_validade,
                     status='DISPONIVEL',
                     unidade_medida=unidade,
+                    valor_unitario=preco_compra,
                     fornecedor=self.recebimento.fornecedor if hasattr(self.recebimento, 'fornecedor') else None,
                     nota_fiscal=self.recebimento.nota_fiscal,
                 )
                 ItemRecebimento.objects.filter(pk=self.pk).update(lote=self.lote)
+            elif preco_compra is not None and self.lote.valor_unitario is None:
+                # Lote já existia sem custo informado (ex.: criado no save() inicial) - preenche agora
+                self.lote.valor_unitario = preco_compra
+                self.lote.save(update_fields=['valor_unitario', 'valor_total'])
 
             # Cria a movimentação de estoque
             if self.lote:
@@ -1712,23 +1732,13 @@ class ItemRecebimento(models.Model):
                 for lote in lotes_disponiveis:
                     total_estoque += lote.quantidade_atual
 
-                # Atualizar preço de custo com o último preço comprado
-                preco_compra = None
-                if self.item_pedido and self.item_pedido.preco_unitario:
-                    preco_compra = self.item_pedido.preco_unitario
-                elif self.preco_unitario:
-                    preco_compra = self.preco_unitario
-
                 produto.estoque_atual = total_estoque
-                update_fields = ['estoque_atual']
-                if preco_compra is not None:
-                    produto.preco_custo = preco_compra
-                    update_fields.append('preco_custo')
-
-                produto.save(update_fields=update_fields)
+                produto.save(update_fields=['estoque_atual'])
                 logging.info(f"Estoque atualizado para {produto.nome}: {total_estoque}")
-                if preco_compra is not None:
-                    logging.info(f"Preço de custo atualizado para {produto.nome}: {preco_compra}")
+
+                # Atualiza custo médio ponderado do produto com base nos lotes ativos
+                produto.recalcular_custo_medio()
+                logging.info(f"Custo médio ponderado atualizado para {produto.nome}: {produto.preco_custo}")
                 logging.info(f"Movimentação ENTRADA registrada para ItemRecebimento #{self.id}")
         
         except Exception as e:

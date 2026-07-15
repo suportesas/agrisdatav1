@@ -3262,6 +3262,29 @@ def _validar_cte(ct):
     if cst in ('00', '20') and (not ct.aliquota_icms or ct.aliquota_icms <= 0):
         erros.append({'aba': 'Tributação', 'campo': 'Alíquota ICMS (%)', 'msg': 'Deve ser maior que zero para o CST selecionado.'})
 
+    # Reforma Tributária — IBS/CBS
+    if ct.tipo_cte != '0':
+        erros.append({'aba': 'Geral', 'campo': 'Tipo do CT-e',
+                       'msg': 'CT-e Complementar/Anulação/Substituto não são suportados para emissão — selecione "0 - CT-e Normal".'})
+    cst_reforma = (ct.ibs_cbs_situacao_tributaria or '').strip()
+    cclasstrib_reforma = (ct.ibs_cbs_classificacao_tributaria or '').strip()
+    if cst_reforma:
+        codigos_validos = {c for c, _ in ConhecimentoTransporte.IBS_CBS_CST_CCLASSTRIB_MAP.get(cst_reforma, [])}
+        if not cclasstrib_reforma:
+            erros.append({'aba': 'Tributação', 'campo': 'cClassTrib',
+                          'msg': 'cClassTrib obrigatório quando CST IBS/CBS informado.'})
+        elif cclasstrib_reforma not in codigos_validos:
+            erros.append({'aba': 'Tributação', 'campo': 'cClassTrib',
+                          'msg': f'cClassTrib "{cclasstrib_reforma}" inválido para CST IBS/CBS {cst_reforma}.'})
+        if cst_reforma == '200' and (
+            (ct.ibs_percentual_reducao or 0) <= 0
+            or (ct.cbs_percentual_reducao or 0) <= 0
+        ):
+            erros.append({'aba': 'Tributação', 'campo': '% Redução IBS/CBS',
+                          'msg': 'CST IBS/CBS 200 exige "% Redução IBS" e "% Redução CBS" preenchidos.'})
+    elif cclasstrib_reforma:
+        erros.append({'aba': 'Tributação', 'campo': 'cClassTrib', 'msg': 'cClassTrib informado sem CST IBS/CBS.'})
+
     # Aba Documentos
     docs_validos = [d for d in ct.documentos_vinculados.all() if _re.fullmatch(r'\d{44}', d.chave_nfe or '')]
     if not docs_validos:

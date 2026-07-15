@@ -13,8 +13,8 @@
         <div class="card-body">
           <div class="alert alert-info rounded-3 small mb-4">
             <i class="bi bi-info-circle"></i>
-            O motorista usará a <strong>matrícula</strong> e o <strong>PIN</strong> para entrar no Portal do Motorista
-            em <code>{% url 'portal_motorista:login' %}</code>.
+            O motorista usará a <strong>matrícula</strong> como usuário e o <strong>PIN</strong> como senha para
+            entrar na tela principal de login (<code>{% url 'login' %}</code>) — não há mais uma tela separada.
             Se deixar o PIN em branco, o PIN atual não será alterado.
           </div>
 
@@ -26,10 +26,10 @@
             {% else %}
             <div class="small text-muted mt-1"><i class="bi bi-x-circle text-warning"></i> Sem matrícula configurada</div>
             {% endif %}
-            {% if motorista.pin %}
-            <div class="small text-success mt-1"><i class="bi bi-lock-fill"></i> PIN configurado</div>
+            {% if motorista.usuario_vinculado %}
+            <div class="small text-success mt-1"><i class="bi bi-lock-fill"></i> Acesso configurado — login: <strong>{{ motorista.usuario_vinculado.username }}</strong></div>
             {% else %}
-            <div class="small text-warning mt-1"><i class="bi bi-unlock"></i> PIN não configurado — acesso bloqueado</div>
+            <div class="small text-warning mt-1"><i class="bi bi-unlock"></i> Acesso não configurado — motorista ainda não consegue logar</div>
             {% endif %}
           </div>
 

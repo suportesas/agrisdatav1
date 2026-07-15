@@ -55,7 +55,7 @@
             <td class="small">{{ p.cultura.nome }}</td>
             <td class="small text-muted">{{ p.safra.nome|default:"—" }}</td>
             <td class="small text-muted">{{ p.talhao.nome|default:"—" }}</td>
-            <td class="text-end small">{{ p.area_ha|floatformat:2 }}</td>
+            <td class="text-end small">{{ p.area_ha|floatformat:"2g" }}</td>
             <td class="text-end fw-bold text-warning">R$ {{ total|floatformat:2 }}</td>
             <td class="text-end small text-muted">R$ {{ p.custo_planejado_por_ha|floatformat:2 }}</td>
             <td class="text-end small {% if receita %}text-success{% else %}text-muted{% endif %}">

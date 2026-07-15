@@ -6,6 +6,7 @@ from datetime import timedelta
 from django import forms
 from django.forms.models import inlineformset_factory
 from django.utils import timezone
+from core.widgets import MoneyBRInput
 from .models import (
     ConfiguracaoJurosMulta,
     ContaPagar,
@@ -198,11 +199,7 @@ class ParcelaContaPageForm(forms.ModelForm):
                 'class': 'form-control',
                 'min': '1'
             }),
-            'valor_parcela': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'step': '0.01',
-                'min': '0.01'
-            }),
+            'valor_parcela': MoneyBRInput(),
             'data_vencimento': forms.DateInput(attrs={
                 'class': 'form-control',
                 'type': 'date'

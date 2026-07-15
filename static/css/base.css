@@ -34,6 +34,9 @@
   --pastel-orange-bg: #fef3c7; --pastel-orange-text: #b45309; --pastel-orange-border: #fde68a;
   --pastel-red-bg: #fee2e2;    --pastel-red-text: #b91c1c;    --pastel-red-border: #fecaca;
   --pastel-gray-bg: #f3f4f6;   --pastel-gray-text: #4b5563;   --pastel-gray-border: #e5e7eb;
+
+  --color-input-border: #d1d5db;
+  --color-switch-track-off: #d1d5db;
 }
 
 /* ==============================
@@ -542,6 +545,578 @@ main {
 .btn-group .btn-outline-danger:last-child,
 .btn-group .btn-outline-warning:last-child {
   margin-right: 0;
+}
+
+/* ==============================
+   Form Pages
+================================ */
+
+/* Form header (page-header equivalent for create/edit screens) */
+.form-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.form-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.form-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.form-header h2, .form-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+
+.form-header .text-muted {
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+.form-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Icon badge — generalizes .page-header-icon for reuse in section headers */
+.icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  background: var(--pastel-green-bg);
+  color: var(--pastel-green-text);
+  flex-shrink: 0;
+}
+.icon-badge.blue   { background: var(--pastel-blue-bg);   color: var(--pastel-blue-text); }
+.icon-badge.orange { background: var(--pastel-orange-bg); color: var(--pastel-orange-text); }
+.icon-badge.red    { background: var(--pastel-red-bg);    color: var(--pastel-red-text); }
+.icon-badge.gray   { background: var(--pastel-gray-bg);   color: var(--pastel-gray-text); }
+
+.icon-badge.sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 1rem;
+}
+
+/* Status pill */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--pastel-gray-bg);
+  color: var(--pastel-gray-text);
+  border: 1px solid var(--pastel-gray-border);
+}
+.status-pill.green  { background: var(--pastel-green-bg);  color: var(--pastel-green-text);  border-color: var(--pastel-green-border); }
+.status-pill.blue   { background: var(--pastel-blue-bg);   color: var(--pastel-blue-text);   border-color: var(--pastel-blue-border); }
+.status-pill.orange { background: var(--pastel-orange-bg); color: var(--pastel-orange-text); border-color: var(--pastel-orange-border); }
+.status-pill.red    { background: var(--pastel-red-bg);    color: var(--pastel-red-text);    border-color: var(--pastel-red-border); }
+
+/* Required marker + helper text */
+.req {
+  color: var(--color-danger);
+  margin-left: 2px;
+  font-weight: 700;
+}
+
+.required-hint, .helper-note {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+/* Form section — replaces bare .card for grouped fields */
+.form-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.form-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-section-header .title {
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: var(--font-display);
+  color: var(--color-text-primary);
+}
+
+.form-section-body {
+  padding: 22px;
+}
+
+.form-section-footer {
+  border-top: 1px solid var(--color-border);
+  padding: 12px 22px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+}
+
+/* Field — label+input stack, usable inside or outside .form-grid (e.g. the
+   Valores summary sidebar, which isn't a grid container) */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Form grid — CSS Grid replacement for Bootstrap .row/.col-md-* inside a section */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px 20px;
+}
+
+.form-grid .field {
+  grid-column: span 12;
+  width: auto;
+  flex: none;
+  max-width: none;
+}
+
+/* Scoped under .form-grid so specificity (0,0,2,0) reliably beats Bootstrap's
+   own flat .col-3/.col-4/.col-6/.col-8/.col-12 grid classes (0,0,1,0), which
+   otherwise apply width:X%/flex on the same elements and squash them. */
+.form-grid .col-2  { grid-column: span 2;  width: auto; flex: none; max-width: none; }
+.form-grid .col-3  { grid-column: span 3;  width: auto; flex: none; max-width: none; }
+.form-grid .col-4  { grid-column: span 4;  width: auto; flex: none; max-width: none; }
+.form-grid .col-6  { grid-column: span 6;  width: auto; flex: none; max-width: none; }
+.form-grid .col-8  { grid-column: span 8;  width: auto; flex: none; max-width: none; }
+.form-grid .col-12 { grid-column: span 12; width: auto; flex: none; max-width: none; }
+
+@media (max-width: 768px) {
+  .form-grid .col-2,
+  .form-grid .col-3,
+  .form-grid .col-4,
+  .form-grid .col-6,
+  .form-grid .col-8 {
+    grid-column: span 12;
+  }
+}
+
+/* Field error state */
+.field.has-error .form-control,
+.field.has-error .form-select {
+  border-color: var(--color-danger);
+  background-color: rgba(239,68,68,.04);
+}
+
+.field.has-error .form-control:focus,
+.field.has-error .form-select:focus {
+  box-shadow: 0 0 0 3px rgba(239,68,68,.15);
+}
+
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--color-danger);
+  margin-top: 2px;
+}
+
+/* Input suffix — replaces .input-group/.input-group-text for unit fields */
+.input-suffix {
+  display: flex;
+}
+
+.input-suffix .form-control {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.input-suffix .suffix-text {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: var(--color-neutral-bg);
+  border: 1px solid var(--color-input-border);
+  border-left: none;
+  border-radius: 0 var(--radius-btn) var(--radius-btn) 0;
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Switch — styled toggle replacing .form-check.form-switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.switch .slider {
+  position: absolute;
+  inset: 0;
+  background: var(--color-switch-track-off);
+  border-radius: 999px;
+  transition: background-color 0.2s ease;
+}
+
+.switch .slider::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: transform 0.2s ease;
+}
+
+.switch input:checked + .slider {
+  background: var(--color-primary);
+}
+
+.switch input:checked + .slider::before {
+  transform: translateX(18px);
+}
+
+.switch input:focus-visible + .slider {
+  box-shadow: 0 0 0 3px rgba(22,163,74,.25);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.switch-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Dependent field — dimmed (not hidden) so it doesn't reflow the grid */
+.dependent-field {
+  transition: opacity 0.15s ease;
+}
+
+.dependent-field.is-hidden {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Measure bar — proportion visualization (e.g. área plantável vs reserva) */
+.measure-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-neutral-bg);
+  margin: 10px 0 6px;
+}
+
+.measure-bar .segment.plantavel { background: var(--color-primary); }
+.measure-bar .segment.reserva   { background: var(--color-warning); }
+
+.measure-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.measure-legend .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* Button variants not covered by the global .btn rules */
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+.btn-outline:hover {
+  background: var(--color-neutral-bg);
+  color: var(--color-text-primary);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-secondary);
+}
+.btn-ghost:hover {
+  background: var(--color-neutral-bg);
+}
+
+/* Section nav — sticky jump-to-section anchors for long forms */
+.section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  position: sticky;
+  top: 76px;
+  z-index: 10;
+}
+
+.section-nav a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-btn);
+  text-decoration: none;
+}
+
+.section-nav a:hover,
+.section-nav a.active {
+  background: var(--pastel-green-bg);
+  color: var(--pastel-green-text);
+}
+
+.section-nav a .count {
+  background: rgba(127,127,127,.18);
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  margin-left: 4px;
+}
+
+.section-nav a.has-hint::after {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-warning);
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* Tab panel visibility for .section-nav-driven forms. Uses !important so it
+   reliably wins over any inline style.display business-rule toggle (e.g.
+   CFOP-conditional sections) set on the same element — when this class is
+   removed, the element's own inline style/display takes over again. */
+.form-section.tab-hidden {
+  display: none !important;
+}
+
+/* Complex two-column layout: main fields + sticky summary sidebar */
+.complex-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.complex-main {
+  min-width: 0;
+}
+
+.complex-summary {
+  position: sticky;
+  top: 84px;
+}
+
+@media (max-width: 1100px) {
+  .complex-layout {
+    grid-template-columns: 1fr;
+  }
+  .complex-summary {
+    position: static;
+  }
+}
+
+/* Summary card (e.g. "Valores" panel) */
+.summary-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+.summary-card h4 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin: 0 0 14px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  padding: 6px 0;
+}
+
+.summary-row.negative span:last-child {
+  color: var(--color-danger);
+}
+
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+  margin-top: 6px;
+  color: var(--color-primary-dark);
+}
+
+/* Section toolbar + count badge (formset headers) */
+.section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.section-toolbar .title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--pastel-green-bg);
+  color: var(--pastel-green-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* Items table — styled table for formset rows */
+.items-table-wrap {
+  overflow-x: auto;
+}
+
+table.items-table thead th {
+  background: #f7faf8;
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+table.items-table tbody td {
+  padding: 8px 10px;
+  font-size: 0.85rem;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(0,0,0,.04);
+}
+
+table.items-table tbody tr:hover {
+  background: #f7faf8;
+}
+
+/* Row action buttons within formset rows */
+.row-action {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.row-action.danger {
+  border-color: var(--pastel-red-border);
+  color: var(--pastel-red-text);
+}
+.row-action.danger:hover {
+  background: var(--pastel-red-bg);
+}
+
+/* Sticky bottom action bar (Salvar/Cancelar) */
+.app-footer-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -2px 12px rgba(0,0,0,.05);
+  padding: 14px 0;
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* ==============================

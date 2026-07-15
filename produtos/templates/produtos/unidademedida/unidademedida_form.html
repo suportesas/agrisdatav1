@@ -1,33 +1,53 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-3">
-  <h1>{{ action }} Unidade de Medida</h1>
+<div class="container py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-rulers"></i></span>
+        <h2>{{ action }} Unidade de Medida</h2>
+      </div>
+    </div>
+  </div>
+
   <form method="post">
     {% csrf_token %}
-    <div class="row">
-      <div class="col-md-3 mb-3">
-        {{ form.sigla.label_tag }}
-        {{ form.sigla }}
-        {% if form.sigla.errors %}<div class="text-danger">{{ form.sigla.errors }}</div>{% endif %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">{{ form.sigla.label }}</label>
+            {{ form.sigla }}
+            {% if form.sigla.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.sigla.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-5">
+            <label class="form-label">{{ form.nome.label }}</label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.tipo.label }}</label>
+            {{ form.tipo }}
+            {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="col-md-5 mb-3">
-        {{ form.nome.label_tag }}
-        {{ form.nome }}
-        {% if form.nome.errors %}<div class="text-danger">{{ form.nome.errors }}</div>{% endif %}
-      </div>
-      <div class="col-md-4 mb-3">
-        {{ form.tipo.label_tag }}
-        {{ form.tipo }}
-        {% if form.tipo.errors %}<div class="text-danger">{{ form.tipo.errors }}</div>{% endif %}
-      </div>
-    </div>
-    <div class="mb-3 form-check">
-      {{ form.ativo }} {{ form.ativo.label_tag }}
     </div>
 
-    <button class="btn btn-primary">Salvar</button>
-    <a class="btn btn-secondary ms-2" href="{% url 'produtos:unidademedida_list' %}">Cancelar</a>
+    <div class="app-footer-bar">
+      <a href="{% url 'produtos:unidademedida_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
   </form>
 </div>
 {% endblock %}

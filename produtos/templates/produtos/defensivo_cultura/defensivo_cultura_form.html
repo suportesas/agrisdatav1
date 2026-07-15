@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-3">
-  <nav aria-label="breadcrumb">
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'produtos:produto_list' %}">Produtos</a></li>
       <li class="breadcrumb-item"><a href="{% url 'produtos:produto_detail' produto.pk %}">{{ produto.codigo }}</a></li>
@@ -11,199 +12,240 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div>
-      <h1><i class="bi bi-shield-fill-exclamation me-2"></i>{{ action }} Cultura/Praga</h1>
-      <p class="text-muted mb-0">Produto: <strong>{{ produto.nome }}</strong></p>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge red"><i class="bi bi-shield-fill-exclamation"></i></span>
+        <div>
+          <h2>{{ action }} Cultura/Praga</h2>
+          <p class="text-muted mb-0">Produto: <strong>{{ produto.nome }}</strong></p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <form method="post">
-        {% csrf_token %}
-        
-        <div class="alert alert-info">
-          <i class="bi bi-info-circle me-2"></i>
-          Preencha os dados conforme a bula do produto para esta cultura específica.
-        </div>
-        
-        <h5 class="mb-3"><i class="bi bi-info-circle me-2"></i>Identificação</h5>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            {{ form.cultura.label_tag }}
-            {{ form.cultura }}
-            {% if form.cultura.errors %}
-            <div class="text-danger">{{ form.cultura.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-6 mb-3">
-            {{ form.praga.label_tag }}
-            {{ form.praga }}
-            {% if form.praga.errors %}
-            <div class="text-danger">{{ form.praga.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-        
-        <h5 class="mb-3 mt-4"><i class="bi bi-droplet me-2"></i>Dosagem</h5>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            {{ form.dosagem_minima.label_tag }}
-            {{ form.dosagem_minima }}
-            {% if form.dosagem_minima.errors %}
-            <div class="text-danger">{{ form.dosagem_minima.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            {{ form.dosagem_maxima.label_tag }}
-            {{ form.dosagem_maxima }}
-            {% if form.dosagem_maxima.errors %}
-            <div class="text-danger">{{ form.dosagem_maxima.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            {{ form.unidade_dosagem.label_tag }}
-            {{ form.unidade_dosagem }}
-            {% if form.unidade_dosagem.errors %}
-            <div class="text-danger">{{ form.unidade_dosagem.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-        
-        <h5 class="mb-3 mt-4"><i class="bi bi-water me-2"></i>Volume de Calda</h5>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            {{ form.volume_calda_minimo.label_tag }}
-            {{ form.volume_calda_minimo }}
-            {% if form.volume_calda_minimo.errors %}
-            <div class="text-danger">{{ form.volume_calda_minimo.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-6 mb-3">
-            {{ form.volume_calda_maximo.label_tag }}
-            {{ form.volume_calda_maximo }}
-            {% if form.volume_calda_maximo.errors %}
-            <div class="text-danger">{{ form.volume_calda_maximo.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-        
-        <h5 class="mb-3 mt-4"><i class="bi bi-calculator me-2"></i>Concentração na Calda (Cálculo)</h5>
-        <div class="alert alert-info py-2 px-3 mb-3 small">
-          <i class="bi bi-info-circle me-1"></i>
-          Concentração calculada para o volume de calda informado abaixo. Se nenhum volume for informado, usa o volume mínimo/máximo da bula como referência.
-          Fórmula: <code>(Dosagem mL/ha ÷ Volume L/ha) × 100 = mL/100L</code>
-        </div>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            {{ form.dosagem_minima_calc.label_tag }}
-            {{ form.dosagem_minima_calc }}
-            <small class="text-muted d-block">Concentração mínima (mL/100L de calda)</small>
-            {% if form.dosagem_minima_calc.errors %}
-            <div class="text-danger">{{ form.dosagem_minima_calc.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            {{ form.dosagem_maxima_calc.label_tag }}
-            {{ form.dosagem_maxima_calc }}
-            <small class="text-muted d-block">Concentração máxima (mL/100L de calda)</small>
-            {% if form.dosagem_maxima_calc.errors %}
-            <div class="text-danger">{{ form.dosagem_maxima_calc.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            {{ form.unidade_dosagem_calc.label_tag }}
-            {{ form.unidade_dosagem_calc }}
-            <small class="text-muted d-block">Ex: mL/100L</small>
-            {% if form.unidade_dosagem_calc.errors %}
-            <div class="text-danger">{{ form.unidade_dosagem_calc.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-
-        <h5 class="mb-3 mt-4"><i class="bi bi-arrows-angle-expand me-2"></i>Simulação por Volume de Calda</h5>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            {{ form.volume_calda_aplicacao.label_tag }}
-            {{ form.volume_calda_aplicacao }}
-            <small class="text-muted d-block">Volume de calda que será aplicado por hectare (L/ha)</small>
-            {% if form.volume_calda_aplicacao.errors %}
-            <div class="text-danger">{{ form.volume_calda_aplicacao.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Dosagem por Hectare (conforme bula)</label>
-            {{ form.dosagem_calculada_ha }}
-            <div id="alertaDosagem" class="mt-1"></div>
-            <small class="text-muted d-block">Dose/ha da bula (mL/ha). A concentração na calda é exibida no alerta acima.</small>
-            {% if form.dosagem_calculada_ha.errors %}
-            <div class="text-danger">{{ form.dosagem_calculada_ha.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-        
-        <h5 class="mb-3 mt-4"><i class="bi bi-calendar-check me-2"></i>Aplicação</h5>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            {{ form.carencia.label_tag }}
-            {{ form.carencia }}
-            <small class="text-muted">Entre última aplicação e colheita</small>
-            {% if form.carencia.errors %}
-            <div class="text-danger">{{ form.carencia.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            {{ form.quantidade_maxima_aplicacoes.label_tag }}
-            {{ form.quantidade_maxima_aplicacoes }}
-            {% if form.quantidade_maxima_aplicacoes.errors %}
-            <div class="text-danger">{{ form.quantidade_maxima_aplicacoes.errors }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            {{ form.intervalo_reaplicacao.label_tag }}
-            {{ form.intervalo_reaplicacao }}
-            {% if form.intervalo_reaplicacao.errors %}
-            <div class="text-danger">{{ form.intervalo_reaplicacao.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-        
-        <h5 class="mb-3 mt-4"><i class="bi bi-flask me-2"></i>Limite Máximo de Resíduo</h5>
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            {{ form.mrl.label_tag }}
-            {{ form.mrl }}
-            <small class="text-muted d-block">mg/kg - Conforme legislação vigente</small>
-            {% if form.mrl.errors %}
-            <div class="text-danger">{{ form.mrl.errors }}</div>
-            {% endif %}
-          </div>
-        </div>
-        
-        <div class="mb-3">
-          {{ form.observacoes.label_tag }}
-          {{ form.observacoes }}
-          {% if form.observacoes.errors %}
-          <div class="text-danger">{{ form.observacoes.errors }}</div>
-          {% endif %}
-        </div>
-        
-        {{ form.produto }}
-        
-        <div class="mt-4">
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-save me-1"></i>Salvar
-          </button>
-          <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-secondary ms-2">
-            <i class="bi bi-x-circle me-1"></i>Cancelar
-          </a>
-        </div>
-      </form>
-    </div>
+  <div class="alert alert-info mb-3">
+    <i class="bi bi-info-circle me-2"></i>
+    Preencha os dados conforme a bula do produto para esta cultura específica.
   </div>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.produto }}
+
+    <nav class="section-nav">
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-dosagem" data-tab="sec-dosagem">Dosagem</a>
+      <a href="#sec-volume" data-tab="sec-volume">Volume de Calda</a>
+      <a href="#sec-concentracao" data-tab="sec-concentracao">Concentração (Cálculo)</a>
+      <a href="#sec-simulacao" data-tab="sec-simulacao">Simulação por Volume</a>
+      <a href="#sec-aplicacao" data-tab="sec-aplicacao">Aplicação</a>
+      <a href="#sec-mrl" data-tab="sec-mrl">Limite Máximo de Resíduo</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+          <span class="title">Identificação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">{{ form.cultura.label }}</label>
+              {{ form.cultura }}
+              {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.praga.label }}</label>
+              {{ form.praga }}
+              {% if form.praga.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.praga.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-dosagem" data-tab-panel="sec-dosagem">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-droplet"></i></span>
+          <span class="title">Dosagem</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.dosagem_minima.label }}</label>
+              {{ form.dosagem_minima }}
+              {% if form.dosagem_minima.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dosagem_minima.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.dosagem_maxima.label }}</label>
+              {{ form.dosagem_maxima }}
+              {% if form.dosagem_maxima.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dosagem_maxima.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.unidade_dosagem.label }}</label>
+              {{ form.unidade_dosagem }}
+              {% if form.unidade_dosagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_dosagem.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-volume" data-tab-panel="sec-volume">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-water"></i></span>
+          <span class="title">Volume de Calda</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">{{ form.volume_calda_minimo.label }}</label>
+              {{ form.volume_calda_minimo }}
+              {% if form.volume_calda_minimo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.volume_calda_minimo.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label">{{ form.volume_calda_maximo.label }}</label>
+              {{ form.volume_calda_maximo }}
+              {% if form.volume_calda_maximo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.volume_calda_maximo.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-concentracao" data-tab-panel="sec-concentracao">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-calculator"></i></span>
+          <span class="title">Concentração na Calda (Cálculo)</span>
+        </div>
+        <div class="form-section-body">
+          <div class="alert alert-info py-2 px-3 mb-3 small">
+            <i class="bi bi-info-circle me-1"></i>
+            Concentração calculada para o volume de calda informado abaixo. Se nenhum volume for informado, usa o volume mínimo/máximo da bula como referência.
+            Fórmula: <code>(Dosagem mL/ha ÷ Volume L/ha) × 100 = mL/100L</code>
+          </div>
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.dosagem_minima_calc.label }}</label>
+              {{ form.dosagem_minima_calc }}
+              <div class="helper-note">Concentração mínima (mL/100L de calda)</div>
+              {% if form.dosagem_minima_calc.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dosagem_minima_calc.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.dosagem_maxima_calc.label }}</label>
+              {{ form.dosagem_maxima_calc }}
+              <div class="helper-note">Concentração máxima (mL/100L de calda)</div>
+              {% if form.dosagem_maxima_calc.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dosagem_maxima_calc.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.unidade_dosagem_calc.label }}</label>
+              {{ form.unidade_dosagem_calc }}
+              <div class="helper-note">Ex: mL/100L</div>
+              {% if form.unidade_dosagem_calc.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_dosagem_calc.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-simulacao" data-tab-panel="sec-simulacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-arrows-angle-expand"></i></span>
+          <span class="title">Simulação por Volume de Calda</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">{{ form.volume_calda_aplicacao.label }}</label>
+              {{ form.volume_calda_aplicacao }}
+              <div class="helper-note">Volume de calda que será aplicado por hectare (L/ha)</div>
+              {% if form.volume_calda_aplicacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.volume_calda_aplicacao.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label">Dosagem por Hectare (conforme bula)</label>
+              {{ form.dosagem_calculada_ha }}
+              <div id="alertaDosagem" class="mt-1"></div>
+              <div class="helper-note">Dose/ha da bula (mL/ha). A concentração na calda é exibida no alerta acima.</div>
+              {% if form.dosagem_calculada_ha.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dosagem_calculada_ha.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-aplicacao" data-tab-panel="sec-aplicacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-calendar-check"></i></span>
+          <span class="title">Aplicação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.carencia.label }}</label>
+              {{ form.carencia }}
+              <div class="helper-note">Entre última aplicação e colheita</div>
+              {% if form.carencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.carencia.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.quantidade_maxima_aplicacoes.label }}</label>
+              {{ form.quantidade_maxima_aplicacoes }}
+              {% if form.quantidade_maxima_aplicacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade_maxima_aplicacoes.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.intervalo_reaplicacao.label }}</label>
+              {{ form.intervalo_reaplicacao }}
+              {% if form.intervalo_reaplicacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.intervalo_reaplicacao.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-mrl" data-tab-panel="sec-mrl">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-flask"></i></span>
+          <span class="title">Limite Máximo de Resíduo</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label class="form-label">{{ form.mrl.label }}</label>
+              {{ form.mrl }}
+              <div class="helper-note">mg/kg - Conforme legislação vigente</div>
+              {% if form.mrl.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.mrl.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-chat-text"></i></span>
+          <span class="title">Observações</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'produtos:produto_update' produto.pk %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Salvar
+      </button>
+    </div>
+  </form>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const dosagemMinima       = document.getElementById('id_dosagem_minima');
@@ -315,5 +357,4 @@ document.addEventListener('DOMContentLoaded', function() {
   calcularDosagem();
 });
 </script>
-
 {% endblock %}

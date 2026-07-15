@@ -4,119 +4,134 @@
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid py-4">
   <div class="row justify-content-center">
     <div class="col-lg-10">
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-journal-text text-success"></i> {{ title }}</h6>
-        </div>
-        <div class="card-body">
-          <form method="post" enctype="multipart/form-data" novalidate>
-            {% csrf_token %}
 
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-
-            <!-- Localização -->
-            <h6 class="text-uppercase text-muted fw-bold small mb-3 mt-2 border-bottom pb-2">
-              <i class="bi bi-map"></i> Localização
-            </h6>
-            <div class="row g-3 mb-4">
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Talhão <span class="text-danger">*</span></label>
-                {{ form.talhao }}
-                {% if form.talhao.errors %}<div class="text-danger small">{{ form.talhao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Safra</label>
-                {{ form.safra }}
-                {% if form.safra.errors %}<div class="text-danger small">{{ form.safra.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Ordem de Serviço</label>
-                {{ form.os }}
-                {% if form.os.errors %}<div class="text-danger small">{{ form.os.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <!-- Atividade -->
-            <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">
-              <i class="bi bi-tools"></i> Atividade
-            </h6>
-            <div class="row g-3 mb-4">
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
-                {{ form.data_atividade }}
-                {% if form.data_atividade.errors %}<div class="text-danger small">{{ form.data_atividade.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Tipo de Atividade <span class="text-danger">*</span></label>
-                {{ form.tipo_atividade }}
-                {% if form.tipo_atividade.errors %}<div class="text-danger small">{{ form.tipo_atividade.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Descrição da Atividade <span class="text-danger">*</span></label>
-                {{ form.atividade }}
-                {% if form.atividade.errors %}<div class="text-danger small">{{ form.atividade.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Responsável <span class="text-danger">*</span></label>
-                {{ form.responsavel }}
-                {% if form.responsavel.errors %}<div class="text-danger small">{{ form.responsavel.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Foto</label>
-                {{ form.fotos }}
-                {% if form.fotos.errors %}<div class="text-danger small">{{ form.fotos.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <!-- Condições Climáticas -->
-            <h6 class="text-uppercase text-muted fw-bold small mb-3 border-bottom pb-2">
-              <i class="bi bi-cloud-sun"></i> Condições Climáticas
-            </h6>
-            <div class="row g-3 mb-4">
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Temperatura (°C)</label>
-                {{ form.temperatura }}
-                {% if form.temperatura.errors %}<div class="text-danger small">{{ form.temperatura.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label fw-semibold">Umidade (%)</label>
-                {{ form.umidade }}
-                {% if form.umidade.errors %}<div class="text-danger small">{{ form.umidade.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">Condição do Tempo</label>
-                {{ form.condicao_tempo }}
-                {% if form.condicao_tempo.errors %}<div class="text-danger small">{{ form.condicao_tempo.errors }}</div>{% endif %}
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold">Observações</label>
-                {{ form.observacoes }}
-                {% if form.observacoes.errors %}<div class="text-danger small">{{ form.observacoes.errors }}</div>{% endif %}
-              </div>
-            </div>
-
-            <div class="d-flex gap-2 mt-3">
-              <button type="submit" class="btn btn-success">
-                <i class="bi bi-check-lg"></i> Salvar
-              </button>
-              {% if obj %}
-                <a href="{% url 'operacoes_campo:caderno_campo_detail' obj.pk %}" class="btn btn-outline-secondary">
-                  <i class="bi bi-x"></i> Cancelar
-                </a>
-              {% else %}
-                <a href="{% url 'operacoes_campo:caderno_campo_list' %}" class="btn btn-outline-secondary">
-                  <i class="bi bi-x"></i> Cancelar
-                </a>
-              {% endif %}
-            </div>
-          </form>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge green"><i class="bi bi-journal-text"></i></span>
+            <h2>{{ title }}</h2>
+          </div>
         </div>
       </div>
+
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-map"></i></span>
+            <span class="title">Localização</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Talhão<span class="req">*</span></label>
+                {{ form.talhao }}
+                {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Safra</label>
+                {{ form.safra }}
+                {% if form.safra.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Ordem de Serviço</label>
+                {{ form.os }}
+                {% if form.os.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.os.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-tools"></i></span>
+            <span class="title">Atividade</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <label class="form-label">Data<span class="req">*</span></label>
+                {{ form.data_atividade }}
+                {% if form.data_atividade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_atividade.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Tipo de Atividade<span class="req">*</span></label>
+                {{ form.tipo_atividade }}
+                {% if form.tipo_atividade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_atividade.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Descrição da Atividade<span class="req">*</span></label>
+                {{ form.atividade }}
+                {% if form.atividade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.atividade.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Responsável<span class="req">*</span></label>
+                {{ form.responsavel }}
+                {% if form.responsavel.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.responsavel.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Foto</label>
+                {{ form.fotos }}
+                {% if form.fotos.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fotos.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-cloud-sun"></i></span>
+            <span class="title">Condições Climáticas</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <label class="form-label">Temperatura (°C)</label>
+                {{ form.temperatura }}
+                {% if form.temperatura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.temperatura.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Umidade (%)</label>
+                {{ form.umidade }}
+                {% if form.umidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.umidade.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Condição do Tempo</label>
+                {{ form.condicao_tempo }}
+                {% if form.condicao_tempo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.condicao_tempo.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-footer-bar">
+          {% if obj %}
+            <a href="{% url 'operacoes_campo:caderno_campo_detail' obj.pk %}" class="btn btn-outline">
+              <i class="bi bi-x"></i> Cancelar
+            </a>
+          {% else %}
+            <a href="{% url 'operacoes_campo:caderno_campo_list' %}" class="btn btn-outline">
+              <i class="bi bi-x"></i> Cancelar
+            </a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> Salvar
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

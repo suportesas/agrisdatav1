@@ -1,228 +1,284 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ action }}{% endblock %}
 {% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="card">
-    <div class="card-body">
-      <form method="post">
-        {% csrf_token %}
 
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
-
-        <!-- Solicitação -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3 mt-1">Solicitação de Booking</h6>
-        <div class="row g-3 mb-2">
-          <div class="col-md-12">
-            <label for="{{ form.solicitacao.id_for_label }}" class="form-label fw-semibold">{{ form.solicitacao.label }}</label>
-            {{ form.solicitacao }}
-            {% if form.solicitacao.errors %}<div class="text-danger small mt-1">{{ form.solicitacao.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <!-- Card preview AJAX -->
-        <div id="solicitacao-preview" class="card border-primary mb-3" style="display:none;">
-          <div class="card-header bg-primary bg-opacity-10 py-2">
-            <small class="fw-semibold text-primary text-uppercase">
-              <i class="bi bi-info-circle me-1"></i>Dados da Solicitação Selecionada
-            </small>
-          </div>
-          <div class="card-body py-3">
-            <div class="row g-2">
-              <div class="col-md-6">
-                <span class="text-muted small">Nome</span><br>
-                <span id="prev-nome" class="fw-semibold"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Status</span><br>
-                <span id="prev-status"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Embarque Previsto</span><br>
-                <span id="prev-embarque" class="fw-semibold"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Cliente</span><br>
-                <span id="prev-cliente"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Cultura</span><br>
-                <span id="prev-cultura"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Qtd. Contêineres</span><br>
-                <span id="prev-quantidade"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Porto Origem</span><br>
-                <span id="prev-porto-origem"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Porto Destino</span><br>
-                <span id="prev-porto-destino"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Tipo de Exportação</span><br>
-                <span id="prev-tipo"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Armador</span><br>
-                <span id="prev-armador"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Navio</span><br>
-                <span id="prev-navio"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Frete</span><br>
-                <span id="prev-frete"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Identificação -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Identificação</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label for="{{ form.codigo.id_for_label }}" class="form-label fw-semibold">{{ form.codigo.label }}</label>
-            {{ form.codigo }}
-            {% if form.codigo.errors %}<div class="text-danger small mt-1">{{ form.codigo.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.tipo_exportacao.id_for_label }}" class="form-label fw-semibold">{{ form.tipo_exportacao.label }}</label>
-            {{ form.tipo_exportacao }}
-            {% if form.tipo_exportacao.errors %}<div class="text-danger small mt-1">{{ form.tipo_exportacao.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">{{ form.status.label }}</label>
-            {{ form.status }}
-            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Rotas -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Rotas</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label for="{{ form.porto_origem.id_for_label }}" class="form-label fw-semibold">{{ form.porto_origem.label }}</label>
-            {{ form.porto_origem }}
-            {% if form.porto_origem.errors %}<div class="text-danger small mt-1">{{ form.porto_origem.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.porto_destino.id_for_label }}" class="form-label fw-semibold">{{ form.porto_destino.label }}</label>
-            {{ form.porto_destino }}
-            {% if form.porto_destino.errors %}<div class="text-danger small mt-1">{{ form.porto_destino.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.rota_navio.id_for_label }}" class="form-label fw-semibold">{{ form.rota_navio.label }}</label>
-            {{ form.rota_navio }}
-            {% if form.rota_navio.errors %}<div class="text-danger small mt-1">{{ form.rota_navio.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Datas e Prazos -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Datas e Prazos</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.data_embarque_previsto.id_for_label }}" class="form-label fw-semibold">{{ form.data_embarque_previsto.label }}</label>
-            {{ form.data_embarque_previsto }}
-            {% if form.data_embarque_previsto.errors %}<div class="text-danger small mt-1">{{ form.data_embarque_previsto.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label for="{{ form.data_embarque_realizado.id_for_label }}" class="form-label fw-semibold">{{ form.data_embarque_realizado.label }}</label>
-            {{ form.data_embarque_realizado }}
-            {% if form.data_embarque_realizado.errors %}<div class="text-danger small mt-1">{{ form.data_embarque_realizado.errors }}</div>{% endif %}
-          </div>
-        </div>
-        <div class="row g-3 mb-3">
-          <div class="col-md-3">
-            <label for="{{ form.deadline_draft.id_for_label }}" class="form-label fw-semibold">{{ form.deadline_draft.label }}</label>
-            {{ form.deadline_draft }}
-            {% if form.deadline_draft.errors %}<div class="text-danger small mt-1">{{ form.deadline_draft.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.deadline_carga.id_for_label }}" class="form-label fw-semibold">{{ form.deadline_carga.label }}</label>
-            {{ form.deadline_carga }}
-            {% if form.deadline_carga.errors %}<div class="text-danger small mt-1">{{ form.deadline_carga.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.etd.id_for_label }}" class="form-label fw-semibold">{{ form.etd.label }}</label>
-            {{ form.etd }}
-            {% if form.etd.errors %}<div class="text-danger small mt-1">{{ form.etd.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.eta.id_for_label }}" class="form-label fw-semibold">{{ form.eta.label }}</label>
-            {{ form.eta }}
-            {% if form.eta.errors %}<div class="text-danger small mt-1">{{ form.eta.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Agentes de Exportação -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Agentes de Exportação</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label for="{{ form.notify_party.id_for_label }}" class="form-label fw-semibold">{{ form.notify_party.label }}</label>
-            {{ form.notify_party }}
-            {% if form.notify_party.errors %}<div class="text-danger small mt-1">{{ form.notify_party.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.freight_forwarder.id_for_label }}" class="form-label fw-semibold">{{ form.freight_forwarder.label }}</label>
-            {{ form.freight_forwarder }}
-            {% if form.freight_forwarder.errors %}<div class="text-danger small mt-1">{{ form.freight_forwarder.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.despachante_aduaneiro.id_for_label }}" class="form-label fw-semibold">{{ form.despachante_aduaneiro.label }}</label>
-            {{ form.despachante_aduaneiro }}
-            {% if form.despachante_aduaneiro.errors %}<div class="text-danger small mt-1">{{ form.despachante_aduaneiro.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Financeiro e Observações -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Financeiro</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label for="{{ form.valor_fob.id_for_label }}" class="form-label fw-semibold">{{ form.valor_fob.label }}</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              {{ form.valor_fob }}
-            </div>
-            {% if form.valor_fob.errors %}<div class="text-danger small mt-1">{{ form.valor_fob.errors }}</div>{% endif %}
-          </div>
-        </div>
-        <div class="row g-3 mb-3">
-          <div class="col-12">
-            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">{{ form.observacoes.label }}</label>
-            {{ form.observacoes }}
-            {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <button type="submit" class="btn btn-primary">Salvar</button>
-          <a href="{% url 'exportacao:booking_list' %}" class="btn btn-secondary ms-2">Cancelar</a>
-        </div>
-
-      </form>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-bookmarks"></i></span>
+        <h2>{{ action }}</h2>
+      </div>
     </div>
   </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <nav class="section-nav">
+      <a href="#sec-solicitacao" data-tab="sec-solicitacao">Solicitação</a>
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-rotas" data-tab="sec-rotas">Rotas</a>
+      <a href="#sec-datas" data-tab="sec-datas">Datas e Prazos</a>
+      <a href="#sec-agentes" data-tab="sec-agentes">Agentes de Exportação</a>
+      <a href="#sec-financeiro" data-tab="sec-financeiro">Financeiro</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-solicitacao" data-tab-panel="sec-solicitacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+          <span class="title">Solicitação de Booking</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label for="{{ form.solicitacao.id_for_label }}" class="form-label">{{ form.solicitacao.label }}</label>
+              {{ form.solicitacao }}
+              {% if form.solicitacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.solicitacao.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <!-- Card preview AJAX -->
+          <div id="solicitacao-preview" class="card border-primary mt-3" style="display:none;">
+            <div class="card-header bg-primary bg-opacity-10 py-2">
+              <small class="fw-semibold text-primary text-uppercase">
+                <i class="bi bi-info-circle me-1"></i>Dados da Solicitação Selecionada
+              </small>
+            </div>
+            <div class="card-body py-3">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <span class="text-muted small">Nome</span><br>
+                  <span id="prev-nome" class="fw-semibold"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Status</span><br>
+                  <span id="prev-status"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Embarque Previsto</span><br>
+                  <span id="prev-embarque" class="fw-semibold"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Cliente</span><br>
+                  <span id="prev-cliente"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Cultura</span><br>
+                  <span id="prev-cultura"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Qtd. Contêineres</span><br>
+                  <span id="prev-quantidade"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Porto Origem</span><br>
+                  <span id="prev-porto-origem"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Porto Destino</span><br>
+                  <span id="prev-porto-destino"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Tipo de Exportação</span><br>
+                  <span id="prev-tipo"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Armador</span><br>
+                  <span id="prev-armador"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Navio</span><br>
+                  <span id="prev-navio"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Frete</span><br>
+                  <span id="prev-frete"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-box"></i></span>
+          <span class="title">Identificação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label for="{{ form.codigo.id_for_label }}" class="form-label">{{ form.codigo.label }}</label>
+              {{ form.codigo }}
+              {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.tipo_exportacao.id_for_label }}" class="form-label">{{ form.tipo_exportacao.label }}</label>
+              {{ form.tipo_exportacao }}
+              {% if form.tipo_exportacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_exportacao.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+              {{ form.status }}
+              {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-rotas" data-tab-panel="sec-rotas">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-signpost-split"></i></span>
+          <span class="title">Rotas</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label for="{{ form.porto_origem.id_for_label }}" class="form-label">{{ form.porto_origem.label }}</label>
+              {{ form.porto_origem }}
+              {% if form.porto_origem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.porto_origem.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.porto_destino.id_for_label }}" class="form-label">{{ form.porto_destino.label }}</label>
+              {{ form.porto_destino }}
+              {% if form.porto_destino.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.porto_destino.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.rota_navio.id_for_label }}" class="form-label">{{ form.rota_navio.label }}</label>
+              {{ form.rota_navio }}
+              {% if form.rota_navio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.rota_navio.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-datas" data-tab-panel="sec-datas">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-calendar-check"></i></span>
+          <span class="title">Datas e Prazos</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.data_embarque_previsto.id_for_label }}" class="form-label">{{ form.data_embarque_previsto.label }}</label>
+              {{ form.data_embarque_previsto }}
+              {% if form.data_embarque_previsto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_embarque_previsto.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label for="{{ form.data_embarque_realizado.id_for_label }}" class="form-label">{{ form.data_embarque_realizado.label }}</label>
+              {{ form.data_embarque_realizado }}
+              {% if form.data_embarque_realizado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_embarque_realizado.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.deadline_draft.id_for_label }}" class="form-label">{{ form.deadline_draft.label }}</label>
+              {{ form.deadline_draft }}
+              {% if form.deadline_draft.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.deadline_draft.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.deadline_carga.id_for_label }}" class="form-label">{{ form.deadline_carga.label }}</label>
+              {{ form.deadline_carga }}
+              {% if form.deadline_carga.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.deadline_carga.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.etd.id_for_label }}" class="form-label">{{ form.etd.label }}</label>
+              {{ form.etd }}
+              {% if form.etd.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.etd.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.eta.id_for_label }}" class="form-label">{{ form.eta.label }}</label>
+              {{ form.eta }}
+              {% if form.eta.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.eta.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-agentes" data-tab-panel="sec-agentes">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-people"></i></span>
+          <span class="title">Agentes de Exportação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label for="{{ form.notify_party.id_for_label }}" class="form-label">{{ form.notify_party.label }}</label>
+              {{ form.notify_party }}
+              {% if form.notify_party.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.notify_party.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.freight_forwarder.id_for_label }}" class="form-label">{{ form.freight_forwarder.label }}</label>
+              {{ form.freight_forwarder }}
+              {% if form.freight_forwarder.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.freight_forwarder.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.despachante_aduaneiro.id_for_label }}" class="form-label">{{ form.despachante_aduaneiro.label }}</label>
+              {{ form.despachante_aduaneiro }}
+              {% if form.despachante_aduaneiro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.despachante_aduaneiro.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-financeiro" data-tab-panel="sec-financeiro">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-cash-coin"></i></span>
+          <span class="title">Financeiro</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label for="{{ form.valor_fob.id_for_label }}" class="form-label">{{ form.valor_fob.label }}</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                {{ form.valor_fob }}
+              </div>
+              {% if form.valor_fob.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_fob.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-chat-text"></i></span>
+          <span class="title">Observações</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'exportacao:booking_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+
+  </form>
 </div>
+{% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 (function () {
   const sel  = document.getElementById('id_solicitacao');
@@ -268,5 +324,4 @@
   }
 })();
 </script>
-{% endblock %}
 {% endblock %}

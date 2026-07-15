@@ -2,18 +2,8 @@
 
 {% block title %}{{ action }} Patrimônio | Agrisdata{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-card {
-    border-left: 4px solid #3b82f6;
-    margin-bottom: 1.5rem;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container py-4">
-  <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -22,126 +12,193 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0"><i class="bi bi-house-fill text-primary"></i> {{ action }} Patrimônio</h2>
-    <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-house-fill"></i></span>
+        <h2>{{ action }} Patrimônio</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+  {% endif %}
 
   <form method="post" class="needs-validation">
     {% csrf_token %}
 
-    {% if form.non_field_errors %}
-    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-    {% endif %}
-
-    <!-- Seção 1: Identificação -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-tag"></i> Identificação</h5>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Identificação</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6">{{ form.numero_patrimonio.label_tag }}{{ form.numero_patrimonio }}</div>
-          <div class="col-md-6">{{ form.categoria.label_tag }}{{ form.categoria }}</div>
-          <div class="col-12">{{ form.descricao.label_tag }}{{ form.descricao }}</div>
-          <div class="col-md-6">
-            {{ form.veiculo.label_tag }}{{ form.veiculo }}
-            <small class="text-muted">Se for um veículo já cadastrado</small>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.numero_patrimonio.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.numero_patrimonio.label }}</label>
+            {{ form.numero_patrimonio }}
+            {% if form.numero_patrimonio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_patrimonio.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">{{ form.estado.label_tag }}{{ form.estado }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 2: Valores -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Valores</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">{{ form.valor_inicial.label_tag }}{{ form.valor_inicial }}</div>
-          <div class="col-md-4">
-            {{ form.valor_residual.label_tag }}{{ form.valor_residual }}
-            <small class="text-muted">Valor esperado ao final da vida útil</small>
+          <div class="field col-6{% if form.categoria.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.categoria.label }}</label>
+            {{ form.categoria }}
+            {% if form.categoria.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.categoria.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            {{ form.valor_atual.label_tag }}{{ form.valor_atual }}
-            <small class="text-muted">Calculado automaticamente</small>
+          <div class="field col-12{% if form.descricao.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.descricao.label }}</label>
+            {{ form.descricao }}
+            {% if form.descricao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.descricao.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6{% if form.veiculo.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.veiculo.label }}</label>
+            {{ form.veiculo }}
+            <div class="helper-note">Se for um veículo já cadastrado</div>
+            {% if form.veiculo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.veiculo.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6{% if form.estado.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.estado.label }}</label>
+            {{ form.estado }}
+            {% if form.estado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.estado.errors|striptags }}</div>{% endif %}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 3: Depreciação -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="bi bi-graph-down-arrow"></i> Depreciação</h5>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm blue"><i class="bi bi-cash-stack"></i></span>
+        <span class="title">Valores</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">{{ form.tipo_depreciacao.label_tag }}{{ form.tipo_depreciacao }}</div>
-          <div class="col-md-4">{{ form.vida_util_anos.label_tag }}{{ form.vida_util_anos }}<small class="text-muted">Em anos</small></div>
-          <div class="col-md-4">{{ form.percentual_depreciacao_anual.label_tag }}{{ form.percentual_depreciacao_anual }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 4: Datas -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Datas</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6">{{ form.data_aquisicao.label_tag }}{{ form.data_aquisicao }}</div>
-          <div class="col-md-6">{{ form.data_baixa.label_tag }}{{ form.data_baixa }}<small class="text-muted">Se foi descartado</small></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 5: Localização e Responsável -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #6366f1; color: white;">
-        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Localização e Responsável</h5>
-      </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6">
-            {{ form.localizacao.label_tag }}{{ form.localizacao }}
-            <small class="text-muted">Galpão, Fazenda, etc</small>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4{% if form.valor_inicial.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.valor_inicial.label }}</label>
+            {{ form.valor_inicial }}
+            {% if form.valor_inicial.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_inicial.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">{{ form.responsavel.label_tag }}{{ form.responsavel }}</div>
-          <div class="col-12 d-flex align-items-center">
-            <div class="form-check">
-              {{ form.ativo }} <label for="id_ativo" class="form-check-label">Patrimônio Ativo</label>
+          <div class="field col-4{% if form.valor_residual.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.valor_residual.label }}</label>
+            {{ form.valor_residual }}
+            <div class="helper-note">Valor esperado ao final da vida útil</div>
+            {% if form.valor_residual.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_residual.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4{% if form.valor_atual.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.valor_atual.label }}</label>
+            {{ form.valor_atual }}
+            <div class="helper-note">Calculado automaticamente</div>
+            {% if form.valor_atual.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_atual.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm orange"><i class="bi bi-graph-down-arrow"></i></span>
+        <span class="title">Depreciação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4{% if form.tipo_depreciacao.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.tipo_depreciacao.label }}</label>
+            {{ form.tipo_depreciacao }}
+            {% if form.tipo_depreciacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_depreciacao.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4{% if form.vida_util_anos.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.vida_util_anos.label }}</label>
+            {{ form.vida_util_anos }}
+            <div class="helper-note">Em anos</div>
+            {% if form.vida_util_anos.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.vida_util_anos.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4{% if form.percentual_depreciacao_anual.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.percentual_depreciacao_anual.label }}</label>
+            {{ form.percentual_depreciacao_anual }}
+            {% if form.percentual_depreciacao_anual.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.percentual_depreciacao_anual.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm gray"><i class="bi bi-calendar-event"></i></span>
+        <span class="title">Datas</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.data_aquisicao.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.data_aquisicao.label }}</label>
+            {{ form.data_aquisicao }}
+            {% if form.data_aquisicao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_aquisicao.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6{% if form.data_baixa.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.data_baixa.label }}</label>
+            {{ form.data_baixa }}
+            <div class="helper-note">Se foi descartado</div>
+            {% if form.data_baixa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_baixa.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Localização e Responsável</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.localizacao.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.localizacao.label }}</label>
+            {{ form.localizacao }}
+            <div class="helper-note">Galpão, Fazenda, etc</div>
+            {% if form.localizacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.localizacao.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6{% if form.responsavel.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.responsavel.label }}</label>
+            {{ form.responsavel }}
+            {% if form.responsavel.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.responsavel.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="id_ativo">Patrimônio Ativo</label>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 6: Observações -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-dark text-white">
-        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações</h5>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm gray"><i class="bi bi-chat-text"></i></span>
+        <span class="title">Observações</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-12">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12{% if form.observacoes.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Botões -->
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'patrimonio:patrimonio_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar
       </button>
     </div>

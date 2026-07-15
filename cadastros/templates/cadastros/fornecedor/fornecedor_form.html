@@ -3,30 +3,9 @@
 
 {% block title %}{{ action }} Fornecedor | Agrisdata{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-header {
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px 10px 0 0;
-    margin-bottom: 0;
-  }
-  .form-section {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    margin-bottom: 1rem;
-  }
-  .form-section-body { padding: 1.25rem; }
-  .cnpj-search-btn { transition: all 0.3s ease; }
-  .cnpj-search-btn:hover { transform: scale(1.05); }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-  <nav aria-label="breadcrumb" class="mb-4">
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
@@ -34,25 +13,27 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if fornecedor %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
-        {{ action }} Fornecedor
-      </h2>
-      {% if fornecedor %}
-        <p class="text-muted mb-0">Editando: <strong>{{ fornecedor.razao_social|default:fornecedor.nome }}</strong></p>
-      {% else %}
-        <p class="text-muted mb-0">Preencha os dados do fornecedor</p>
-      {% endif %}
-    </div>
-    <div class="d-flex gap-2">
-      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#ajudaFornecedorModal">
-        <i class="bi bi-question-circle"></i> Ajuda
-      </button>
-      <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Voltar
-      </a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if fornecedor %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <div>
+          <h2>{{ action }} Fornecedor</h2>
+          {% if fornecedor %}
+            <p class="text-muted mb-0">Editando: <strong>{{ fornecedor.razao_social|default:fornecedor.nome }}</strong></p>
+          {% else %}
+            <p class="text-muted mb-0">Preencha os dados do fornecedor</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <button type="button" class="btn btn-ghost" data-bs-toggle="modal" data-bs-target="#ajudaFornecedorModal">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+        <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
@@ -189,310 +170,319 @@
   <form method="post" id="fornecedorForm">
     {% csrf_token %}
 
-    <!-- Seção 1: Dados Básicos -->
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);">
-        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Dados Básicos</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
+    <nav class="section-nav" id="fornecedor-section-nav">
+      <a href="#sec-basicos" data-tab="sec-basicos">Dados Básicos</a>
+      <a href="#sec-fiscal" data-tab="sec-fiscal">Documentação Fiscal</a>
+      <a href="#sec-classificacao" data-tab="sec-classificacao">Classificação</a>
+      <a href="#sec-comercial" data-tab="sec-comercial">Condições Comerciais</a>
+      <a href="#sec-internacional" data-tab="sec-internacional" class="d-none">Dados Internacionais</a>
+      <a href="#sec-contato" data-tab="sec-contato">Contato</a>
+      <a href="#sec-portal" data-tab="sec-portal">Portal do Fornecedor</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
 
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Pessoa *</label>
-            {{ form.tipo_pessoa }}
-            {% if form.tipo_pessoa.errors %}
-              <div class="text-danger small">{{ form.tipo_pessoa.errors|striptags }}</div>
-            {% endif %}
-          </div>
+    <div class="complex-main">
 
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">CNPJ/CPF *</label>
-            <div class="input-group">
-              {{ form.cnpj_cpf }}
-              <button type="button" class="btn btn-primary cnpj-search-btn" id="buscarCNPJ">
-                <i class="bi bi-search"></i> Buscar
-              </button>
+      <!-- Seção 1: Dados Básicos -->
+      <div class="form-section" id="sec-basicos" data-tab-panel="sec-basicos">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+          <span class="title">Dados Básicos</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            <div class="field col-3">
+              <label class="form-label">Tipo de Pessoa<span class="req">*</span></label>
+              {{ form.tipo_pessoa }}
+              {% if form.tipo_pessoa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_pessoa.errors|striptags }}</div>{% endif %}
             </div>
-            {% if form.cnpj_cpf.errors %}
-              <div class="text-danger small">{{ form.cnpj_cpf.errors|striptags }}</div>
-            {% endif %}
-          </div>
 
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Razão Social / Nome Completo *</label>
-            {{ form.nome }}
-            {% if form.nome.errors %}
-              <div class="text-danger small">{{ form.nome.errors|striptags }}</div>
-            {% endif %}
-          </div>
+            <div class="field col-3">
+              <label class="form-label">CNPJ/CPF<span class="req">*</span></label>
+              <div class="input-group">
+                {{ form.cnpj_cpf }}
+                <button type="button" class="btn btn-outline-primary cnpj-search-btn" id="buscarCNPJ">
+                  <i class="bi bi-search"></i> Buscar
+                </button>
+              </div>
+              {% if form.cnpj_cpf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cnpj_cpf.errors|striptags }}</div>{% endif %}
+            </div>
 
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Nome Fantasia</label>
-            {{ form.nome_fantasia }}
-          </div>
+            <div class="field col-4">
+              <label class="form-label">Razão Social / Nome Completo<span class="req">*</span></label>
+              {{ form.nome }}
+              {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+            </div>
 
-          <div class="col-md-3" id="codigoFiscalDiv" style="display:none;">
-            <label class="form-label fw-semibold">Código Fiscal Internacional</label>
-            {{ form.codigo_fiscal_internacional }}
-            <small class="text-muted">Para fornecedores internacionais</small>
-          </div>
+            <div class="field col-2">
+              <label class="form-label">Nome Fantasia</label>
+              {{ form.nome_fantasia }}
+            </div>
 
-          <div class="col-md-3">
-            <label class="form-label fw-semibold d-block">Fornecedor Internacional</label>
-            <div class="form-check form-switch mt-2">
-              {{ form.is_exportador }}
-              <label class="form-check-label" for="{{ form.is_exportador.id_for_label }}">Internacional</label>
+            <div class="field col-3" id="codigoFiscalDiv" style="display:none;">
+              <label class="form-label">Código Fiscal Internacional</label>
+              {{ form.codigo_fiscal_internacional }}
+              <div class="helper-note">Para fornecedores internacionais</div>
+            </div>
+
+            <div class="field col-3">
+              <div class="switch-row">
+                <label class="switch">
+                  {{ form.is_exportador }}
+                  <span class="slider"></span>
+                </label>
+                <label class="switch-label" for="{{ form.is_exportador.id_for_label }}">Fornecedor Internacional</label>
+              </div>
+            </div>
+
+            <div class="field col-3">
+              <div class="switch-row">
+                <label class="switch">
+                  {{ form.ativa }}
+                  <span class="slider"></span>
+                </label>
+                <label class="switch-label" for="{{ form.ativa.id_for_label }}">Fornecedor Ativo</label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção 2: Documentação Fiscal -->
+      <div class="form-section" id="sec-fiscal" data-tab-panel="sec-fiscal">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-file-earmark-text"></i></span>
+          <span class="title">Documentação Fiscal</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            <div class="field col-3">
+              <label class="form-label">Inscrição Estadual</label>
+              {{ form.inscricao_estadual }}
+            </div>
+
+            <div class="field col-3">
+              <label class="form-label">Inscrição Municipal</label>
+              {{ form.inscricao_municipal }}
+            </div>
+
+            <div class="field col-3">
+              <label class="form-label">Código EORI</label>
+              {{ form.eori }}
+              <div class="helper-note">Para exportação/importação</div>
+            </div>
+
+            <div class="field col-3">
+              <label class="form-label">Regime Tributário<span class="req">*</span></label>
+              {{ form.regime_tributario }}
+              {% if form.regime_tributario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.regime_tributario.errors|striptags }}</div>{% endif %}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção 3: Classificação -->
+      <div class="form-section" id="sec-classificacao" data-tab-panel="sec-classificacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-tags"></i></span>
+          <span class="title">Classificação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            <div class="field col-4">
+              <label class="form-label">Classificação de Risco</label>
+              {{ form.classificacao_risco }}
+            </div>
+
+            <div class="field col-4">
+              <label class="form-label">Data de Homologação</label>
+              {{ form.data_homologacao }}
+            </div>
+
+            <div class="field col-4">
+              <label class="form-label">Validade da Homologação</label>
+              {{ form.validade_homologacao }}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção 4: Condições Comerciais -->
+      <div class="form-section" id="sec-comercial" data-tab-panel="sec-comercial">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-cash-coin"></i></span>
+          <span class="title">Condições Comerciais</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            <div class="field col-4">
+              <label class="form-label">Limite de Crédito Aprovado</label>
+              <div class="input-group">
+                <span class="input-group-text">R$</span>
+                {{ form.limite_credito }}
+              </div>
+              <div class="helper-note">Valor aprovado para compras a prazo</div>
+            </div>
+
+            <div class="field col-4">
+              <label class="form-label">Prazo de Pagamento Padrão (dias)<span class="req">*</span></label>
+              {{ form.prazo_pagamento_padrao }}
+              <div class="helper-note">Ex: 30 dias</div>
+            </div>
+
+            <div class="field col-4">
+              <label class="form-label">Prazo de Entrega Médio (dias)<span class="req">*</span></label>
+              {{ form.prazo_entrega_medio }}
+              <div class="helper-note">Ex: 7 dias</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção 5: Dados Internacionais -->
+      <div class="form-section" id="dadosInternacionaisDiv" data-tab-panel="sec-internacional" style="display:none;">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-globe"></i></span>
+          <span class="title">Dados Internacionais</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            <div class="field col-4">
+              <label class="form-label">País de Origem</label>
+              {{ form.pais_origem }}
+            </div>
+
+            <div class="field col-4">
+              <label class="form-label">Moeda Padrão</label>
+              {{ form.moeda_padrao }}
+              <div class="helper-note">Ex: USD, EUR</div>
+            </div>
+
+            <div class="field col-4">
+              <label class="form-label">Incoterm Preferencial</label>
+              {{ form.incoterm_preferencial }}
+              <div class="helper-note">Ex: FOB, CIF</div>
+            </div>
+
+            <div class="field col-12">
+              <div class="switch-row">
+                <label class="switch">
+                  {{ form.possui_certificacao_internacional }}
+                  <span class="slider"></span>
+                </label>
+                <label class="switch-label" for="{{ form.possui_certificacao_internacional.id_for_label }}">Possui Certificação Internacional (ISO, GMP, etc.)</label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção 6: Contato -->
+      <div class="form-section" id="sec-contato" data-tab-panel="sec-contato">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-telephone"></i></span>
+          <span class="title">Informações de Contato</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            <div class="field col-3">
+              <label class="form-label">Telefone</label>
+              {{ form.telefone }}
+            </div>
+
+            <div class="field col-3">
+              <label class="form-label">{{ form.celular.label }}</label>
+              {{ form.celular }}
+              {% if form.celular.help_text %}
+                <div class="helper-note"><i class="bi bi-whatsapp text-success"></i> {{ form.celular.help_text }}</div>
+              {% endif %}
+              {% if form.celular.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.celular.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="field col-3">
+              <label class="form-label">E-mail</label>
+              {{ form.email }}
+            </div>
+
+            <div class="field col-3">
+              <label class="form-label">Website</label>
+              {{ form.website }}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção 7: Portal do Fornecedor -->
+      <div class="form-section" id="sec-portal" data-tab-panel="sec-portal">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-person-badge"></i></span>
+          <span class="title">Portal do Fornecedor</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            <div class="field col-4">
+              <div class="switch-row">
+                <label class="switch">
+                  {{ form.portal_enabled }}
+                  <span class="slider"></span>
+                </label>
+                <label class="switch-label" for="{{ form.portal_enabled.id_for_label }}">Liberar acesso ao portal</label>
+              </div>
+            </div>
+
+            <div class="field col-8">
+              <label class="form-label">Usuário Portal</label>
+              {{ form.portal_user }}
+              {% if form.portal_user.help_text %}<div class="helper-note">{{ form.portal_user.help_text }}</div>{% endif %}
+              {% if form.portal_user.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.portal_user.errors|striptags }}</div>{% endif %}
+            </div>
+
+            <div class="field col-12">
+              <div class="alert alert-light border mb-0 py-2">
+                <small class="text-muted">
+                  O usuário deve pertencer à mesma empresa. Quando o portal estiver habilitado, será redirecionado automaticamente após o login.
+                </small>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Seção 8: Observações -->
+      <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-chat-text"></i></span>
+          <span class="title">Observações</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label class="form-label">Observações Gerais</label>
+              {{ form.observacoes }}
             </div>
           </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold d-block">Situação</label>
-            <div class="form-check form-switch mt-2">
-              {{ form.ativa }}
-              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">Fornecedor Ativo</label>
-            </div>
-          </div>
-
         </div>
       </div>
+
     </div>
 
-    <!-- Seção 2: Documentação Fiscal -->
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #198754 0%, #157347 100%);">
-        <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Documentação Fiscal</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Inscrição Estadual</label>
-            {{ form.inscricao_estadual }}
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Inscrição Municipal</label>
-            {{ form.inscricao_municipal }}
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Código EORI</label>
-            {{ form.eori }}
-            <small class="text-muted d-block">Para exportação/importação</small>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Regime Tributário *</label>
-            {{ form.regime_tributario }}
-            {% if form.regime_tributario.errors %}
-              <div class="text-danger small">{{ form.regime_tributario.errors|striptags }}</div>
-            {% endif %}
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 3: Classificação -->
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa8cc 100%);">
-        <h5 class="mb-0"><i class="bi bi-tags me-2"></i>Classificação</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Classificação de Risco</label>
-            {{ form.classificacao_risco }}
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Data de Homologação</label>
-            {{ form.data_homologacao }}
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Validade da Homologação</label>
-            {{ form.validade_homologacao }}
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 4: Condições Comerciais -->
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #ffc107 0%, #d39e00 100%); color: #212529;">
-        <h5 class="mb-0"><i class="bi bi-cash-coin me-2"></i>Condições Comerciais</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Limite de Crédito Aprovado</label>
-            <div class="input-group">
-              <span class="input-group-text">R$</span>
-              {{ form.limite_credito }}
-            </div>
-            <small class="text-muted d-block">Valor aprovado para compras a prazo</small>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Prazo de Pagamento Padrão (dias) *</label>
-            {{ form.prazo_pagamento_padrao }}
-            <small class="text-muted d-block">Ex: 30 dias</small>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Prazo de Entrega Médio (dias) *</label>
-            {{ form.prazo_entrega_medio }}
-            <small class="text-muted d-block">Ex: 7 dias</small>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 5: Dados Internacionais -->
-    <div class="form-section" id="dadosInternacionaisDiv" style="display:none;">
-      <div class="section-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-        <h5 class="mb-0"><i class="bi bi-globe me-2"></i>Dados Internacionais</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">País de Origem</label>
-            {{ form.pais_origem }}
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Moeda Padrão</label>
-            {{ form.moeda_padrao }}
-            <small class="text-muted d-block">Ex: USD, EUR</small>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Incoterm Preferencial</label>
-            {{ form.incoterm_preferencial }}
-            <small class="text-muted d-block">Ex: FOB, CIF</small>
-          </div>
-
-          <div class="col-md-12">
-            <div class="form-check">
-              {{ form.possui_certificacao_internacional }}
-              <label class="form-check-label" for="{{ form.possui_certificacao_internacional.id_for_label }}">
-                Possui Certificação Internacional (ISO, GMP, etc.)
-              </label>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 6: Contato -->
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
-        <h5 class="mb-0"><i class="bi bi-telephone me-2"></i>Informações de Contato</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Telefone</label>
-            {{ form.telefone }}
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">{{ form.celular.label }}</label>
-            {{ form.celular }}
-            {% if form.celular.help_text %}
-              <small class="form-text text-muted d-block mt-1">
-                <i class="bi bi-whatsapp text-success"></i> {{ form.celular.help_text }}
-              </small>
-            {% endif %}
-            {% if form.celular.errors %}
-              <div class="text-danger small">{{ form.celular.errors|striptags }}</div>
-            {% endif %}
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">E-mail</label>
-            {{ form.email }}
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Website</label>
-            {{ form.website }}
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 7: Portal do Fornecedor -->
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #22a24f 0%, #1a7a3c 100%);">
-        <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Portal do Fornecedor</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold d-block">Portal Habilitado</label>
-            <div class="form-check form-switch mt-2">
-              {{ form.portal_enabled }}
-              <label class="form-check-label" for="{{ form.portal_enabled.id_for_label }}">
-                Liberar acesso ao portal
-              </label>
-            </div>
-          </div>
-
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Usuário Portal</label>
-            {{ form.portal_user }}
-            {% if form.portal_user.help_text %}
-              <small class="text-muted d-block mt-1">{{ form.portal_user.help_text }}</small>
-            {% endif %}
-            {% if form.portal_user.errors %}
-              <div class="text-danger small">{{ form.portal_user.errors|striptags }}</div>
-            {% endif %}
-          </div>
-
-          <div class="col-12">
-            <div class="alert alert-light border mb-0 py-2">
-              <small class="text-muted">
-                O usuário deve pertencer à mesma empresa. Quando o portal estiver habilitado, será redirecionado automaticamente após o login.
-              </small>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
-    <!-- Seção 8: Observações -->
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-        <h5 class="mb-0"><i class="bi bi-chat-text me-2"></i>Observações</h5>
-      </div>
-      <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Observações Gerais</label>
-            {{ form.observacoes }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Botões de Ação -->
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline-secondary btn-lg px-5">
-        <i class="bi bi-x-circle"></i> Cancelar
-      </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:fornecedor_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Fornecedor
       </button>
     </div>
@@ -516,6 +506,7 @@
 
 {% block extra_js %}
 {{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -528,6 +519,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const isInternacional = isExportadorCheckbox && isExportadorCheckbox.checked;
     document.getElementById('dadosInternacionaisDiv').style.display = isInternacional ? 'block' : 'none';
     document.getElementById('codigoFiscalDiv').style.display = isInternacional ? 'block' : 'none';
+    if (window.SectionNav) window.SectionNav.setTabVisible('sec-internacional', isInternacional);
   }
 
   if (isExportadorCheckbox) {
@@ -597,6 +589,17 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Máscara Celular (nativa — substitui a antiga dependência de jQuery/jquery.mask)
+  const celularInput = document.getElementById('{{ form.celular.id_for_label }}');
+  if (celularInput) {
+    celularInput.addEventListener('input', function (e) {
+      let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+      v = v.replace(/^(\d{2})(\d)/, '($1) $2');
+      v = v.replace(/(\d{5})(\d{1,4})$/, '$1-$2');
+      e.target.value = v;
+    });
+  }
+
   // Formatação de limite de crédito
   const creditInput = document.getElementById('id_limite_credito');
   if (creditInput) {
@@ -630,14 +633,6 @@ document.addEventListener('DOMContentLoaded', function () {
       el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
     }
   });
-});
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
-<script>
-$(document).ready(function () {
-  var celularInput = $("#{{ form.celular.id_for_label }}");
-  if (celularInput.length) celularInput.mask('(00) 00000-0000');
 });
 </script>
 {% endblock %}

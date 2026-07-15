@@ -1,58 +1,66 @@
 {% extends 'base.html' %}
 {% block title %}Aplicar Desconto — {{ adiantamento.numero_referencia }}{% endblock %}
 {% block content %}
-<div class="container" style="max-width:700px;margin-top:2rem">
+<div class="container py-4" style="max-width:700px">
 
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h1 class="mb-0 fs-4"><i class="bi bi-check-circle"></i> Aplicar Desconto em Invoice</h1>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-check-circle"></i></span>
+        <h2>Aplicar Desconto em Invoice</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
-  <!-- Resumo do adiantamento -->
   <div class="alert alert-info mb-4">
     <div class="row g-2">
       <div class="col-sm-4"><strong>Adiantamento:</strong> {{ adiantamento.numero_referencia }}</div>
       <div class="col-sm-4"><strong>Cliente:</strong> {{ adiantamento.cliente.razao_social }}</div>
-      <div class="col-sm-4"><strong>Saldo disponível:</strong> <span class="text-warning fw-bold">{{ adiantamento.moeda }} {{ adiantamento.saldo_estrangeiro|floatformat:2 }}</span></div>
+      <div class="col-sm-4"><strong>Saldo disponível:</strong> <span class="text-warning fw-bold">{{ adiantamento.moeda }} {{ adiantamento.saldo_estrangeiro|floatformat:"2g" }}</span></div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-body">
-      <form method="post">
-        {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label">{{ form.invoice.label }} <span class="text-danger">*</span></label>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12{% if form.invoice.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.invoice.label }}<span class="req">*</span></label>
             {{ form.invoice }}
-            {% if form.invoice.errors %}<div class="text-danger small">{{ form.invoice.errors.0 }}</div>{% endif %}
+            {% if form.invoice.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.invoice.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-sm-6">
-            <label class="form-label">{{ form.valor_desconto_estrangeiro.label }} ({{ adiantamento.moeda }}) <span class="text-danger">*</span></label>
+          <div class="field col-6{% if form.valor_desconto_estrangeiro.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.valor_desconto_estrangeiro.label }} ({{ adiantamento.moeda }})<span class="req">*</span></label>
             {{ form.valor_desconto_estrangeiro }}
-            {% if form.valor_desconto_estrangeiro.errors %}<div class="text-danger small">{{ form.valor_desconto_estrangeiro.errors.0 }}</div>{% endif %}
-            <small class="text-muted">Saldo máximo: {{ adiantamento.moeda }} {{ adiantamento.saldo_estrangeiro|floatformat:2 }}</small>
+            {% if form.valor_desconto_estrangeiro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_desconto_estrangeiro.errors.0 }}</div>{% endif %}
+            <div class="helper-note">Saldo máximo: {{ adiantamento.moeda }} {{ adiantamento.saldo_estrangeiro|floatformat:"2g" }}</div>
           </div>
-          <div class="col-sm-3">
+          <div class="field col-3">
             <label class="form-label">{{ form.taxa_cambio_aplicada.label }}</label>
             {{ form.taxa_cambio_aplicada }}
           </div>
-          <div class="col-sm-3">
+          <div class="field col-3">
             <label class="form-label">{{ form.data_desconto.label }}</label>
             {{ form.data_desconto }}
           </div>
-          <div class="col-12">
+          <div class="field col-12">
             <label class="form-label">{{ form.observacoes.label }}</label>
             {{ form.observacoes }}
           </div>
         </div>
-        <hr>
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Aplicar Desconto</button>
-          <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'adiantamentos:adiantamento_detail' adiantamento.pk %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Aplicar Desconto</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

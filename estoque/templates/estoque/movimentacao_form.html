@@ -4,47 +4,65 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="mb-4">
-    <nav aria-label="breadcrumb">
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'estoque:dashboard' %}">Estoque</a></li>
-        <li class="breadcrumb-item"><a href="{% url 'estoque:movimentacao_list' %}">Movimentações</a></li>
-        <li class="breadcrumb-item active">{{ titulo }}</li>
-      </ol>
-    </nav>
-    <h2>
-      {% if tipo == 'ENTRADA' %}
-        <i class="bi bi-box-arrow-in-down text-success"></i>
-      {% elif tipo == 'SAIDA' %}
-        <i class="bi bi-box-arrow-up text-warning"></i>
-      {% elif tipo == 'TRANSFERENCIA' %}
-        <i class="bi bi-arrow-left-right text-info"></i>
-      {% else %}
-        <i class="bi bi-arrow-left-right"></i>
-      {% endif %}
-      {{ titulo }}
-    </h2>
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'estoque:dashboard' %}">Estoque</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'estoque:movimentacao_list' %}">Movimentações</a></li>
+      <li class="breadcrumb-item active">{{ titulo }}</li>
+    </ol>
+  </nav>
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge{% if tipo == 'SAIDA' %} orange{% elif tipo == 'TRANSFERENCIA' %} blue{% endif %}">
+          {% if tipo == 'ENTRADA' %}
+            <i class="bi bi-box-arrow-in-down"></i>
+          {% elif tipo == 'SAIDA' %}
+            <i class="bi bi-box-arrow-up"></i>
+          {% elif tipo == 'TRANSFERENCIA' %}
+            <i class="bi bi-arrow-left-right"></i>
+          {% else %}
+            <i class="bi bi-arrow-left-right"></i>
+          {% endif %}
+        </span>
+        <h2>{{ titulo }}</h2>
+      </div>
+    </div>
   </div>
 
-  <div class="row">
-    <div class="col-lg-8">
-      <div class="card">
-        <div class="card-body">
-          <form method="post">
-            {% csrf_token %}
-            
-            {% if form.non_field_errors %}
-              <div class="alert alert-danger">
-                {{ form.non_field_errors }}
-              </div>
-            {% endif %}
+  <form method="post">
+    {% csrf_token %}
 
-            <!-- Tipo e Origem -->
-            <div class="row g-3 mb-3">
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <nav class="section-nav">
+      <a href="#sec-tipo" data-tab="sec-tipo">Tipo e Origem</a>
+      <a href="#sec-produto" data-tab="sec-produto">Produto e Quantidade</a>
+      {% if 'lote' in form.fields %}<a href="#sec-lote" data-tab="sec-lote">Lote</a>{% endif %}
+      {% if 'armazem_origem' in form.fields %}<a href="#sec-loc-origem" data-tab="sec-loc-origem">Localização de Origem</a>{% endif %}
+      {% if 'armazem_destino' in form.fields %}<a href="#sec-loc-destino" data-tab="sec-loc-destino">Localização de Destino</a>{% endif %}
+      <a href="#sec-adicional" data-tab="sec-adicional">Informações Adicionais</a>
+    </nav>
+
+    <div class="complex-layout">
+      <div class="complex-main">
+
+        <div class="form-section" id="sec-tipo" data-tab-panel="sec-tipo">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+            <span class="title">Tipo e Origem</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
               {% if 'tipo' in form.fields %}
-                <div class="col-md-6">
-                  <label class="form-label fw-semibold">{{ form.tipo.label }} *</label>
+                <div class="field col-6">
+                  <label class="form-label">{{ form.tipo.label }}<span class="req">*</span></label>
                   {% if form.tipo.value %}
                     {{ form.tipo }}
                   {% else %}
@@ -55,181 +73,165 @@
                       {% endfor %}
                     </select>
                   {% endif %}
-                  {% if form.tipo.errors %}
-                    <div class="text-danger small">{{ form.tipo.errors.0 }}</div>
-                  {% endif %}
+                  {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors.0 }}</div>{% endif %}
                 </div>
               {% endif %}
-              
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">{{ form.origem.label }} *</label>
+
+              <div class="field col-6">
+                <label class="form-label">{{ form.origem.label }}<span class="req">*</span></label>
                 {{ form.origem }}
-                {% if form.origem.errors %}
-                  <div class="text-danger small">{{ form.origem.errors.0 }}</div>
-                {% endif %}
-                <div class="form-text">Motivo da movimentação</div>
+                {% if form.origem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.origem.errors.0 }}</div>{% endif %}
+                <div class="helper-note">Motivo da movimentação</div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Produto, Unidade de Medida e Quantidade -->
-            <div class="row g-3 mb-3">
-              <!-- Produto (opcional) -->
+        <div class="form-section" id="sec-produto" data-tab-panel="sec-produto">
+          <div class="form-section-header">
+            <span class="icon-badge sm green"><i class="bi bi-box-seam"></i></span>
+            <span class="title">Produto e Quantidade</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
               {% if 'produto' in form.fields %}
-                <div class="col-md-5">
+                <div class="field col-5">
                   <label class="form-label">{{ form.produto.label }}</label>
                   {{ form.produto }}
-                  {% if form.produto.errors %}
-                    <div class="text-danger small">{{ form.produto.errors.0 }}</div>
-                  {% endif %}
+                  {% if form.produto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produto.errors.0 }}</div>{% endif %}
                 </div>
               {% endif %}
-              
-              <!-- Unidade de Medida (opcional) -->
+
               {% if 'unidade_medida' in form.fields %}
-                <div class="col-md-3">
+                <div class="field col-3">
                   <label class="form-label">{{ form.unidade_medida.label }}</label>
                   {{ form.unidade_medida }}
-                  {% if form.unidade_medida.errors %}
-                    <div class="text-danger small">{{ form.unidade_medida.errors.0 }}</div>
-                  {% endif %}
+                  {% if form.unidade_medida.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_medida.errors.0 }}</div>{% endif %}
                 </div>
               {% endif %}
-              
-              <!-- Quantidade -->
-              <div class="col-md-4">
-                <label class="form-label fw-semibold">{{ form.quantidade.label }} *</label>
+
+              <div class="field col-4">
+                <label class="form-label">{{ form.quantidade.label }}<span class="req">*</span></label>
                 {{ form.quantidade }}
-                {% if form.quantidade.errors %}
-                  <div class="text-danger small">{{ form.quantidade.errors.0 }}</div>
-                {% endif %}
+                {% if form.quantidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade.errors.0 }}</div>{% endif %}
               </div>
             </div>
-
-            <!-- Lote (opcional) -->
-            {% if 'lote' in form.fields %}
-              <div class="row g-3 mb-3">
-                <div class="col-md-12">
-                  <label class="form-label">{{ form.lote.label }}</label>
-                  <div class="input-group">
-                    {{ form.lote }}
-                    {% if tipo == 'ENTRADA' %}
-                      <a href="{% url 'estoque:lote_create' %}" class="btn btn-outline-secondary" target="_blank" title="Cadastrar Novo Lote">
-                        <i class="bi bi-plus-lg"></i>
-                      </a>
-                    {% endif %}
-                  </div>
-                  {% if form.lote.errors %}
-                    <div class="text-danger small">{{ form.lote.errors.0 }}</div>
-                  {% endif %}
-                  {% if form.lote.help_text %}
-                    <div class="form-text">{{ form.lote.help_text }}</div>
-                  {% endif %}
-                </div>
-              </div>
-            {% endif %}
-
-            <hr>
-
-            <!-- Localização Origem -->
-            {% if 'armazem_origem' in form.fields %}
-              <h5 class="mb-3"><i class="bi bi-geo-alt"></i> Origem</h5>
-              <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label">{{ form.armazem_origem.label }}</label>
-                  {{ form.armazem_origem }}
-                  {% if form.armazem_origem.errors %}
-                    <div class="text-danger small">{{ form.armazem_origem.errors.0 }}</div>
-                  {% endif %}
-                </div>
-                
-                {% if 'local_origem' in form.fields %}
-                  <div class="col-md-6">
-                    <label class="form-label">{{ form.local_origem.label }}</label>
-                    {{ form.local_origem }}
-                    {% if form.local_origem.errors %}
-                      <div class="text-danger small">{{ form.local_origem.errors.0 }}</div>
-                    {% endif %}
-                  </div>
-                {% endif %}
-              </div>
-              <hr>
-            {% endif %}
-
-            <!-- Localização Destino -->
-            {% if 'armazem_destino' in form.fields %}
-              <h5 class="mb-3"><i class="bi bi-geo-alt-fill"></i> Destino</h5>
-              <div class="row g-3 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label">{{ form.armazem_destino.label }} {% if tipo == 'TRANSFERENCIA' %}*{% endif %}</label>
-                  {{ form.armazem_destino }}
-                  {% if form.armazem_destino.errors %}
-                    <div class="text-danger small">{{ form.armazem_destino.errors.0 }}</div>
-                  {% endif %}
-                </div>
-                
-                {% if 'local_destino' in form.fields %}
-                  <div class="col-md-6">
-                    <label class="form-label">{{ form.local_destino.label }}</label>
-                    {{ form.local_destino }}
-                    {% if form.local_destino.errors %}
-                      <div class="text-danger small">{{ form.local_destino.errors.0 }}</div>
-                    {% endif %}
-                  </div>
-                {% endif %}
-              </div>
-              <hr>
-            {% endif %}
-
-            <!-- Informações Adicionais -->
-            <h5 class="mb-3"><i class="bi bi-info-circle"></i> Informações Adicionais</h5>
-            
-            <div class="mb-3">
-              <label class="form-label">{{ form.documento.label }}</label>
-              {{ form.documento }}
-              {% if form.documento.errors %}
-                <div class="text-danger small">{{ form.documento.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">{{ form.observacao.label }}</label>
-              {{ form.observacao }}
-              {% if form.observacao.errors %}
-                <div class="text-danger small">{{ form.observacao.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">{{ form.justificativa.label }}</label>
-              {{ form.justificativa }}
-              {% if form.justificativa.errors %}
-                <div class="text-danger small">{{ form.justificativa.errors.0 }}</div>
-              {% endif %}
-              <div class="form-text">Obrigatório para ajustes e perdas</div>
-            </div>
-
-            <!-- Botões -->
-            <div class="d-flex gap-2 mt-4">
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-circle"></i> Salvar Movimentação
-              </button>
-              <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-secondary">
-                <i class="bi bi-x-circle"></i> Cancelar
-              </a>
-            </div>
-          </form>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Sidebar com ajuda -->
-    <div class="col-lg-4">
-      <div class="card bg-light">
-        <div class="card-body">
-          <h5 class="card-title">
-            <i class="bi bi-lightbulb"></i> Dicas
-          </h5>
-          
+        {% if 'lote' in form.fields %}
+        <div class="form-section" id="sec-lote" data-tab-panel="sec-lote">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-box2"></i></span>
+            <span class="title">Lote</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <label class="form-label">{{ form.lote.label }}</label>
+                <div class="input-group">
+                  {{ form.lote }}
+                  {% if tipo == 'ENTRADA' %}
+                    <a href="{% url 'estoque:lote_create' %}" class="btn btn-outline-secondary" target="_blank" title="Cadastrar Novo Lote">
+                      <i class="bi bi-plus-lg"></i>
+                    </a>
+                  {% endif %}
+                </div>
+                {% if form.lote.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.lote.errors.0 }}</div>{% endif %}
+                {% if form.lote.help_text %}<div class="helper-note">{{ form.lote.help_text }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if 'armazem_origem' in form.fields %}
+        <div class="form-section" id="sec-loc-origem" data-tab-panel="sec-loc-origem">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-geo-alt"></i></span>
+            <span class="title">Origem</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <label class="form-label">{{ form.armazem_origem.label }}</label>
+                {{ form.armazem_origem }}
+                {% if form.armazem_origem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.armazem_origem.errors.0 }}</div>{% endif %}
+              </div>
+
+              {% if 'local_origem' in form.fields %}
+                <div class="field col-6">
+                  <label class="form-label">{{ form.local_origem.label }}</label>
+                  {{ form.local_origem }}
+                  {% if form.local_origem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.local_origem.errors.0 }}</div>{% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% if 'armazem_destino' in form.fields %}
+        <div class="form-section" id="sec-loc-destino" data-tab-panel="sec-loc-destino">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-geo-alt-fill"></i></span>
+            <span class="title">Destino</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <label class="form-label">{{ form.armazem_destino.label }} {% if tipo == 'TRANSFERENCIA' %}<span class="req">*</span>{% endif %}</label>
+                {{ form.armazem_destino }}
+                {% if form.armazem_destino.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.armazem_destino.errors.0 }}</div>{% endif %}
+              </div>
+
+              {% if 'local_destino' in form.fields %}
+                <div class="field col-6">
+                  <label class="form-label">{{ form.local_destino.label }}</label>
+                  {{ form.local_destino }}
+                  {% if form.local_destino.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.local_destino.errors.0 }}</div>{% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="form-section" id="sec-adicional" data-tab-panel="sec-adicional">
+          <div class="form-section-header">
+            <span class="icon-badge sm gray"><i class="bi bi-info-circle"></i></span>
+            <span class="title">Informações Adicionais</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <label class="form-label">{{ form.documento.label }}</label>
+                {{ form.documento }}
+                {% if form.documento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.documento.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-12">
+                <label class="form-label">{{ form.observacao.label }}</label>
+                {{ form.observacao }}
+                {% if form.observacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacao.errors.0 }}</div>{% endif %}
+              </div>
+
+              <div class="field col-12">
+                <label class="form-label">{{ form.justificativa.label }}</label>
+                {{ form.justificativa }}
+                {% if form.justificativa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.justificativa.errors.0 }}</div>{% endif %}
+                <div class="helper-note">Obrigatório para ajustes e perdas</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4><i class="bi bi-lightbulb"></i> Dicas</h4>
+
           {% if tipo == 'ENTRADA' %}
             <p class="small mb-2"><strong>Entrada de Estoque:</strong></p>
             <ul class="small">
@@ -262,7 +264,7 @@
             </ul>
           {% endif %}
 
-          <hr>
+          <hr class="my-2">
 
           <p class="small mb-2"><strong>Status da Movimentação:</strong></p>
           <ul class="small mb-0">
@@ -272,18 +274,29 @@
         </div>
       </div>
     </div>
-  </div>
-</div>
 
+    <div class="app-footer-bar">
+      <a href="{% url 'estoque:movimentacao_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar Movimentação
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const produtoSelect = document.getElementById('id_produto');
   const unidadeMedidaSelect = document.getElementById('id_unidade_medida');
-  
+
   if (produtoSelect && unidadeMedidaSelect) {
     produtoSelect.addEventListener('change', function() {
       const produtoId = this.value;
-      
+
       if (produtoId) {
         // Fazer requisição AJAX para buscar a unidade de medida do produto
         fetch(`{% url 'estoque:api_produto_unidade' 0 %}`.replace('0', produtoId))

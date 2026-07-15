@@ -51,15 +51,15 @@
         <div class="card-body">
           <dl class="row mb-0 small">
             <dt class="col-7 text-muted">Consumo Total</dt>
-            <dd class="col-5 font-monospace">{{ obj.consumo_total_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace">{{ obj.consumo_total_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Consumo Registrado</dt>
-            <dd class="col-5 font-monospace">{{ obj.consumo_registrado_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace">{{ obj.consumo_registrado_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Unidade Geradora</dt>
-            <dd class="col-5 font-monospace">{{ obj.uc_geradora_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace">{{ obj.uc_geradora_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Consumo Instantâneo</dt>
-            <dd class="col-5 font-monospace">{{ obj.consumo_instantaneo_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace">{{ obj.consumo_instantaneo_kwh|floatformat:"2g" }} kWh</dd>
             <dt class="col-7 text-muted">Energia Injetada</dt>
-            <dd class="col-5 font-monospace text-info">{{ obj.energia_injetada_kwh|floatformat:2 }} kWh</dd>
+            <dd class="col-5 font-monospace text-info">{{ obj.energia_injetada_kwh|floatformat:"2g" }} kWh</dd>
           </dl>
         </div>
       </div>
@@ -83,7 +83,7 @@
         <div class="card-body">
           <div class="row text-center">
             <div class="col-6">
-              <div class="fs-4 fw-bold text-success">{{ obj.co2_nao_produzido_t|floatformat:2 }}t</div>
+              <div class="fs-4 fw-bold text-success">{{ obj.co2_nao_produzido_t|floatformat:"2g" }}t</div>
               <div class="text-muted small">CO₂ não produzido</div>
             </div>
             <div class="col-6">

@@ -19,7 +19,7 @@
       </h5>
       <small class="text-muted">
         {{ plan.cultura.nome }}{% if plan.safra %} · {{ plan.safra }}{% endif %}{% if plan.talhao %} · {{ plan.talhao.nome }}{% endif %}
-        · {{ plan.area_ha|floatformat:2 }} ha
+        · {{ plan.area_ha|floatformat:"2g" }} ha
       </small>
     </div>
     <div class="d-flex gap-2">
@@ -191,7 +191,7 @@
                 <td class="text-end small">
                   {% if item.dose_por_ha %}{{ item.dose_por_ha|floatformat:4 }} {% if item.unidade_medida %}{{ item.unidade_medida.sigla }}{% endif %}{% else %}—{% endif %}
                 </td>
-                <td class="text-end small">{{ item.area_ha|floatformat:2 }}</td>
+                <td class="text-end small">{{ item.area_ha|floatformat:"2g" }}</td>
                 <td class="text-end small text-muted">R$ {{ item.custo_unitario|floatformat:4 }}</td>
                 <td class="text-end fw-bold text-warning">R$ {{ item.custo_total|floatformat:2 }}</td>
                 <td class="text-nowrap">
@@ -308,7 +308,7 @@
                 <td><span class="badge bg-{{ item.color }}">{{ item.get_tipo_display }}</span></td>
                 <td class="small">{{ item.descricao }}</td>
                 <td class="text-end small text-muted">
-                  {% if item.percentual_receita %}{{ item.percentual_receita|floatformat:2 }}% da receita
+                  {% if item.percentual_receita %}{{ item.percentual_receita|floatformat:"2g" }}% da receita
                   {% else %}R$ {{ item.valor_fixo|floatformat:2 }}{% endif %}
                 </td>
                 <td class="text-end fw-semibold text-info">R$ {{ item.custo_calculado|floatformat:2 }}</td>
@@ -430,9 +430,9 @@
               {% if formacao.pct_avaria_prevista > 0 and formacao.producao_prevista_total %}
               <div class="alert alert-warning py-2 small mb-3">
                 <i class="bi bi-exclamation-triangle me-1"></i>
-                Bruto: <strong>{{ formacao.producao_prevista_total|floatformat:2 }} {{ plan.unidade_producao|default:"un" }}</strong>
-                → Avaria {{ formacao.pct_avaria_prevista|floatformat:2 }}%
-                → Comercializável: <strong>{{ formacao.producao_comercializavel|floatformat:2 }} {{ plan.unidade_producao|default:"un" }}</strong>
+                Bruto: <strong>{{ formacao.producao_prevista_total|floatformat:"2g" }} {{ plan.unidade_producao|default:"un" }}</strong>
+                → Avaria {{ formacao.pct_avaria_prevista|floatformat:"2g" }}%
+                → Comercializável: <strong>{{ formacao.producao_comercializavel|floatformat:"2g" }} {{ plan.unidade_producao|default:"un" }}</strong>
               </div>
               {% endif %}
 
@@ -481,13 +481,13 @@
                 <div class="col">
                   <div class="p-2 bg-light rounded-3">
                     <div class="text-muted small">Comercializável</div>
-                    <div class="fw-bold">{{ formacao.producao_comercializavel|floatformat:2|default:"—" }} {{ plan.unidade_producao }}</div>
+                    <div class="fw-bold">{{ formacao.producao_comercializavel|floatformat:"2g"|default:"—" }} {{ plan.unidade_producao }}</div>
                   </div>
                 </div>
                 <div class="col">
                   <div class="p-2 bg-light rounded-3">
                     <div class="text-muted small">Margem Alvo</div>
-                    <div class="fw-bold text-primary">{{ formacao.margem_desejada_pct|floatformat:2 }}%</div>
+                    <div class="fw-bold text-primary">{{ formacao.margem_desejada_pct|floatformat:"2g" }}%</div>
                   </div>
                 </div>
                 <div class="col">
@@ -534,7 +534,7 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
         <div>
           <h6 class="fw-semibold mb-0"><i class="bi bi-bar-chart me-2 text-primary"></i>Comparativo Planejado × Realizado</h6>
-          <small class="text-muted">Plano base: <strong>{{ plan.area_ha|floatformat:2 }} ha</strong> — valores ajustados automaticamente para a área do talhão selecionado</small>
+          <small class="text-muted">Plano base: <strong>{{ plan.area_ha|floatformat:"2g" }} ha</strong> — valores ajustados automaticamente para a área do talhão selecionado</small>
         </div>
         <div class="d-flex gap-2 align-items-center flex-wrap">
           <select id="sel-talhao-comparativo" class="form-select form-select-sm" style="min-width:240px">

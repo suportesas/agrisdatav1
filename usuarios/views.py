@@ -307,6 +307,17 @@ def login_view(request):
                     user.groups.add(group)
                 return redirect('portal_produtor:dashboard')
 
+            try:
+                motorista = user.motorista_profile
+            except Exception:
+                motorista = None
+
+            if motorista and motorista.ativo:
+                group, _ = Group.objects.get_or_create(name='MOTORISTA')
+                if not user.groups.filter(pk=group.pk).exists():
+                    user.groups.add(group)
+                return redirect('portal_motorista:home')
+
             return redirect('dashboard:index')
         
         else:

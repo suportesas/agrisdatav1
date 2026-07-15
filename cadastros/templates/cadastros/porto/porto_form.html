@@ -2,69 +2,80 @@
 {% block title %}{{ action }} Porto | Agrisdata{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:porto_list' %}">Portos</a></li>
-      <li class="breadcrumb-item active">{{ action }} Porto</li>
-    </ol>
-  </nav>
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1"><i class="bi bi-geo-alt text-primary"></i> {{ action }} Porto</h2>
-      {% if porto %}
-        <p class="text-muted mb-0">Editando: <strong>{{ porto.nome }}</strong></p>
-      {% else %}
-        <p class="text-muted mb-0">Cadastre um novo porto</p>
-      {% endif %}
-    </div>
-    <a href="{% url 'cadastros:porto_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
-  </div>
-
-  <form method="post">
-    {% csrf_token %}
-
-    <div class="form-section bg-white p-4 rounded shadow-sm">
-      <div class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label fw-semibold">Código *</label>
-          {{ form.codigo }}
-          {% if form.codigo.errors %}<div class="text-danger small">{{ form.codigo.errors|striptags }}</div>{% endif %}
-        </div>
-        <div class="col-md-5">
-          <label class="form-label fw-semibold">Nome *</label>
-          {{ form.nome }}
-          {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors|striptags }}</div>{% endif %}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">País</label>
-          {{ form.pais }}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Cidade</label>
-          {{ form.cidade }}
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Tipo</label>
-          {{ form.tipo }}
-        </div>
-        <div class="col-md-4 d-flex align-items-center">
-          <div class="form-check form-switch mt-2">
-            {{ form.ativo }} <label class="form-check-label ms-2">Ativo</label>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge"><i class="bi bi-geo-alt"></i></span>
+            <div>
+              <h2>{{ action }} Porto</h2>
+              {% if porto %}
+                <p class="text-muted mb-0">Editando: <strong>{{ porto.nome }}</strong></p>
+              {% else %}
+                <p class="text-muted mb-0">Cadastre um novo porto</p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="form-header-actions">
+            <a href="{% url 'cadastros:porto_list' %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="mt-3">
-      <button class="btn btn-primary" type="submit">Salvar</button>
-      <a href="{% url 'cadastros:porto_list' %}" class="btn btn-secondary">Cancelar</a>
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-section">
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <label class="form-label">Código<span class="req">*</span></label>
+                {{ form.codigo }}
+                {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">Nome<span class="req">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">País</label>
+                {{ form.pais }}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Cidade</label>
+                {{ form.cidade }}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Tipo</label>
+                {{ form.tipo }}
+              </div>
+              <div class="field col-4">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativo }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="app-footer-bar">
+          <a href="{% url 'cadastros:porto_list' %}" class="btn btn-outline">Cancelar</a>
+          <button class="btn btn-primary" type="submit">
+            <i class="bi bi-check-circle"></i> Salvar
+          </button>
+        </div>
+      </form>
     </div>
-  </form>
+  </div>
 </div>
 {% endblock %}

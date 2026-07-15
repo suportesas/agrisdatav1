@@ -114,7 +114,7 @@
         <td class="text-right">{{ item.valor_unitario|floatformat:4 }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.valor_unitario_tributavel|floatformat:4 }}</small>{% endif %}</td>
         <td class="text-right">{{ item.valor_desconto|floatformat:2 }}</td>
         <td class="text-right">{{ item.valor_total|floatformat:2 }}</td>
-        <td class="text-right">{{ item.aliquota_icms|floatformat:2 }}%</td>
+        <td class="text-right">{{ item.aliquota_icms|floatformat:"2g" }}%</td>
         <td class="text-right">{{ item.valor_icms|floatformat:2 }}</td>
       </tr>
       {% endfor %}

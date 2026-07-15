@@ -8,7 +8,6 @@
   <div class="row justify-content-center">
     <div class="col-lg-10">
 
-      <!-- Breadcrumb -->
       <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
           <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -18,14 +17,21 @@
         </ol>
       </nav>
 
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 class="h3 mb-1"><i class="fas fa-file-medical me-2 text-danger"></i>{{ title }}</h1>
-          <p class="text-muted mb-0">Registre data de emissao, validade e responsavel tecnico do laudo.</p>
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge red"><i class="bi bi-file-medical"></i></span>
+            <div>
+              <h2>{{ title }}</h2>
+              <p class="text-muted mb-0">Registre data de emissão, validade e responsável técnico do laudo.</p>
+            </div>
+          </div>
+          <div class="form-header-actions">
+            <a href="{% url 'rh:laudo_list' %}" class="btn btn-ghost">
+              <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+          </div>
         </div>
-        <a href="{% url 'rh:laudo_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
-        </a>
       </div>
 
       <form method="post" enctype="multipart/form-data">
@@ -34,56 +40,56 @@
         <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
 
-        <div class="card mb-3">
-          <div class="card-header bg-danger text-white"><strong>Dados do Laudo</strong></div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">{{ form.funcao.label }} <span class="text-danger">*</span></label>
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm red"><i class="bi bi-file-medical"></i></span>
+            <span class="title">Dados do Laudo</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4{% if form.funcao.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.funcao.label }}<span class="req">*</span></label>
                 {{ form.funcao|add_class:"form-select" }}
-                {% if form.funcao.errors %}<div class="text-danger small">{{ form.funcao.errors }}</div>{% endif %}
+                {% if form.funcao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcao.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.vinculo.label }}</label>
                 {{ form.vinculo|add_class:"form-select" }}
-                {% if form.vinculo.errors %}<div class="text-danger small">{{ form.vinculo.errors }}</div>{% endif %}
+                {% if form.vinculo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.vinculo.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.tipo_laudo.label }} <span class="text-danger">*</span></label>
+              <div class="field col-4{% if form.tipo_laudo.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.tipo_laudo.label }}<span class="req">*</span></label>
                 {{ form.tipo_laudo|add_class:"form-select" }}
-                {% if form.tipo_laudo.errors %}<div class="text-danger small">{{ form.tipo_laudo.errors }}</div>{% endif %}
+                {% if form.tipo_laudo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_laudo.errors|striptags }}</div>{% endif %}
               </div>
-
-              <div class="col-md-3">
-                <label class="form-label">{{ form.data_emissao.label }} <span class="text-danger">*</span></label>
+              <div class="field col-3{% if form.data_emissao.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.data_emissao.label }}<span class="req">*</span></label>
                 {{ form.data_emissao|add_class:"form-control" }}
-                {% if form.data_emissao.errors %}<div class="text-danger small">{{ form.data_emissao.errors }}</div>{% endif %}
+                {% if form.data_emissao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_emissao.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-3">
-                <label class="form-label">{{ form.data_validade.label }} <span class="text-danger">*</span></label>
+              <div class="field col-3{% if form.data_validade.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.data_validade.label }}<span class="req">*</span></label>
                 {{ form.data_validade|add_class:"form-control" }}
-                {% if form.data_validade.errors %}<div class="text-danger small">{{ form.data_validade.errors }}</div>{% endif %}
+                {% if form.data_validade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_validade.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">{{ form.status.label }}</label>
                 {{ form.status|add_class:"form-select" }}
               </div>
-              <div class="col-md-3">
+              <div class="field col-3">
                 <label class="form-label">{{ form.numero_art.label }}</label>
                 {{ form.numero_art|add_class:"form-control" }}
               </div>
-
-              <div class="col-md-8">
-                <label class="form-label">{{ form.responsavel_tecnico.label }} <span class="text-danger">*</span></label>
+              <div class="field col-8{% if form.responsavel_tecnico.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.responsavel_tecnico.label }}<span class="req">*</span></label>
                 {{ form.responsavel_tecnico|add_class:"form-control" }}
-                {% if form.responsavel_tecnico.errors %}<div class="text-danger small">{{ form.responsavel_tecnico.errors }}</div>{% endif %}
+                {% if form.responsavel_tecnico.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.responsavel_tecnico.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.arquivo_laudo.label }}</label>
                 {{ form.arquivo_laudo|add_class:"form-control" }}
               </div>
-
-              <div class="col-md-12">
+              <div class="field col-12">
                 <label class="form-label">{{ form.observacoes.label }}</label>
                 {{ form.observacoes|add_class:"form-control" }}
               </div>
@@ -91,9 +97,9 @@
           </div>
         </div>
 
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'rh:laudo_list' %}" class="btn btn-outline-secondary btn-lg px-5">Cancelar</a>
-          <button type="submit" class="btn btn-success btn-lg px-5">Salvar Laudo</button>
+        <div class="app-footer-bar">
+          <a href="{% url 'rh:laudo_list' %}" class="btn btn-outline">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Salvar Laudo</button>
         </div>
       </form>
     </div>

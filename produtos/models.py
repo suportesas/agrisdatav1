@@ -625,6 +625,27 @@ class Produto(models.Model):
         self.estoque_atual = Decimal(total) if total is not None else Decimal('0.000')
         self.save(update_fields=['estoque_atual'])
 
+    def recalcular_custo_medio(self):
+        """
+        Recalcula preco_custo como custo médio ponderado dos lotes ativos
+        (quantidade_atual > 0), ponderado por quantidade e valor_unitario.
+        Lotes sem valor_unitario informado não entram na ponderação.
+        """
+        agg = self.lotes.filter(
+            status__in=['DISPONIVEL', 'BLOQUEADO'],
+            quantidade_atual__gt=0,
+            valor_unitario__isnull=False,
+        ).aggregate(
+            valor=models.Sum(
+                models.F('valor_unitario') * models.F('quantidade_atual'),
+                output_field=models.DecimalField(max_digits=20, decimal_places=4)
+            ),
+            qtd=models.Sum('quantidade_atual'),
+        )
+        if agg['qtd']:
+            self.preco_custo = (agg['valor'] / agg['qtd']).quantize(Decimal('0.01'))
+            self.save(update_fields=['preco_custo'])
+
     def calcular_saldo_real(self):
         """
         Saldo real de estoque: soma dos lotes ativos + movimentações

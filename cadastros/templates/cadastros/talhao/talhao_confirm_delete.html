@@ -34,7 +34,7 @@
             </p>
             
             <p class="text-muted mb-0">
-              <span class="badge bg-success">{{ talhao.area_hac|floatformat:2 }} ha</span>
+              <span class="badge bg-success">{{ talhao.area_hac|floatformat:"2g" }} ha</span>
               <span class="badge bg-info">{{ talhao.get_status_display }}</span>
             </p>
           </div>
@@ -49,7 +49,7 @@
               <li>{{ talhao.historico.count }} registro(s) de histórico será(ão) desvinculado(s)</li>
               {% if talhao.cultura_atual %}<li>A cultura atual será desvinculada</li>{% endif %}
               <li>Todos os dados do talhão serão perdidos</li>
-              <li>A área de {{ talhao.area_hac|floatformat:2 }} ha será liberada novamente</li>
+              <li>A área de {{ talhao.area_hac|floatformat:"2g" }} ha será liberada novamente</li>
             </ul>
           </div>
 

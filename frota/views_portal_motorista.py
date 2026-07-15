@@ -1,12 +1,16 @@
-"""Portal do Motorista — autenticação por matrícula+PIN, registro de abastecimentos com foto."""
+"""Portal do Motorista — login unificado via django.contrib.auth (Usuario vinculado ao Motorista)."""
 from functools import wraps
 from datetime import date
 
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import logout as auth_logout
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
-from .forms import AbastecimentoPortalForm, MotoristaLoginForm, SolicitacaoManutencaoForm
+from .forms import AbastecimentoPortalForm, SolicitacaoManutencaoForm
 from .models import (
     AbastecimentoVeiculo, FotoAbastecimento, ManutencaoVeiculo,
     Motorista, MotoristaVinculoPlaca, Vehicle,
@@ -44,60 +48,36 @@ def _get_vehicles_for_motorista(motorista):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# AUTENTICAÇÃO
+# AUTENTICAÇÃO — login unificado (django.contrib.auth), tela principal /login/
 # ──────────────────────────────────────────────────────────────────────────────
 
 def motorista_login_required(view_func):
+    """Exige um Usuario autenticado com um Motorista vinculado e ativo.
+    Substitui a antiga checagem de request.session['motorista_id']."""
     @wraps(view_func)
+    @login_required
     def wrapper(request, *args, **kwargs):
-        if 'motorista_id' not in request.session:
-            return redirect(LOGIN_URL)
+        motorista = getattr(request.user, 'motorista_profile', None)
+        if not motorista or not motorista.ativo:
+            messages.error(request, 'Acesso restrito a motoristas.')
+            return redirect(settings.LOGIN_URL)
+        request.motorista = motorista
         return view_func(request, *args, **kwargs)
     return wrapper
 
 
 def _get_motorista(request):
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return None
-    try:
-        return Motorista.objects.get(pk=motorista_id, ativo=True)
-    except Motorista.DoesNotExist:
-        return None
+    return getattr(request, 'motorista', None) or getattr(request.user, 'motorista_profile', None)
 
 
 def motorista_login(request):
-    if request.session.get('motorista_id'):
-        return redirect(HOME_URL)
-
-    if request.method == 'POST':
-        form = MotoristaLoginForm(request.POST)
-        if form.is_valid():
-            matricula = form.cleaned_data['matricula'].strip()
-            pin = form.cleaned_data['pin'].strip()
-            try:
-                motorista = Motorista.objects.get(matricula=matricula, ativo=True)
-                if motorista.check_pin(pin):
-                    request.session['motorista_id'] = motorista.pk
-                    request.session['motorista_nome'] = motorista.nome
-                    messages.success(request, f'Bem-vindo, {motorista.nome}!')
-                    return redirect(HOME_URL)
-                else:
-                    messages.error(request, 'Matrícula ou PIN incorretos.')
-            except Motorista.DoesNotExist:
-                messages.error(request, 'Matrícula ou PIN incorretos.')
-    else:
-        form = MotoristaLoginForm()
-
-    return render(request, 'cadastros/portal_motorista/login.html', {
-        'form': form,
-        'title': 'Portal do Motorista',
-    })
+    """Compatibilidade com bookmarks antigos — login agora é feito em /login/."""
+    return redirect(f"{settings.LOGIN_URL}?next={reverse(HOME_URL)}")
 
 
 def motorista_logout(request):
-    request.session.flush()
-    return redirect(LOGIN_URL)
+    auth_logout(request)
+    return redirect(settings.LOGIN_URL)
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -107,9 +87,6 @@ def motorista_logout(request):
 @motorista_login_required
 def motorista_home(request):
     motorista = _get_motorista(request)
-    if not motorista:
-        request.session.flush()
-        return redirect(LOGIN_URL)
 
     ultimos_abastecimentos = AbastecimentoVeiculo.objects.filter(
         motorista=motorista
@@ -143,9 +120,6 @@ def motorista_home(request):
 @motorista_login_required
 def motorista_abastecimento_novo(request):
     motorista = _get_motorista(request)
-    if not motorista:
-        return redirect(LOGIN_URL)
-
     vehicles_qs, tem_vinculo = _get_vehicles_for_motorista(motorista)
 
     if request.method == 'POST':
@@ -191,8 +165,6 @@ def motorista_abastecimento_novo(request):
 @motorista_login_required
 def motorista_historico(request):
     motorista = _get_motorista(request)
-    if not motorista:
-        return redirect(LOGIN_URL)
 
     abastecimentos = AbastecimentoVeiculo.objects.filter(
         motorista=motorista
@@ -219,8 +191,6 @@ def motorista_historico(request):
 @motorista_login_required
 def motorista_manutencao_list(request):
     motorista = _get_motorista(request)
-    if not motorista:
-        return redirect(LOGIN_URL)
 
     _vehicles_m, _ = _get_vehicles_for_motorista(motorista)
     _vehicle_ids_m = list(_vehicles_m.values_list('pk', flat=True))
@@ -238,9 +208,6 @@ def motorista_manutencao_list(request):
 @motorista_login_required
 def motorista_solicitar_manutencao(request):
     motorista = _get_motorista(request)
-    if not motorista:
-        return redirect(LOGIN_URL)
-
     vehicles_qs, tem_vinculo = _get_vehicles_for_motorista(motorista)
 
     if request.method == 'POST':
@@ -268,8 +235,6 @@ def motorista_solicitar_manutencao(request):
 @motorista_login_required
 def motorista_manutencao_concluir(request, pk):
     motorista = _get_motorista(request)
-    if not motorista:
-        return redirect(LOGIN_URL)
 
     manutencao = get_object_or_404(ManutencaoVeiculo, pk=pk, motorista_solicitante=motorista)
 
@@ -298,11 +263,10 @@ def motorista_manutencao_concluir(request, pk):
 # ORDENS DE COLETA
 # ──────────────────────────────────────────────────────────────────────────────
 
+@motorista_login_required
 def motorista_ordens_coleta(request):
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return redirect(LOGIN_URL)
-    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    motorista = _get_motorista(request)
+    motorista_id = motorista.pk
     from exportacao.models import OrdemColeta
     from datetime import date as _date, timedelta
 
@@ -343,13 +307,11 @@ def motorista_ordens_coleta(request):
     })
 
 
+@motorista_login_required
 def motorista_ordem_coleta_detail(request, pk):
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return redirect(LOGIN_URL)
-    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    motorista = _get_motorista(request)
     from exportacao.models import OrdemColeta
-    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista.pk)
     fotos_count = ordem.fotos.count()
     return render(request, 'cadastros/portal_motorista/ordem_coleta_detail.html', {
         'ordem': ordem,
@@ -359,20 +321,18 @@ def motorista_ordem_coleta_detail(request, pk):
     })
 
 
+@motorista_login_required
 def motorista_ordem_coleta_print(request, pk):
-    """PDF da Ordem de Coleta — autenticação via session do portal."""
+    """PDF da Ordem de Coleta."""
     from datetime import date as _date
     from django.db.models import Q as _Q
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return redirect(LOGIN_URL)
-    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    motorista = _get_motorista(request)
     from exportacao.models import OrdemColeta
     ordem = get_object_or_404(
         OrdemColeta.objects.select_related(
             'booking', 'container', 'transportadora', 'motorista', 'empresa'
         ),
-        pk=pk, motorista_id=motorista_id,
+        pk=pk, motorista_id=motorista.pk,
     )
     placa_principal = ''
     veiculo_principal = ''
@@ -380,7 +340,7 @@ def motorista_ordem_coleta_print(request, pk):
     hoje = _date.today()
     vinculo = (
         MotoristaVinculoPlaca.objects
-        .filter(motorista_id=motorista_id, ativo=True)
+        .filter(motorista_id=motorista.pk, ativo=True)
         .filter(_Q(data_fim__isnull=True) | _Q(data_fim__gte=hoje))
         .select_related('placa_principal__vehicle')
         .prefetch_related('reboques__vehicle')
@@ -407,12 +367,10 @@ def motorista_ordem_coleta_print(request, pk):
     })
 
 
+@motorista_login_required
 def motorista_carta_temperatura(request, pk):
-    """Carta de Temperatura — autenticação via session do portal."""
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return redirect(LOGIN_URL)
-    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    """Carta de Temperatura."""
+    motorista = _get_motorista(request)
     from exportacao.models import OrdemColeta
     ordem = get_object_or_404(
         OrdemColeta.objects.select_related(
@@ -422,7 +380,7 @@ def motorista_carta_temperatura(request, pk):
             'booking__porto_destino',
             'container',
         ),
-        pk=pk, motorista_id=motorista_id,
+        pk=pk, motorista_id=motorista.pk,
     )
     MESES = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -465,26 +423,24 @@ def motorista_carta_temperatura(request, pk):
     })
 
 
+@motorista_login_required
 def motorista_confirmar_coleta(request, pk):
     """POST: muda status PENDENTE → EM_ANDAMENTO."""
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return redirect(LOGIN_URL)
+    motorista = _get_motorista(request)
     from exportacao.models import OrdemColeta
-    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista.pk)
     if request.method == 'POST' and ordem.status == 'PENDENTE':
         ordem.status = 'EM_ANDAMENTO'
         ordem.save(update_fields=['status'])
     return redirect('portal_motorista:ordem_coleta_detail', pk=pk)
 
 
+@motorista_login_required
 def motorista_finalizar_coleta(request, pk):
     """POST: muda status EM_ANDAMENTO → CONCLUIDA."""
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return redirect(LOGIN_URL)
+    motorista = _get_motorista(request)
     from exportacao.models import OrdemColeta
-    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista.pk)
     if request.method == 'POST' and ordem.status == 'EM_ANDAMENTO':
         from datetime import date as _date
         ordem.status = 'CONCLUIDA'
@@ -493,15 +449,12 @@ def motorista_finalizar_coleta(request, pk):
     return redirect('portal_motorista:ordem_coleta_fotos', pk=pk)
 
 
+@motorista_login_required
 def motorista_ordem_coleta_fotos(request, pk):
     """GET: galeria de fotos + formulário de upload. POST: salva nova foto."""
-    from django import forms as _forms
-    motorista_id = request.session.get('motorista_id')
-    if not motorista_id:
-        return redirect(LOGIN_URL)
-    motorista = get_object_or_404(Motorista, pk=motorista_id)
+    motorista = _get_motorista(request)
     from exportacao.models import FotoOrdemColeta, OrdemColeta
-    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista_id)
+    ordem = get_object_or_404(OrdemColeta, pk=pk, motorista_id=motorista.pk)
 
     if request.method == 'POST':
         tipo = request.POST.get('tipo', 'OUTROS')

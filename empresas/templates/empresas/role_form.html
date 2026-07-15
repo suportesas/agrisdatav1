@@ -2,8 +2,7 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
-  <!-- Breadcrumb -->
+<div class="container py-4">
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Início</a></li>
@@ -12,189 +11,137 @@
     </ol>
   </nav>
 
-  <div class="row justify-content-center">
-    <div class="col-xl-8 col-lg-10">
-      <!-- Card Principal -->
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-primary text-white py-3">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-shield-check fs-4 me-2"></i>
-            <div>
-              <h4 class="mb-0">{{ action }} Função</h4>
-              {% if request.user.empresa %}
-              <small class="opacity-75">
-                <i class="bi bi-building"></i> {{ request.user.empresa.nome }}
-              </small>
-              {% else %}
-              <small class="opacity-75">Configure funções e permissões para sua equipe</small>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <div class="card-body p-4">
-          <!-- Alert Multi-tenant -->
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-shield-check"></i></span>
+        <div>
+          <h2>{{ action }} Função</h2>
           {% if request.user.empresa %}
-          <div class="alert alert-primary border-0 d-flex align-items-start mb-4">
-            <i class="bi bi-building fs-5 me-2"></i>
-            <div>
-              <strong>Função exclusiva da sua empresa</strong>
-              <p class="mb-0 small">Esta função será criada apenas para <strong>{{ request.user.empresa.nome }}</strong>. Outras empresas não terão acesso.</p>
-            </div>
-          </div>
+          <p class="text-muted mb-0"><i class="bi bi-building"></i> {{ request.user.empresa.nome }}</p>
+          {% else %}
+          <p class="text-muted mb-0">Configure funções e permissões para sua equipe</p>
           {% endif %}
-          
-          <!-- Alert Informativo -->
-          <div class="alert alert-info border-0 d-flex align-items-start mb-4">
-            <i class="bi bi-info-circle fs-5 me-2"></i>
-            <div>
-              <strong>O que são Funções?</strong>
-              <p class="mb-0 small">Funções definem cargos ou papéis dos usuários no sistema (ex: Gerente, Supervisor, Operador). Após criar a função, você poderá atribuir permissões específicas.</p>
-            </div>
-          </div>
-
-          <form method="post" id="roleForm">
-            {% csrf_token %}
-            
-            <!-- Erros Gerais do Formulário -->
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-              <i class="bi bi-exclamation-triangle me-2"></i>
-              {{ form.non_field_errors }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endif %}
-
-            <!-- Nome da Função -->
-            <div class="mb-4">
-              <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">
-                <i class="bi bi-tag text-primary me-1"></i>
-                {{ form.name.label }}
-                <span class="text-danger">*</span>
-              </label>
-              {{ form.name }}
-              {% if form.name.help_text %}
-              <div class="form-text">
-                <i class="bi bi-lightbulb text-warning"></i> {{ form.name.help_text }}
-              </div>
-              {% endif %}
-              {% if form.name.errors %}
-              <div class="invalid-feedback d-block">
-                <i class="bi bi-x-circle"></i> {{ form.name.errors.0 }}
-              </div>
-              {% endif %}
-            </div>
-
-            <!-- Descrição -->
-            <div class="mb-4">
-              <label for="{{ form.description.id_for_label }}" class="form-label fw-semibold">
-                <i class="bi bi-file-text text-primary me-1"></i>
-                {{ form.description.label }}
-              </label>
-              {{ form.description }}
-              {% if form.description.help_text %}
-              <div class="form-text">
-                <i class="bi bi-lightbulb text-warning"></i> {{ form.description.help_text }}
-              </div>
-              {% endif %}
-              {% if form.description.errors %}
-              <div class="invalid-feedback d-block">
-                <i class="bi bi-x-circle"></i> {{ form.description.errors.0 }}
-              </div>
-              {% endif %}
-            </div>
-
-            <!-- Exemplos de Funções -->
-            <div class="card bg-light border-0 mb-4">
-              <div class="card-body">
-                <h6 class="fw-semibold mb-3">
-                  <i class="bi bi-lightbulb text-warning me-1"></i>
-                  Exemplos de Funções Comuns:
-                </h6>
-                <div class="row g-2">
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Gerente de Compras</strong>
-                      <p class="small text-muted mb-0">Aprovar pedidos, gerenciar fornecedores</p>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Supervisor de Estoque</strong>
-                      <p class="small text-muted mb-0">Controlar movimentações, conferir recebimentos</p>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Operador de Sistema</strong>
-                      <p class="small text-muted mb-0">Visualizar relatórios, consultar dados</p>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Analista Financeiro</strong>
-                      <p class="small text-muted mb-0">Acompanhar pagamentos, gerar relatórios</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Botões de Ação -->
-            <div class="d-flex gap-2 justify-content-between align-items-center pt-3 border-top">
-              <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-              </a>
-              <button type="submit" class="btn btn-primary btn-lg px-4">
-                <i class="bi bi-check-circle"></i> Salvar Função
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Footer do Card -->
-        <div class="card-footer bg-light text-muted small">
-          <i class="bi bi-info-circle"></i>
-          <strong>Próximo passo:</strong> Após salvar, você poderá configurar as permissões específicas desta função.
         </div>
       </div>
+      <div class="form-header-actions">
+        <a href="{% url 'empresas:roles_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
 
-      <!-- Card de Ajuda -->
-      <div class="card border-0 bg-transparent mt-3">
-        <div class="card-body">
-          <div class="alert alert-warning border-0 mb-0">
-            <h6 class="alert-heading">
-              <i class="bi bi-question-circle"></i> Precisa de ajuda?
-            </h6>
-            <ul class="mb-0 small">
-              <li><strong>Nome:</strong> Deve ser descritivo e único para sua empresa</li>
-              <li><strong>Descrição:</strong> Ajuda a entender as responsabilidades da função</li>
-              <li><strong>Permissões:</strong> Serão configuradas após criar a função</li>
-            </ul>
+  {% if request.user.empresa %}
+  <div class="alert alert-primary border-0 d-flex align-items-start mb-3">
+    <i class="bi bi-building fs-5 me-2"></i>
+    <div>
+      <strong>Função exclusiva da sua empresa</strong>
+      <p class="mb-0 small">Esta função será criada apenas para <strong>{{ request.user.empresa.nome }}</strong>. Outras empresas não terão acesso.</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="alert alert-info border-0 d-flex align-items-start mb-4">
+    <i class="bi bi-info-circle fs-5 me-2"></i>
+    <div>
+      <strong>O que são Funções?</strong>
+      <p class="mb-0 small">Funções definem cargos ou papéis dos usuários no sistema (ex: Gerente, Supervisor, Operador). Após criar a função, você poderá atribuir permissões específicas.</p>
+    </div>
+  </div>
+
+  <form method="post" id="roleForm">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      {{ form.non_field_errors }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Dados da Função</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12{% if form.name.errors %} has-error{% endif %}">
+            <label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}<span class="req">*</span></label>
+            {{ form.name }}
+            {% if form.name.help_text %}<div class="helper-note"><i class="bi bi-lightbulb text-warning"></i> {{ form.name.help_text }}</div>{% endif %}
+            {% if form.name.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-12{% if form.description.errors %} has-error{% endif %}">
+            <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+            {{ form.description }}
+            {% if form.description.help_text %}<div class="helper-note"><i class="bi bi-lightbulb text-warning"></i> {{ form.description.help_text }}</div>{% endif %}
+            {% if form.description.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.description.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="form-section-footer">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>Próximo passo:</strong> Após salvar, você poderá configurar as permissões específicas desta função.
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm gray"><i class="bi bi-lightbulb"></i></span>
+        <span class="title">Exemplos de Funções Comuns</span>
+      </div>
+      <div class="form-section-body">
+        <div class="row g-2">
+          <div class="col-md-6">
+            <div class="p-2 bg-white rounded border">
+              <strong class="text-primary">Gerente de Compras</strong>
+              <p class="small text-muted mb-0">Aprovar pedidos, gerenciar fornecedores</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2 bg-white rounded border">
+              <strong class="text-primary">Supervisor de Estoque</strong>
+              <p class="small text-muted mb-0">Controlar movimentações, conferir recebimentos</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2 bg-white rounded border">
+              <strong class="text-primary">Operador de Sistema</strong>
+              <p class="small text-muted mb-0">Visualizar relatórios, consultar dados</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-2 bg-white rounded border">
+              <strong class="text-primary">Analista Financeiro</strong>
+              <p class="small text-muted mb-0">Acompanhar pagamentos, gerar relatórios</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'empresas:roles_list' %}" class="btn btn-outline">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar Função
+      </button>
+    </div>
+  </form>
+
+  <div class="alert alert-warning border-0 mt-3 mb-0">
+    <h6 class="alert-heading">
+      <i class="bi bi-question-circle"></i> Precisa de ajuda?
+    </h6>
+    <ul class="mb-0 small">
+      <li><strong>Nome:</strong> Deve ser descritivo e único para sua empresa</li>
+      <li><strong>Descrição:</strong> Ajuda a entender as responsabilidades da função</li>
+      <li><strong>Permissões:</strong> Serão configuradas após criar a função</li>
+    </ul>
   </div>
 </div>
-
-<style>
-  .form-control:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-  }
-  
-  .card {
-    transition: transform 0.2s;
-  }
-  
-  .btn {
-    transition: all 0.2s;
-  }
-  
-  .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  }
-</style>
 {% endblock %}

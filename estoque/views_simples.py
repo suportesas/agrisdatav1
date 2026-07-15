@@ -73,18 +73,22 @@ def entrada_rapida(request):
                         numero_lote=numero_lote,
                         armazem=local,
                         defaults={
+                            'empresa': request.user.empresa,
+                            'unidade_medida': produto.unidade_medida,
                             'data_fabricacao': timezone.now().date(),
                             'quantidade_inicial': qtd,
                             'quantidade_atual': qtd,
-                            'preco_custo': preco_unit,
+                            'valor_unitario': preco_unit if preco_unit > 0 else None,
                         }
                     )
-                    
+
                     if not created:
-                        # Lote já existe, atualiza quantidade
+                        # Lote já existe, atualiza quantidade e custo do lote
                         lote.quantidade_atual += qtd
+                        if preco_unit and preco_unit > 0:
+                            lote.valor_unitario = preco_unit
                         lote.save()
-                    
+
                     # Criar movimentação de entrada
                     MovimentacaoEstoque.objects.create(
                         empresa=request.user.empresa,
@@ -96,14 +100,6 @@ def entrada_rapida(request):
                         data_movimentacao=timezone.now()
                     )
 
-                    # Atualiza preco de custo do produto com o ultimo valor informado
-                    if preco_unit and preco_unit > 0:
-                        produto.preco_custo = preco_unit
-                        produto.save(update_fields=['preco_custo'])
-
-                    # Recalcula estoque_atual com base nos lotes disponiveis
-                    produto.recalcular_estoque()
-                    
                     total_itens += 1
                 
                 messages.success(

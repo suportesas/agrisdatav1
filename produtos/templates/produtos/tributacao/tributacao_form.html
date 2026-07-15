@@ -1,42 +1,18 @@
 {% extends 'base.html' %}
-
-{% block extra_css %}
-<style>
-  .form-control.is-invalid,
-  .form-select.is-invalid {
-    border-color: #dc3545;
-    padding-right: calc(1.5em + 0.75rem);
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right calc(0.375em + 0.1875rem) center;
-    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
-  }
-  
-  .card-header {
-    background-color: #f8f9fa;
-    font-weight: 600;
-  }
-  
-  #debugAlert {
-    max-height: 400px;
-    overflow-y: auto;
-    border-left: 4px solid #ffc107;
-  }
-  
-  .required-label::after {
-    content: " *";
-    color: #dc3545;
-    font-weight: bold;
-  }
-</style>
-{% endblock %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-3">
-  <h1>{{ action }} Tributação - {{ produto.nome }}</h1>
-  
+<div class="container-fluid py-4">
 
-  
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-receipt"></i></span>
+        <h2>{{ action }} Tributação - {{ produto.nome }}</h2>
+      </div>
+    </div>
+  </div>
+
   {% if form.errors %}
   <div class="alert alert-danger alert-dismissible fade show" role="alert">
     <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>Erro ao salvar!</strong>
@@ -57,44 +33,6 @@
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
   {% endif %}
-  
-  <!-- ══ PAINEL DE PREENCHIMENTO RÁPIDO ══════════════════════════════════ -->
-  <div class="card mb-3 border-0 shadow-sm">
-    <div class="card-header bg-primary text-white fw-semibold d-flex align-items-center justify-content-between">
-      <span><i class="bi bi-lightning-fill me-2"></i>Preenchimento Rápido de Tributos</span>
-      <small class="fw-normal opacity-75">Regime: <strong>{{ regime_tributario_display|default:"—" }}</strong></small>
-    </div>
-    <div class="card-body pb-2">
-
-      <!-- Perfis Fiscais -->
-      <p class="text-muted small mb-2">Clique em um perfil para preencher automaticamente todos os campos de tributos:</p>
-      <div class="d-flex flex-wrap gap-2 mb-3" id="perfisContainer">
-        <!-- gerado pelo JS abaixo -->
-      </div>
-
-      <!-- Copiar de outro produto -->
-      <hr class="my-3">
-      <p class="text-muted small mb-2"><i class="bi bi-files me-1"></i><strong>Copiar tributação de outro produto</strong> — busca e aplica as configurações de um produto já cadastrado:</p>
-      <div class="row g-2 align-items-end">
-        <div class="col-md-5">
-          <input type="text" id="copiarProdutoInput" class="form-control form-control-sm"
-                 placeholder="Digite código ou nome do produto..." autocomplete="off">
-        </div>
-        <div class="col-auto">
-          <button type="button" id="btnBuscarProdutoCopiar" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-search"></i> Buscar
-          </button>
-        </div>
-      </div>
-      <div id="copiarResultados" class="mt-2" style="display:none">
-        <p class="text-muted small mb-1" id="copiarProdutoNome"></p>
-        <div class="list-group list-group-flush border rounded" id="copiarListaTributos"></div>
-      </div>
-      <div id="copiarErro" class="text-danger small mt-1" style="display:none"></div>
-
-    </div>
-  </div>
-  <!-- ══════════════════════════════════════════════════════════════════ -->
 
   <form method="post" id="tributacaoForm">
     {% csrf_token %}
@@ -102,440 +40,486 @@
     <!-- Campo produto hidden -->
     <input type="hidden" name="produto" value="{{ produto.id }}" id="id_produto">
 
-    <div class="card mb-3">
-      <div class="card-header"><strong>Identificação</strong></div>
-      <div class="card-body">
-        <div class="alert alert-info mb-3">
-          <i class="bi bi-box-seam me-2"></i>
-          <strong>Produto:</strong> {{ produto.codigo }} - {{ produto.nome }}
-        </div>
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label for="cfopCodigoInput" class="form-label required-label">{{ form.cfop.label }}</label>
-            <div class="input-group">
-              <input type="text" 
-                id="cfopCodigoInput" 
-                class="form-control" 
-                placeholder="Digite o código CFOP"
-                maxlength="4"
-                style="display: inline-block !important; border: 2px solid #b30000; background: #fffbe6;"
-                value="{{ cfop_codigo }}">
-              <button type="button" 
-                 class="btn btn-primary" 
-                 id="btnBuscarCfop"
-                 style="display: inline-block !important; border: 2px solid #b30000; background: #ffe6e6; color: #b30000; font-weight: bold;">
-                <i class="bi bi-search"></i> Buscar
-              </button>
+    <nav class="section-nav">
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-icms" data-tab="sec-icms">ICMS</a>
+      <a href="#sec-ipi" data-tab="sec-ipi">IPI</a>
+      <a href="#sec-pis-cofins" data-tab="sec-pis-cofins">PIS / COFINS</a>
+      <a href="#sec-ibs-cbs" data-tab="sec-ibs-cbs">IBS/CBS — Reforma Tributária</a>
+      <a href="#sec-outros" data-tab="sec-outros">Outros</a>
+    </nav>
+
+    <div class="complex-layout">
+      <div class="complex-main">
+
+        <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+            <span class="title">Identificação</span>
+          </div>
+          <div class="form-section-body">
+            <div class="alert alert-info mb-3">
+              <i class="bi bi-box-seam me-2"></i>
+              <strong>Produto:</strong> {{ produto.codigo }} - {{ produto.nome }}
             </div>
-            <!-- Descrição do CFOP encontrado -->
-            <div id="cfopDescricao" class="mt-2 d-none">
-              <small class="text-success">
-                <i class="bi bi-check-circle-fill me-1"></i>
-                <strong id="cfopDescricaoTexto"></strong>
-              </small>
-            </div>
-            <!-- Select CFOP oculto (necessário para o formulário) -->
-            <div style="display: none;">
-              {{ form.cfop }}
-            </div>
-            {% if form.cfop.errors %}
-              <div class="invalid-feedback d-block">{{ form.cfop.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Digite o código (ex: 5101)</small>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            <label class="form-label">Natureza da Operação</label>
-            <input type="text" id="id_natureza_operacao_display" class="form-control"
-                   placeholder="Preenchido ao buscar o CFOP" readonly
-                   value="{{ natureza_descricao }}">
-            <small class="form-text text-muted">Preenchido automaticamente pela busca do CFOP</small>
-            <!-- Select oculto para envio do ID -->
-            <div style="display: none;">
-              {{ form.natureza_operacao }}
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <label for="id_descricao" class="form-label">{{ form.descricao.label }}</label>
-            {{ form.descricao }}
-            {% if form.descricao.errors %}
-              <div class="invalid-feedback d-block">{{ form.descricao.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Preenchido automaticamente pela Natureza da Operação</small>
-            {% endif %}
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-12 mb-3">
-            <label for="id_origem_mercadoria" class="form-label required-label">{{ form.origem_mercadoria.label }}</label>
-            {{ form.origem_mercadoria }}
-            {% if form.origem_mercadoria.errors %}
-              <div class="invalid-feedback d-block">{{ form.origem_mercadoria.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Obrigatório para emissão de NF-e - Indica a procedência da mercadoria</small>
-            {% endif %}
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <div class="form-check">
-              {{ form.padrao }} {{ form.padrao.label_tag }}
-            </div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <div class="form-check">
-              {{ form.ativo }} {{ form.ativo.label_tag }}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header"><strong>ICMS</strong></div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-4 mb-3">
-            <label for="id_icms_situacao_tributaria" class="form-label required-label">{{ form.icms_situacao_tributaria.label }}</label>
-            {{ form.icms_situacao_tributaria }}
-            {% if form.icms_situacao_tributaria.errors %}
-              <div class="invalid-feedback d-block">{{ form.icms_situacao_tributaria.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">CST/CSOSN do ICMS</small>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            <label for="id_icms_modalidade_base" class="form-label">{{ form.icms_modalidade_base.label }}</label>
-            {{ form.icms_modalidade_base }}
-            {% if form.icms_modalidade_base.errors %}
-              <div class="invalid-feedback d-block">{{ form.icms_modalidade_base.errors.0 }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            <label for="id_icms_aliquota" class="form-label">{{ form.icms_aliquota.label }}</label>
-            {{ form.icms_aliquota }}
-            {% if form.icms_aliquota.errors %}
-              <div class="invalid-feedback d-block">{{ form.icms_aliquota.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Percentual (0-100)</small>
-            {% endif %}
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="id_icms_reducao_base" class="form-label">{{ form.icms_reducao_base.label }}</label>
-            {{ form.icms_reducao_base }}
-            {% if form.icms_reducao_base.errors %}
-              <div class="invalid-feedback d-block">{{ form.icms_reducao_base.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Percentual (0-100)</small>
-            {% endif %}
-          </div>
-          <div class="col-md-6 mb-3">
-            <label for="id_icms_base_calculo" class="form-label">{{ form.icms_base_calculo.label }}</label>
-            {{ form.icms_base_calculo }}
-            {% if form.icms_base_calculo.errors %}
-              <div class="invalid-feedback d-block">{{ form.icms_base_calculo.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Percentual (0-100)</small>
-            {% endif %}
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="id_icms_percentual_diferimento" class="form-label">{{ form.icms_percentual_diferimento.label }}</label>
-            {{ form.icms_percentual_diferimento }}
-            {% if form.icms_percentual_diferimento.errors %}
-              <div class="invalid-feedback d-block">{{ form.icms_percentual_diferimento.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">CST 51 — use 100 para diferimento total</small>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header"><strong>IPI</strong></div>
-      <div class="card-body">
-        <small class="text-muted d-block mb-2">
-          Fora do escopo desta fazenda: commodities agrícolas não são produtos
-          industrializados. CST 53/55 (únicos disponíveis) são sempre
-          não-tributada/suspensão, nunca com alíquota.
-        </small>
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label for="id_ipi_situacao_tributaria" class="form-label">{{ form.ipi_situacao_tributaria.label }}</label>
-            {{ form.ipi_situacao_tributaria }}
-            {% if form.ipi_situacao_tributaria.errors %}
-              <div class="invalid-feedback d-block">{{ form.ipi_situacao_tributaria.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">CST do IPI</small>
-            {% endif %}
-          </div>
-          <div class="col-md-6 mb-3">
-            <label for="id_ipi_codigo_enquadramento" class="form-label">{{ form.ipi_codigo_enquadramento.label }}</label>
-            {{ form.ipi_codigo_enquadramento }}
-            {% if form.ipi_codigo_enquadramento.errors %}
-              <div class="invalid-feedback d-block">{{ form.ipi_codigo_enquadramento.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Ex: 999</small>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- datalist compartilhado para Natureza da Receita -->
-    <datalist id="natureza-receita-list">
-      <option value="001">001 - Receita de Exportação</option>
-      <option value="002">002 - Receita de Serviços Prestados a Pessoa Jurídica do Exterior</option>
-      <option value="003">003 - Receita de Frete Internacional</option>
-      <option value="004">004 - Receita de Seguros em Exportações</option>
-      <option value="005">005 - Receita de Juros sobre o Capital Próprio</option>
-      <option value="006">006 - Receita de Dividendos</option>
-      <option value="007">007 - Receita de Arrendamento Mercantil</option>
-      <option value="008">008 - Receita de Venda de Participações Societárias</option>
-      <option value="009">009 - Receita de Vendas a Órgãos Públicos</option>
-      <option value="010">010 - Receita de Pesquisa e Lavra de Petróleo/Gás</option>
-      <option value="013">013 - Receita de Livros, Jornais e Periódicos</option>
-      <option value="014">014 - Receita de Energia Elétrica</option>
-      <option value="015">015 - Receita de Combustíveis e Lubrificantes</option>
-      <option value="016">016 - Receita de Produtos Farmacêuticos</option>
-      <option value="017">017 - Receita de Higiene, Cosméticos e Perfumaria</option>
-      <option value="018">018 - Receita de Máquinas, Tratores e Veículos</option>
-      <option value="019">019 - Receita de Pneumáticos</option>
-      <option value="020">020 - Receita de Auto-peças</option>
-      <option value="021">021 - Receita de Embarcações</option>
-      <option value="022">022 - Receita de Aeronaves</option>
-      <option value="024">024 - Receita de Bebidas Frias</option>
-      <option value="026">026 - Receita de Álcool Hidratado</option>
-      <option value="032">032 - Receita de Insumos para Produtos Agropecuários</option>
-      <option value="033">033 - Receita de Bens de Capital</option>
-      <option value="034">034 - Receita de Beneficiamento de Produtos Agrícolas</option>
-      <option value="101">101 - Receita de Produtos a Alíquota Zero</option>
-      <option value="102">102 - Receita Financeira</option>
-      <option value="106">106 - Receita de Venda de Animais</option>
-      <option value="107">107 - Receita de Venda de Produtos Agrícolas</option>
-      <option value="108">108 - Receita de Produtos Aquícolas</option>
-      <option value="109">109 - Receita de Insumos para Agropecuária</option>
-      <option value="113">113 - Receita de Transporte Rodoviário de Cargas</option>
-      <option value="115">115 - Bebidas frias</option>
-      <option value="116">116 - Produtos hortícolas e frutas</option>
-      <option value="117">117 - Querosene de Aviação</option>
-      <option value="999">999 - Outras Receitas</option>
-    </datalist>
-
-    <div class="card mb-3">
-      <div class="card-header"><strong>PIS / COFINS</strong></div>
-      <div class="card-body">
-        <!-- PIS -->
-        <div class="row align-items-end">
-          <div class="col-md-3 mb-3">
-            <label for="id_pis_situacao_tributaria" class="form-label required-label">{{ form.pis_situacao_tributaria.label }}</label>
-            {{ form.pis_situacao_tributaria }}
-            {% if form.pis_situacao_tributaria.errors %}
-              <div class="invalid-feedback d-block">{{ form.pis_situacao_tributaria.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">CST do PIS</small>
-            {% endif %}
-          </div>
-          <div class="col-md-3 mb-3">
-            <label for="id_pis_aliquota" class="form-label">{{ form.pis_aliquota.label }}</label>
-            {{ form.pis_aliquota }}
-            {% if form.pis_aliquota.errors %}
-              <div class="invalid-feedback d-block">{{ form.pis_aliquota.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Percentual (0-100)</small>
-            {% endif %}
-          </div>
-          <div class="col-md-3 mb-3">
-            <label for="id_pis_base_calculo" class="form-label">{{ form.pis_base_calculo.label }}</label>
-            {{ form.pis_base_calculo }}
-            {% if form.pis_base_calculo.errors %}
-              <div class="invalid-feedback d-block">{{ form.pis_base_calculo.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Percentual (0-100)</small>
-            {% endif %}
-          </div>
-          <div class="col-md-3 mb-3" id="wrap-natureza-pis" style="display:none;">
-            <label for="id_natureza_receita_pis" class="form-label">
-              {{ form.natureza_receita_pis.label }}
-              <i class="bi bi-info-circle text-muted" title="Obrigatório para CST 04-09, 49, 99. Digite o código ou busque na lista."></i>
-            </label>
-            {{ form.natureza_receita_pis }}
-            <small class="form-text text-muted">Código 3 dígitos (ex: 116)</small>
-          </div>
-        </div>
-
-        <hr class="my-2">
-
-        <!-- COFINS -->
-        <div class="row align-items-end">
-          <div class="col-md-3 mb-3">
-            <label for="id_cofins_situacao_tributaria" class="form-label required-label">{{ form.cofins_situacao_tributaria.label }}</label>
-            {{ form.cofins_situacao_tributaria }}
-            {% if form.cofins_situacao_tributaria.errors %}
-              <div class="invalid-feedback d-block">{{ form.cofins_situacao_tributaria.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">CST do COFINS</small>
-            {% endif %}
-          </div>
-          <div class="col-md-3 mb-3">
-            <label for="id_cofins_aliquota" class="form-label">{{ form.cofins_aliquota.label }}</label>
-            {{ form.cofins_aliquota }}
-            {% if form.cofins_aliquota.errors %}
-              <div class="invalid-feedback d-block">{{ form.cofins_aliquota.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Percentual (0-100)</small>
-            {% endif %}
-          </div>
-          <div class="col-md-3 mb-3">
-            <label for="id_cofins_base_calculo" class="form-label">{{ form.cofins_base_calculo.label }}</label>
-            {{ form.cofins_base_calculo }}
-            {% if form.cofins_base_calculo.errors %}
-              <div class="invalid-feedback d-block">{{ form.cofins_base_calculo.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">Percentual (0-100)</small>
-            {% endif %}
-          </div>
-          <div class="col-md-3 mb-3" id="wrap-natureza-cofins" style="display:none;">
-            <label for="id_natureza_receita_cofins" class="form-label">
-              {{ form.natureza_receita_cofins.label }}
-              <i class="bi bi-info-circle text-muted" title="Obrigatório para CST 04-09, 49, 99. Digite o código ou busque na lista."></i>
-            </label>
-            {{ form.natureza_receita_cofins }}
-            <small class="form-text text-muted">Código 3 dígitos (ex: 116)</small>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header"><strong>IBS/CBS — Reforma Tributária</strong></div>
-      <div class="card-body">
-        <div class="row align-items-end mb-2">
-          <div class="col-md-4 mb-3">
-            <label for="id_ibs_cbs_situacao_tributaria" class="form-label">{{ form.ibs_cbs_situacao_tributaria.label }}</label>
-            {{ form.ibs_cbs_situacao_tributaria }}
-            {% if form.ibs_cbs_situacao_tributaria.errors %}
-              <div class="invalid-feedback d-block">{{ form.ibs_cbs_situacao_tributaria.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">CST da Reforma Tributária</small>
-            {% endif %}
-          </div>
-          <div class="col-md-4 mb-3">
-            <label for="id_ibs_cbs_classificacao_tributaria" class="form-label">{{ form.ibs_cbs_classificacao_tributaria.label }}</label>
-            {{ form.ibs_cbs_classificacao_tributaria }}
-            {% if form.ibs_cbs_classificacao_tributaria.errors %}
-              <div class="invalid-feedback d-block">{{ form.ibs_cbs_classificacao_tributaria.errors.0 }}</div>
-            {% else %}
-              <small class="form-text text-muted">cClassTrib — depende do CST acima</small>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Divisão clara IBS x CBS — cada tributo tem sua própria alíquota,
-             redução e diferimento (podem ter percentuais diferentes). -->
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <div class="border rounded p-2 h-100">
-              <div class="fw-semibold text-primary mb-2">IBS</div>
-              <div class="row">
-                <div class="col-6 mb-2">
-                  <label for="id_ibs_cbs_aliquota_uf" class="form-label small">{{ form.ibs_cbs_aliquota_uf.label }}</label>
-                  {{ form.ibs_cbs_aliquota_uf }}
+            <div class="form-grid">
+              <div class="field col-4">
+                <label for="cfopCodigoInput" class="form-label">{{ form.cfop.label }}<span class="req">*</span></label>
+                <div class="input-group">
+                  <input type="text"
+                    id="cfopCodigoInput"
+                    class="form-control"
+                    placeholder="Digite o código CFOP"
+                    maxlength="4"
+                    value="{{ cfop_codigo }}">
+                  <button type="button"
+                     class="btn btn-outline-primary"
+                     id="btnBuscarCfop">
+                    <i class="bi bi-search"></i> Buscar
+                  </button>
                 </div>
-                <div class="col-6 mb-2">
-                  <label for="id_ibs_cbs_aliquota_municipal" class="form-label small">{{ form.ibs_cbs_aliquota_municipal.label }}</label>
-                  {{ form.ibs_cbs_aliquota_municipal }}
+                <!-- Descrição do CFOP encontrado -->
+                <div id="cfopDescricao" class="mt-2 d-none">
+                  <small class="text-success">
+                    <i class="bi bi-check-circle-fill me-1"></i>
+                    <strong id="cfopDescricaoTexto"></strong>
+                  </small>
                 </div>
-                <div class="col-6 mb-2">
-                  <label for="id_ibs_percentual_reducao" class="form-label small">{{ form.ibs_percentual_reducao.label }}</label>
-                  {{ form.ibs_percentual_reducao }}
-                  <small class="form-text text-muted">CST 200/515</small>
+                <!-- Select CFOP oculto (necessário para o formulário) -->
+                <div style="display: none;">
+                  {{ form.cfop }}
                 </div>
-                <div class="col-6 mb-2">
-                  <label for="id_ibs_percentual_diferimento" class="form-label small">{{ form.ibs_percentual_diferimento.label }}</label>
-                  {{ form.ibs_percentual_diferimento }}
-                  <small class="form-text text-muted">CST 515 — 100 = total</small>
+                {% if form.cfop.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cfop.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Digite o código (ex: 5101)</div>
+                {% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Natureza da Operação</label>
+                <input type="text" id="id_natureza_operacao_display" class="form-control"
+                       placeholder="Preenchido ao buscar o CFOP" readonly
+                       value="{{ natureza_descricao }}">
+                <div class="helper-note">Preenchido automaticamente pela busca do CFOP</div>
+                <!-- Select oculto para envio do ID -->
+                <div style="display: none;">
+                  {{ form.natureza_operacao }}
                 </div>
               </div>
-            </div>
-          </div>
-          <div class="col-md-6 mb-3">
-            <div class="border rounded p-2 h-100">
-              <div class="fw-semibold text-primary mb-2">CBS</div>
-              <div class="row">
-                <div class="col-6 mb-2">
-                  <label for="id_ibs_cbs_aliquota_cbs" class="form-label small">{{ form.ibs_cbs_aliquota_cbs.label }}</label>
-                  {{ form.ibs_cbs_aliquota_cbs }}
+              <div class="field col-4">
+                <label for="id_descricao" class="form-label">{{ form.descricao.label }}</label>
+                {{ form.descricao }}
+                {% if form.descricao.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.descricao.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Preenchido automaticamente pela Natureza da Operação</div>
+                {% endif %}
+              </div>
+              <div class="field col-12">
+                <label for="id_origem_mercadoria" class="form-label">{{ form.origem_mercadoria.label }}<span class="req">*</span></label>
+                {{ form.origem_mercadoria }}
+                {% if form.origem_mercadoria.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.origem_mercadoria.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Obrigatório para emissão de NF-e - Indica a procedência da mercadoria</div>
+                {% endif %}
+              </div>
+              <div class="field col-6">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.padrao }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.padrao.id_for_label }}">{{ form.padrao.label }}</label>
                 </div>
-                <div class="col-6 mb-2"></div>
-                <div class="col-6 mb-2">
-                  <label for="id_cbs_percentual_reducao" class="form-label small">{{ form.cbs_percentual_reducao.label }}</label>
-                  {{ form.cbs_percentual_reducao }}
-                  <small class="form-text text-muted">CST 200/515</small>
-                </div>
-                <div class="col-6 mb-2">
-                  <label for="id_cbs_percentual_diferimento" class="form-label small">{{ form.cbs_percentual_diferimento.label }}</label>
-                  {{ form.cbs_percentual_diferimento }}
-                  <small class="form-text text-muted">CST 515 — 100 = total</small>
+              </div>
+              <div class="field col-6">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativo }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }}</label>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <small class="text-muted d-block mb-1">
-          Crédito presumido da Reforma Tributária (gCredPresOper) — mecanismo do
-          <em>comprador</em>, diferente de eventual crédito presumido estadual de ICMS.
-        </small>
-        <div class="row align-items-end">
-          <div class="col-md-3 mb-3">
-            <label for="id_ibs_cbs_credito_presumido_codigo" class="form-label">{{ form.ibs_cbs_credito_presumido_codigo.label }}</label>
-            {{ form.ibs_cbs_credito_presumido_codigo }}
-            <small class="form-text text-muted">gCredPresOper</small>
+        <div class="form-section" id="sec-icms" data-tab-panel="sec-icms">
+          <div class="form-section-header">
+            <span class="icon-badge sm green"><i class="bi bi-cash-coin"></i></span>
+            <span class="title">ICMS</span>
           </div>
-          <div class="col-md-3 mb-3">
-            <label for="id_ibs_cbs_credito_presumido_percentual" class="form-label">{{ form.ibs_cbs_credito_presumido_percentual.label }}</label>
-            {{ form.ibs_cbs_credito_presumido_percentual }}
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label for="id_icms_situacao_tributaria" class="form-label">{{ form.icms_situacao_tributaria.label }}<span class="req">*</span></label>
+                {{ form.icms_situacao_tributaria }}
+                {% if form.icms_situacao_tributaria.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_situacao_tributaria.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">CST/CSOSN do ICMS</div>
+                {% endif %}
+              </div>
+              <div class="field col-4">
+                <label for="id_icms_modalidade_base" class="form-label">{{ form.icms_modalidade_base.label }}</label>
+                {{ form.icms_modalidade_base }}
+                {% if form.icms_modalidade_base.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_modalidade_base.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label for="id_icms_aliquota" class="form-label">{{ form.icms_aliquota.label }}</label>
+                {{ form.icms_aliquota }}
+                {% if form.icms_aliquota.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_aliquota.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-6">
+                <label for="id_icms_reducao_base" class="form-label">{{ form.icms_reducao_base.label }}</label>
+                {{ form.icms_reducao_base }}
+                {% if form.icms_reducao_base.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_reducao_base.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-6">
+                <label for="id_icms_base_calculo" class="form-label">{{ form.icms_base_calculo.label }}</label>
+                {{ form.icms_base_calculo }}
+                {% if form.icms_base_calculo.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_base_calculo.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-6">
+                <label for="id_icms_percentual_diferimento" class="form-label">{{ form.icms_percentual_diferimento.label }}</label>
+                {{ form.icms_percentual_diferimento }}
+                {% if form.icms_percentual_diferimento.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_percentual_diferimento.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">CST 51 — use 100 para diferimento total</div>
+                {% endif %}
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div class="form-section" id="sec-ipi" data-tab-panel="sec-ipi">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-boxes"></i></span>
+            <span class="title">IPI</span>
+          </div>
+          <div class="form-section-body">
+            <p class="text-muted small mb-3">
+              Fora do escopo desta fazenda: commodities agrícolas não são produtos
+              industrializados. CST 53/55 (únicos disponíveis) são sempre
+              não-tributada/suspensão, nunca com alíquota.
+            </p>
+            <div class="form-grid">
+              <div class="field col-6">
+                <label for="id_ipi_situacao_tributaria" class="form-label">{{ form.ipi_situacao_tributaria.label }}</label>
+                {{ form.ipi_situacao_tributaria }}
+                {% if form.ipi_situacao_tributaria.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ipi_situacao_tributaria.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">CST do IPI</div>
+                {% endif %}
+              </div>
+              <div class="field col-6">
+                <label for="id_ipi_codigo_enquadramento" class="form-label">{{ form.ipi_codigo_enquadramento.label }}</label>
+                {{ form.ipi_codigo_enquadramento }}
+                {% if form.ipi_codigo_enquadramento.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ipi_codigo_enquadramento.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Ex: 999</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- datalist compartilhado para Natureza da Receita -->
+        <datalist id="natureza-receita-list">
+          <option value="001">001 - Receita de Exportação</option>
+          <option value="002">002 - Receita de Serviços Prestados a Pessoa Jurídica do Exterior</option>
+          <option value="003">003 - Receita de Frete Internacional</option>
+          <option value="004">004 - Receita de Seguros em Exportações</option>
+          <option value="005">005 - Receita de Juros sobre o Capital Próprio</option>
+          <option value="006">006 - Receita de Dividendos</option>
+          <option value="007">007 - Receita de Arrendamento Mercantil</option>
+          <option value="008">008 - Receita de Venda de Participações Societárias</option>
+          <option value="009">009 - Receita de Vendas a Órgãos Públicos</option>
+          <option value="010">010 - Receita de Pesquisa e Lavra de Petróleo/Gás</option>
+          <option value="013">013 - Receita de Livros, Jornais e Periódicos</option>
+          <option value="014">014 - Receita de Energia Elétrica</option>
+          <option value="015">015 - Receita de Combustíveis e Lubrificantes</option>
+          <option value="016">016 - Receita de Produtos Farmacêuticos</option>
+          <option value="017">017 - Receita de Higiene, Cosméticos e Perfumaria</option>
+          <option value="018">018 - Receita de Máquinas, Tratores e Veículos</option>
+          <option value="019">019 - Receita de Pneumáticos</option>
+          <option value="020">020 - Receita de Auto-peças</option>
+          <option value="021">021 - Receita de Embarcações</option>
+          <option value="022">022 - Receita de Aeronaves</option>
+          <option value="024">024 - Receita de Bebidas Frias</option>
+          <option value="026">026 - Receita de Álcool Hidratado</option>
+          <option value="032">032 - Receita de Insumos para Produtos Agropecuários</option>
+          <option value="033">033 - Receita de Bens de Capital</option>
+          <option value="034">034 - Receita de Beneficiamento de Produtos Agrícolas</option>
+          <option value="101">101 - Receita de Produtos a Alíquota Zero</option>
+          <option value="102">102 - Receita Financeira</option>
+          <option value="106">106 - Receita de Venda de Animais</option>
+          <option value="107">107 - Receita de Venda de Produtos Agrícolas</option>
+          <option value="108">108 - Receita de Produtos Aquícolas</option>
+          <option value="109">109 - Receita de Insumos para Agropecuária</option>
+          <option value="113">113 - Receita de Transporte Rodoviário de Cargas</option>
+          <option value="115">115 - Bebidas frias</option>
+          <option value="116">116 - Produtos hortícolas e frutas</option>
+          <option value="117">117 - Querosene de Aviação</option>
+          <option value="999">999 - Outras Receitas</option>
+        </datalist>
+
+        <div class="form-section" id="sec-pis-cofins" data-tab-panel="sec-pis-cofins">
+          <div class="form-section-header">
+            <span class="icon-badge sm blue"><i class="bi bi-percent"></i></span>
+            <span class="title">PIS / COFINS</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-3">
+                <label for="id_pis_situacao_tributaria" class="form-label">{{ form.pis_situacao_tributaria.label }}<span class="req">*</span></label>
+                {{ form.pis_situacao_tributaria }}
+                {% if form.pis_situacao_tributaria.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.pis_situacao_tributaria.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">CST do PIS</div>
+                {% endif %}
+              </div>
+              <div class="field col-3">
+                <label for="id_pis_aliquota" class="form-label">{{ form.pis_aliquota.label }}</label>
+                {{ form.pis_aliquota }}
+                {% if form.pis_aliquota.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.pis_aliquota.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-3">
+                <label for="id_pis_base_calculo" class="form-label">{{ form.pis_base_calculo.label }}</label>
+                {{ form.pis_base_calculo }}
+                {% if form.pis_base_calculo.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.pis_base_calculo.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-3" id="wrap-natureza-pis" style="display:none;">
+                <label for="id_natureza_receita_pis" class="form-label">
+                  {{ form.natureza_receita_pis.label }}
+                  <i class="bi bi-info-circle text-muted" title="Obrigatório para CST 04-09, 49, 99. Digite o código ou busque na lista."></i>
+                </label>
+                {{ form.natureza_receita_pis }}
+                <div class="helper-note">Código 3 dígitos (ex: 116)</div>
+              </div>
+
+              <div class="field col-3">
+                <label for="id_cofins_situacao_tributaria" class="form-label">{{ form.cofins_situacao_tributaria.label }}<span class="req">*</span></label>
+                {{ form.cofins_situacao_tributaria }}
+                {% if form.cofins_situacao_tributaria.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cofins_situacao_tributaria.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">CST do COFINS</div>
+                {% endif %}
+              </div>
+              <div class="field col-3">
+                <label for="id_cofins_aliquota" class="form-label">{{ form.cofins_aliquota.label }}</label>
+                {{ form.cofins_aliquota }}
+                {% if form.cofins_aliquota.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cofins_aliquota.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-3">
+                <label for="id_cofins_base_calculo" class="form-label">{{ form.cofins_base_calculo.label }}</label>
+                {{ form.cofins_base_calculo }}
+                {% if form.cofins_base_calculo.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cofins_base_calculo.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-3" id="wrap-natureza-cofins" style="display:none;">
+                <label for="id_natureza_receita_cofins" class="form-label">
+                  {{ form.natureza_receita_cofins.label }}
+                  <i class="bi bi-info-circle text-muted" title="Obrigatório para CST 04-09, 49, 99. Digite o código ou busque na lista."></i>
+                </label>
+                {{ form.natureza_receita_cofins }}
+                <div class="helper-note">Código 3 dígitos (ex: 116)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-ibs-cbs" data-tab-panel="sec-ibs-cbs">
+          <div class="form-section-header">
+            <span class="icon-badge sm gray"><i class="bi bi-bank2"></i></span>
+            <span class="title">IBS/CBS — Reforma Tributária</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <label for="id_ibs_cbs_situacao_tributaria" class="form-label">{{ form.ibs_cbs_situacao_tributaria.label }}</label>
+                {{ form.ibs_cbs_situacao_tributaria }}
+                {% if form.ibs_cbs_situacao_tributaria.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ibs_cbs_situacao_tributaria.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">CST da Reforma Tributária</div>
+                {% endif %}
+              </div>
+              <div class="field col-6">
+                <label for="id_ibs_cbs_classificacao_tributaria" class="form-label">{{ form.ibs_cbs_classificacao_tributaria.label }}</label>
+                {{ form.ibs_cbs_classificacao_tributaria }}
+                {% if form.ibs_cbs_classificacao_tributaria.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ibs_cbs_classificacao_tributaria.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">cClassTrib — depende do CST acima</div>
+                {% endif %}
+              </div>
+
+              <div class="field col-6">
+                <div class="border rounded p-2 h-100">
+                  <div class="fw-semibold text-primary mb-2">IBS</div>
+                  <div class="row">
+                    <div class="col-6 mb-2">
+                      <label for="id_ibs_cbs_aliquota_uf" class="form-label small">{{ form.ibs_cbs_aliquota_uf.label }}</label>
+                      {{ form.ibs_cbs_aliquota_uf }}
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label for="id_ibs_cbs_aliquota_municipal" class="form-label small">{{ form.ibs_cbs_aliquota_municipal.label }}</label>
+                      {{ form.ibs_cbs_aliquota_municipal }}
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label for="id_ibs_percentual_reducao" class="form-label small">{{ form.ibs_percentual_reducao.label }}</label>
+                      {{ form.ibs_percentual_reducao }}
+                      <small class="form-text text-muted">CST 200/515</small>
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label for="id_ibs_percentual_diferimento" class="form-label small">{{ form.ibs_percentual_diferimento.label }}</label>
+                      {{ form.ibs_percentual_diferimento }}
+                      <small class="form-text text-muted">CST 515 — 100 = total</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="field col-6">
+                <div class="border rounded p-2 h-100">
+                  <div class="fw-semibold text-primary mb-2">CBS</div>
+                  <div class="row">
+                    <div class="col-6 mb-2">
+                      <label for="id_ibs_cbs_aliquota_cbs" class="form-label small">{{ form.ibs_cbs_aliquota_cbs.label }}</label>
+                      {{ form.ibs_cbs_aliquota_cbs }}
+                    </div>
+                    <div class="col-6 mb-2"></div>
+                    <div class="col-6 mb-2">
+                      <label for="id_cbs_percentual_reducao" class="form-label small">{{ form.cbs_percentual_reducao.label }}</label>
+                      {{ form.cbs_percentual_reducao }}
+                      <small class="form-text text-muted">CST 200/515</small>
+                    </div>
+                    <div class="col-6 mb-2">
+                      <label for="id_cbs_percentual_diferimento" class="form-label small">{{ form.cbs_percentual_diferimento.label }}</label>
+                      {{ form.cbs_percentual_diferimento }}
+                      <small class="form-text text-muted">CST 515 — 100 = total</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field col-12">
+                <p class="text-muted small mb-2">
+                  Crédito presumido da Reforma Tributária (gCredPresOper) — mecanismo do
+                  <em>comprador</em>, diferente de eventual crédito presumido estadual de ICMS.
+                </p>
+              </div>
+              <div class="field col-3">
+                <label for="id_ibs_cbs_credito_presumido_codigo" class="form-label">{{ form.ibs_cbs_credito_presumido_codigo.label }}</label>
+                {{ form.ibs_cbs_credito_presumido_codigo }}
+                <div class="helper-note">gCredPresOper</div>
+              </div>
+              <div class="field col-3">
+                <label for="id_ibs_cbs_credito_presumido_percentual" class="form-label">{{ form.ibs_cbs_credito_presumido_percentual.label }}</label>
+                {{ form.ibs_cbs_credito_presumido_percentual }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-outros" data-tab-panel="sec-outros">
+          <div class="form-section-header">
+            <span class="icon-badge sm gray"><i class="bi bi-three-dots"></i></span>
+            <span class="title">Outros</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <label for="id_beneficio_fiscal" class="form-label">{{ form.beneficio_fiscal.label }}</label>
+                {{ form.beneficio_fiscal }}
+                {% if form.beneficio_fiscal.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.beneficio_fiscal.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Código de benefício fiscal, se aplicável</div>
+                {% endif %}
+              </div>
+              <div class="field col-12">
+                <label for="id_observacoes" class="form-label">{{ form.observacoes.label }}</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Informações complementares sobre a tributação</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4><i class="bi bi-lightning-fill"></i> Preenchimento Rápido</h4>
+          <p class="small text-muted mb-1">Regime: <strong>{{ regime_tributario_display|default:"—" }}</strong></p>
+
+          <p class="text-muted small mb-2">Clique em um perfil para preencher automaticamente todos os campos de tributos:</p>
+          <div class="d-flex flex-wrap gap-2 mb-3" id="perfisContainer">
+            <!-- gerado pelo JS abaixo -->
+          </div>
+
+          <hr class="my-3">
+          <p class="text-muted small mb-2"><i class="bi bi-files me-1"></i><strong>Copiar tributação de outro produto</strong></p>
+          <div class="d-flex gap-2 mb-2">
+            <input type="text" id="copiarProdutoInput" class="form-control form-control-sm"
+                   placeholder="Código ou nome..." autocomplete="off">
+            <button type="button" id="btnBuscarProdutoCopiar" class="btn btn-outline-secondary btn-sm">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+          <div id="copiarResultados" style="display:none">
+            <p class="text-muted small mb-1" id="copiarProdutoNome"></p>
+            <div class="list-group list-group-flush border rounded" id="copiarListaTributos"></div>
+          </div>
+          <div id="copiarErro" class="text-danger small mt-1" style="display:none"></div>
         </div>
       </div>
     </div>
 
-    <div class="card mb-3">
-      <div class="card-header"><strong>Outros</strong></div>
-      <div class="card-body">
-        <div class="mb-3">
-          <label for="id_beneficio_fiscal" class="form-label">{{ form.beneficio_fiscal.label }}</label>
-          {{ form.beneficio_fiscal }}
-          {% if form.beneficio_fiscal.errors %}
-            <div class="invalid-feedback d-block">{{ form.beneficio_fiscal.errors.0 }}</div>
-          {% else %}
-            <small class="form-text text-muted">Código de benefício fiscal, se aplicável</small>
-          {% endif %}
-        </div>
-        <div class="mb-3">
-          <label for="id_observacoes" class="form-label">{{ form.observacoes.label }}</label>
-          {{ form.observacoes }}
-          {% if form.observacoes.errors %}
-            <div class="invalid-feedback d-block">{{ form.observacoes.errors.0 }}</div>
-          {% else %}
-            <small class="form-text text-muted">Informações complementares sobre a tributação</small>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-
-    <div class="mt-3">
+    <div class="app-footer-bar">
+      <a href="{% url 'produtos:produto_detail' produto.pk %}" class="btn btn-outline">Cancelar</a>
       <button type="submit" class="btn btn-primary" id="btnSalvarTributacao">
-        <i class="bi bi-save me-1"></i>Salvar Tributação
+        <i class="bi bi-save"></i> Salvar Tributação
       </button>
-      <a href="{% url 'produtos:produto_detail' produto.pk %}" class="btn btn-secondary ms-2">
-        <i class="bi bi-x-circle me-1"></i>Cancelar
-      </a>
     </div>
   </form>
 </div>
@@ -546,7 +530,11 @@
   <hr>
   <div id="debugContent" style="font-family: monospace; font-size: 0.9em;"></div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const naturezaSelect = document.querySelector('select[name="natureza_operacao"]');
@@ -563,7 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnSalvar = document.getElementById('btnSalvarTributacao');
     const debugAlert = document.getElementById('debugAlert');
     const debugContent = document.getElementById('debugContent');
-    
+
     // Função para adicionar log de debug
     function logDebug(message, type = 'info') {
         const timestamp = new Date().toLocaleTimeString();
@@ -574,18 +562,18 @@ document.addEventListener('DOMContentLoaded', function() {
             'error': '❌'
         };
         const icon = icons[type] || 'ℹ️';
-        
+
         console.log(`[${timestamp}] ${icon} ${message}`);
         debugContent.innerHTML += `<div class="mb-1"><strong>[${timestamp}]</strong> ${icon} ${message}</div>`;
         debugAlert.classList.remove('d-none');
     }
-    
+
     // Validar formulário antes de submeter
     tributacaoForm.addEventListener('submit', function(e) {
         logDebug('Formulário sendo enviado...', 'info');
-        
+
         const formData = new FormData(tributacaoForm);
-        
+
         // Log dos campos obrigatórios
         const camposObrigatorios = [
             { name: 'produto', label: 'Produto' },
@@ -595,15 +583,15 @@ document.addEventListener('DOMContentLoaded', function() {
             { name: 'pis_situacao_tributaria', label: 'PIS - Situação Tributária' },
             { name: 'cofins_situacao_tributaria', label: 'COFINS - Situação Tributária' }
         ];
-        
+
         let temErro = false;
-        
+
         camposObrigatorios.forEach(campo => {
             const valor = formData.get(campo.name);
             if (!valor || valor.trim() === '') {
                 logDebug(`❌ ${campo.label}: VAZIO`, 'error');
                 temErro = true;
-                
+
                 // Destacar o campo com erro
                 const input = tributacaoForm.querySelector(`[name="${campo.name}"]`);
                 if (input) {
@@ -613,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 logDebug(`✓ ${campo.label}: ${valor}`, 'success');
             }
         });
-        
+
         // Se houver erro, impedir envio
         if (temErro) {
             e.preventDefault();
@@ -621,15 +609,15 @@ document.addEventListener('DOMContentLoaded', function() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return false;
         }
-        
+
         // Desabilitar botão para evitar double-submit
         btnSalvar.disabled = true;
         btnSalvar.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Salvando...';
-        
+
         logDebug('✅ Validação OK - Enviando formulário...', 'success');
         // Deixar o formulário submeter normalmente
     });
-    
+
     // Remover classe de erro ao corrigir campo
     const inputs = tributacaoForm.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
@@ -637,7 +625,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.remove('is-invalid');
         });
     });
-    
+
     // ========================================
     // BUSCA DE CFOP
     // ========================================
@@ -646,7 +634,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cfopSelect = document.getElementById('id_cfop');
     const cfopDescricao = document.getElementById('cfopDescricao');
     const cfopDescricaoTexto = document.getElementById('cfopDescricaoTexto');
-    
+
     // Buscar CFOP ao clicar no botão
     if (btnBuscarCfop && cfopCodigoInput) {
         btnBuscarCfop.addEventListener('click', function() {
@@ -731,7 +719,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // O campo agora é input texto e será preenchido pela busca do CFOP
 });
 </script>
-
 <script>
 // ══ PERFIS FISCAIS E COPIAR TRIBUTAÇÃO ══════════════════════════════════════
 (function () {
@@ -915,7 +902,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       })
       .catch(() => { divErro.textContent = 'Erro na busca.'; divErro.style.display = ''; })
-      .finally(() => { btnCopiar.disabled = false; btnCopiar.innerHTML = '<i class="bi bi-search"></i> Buscar'; });
+      .finally(() => { btnCopiar.disabled = false; btnCopiar.innerHTML = '<i class="bi bi-search"></i>'; });
   }
 
   function carregarTributacoes(prodId, prodNome) {
@@ -986,7 +973,6 @@ document.addEventListener('DOMContentLoaded', function() {
   inputCopiar.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); buscarProdutos(); } });
 })();
 </script>
-
 <script>
 // ── Natureza da Receita PIS/COFINS — show/hide por CST ───────────────────────
 (function () {
@@ -1014,7 +1000,6 @@ document.addEventListener('DOMContentLoaded', function() {
   toggleNatureza(cofinsSel, wrapCofins);
 })();
 </script>
-
 <script>
 // ── IBS/CBS — filtra opções de cClassTrib pelo CST selecionado ────────────
 // UX apenas: os 3 primeiros dígitos de cada cClassTrib do escopo desta

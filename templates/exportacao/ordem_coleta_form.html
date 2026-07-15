@@ -1,304 +1,359 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ action }}{% endblock %}
 {% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="card">
-    <div class="card-body">
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
 
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
-
-        <!-- ── 1. BOOKING ─────────────────────────────────────────── -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3 mt-1">Booking</h6>
-        <div class="row g-3 mb-2">
-          <div class="col-12">
-            <label for="{{ form.booking.id_for_label }}" class="form-label fw-semibold">{{ form.booking.label }}</label>
-            {{ form.booking }}
-            {% if form.booking.errors %}<div class="text-danger small mt-1">{{ form.booking.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <!-- Card preview do booking -->
-        <div id="booking-preview" class="card border-primary mb-3" style="display:none;">
-          <div class="card-header bg-primary bg-opacity-10 py-2">
-            <small class="fw-semibold text-primary text-uppercase">
-              <i class="bi bi-info-circle me-1"></i>Dados do Booking
-            </small>
-          </div>
-          <div class="card-body py-3">
-            <div class="row g-2">
-              <div class="col-md-4">
-                <span class="text-muted small">Porto Origem</span><br>
-                <span id="bk-porto-origem" class="fw-semibold"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Porto Destino</span><br>
-                <span id="bk-porto-destino" class="fw-semibold"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Rota do Navio (VIAGEM)</span><br>
-                <span id="bk-rota-navio"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Armador</span><br>
-                <span id="bk-armador"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Navio</span><br>
-                <span id="bk-navio"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Cultura</span><br>
-                <span id="bk-cultura"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Genset</span><br>
-                <span id="bk-genset"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Temperatura</span><br>
-                <span id="bk-temperatura"></span> <small class="text-muted">°C</small>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Humidade</span><br>
-                <span id="bk-humidade"></span> <small class="text-muted">%</small>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Ventilação</span><br>
-                <span id="bk-ventilacao"></span> <small class="text-muted">cbm/h</small>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- ── 2. CONTÊINER ───────────────────────────────────────── -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Contêiner</h6>
-
-        <!-- Toggle segregado -->
-        <div class="form-check form-switch mb-3">
-          {{ form.segregado }}
-          <label class="form-check-label fw-semibold" for="{{ form.segregado.id_for_label }}">
-            Contêiner Segregado
-          </label>
-          <div class="form-text text-muted">Ative se o contêiner já foi pré-cadastrado no booking.</div>
-        </div>
-
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.container.id_for_label }}" class="form-label fw-semibold">
-              {{ form.container.label }} <span id="lbl-obrigatorio" class="text-danger" style="display:none;">*</span>
-            </label>
-            {{ form.container }}
-            {% if form.container.errors %}<div class="text-danger small mt-1">{{ form.container.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <!-- Lacres (visíveis só quando segregado) -->
-        <div id="painel-lacres" class="row g-3 mb-3" style="display:none;">
-          <div class="col-12">
-            <small class="text-muted fw-semibold text-uppercase"><i class="bi bi-lock me-1"></i>Lacres</small>
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.lacre_armador.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_armador.label }}</label>
-            {{ form.lacre_armador }}
-            {% if form.lacre_armador.errors %}<div class="text-danger small mt-1">{{ form.lacre_armador.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.lacre_fiscal.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_fiscal.label }}</label>
-            {{ form.lacre_fiscal }}
-            {% if form.lacre_fiscal.errors %}<div class="text-danger small mt-1">{{ form.lacre_fiscal.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.lacre_terminal.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_terminal.label }}</label>
-            {{ form.lacre_terminal }}
-            {% if form.lacre_terminal.errors %}<div class="text-danger small mt-1">{{ form.lacre_terminal.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.lacre_g7.id_for_label }}" class="form-label fw-semibold">{{ form.lacre_g7.label }}</label>
-            {{ form.lacre_g7 }}
-            {% if form.lacre_g7.errors %}<div class="text-danger small mt-1">{{ form.lacre_g7.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- ── 3. TRANSPORTADORA ──────────────────────────────────── -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Transportadora</h6>
-        <div class="row g-3 mb-2">
-          <div class="col-md-6">
-            <label for="{{ form.transportadora.id_for_label }}" class="form-label fw-semibold">{{ form.transportadora.label }}</label>
-            {{ form.transportadora }}
-            {% if form.transportadora.errors %}<div class="text-danger small mt-1">{{ form.transportadora.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <div id="transp-preview" class="card border-secondary mb-3" style="display:none;">
-          <div class="card-header bg-light py-2">
-            <small class="fw-semibold text-secondary text-uppercase"><i class="bi bi-truck me-1"></i>Dados da Transportadora</small>
-          </div>
-          <div class="card-body py-3">
-            <div class="row g-2">
-              <div class="col-md-5">
-                <span class="text-muted small">Razão Social</span><br>
-                <span id="tr-razao" class="fw-semibold"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">CNPJ</span><br>
-                <span id="tr-cnpj"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">RNTC</span><br>
-                <span id="tr-rntc"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Contato</span><br>
-                <span id="tr-contato"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Telefone</span><br>
-                <span id="tr-telefone"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Cidade/UF</span><br>
-                <span id="tr-cidade"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- ── 4. MOTORISTA ───────────────────────────────────────── -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Motorista</h6>
-        <div class="row g-3 mb-2">
-          <div class="col-md-6">
-            <label for="{{ form.motorista.id_for_label }}" class="form-label fw-semibold">{{ form.motorista.label }}</label>
-            {{ form.motorista }}
-            {% if form.motorista.errors %}<div class="text-danger small mt-1">{{ form.motorista.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <div id="motorista-preview" class="card border-success mb-3" style="display:none;">
-          <div class="card-header bg-success bg-opacity-10 py-2">
-            <small class="fw-semibold text-success text-uppercase"><i class="bi bi-person-badge me-1"></i>Dados do Motorista</small>
-          </div>
-          <div class="card-body py-3">
-            <div class="row g-2">
-              <div class="col-md-5">
-                <span class="text-muted small">Nome</span><br>
-                <span id="mo-nome" class="fw-semibold"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">CPF</span><br>
-                <span id="mo-cpf"></span>
-              </div>
-              <div class="col-md-4">
-                <span class="text-muted small">Celular</span><br>
-                <span id="mo-celular"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">CNH</span><br>
-                <span id="mo-cnh"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Categoria</span><br>
-                <span id="mo-categoria"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Validade CNH</span><br>
-                <span id="mo-validade-cnh"></span>
-              </div>
-              <div class="col-md-3">
-                <span class="text-muted small">Transportadora</span><br>
-                <span id="mo-transportadora"></span>
-              </div>
-              <div class="col-md-6">
-                <span class="text-muted small">Veículo</span><br>
-                <span id="mo-veiculo"></span>
-              </div>
-              <div class="col-md-6">
-                <span class="text-muted small">Placa Principal</span><br>
-                <span id="mo-placa" class="fw-semibold"></span>
-              </div>
-              <div class="col-12" id="mo-reboques-row" style="display:none;">
-                <span class="text-muted small">Reboque(s)</span><br>
-                <span id="mo-reboques" class="fw-semibold"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- ── 5. DATAS E STATUS ──────────────────────────────────── -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Datas e Status</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-3">
-            <label for="{{ form.numero.id_for_label }}" class="form-label fw-semibold">{{ form.numero.label }}</label>
-            {{ form.numero }}
-            <div class="form-text text-muted">Gerado automaticamente.</div>
-            {% if form.numero.errors %}<div class="text-danger small mt-1">{{ form.numero.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">{{ form.status.label }}</label>
-            {{ form.status }}
-            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.data_prevista.id_for_label }}" class="form-label fw-semibold">{{ form.data_prevista.label }}</label>
-            {{ form.data_prevista }}
-            {% if form.data_prevista.errors %}<div class="text-danger small mt-1">{{ form.data_prevista.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.data_realizada.id_for_label }}" class="form-label fw-semibold">{{ form.data_realizada.label }}</label>
-            {{ form.data_realizada }}
-            {% if form.data_realizada.errors %}<div class="text-danger small mt-1">{{ form.data_realizada.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- ── 6. ASSINATURA / DOCUMENTO ─────────────────────────── -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Assinatura / Documento</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.documento.id_for_label }}" class="form-label fw-semibold">{{ form.documento.label }}</label>
-            {{ form.documento }}
-            <div class="form-text text-muted">Aceita imagem (JPG, PNG) ou PDF.</div>
-            {% if form.documento.errors %}<div class="text-danger small mt-1">{{ form.documento.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- ── 7. OBSERVAÇÕES ────────────────────────────────────── -->
-        <div class="row g-3 mb-3">
-          <div class="col-12">
-            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">{{ form.observacoes.label }}</label>
-            {{ form.observacoes }}
-            {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <button type="submit" class="btn btn-primary">Salvar</button>
-          <a href="{% url 'exportacao:ordem_coleta_list' %}" class="btn btn-secondary ms-2">Cancelar</a>
-        </div>
-
-      </form>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-truck"></i></span>
+        <h2>{{ action }}</h2>
+      </div>
     </div>
   </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <nav class="section-nav">
+      <a href="#sec-booking" data-tab="sec-booking">Booking</a>
+      <a href="#sec-container" data-tab="sec-container">Contêiner</a>
+      <a href="#sec-transportadora" data-tab="sec-transportadora">Transportadora</a>
+      <a href="#sec-motorista" data-tab="sec-motorista">Motorista</a>
+      <a href="#sec-datas" data-tab="sec-datas">Datas e Status</a>
+      <a href="#sec-documento" data-tab="sec-documento">Assinatura / Documento</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-booking" data-tab-panel="sec-booking">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-bookmarks"></i></span>
+          <span class="title">Booking</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label for="{{ form.booking.id_for_label }}" class="form-label">{{ form.booking.label }}</label>
+              {{ form.booking }}
+              {% if form.booking.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.booking.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <!-- Card preview do booking -->
+          <div id="booking-preview" class="card border-primary mt-3" style="display:none;">
+            <div class="card-header bg-primary bg-opacity-10 py-2">
+              <small class="fw-semibold text-primary text-uppercase">
+                <i class="bi bi-info-circle me-1"></i>Dados do Booking
+              </small>
+            </div>
+            <div class="card-body py-3">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <span class="text-muted small">Porto Origem</span><br>
+                  <span id="bk-porto-origem" class="fw-semibold"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Porto Destino</span><br>
+                  <span id="bk-porto-destino" class="fw-semibold"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Rota do Navio (VIAGEM)</span><br>
+                  <span id="bk-rota-navio"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Armador</span><br>
+                  <span id="bk-armador"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Navio</span><br>
+                  <span id="bk-navio"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Cultura</span><br>
+                  <span id="bk-cultura"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Genset</span><br>
+                  <span id="bk-genset"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Temperatura</span><br>
+                  <span id="bk-temperatura"></span> <small class="text-muted">°C</small>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Humidade</span><br>
+                  <span id="bk-humidade"></span> <small class="text-muted">%</small>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Ventilação</span><br>
+                  <span id="bk-ventilacao"></span> <small class="text-muted">cbm/h</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-container" data-tab-panel="sec-container">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-box-seam"></i></span>
+          <span class="title">Contêiner</span>
+        </div>
+        <div class="form-section-body">
+          <div class="switch-row mb-3">
+            <label class="switch">
+              {{ form.segregado }}
+              <span class="slider"></span>
+            </label>
+            <label class="switch-label" for="{{ form.segregado.id_for_label }}">Contêiner Segregado</label>
+          </div>
+          <div class="helper-note mb-3">Ative se o contêiner já foi pré-cadastrado no booking.</div>
+
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.container.id_for_label }}" class="form-label">
+                {{ form.container.label }} <span id="lbl-obrigatorio" class="req" style="display:none;">*</span>
+              </label>
+              {{ form.container }}
+              {% if form.container.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.container.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <!-- Lacres (visíveis só quando segregado) -->
+          <div id="painel-lacres" style="display:none;">
+            <div class="section-toolbar" style="padding-left:0;padding-right:0;">
+              <span class="title"><i class="bi bi-lock text-primary"></i>Lacres</span>
+            </div>
+            <div class="form-grid">
+              <div class="field col-4">
+                <label for="{{ form.lacre_armador.id_for_label }}" class="form-label">{{ form.lacre_armador.label }}</label>
+                {{ form.lacre_armador }}
+                {% if form.lacre_armador.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.lacre_armador.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label for="{{ form.lacre_fiscal.id_for_label }}" class="form-label">{{ form.lacre_fiscal.label }}</label>
+                {{ form.lacre_fiscal }}
+                {% if form.lacre_fiscal.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.lacre_fiscal.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label for="{{ form.lacre_terminal.id_for_label }}" class="form-label">{{ form.lacre_terminal.label }}</label>
+                {{ form.lacre_terminal }}
+                {% if form.lacre_terminal.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.lacre_terminal.errors }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label for="{{ form.lacre_g7.id_for_label }}" class="form-label">{{ form.lacre_g7.label }}</label>
+                {{ form.lacre_g7 }}
+                {% if form.lacre_g7.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.lacre_g7.errors }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-transportadora" data-tab-panel="sec-transportadora">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-truck"></i></span>
+          <span class="title">Transportadora</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.transportadora.id_for_label }}" class="form-label">{{ form.transportadora.label }}</label>
+              {{ form.transportadora }}
+              {% if form.transportadora.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.transportadora.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div id="transp-preview" class="card border-secondary mt-3" style="display:none;">
+            <div class="card-header bg-light py-2">
+              <small class="fw-semibold text-secondary text-uppercase"><i class="bi bi-truck me-1"></i>Dados da Transportadora</small>
+            </div>
+            <div class="card-body py-3">
+              <div class="row g-2">
+                <div class="col-md-5">
+                  <span class="text-muted small">Razão Social</span><br>
+                  <span id="tr-razao" class="fw-semibold"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">CNPJ</span><br>
+                  <span id="tr-cnpj"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">RNTC</span><br>
+                  <span id="tr-rntc"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Contato</span><br>
+                  <span id="tr-contato"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Telefone</span><br>
+                  <span id="tr-telefone"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Cidade/UF</span><br>
+                  <span id="tr-cidade"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-motorista" data-tab-panel="sec-motorista">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-person-badge"></i></span>
+          <span class="title">Motorista</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.motorista.id_for_label }}" class="form-label">{{ form.motorista.label }}</label>
+              {{ form.motorista }}
+              {% if form.motorista.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.motorista.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <div id="motorista-preview" class="card border-success mt-3" style="display:none;">
+            <div class="card-header bg-success bg-opacity-10 py-2">
+              <small class="fw-semibold text-success text-uppercase"><i class="bi bi-person-badge me-1"></i>Dados do Motorista</small>
+            </div>
+            <div class="card-body py-3">
+              <div class="row g-2">
+                <div class="col-md-5">
+                  <span class="text-muted small">Nome</span><br>
+                  <span id="mo-nome" class="fw-semibold"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">CPF</span><br>
+                  <span id="mo-cpf"></span>
+                </div>
+                <div class="col-md-4">
+                  <span class="text-muted small">Celular</span><br>
+                  <span id="mo-celular"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">CNH</span><br>
+                  <span id="mo-cnh"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Categoria</span><br>
+                  <span id="mo-categoria"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Validade CNH</span><br>
+                  <span id="mo-validade-cnh"></span>
+                </div>
+                <div class="col-md-3">
+                  <span class="text-muted small">Transportadora</span><br>
+                  <span id="mo-transportadora"></span>
+                </div>
+                <div class="col-md-6">
+                  <span class="text-muted small">Veículo</span><br>
+                  <span id="mo-veiculo"></span>
+                </div>
+                <div class="col-md-6">
+                  <span class="text-muted small">Placa Principal</span><br>
+                  <span id="mo-placa" class="fw-semibold"></span>
+                </div>
+                <div class="col-12" id="mo-reboques-row" style="display:none;">
+                  <span class="text-muted small">Reboque(s)</span><br>
+                  <span id="mo-reboques" class="fw-semibold"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-datas" data-tab-panel="sec-datas">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-calendar-check"></i></span>
+          <span class="title">Datas e Status</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-3">
+              <label for="{{ form.numero.id_for_label }}" class="form-label">{{ form.numero.label }}</label>
+              {{ form.numero }}
+              <div class="helper-note">Gerado automaticamente.</div>
+              {% if form.numero.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+              {{ form.status }}
+              {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.data_prevista.id_for_label }}" class="form-label">{{ form.data_prevista.label }}</label>
+              {{ form.data_prevista }}
+              {% if form.data_prevista.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_prevista.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.data_realizada.id_for_label }}" class="form-label">{{ form.data_realizada.label }}</label>
+              {{ form.data_realizada }}
+              {% if form.data_realizada.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_realizada.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-documento" data-tab-panel="sec-documento">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-file-earmark-text"></i></span>
+          <span class="title">Assinatura / Documento</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.documento.id_for_label }}" class="form-label">{{ form.documento.label }}</label>
+              {{ form.documento }}
+              <div class="helper-note">Aceita imagem (JPG, PNG) ou PDF.</div>
+              {% if form.documento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.documento.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-chat-text"></i></span>
+          <span class="title">Observações</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'exportacao:ordem_coleta_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+
+  </form>
 </div>
+{% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 /* ── BOOKING preview + containers ─────────────────────────────── */
 (function () {
@@ -477,5 +532,4 @@
   }
 })();
 </script>
-{% endblock %}
 {% endblock %}

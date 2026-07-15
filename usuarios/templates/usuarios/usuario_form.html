@@ -5,333 +5,206 @@
 {% block page_title %}Cadastro / Edição de Usuário{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body">
-      <h4 class="fw-bold text-secondary mb-4">
-        {% if usuario %}
-          Editar Usuário: {{ usuario.username }}
-        {% else %}
-          Novo Usuário
-        {% endif %}
-      </h4>
+<div class="container-fluid py-4">
 
-      <!-- Mensagens de erro gerais do formulário -->
-      {% if form.non_field_errors %}
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        {{ form.non_field_errors }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if usuario %}pencil-square{% else %}person-plus{% endif %}"></i></span>
+        <h2>{% if usuario %}Editar Usuário: {{ usuario.username }}{% else %}Novo Usuário{% endif %}</h2>
+      </div>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ form.non_field_errors }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endif %}
+
+  <form id="form-usuario" method="post" enctype="multipart/form-data" novalidate>
+    <div id="loading" class="d-none">Salvando...</div>
+    {% csrf_token %}
+
+    <nav class="section-nav">
+      <a href="#sec-conta" data-tab="sec-conta">Conta</a>
+      <a href="#sec-pessoais" data-tab="sec-pessoais">Dados Pessoais</a>
+      {% if form.password1 %}<a href="#sec-senha" data-tab="sec-senha">Senha</a>{% endif %}
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-conta" data-tab-panel="sec-conta">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-person-badge"></i></span>
+          <span class="title">Conta</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            {% if form.empresa %}
+              {% if not form.empresa.field.widget.is_hidden %}
+              <div class="field col-12">
+                <label class="form-label">{{ form.empresa.label }}</label>
+                {{ form.empresa }}
+                {% if form.empresa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.empresa.errors|join:", " }}</div>{% endif %}
+                {% if form.empresa.help_text %}<div class="helper-note">{{ form.empresa.help_text }}</div>{% endif %}
+              </div>
+              {% endif %}
+            {% endif %}
+
+            <div class="field col-6">
+              <label class="form-label">{{ form.username.label }}<span class="req">*</span></label>
+              {{ form.username }}
+              {% if form.username.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.username.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <div class="field col-6">
+              <label class="form-label">{{ form.email.label }}<span class="req">*</span></label>
+              {{ form.email }}
+              {% if form.email.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.email.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            <div class="field col-6">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label mb-0">{{ form.tipo.label }}<span class="req">*</span></label>
+                {% if user.is_superuser %}
+                <div class="d-flex gap-2 align-items-center">
+                  <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNovoTipoRapido">
+                    <i class="bi bi-plus-circle"></i> Novo tipo
+                  </button>
+                  <a href="{% url 'usuarios:tipo_usuario_list' %}" class="small text-decoration-none">Gerenciar tipos</a>
+                </div>
+                {% endif %}
+              </div>
+              {{ form.tipo }}
+              {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            {% if form.roles %}
+            <div class="field col-6">
+              <label class="form-label">{{ form.roles.label }}</label>
+              {{ form.roles }}
+              {% if form.roles.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.roles.errors|join:", " }}</div>{% endif %}
+              {% if form.roles.help_text %}<div class="helper-note">{{ form.roles.help_text }} • <a href="{% url 'empresas:roles_list' %}">Gerenciar Funções</a></div>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if form.is_active %}
+              {% if not form.is_active.field.widget.is_hidden %}
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.is_active }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+                </div>
+              </div>
+              {% endif %}
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-pessoais" data-tab-panel="sec-pessoais">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-person-vcard"></i></span>
+          <span class="title">Dados Pessoais</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+
+            {% if form.first_name %}
+            <div class="field col-6">
+              <label class="form-label">{{ form.first_name.label }}<span class="req">*</span></label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.first_name.errors|join:", " }}</div>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if form.last_name %}
+            <div class="field col-6">
+              <label class="form-label">{{ form.last_name.label }}<span class="req">*</span></label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.last_name.errors|join:", " }}</div>{% endif %}
+            </div>
+            {% endif %}
+
+            <div class="field col-6">
+              <label class="form-label">{{ form.telefone.label }}</label>
+              {{ form.telefone }}
+              {% if form.telefone.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.telefone.errors|join:", " }}</div>{% endif %}
+            </div>
+
+            {% if form.cpf %}
+            <div class="field col-6">
+              <label class="form-label">{{ form.cpf.label }}</label>
+              {{ form.cpf }}
+              {% if form.cpf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cpf.errors|join:", " }}</div>{% endif %}
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      {% if form.password1 %}
+      <div class="form-section" id="sec-senha" data-tab-panel="sec-senha">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-shield-lock"></i></span>
+          <span class="title">Senha</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">{{ form.password1.label }}<span class="req">*</span></label>
+              <div class="input-group">
+                {{ form.password1 }}
+                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password1">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              {% if form.password1.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.password1.errors|join:", " }}</div>{% endif %}
+              <div class="helper-note">Mínimo 8 caracteres</div>
+            </div>
+
+            {% if form.password2 %}
+            <div class="field col-6">
+              <label class="form-label">{{ form.password2.label }}<span class="req">*</span></label>
+              <div class="input-group">
+                {{ form.password2 }}
+                <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password2">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+              {% if form.password2.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.password2.errors|join:", " }}</div>{% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
       </div>
       {% endif %}
 
-      <form id="form-usuario" method="post" enctype="multipart/form-data" novalidate>
-        <!-- Loading indicator -->
-        <div id="loading" class="d-none">Salvando...</div>
-        {% csrf_token %}
-
-        <div class="row g-3">
-          <!-- Empresa (apenas se existir e não estiver oculto) -->
-          {% if form.empresa %}
-            {% if not form.empresa.field.widget.is_hidden %}
-            <div class="col-md-12">
-              <label class="form-label fw-bold">{{ form.empresa.label }}</label>
-              {{ form.empresa }}
-              {% if form.empresa.errors %}
-              <div class="text-danger   small mt-1">
-                {{ form.empresa.errors|join:", " }}
-              </div>
-              {% endif %}
-              {% if form.empresa.help_text %}
-              <div class="form-text">{{ form.empresa.help_text }}</div>
-              {% endif %}
-            </div>
-            {% endif %}
-          {% endif %}
-
-          <!-- Username -->
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.username.label }} <span class="text-danger">*</span></label>
-            {{ form.username }}
-            {% if form.username.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.username.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- Email -->
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.email.label }} <span class="text-danger">*</span></label>
-            {{ form.email }}
-            {% if form.email.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.email.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- Nome -->
-          {% if form.first_name %}
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.first_name.label }} <span class="text-danger">*</span></label>
-            {{ form.first_name }}
-            {% if form.first_name.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.first_name.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-          {% endif %}
-
-          <!-- Sobrenome -->
-          {% if form.last_name %}
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.last_name.label }} <span class="text-danger">*</span></label>
-            {{ form.last_name }}
-            {% if form.last_name.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.last_name.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-          {% endif %}
-
-          <!-- Tipo -->
-          <div class="col-md-6">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <label class="form-label fw-bold mb-0">{{ form.tipo.label }} <span class="text-danger">*</span></label>
-              {% if user.is_superuser %}
-              <div class="d-flex gap-2 align-items-center">
-                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalNovoTipoRapido">
-                  <i class="bi bi-plus-circle"></i> Novo tipo
-                </button>
-                <a href="{% url 'usuarios:tipo_usuario_list' %}" class="small text-decoration-none">Gerenciar tipos</a>
-              </div>
-              {% endif %}
-            </div>
-            {{ form.tipo }}
-            {% if form.tipo.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.tipo.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- Roles / Funções -->
-          {% if form.roles %}
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.roles.label }}</label>
-            {{ form.roles }}
-            {% if form.roles.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.roles.errors|join:", " }}
-            </div>
-            {% endif %}
-            {% if form.roles.help_text %}
-            <div class="form-text">{{ form.roles.help_text }} • <a href="{% url 'empresas:roles_list' %}">Gerenciar Funções</a></div>
-            {% endif %}
-          </div>
-          {% endif %}
-
-          <!-- Telefone -->
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.telefone.label }}</label>
-            {{ form.telefone }}
-            {% if form.telefone.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.telefone.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- CPF -->
-          {% if form.cpf %}
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.cpf.label }}</label>
-            {{ form.cpf }}
-            {% if form.cpf.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.cpf.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-          {% endif %}
-
-          <!-- Senha 1 (apenas na criação) -->
-          {% if form.password1 %}
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.password1.label }} <span class="text-danger">*</span></label>
-            <div class="input-group">
-              {{ form.password1 }}
-              <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password1">
-                <i class="bi bi-eye"></i>
-              </button>
-            </div>
-            {% if form.password1.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.password1.errors|join:", " }}
-            </div>
-            {% endif %}
-            <div class="form-text">Mínimo 8 caracteres</div>
-          </div>
-          {% endif %}
-
-          <!-- Senha 2 (apenas na criação) -->
-          {% if form.password2 %}
-          <div class="col-md-6">
-            <label class="form-label fw-bold">{{ form.password2.label }} <span class="text-danger">*</span></label>
-            <div class="input-group">
-              {{ form.password2 }}
-              <button class="btn btn-outline-secondary toggle-password" type="button" data-target="id_password2">
-                <i class="bi bi-eye"></i>
-              </button>
-            </div>
-            {% if form.password2.errors %}
-            <div class="text-danger small mt-1">
-              {{ form.password2.errors|join:", " }}
-            </div>
-            {% endif %}
-          </div>
-          {% endif %}
-
-          <!-- Ativo -->
-          {% if form.is_active %}
-            {% if not form.is_active.field.widget.is_hidden %}
-            <div class="col-md-12">
-              <div class="form-check">
-                {{ form.is_active }}
-                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
-                  {{ form.is_active.label }}
-                </label>
-              </div>
-            </div>
-            {% endif %}
-          {% endif %}
-
-        </div>
-
-        <!-- Botões -->
-        <div class="d-flex justify-content-between align-items-center mt-4">
-          <div class="d-flex gap-2">
-            <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-            {% if usuario and user.is_superuser %}
-            <a href="{% url 'usuarios:usuario_troca_senha_emergencial' usuario.id %}" class="btn btn-outline-warning">
-              <i class="bi bi-key"></i> Troca Emergencial de Senha
-            </a>
-            {% endif %}
-          </div>
-          <button type="submit" class="btn btn-success btn-lg">
-            <i class="bi bi-save"></i> Salvar Usuário
-          </button>
-        </div>
-      </form>
-
-      <!-- ACRESCENTADO SCRIPT-->
-      <script>
-      document.getElementById('form-usuario').addEventListener('submit', function() {
-        document.getElementById('loading').classList.remove('d-none');
-      });
-
-      // Toggle visibilidade de senha
-      document.querySelectorAll('.toggle-password').forEach(button => {
-        button.addEventListener('click', function(e) {
-          e.preventDefault();
-          const targetId = this.getAttribute('data-target');
-          const input = document.getElementById(targetId);
-          const icon = this.querySelector('i');
-          
-          if (input.type === 'password') {
-            input.type = 'text';
-            icon.classList.remove('bi-eye');
-            icon.classList.add('bi-eye-slash');
-          } else {
-            input.type = 'password';
-            icon.classList.remove('bi-eye-slash');
-            icon.classList.add('bi-eye');
-          }
-        });
-      });
-
-      {% if user.is_superuser %}
-      {% url 'usuarios:tipo_usuario_quick_create' as tipo_usuario_quick_create_url %}
-      const formNovoTipoRapido = document.getElementById('form-novo-tipo-rapido');
-      const feedbackNovoTipo = document.getElementById('feedback-novo-tipo');
-      const tipoSelectPrincipal = document.getElementById('id_tipo');
-      const modalNovoTipoElement = document.getElementById('modalNovoTipoRapido');
-      const modalNovoTipo = modalNovoTipoElement ? bootstrap.Modal.getOrCreateInstance(modalNovoTipoElement) : null;
-
-      if (formNovoTipoRapido && tipoSelectPrincipal) {
-        formNovoTipoRapido.addEventListener('submit', async function(event) {
-          event.preventDefault();
-          feedbackNovoTipo.classList.add('d-none');
-          feedbackNovoTipo.className = 'alert d-none mt-3';
-
-          const submitButton = formNovoTipoRapido.querySelector('button[type="submit"]');
-          submitButton.disabled = true;
-          submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
-
-          try {
-            const formData = new FormData(formNovoTipoRapido);
-            const response = await fetch('{{ tipo_usuario_quick_create_url|default:"/usuarios/tipos/quick-create/" }}', {
-              method: 'POST',
-              headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-              body: formData,
-            });
-
-            const data = await response.json();
-            if (!response.ok || !data.ok) {
-              throw data;
-            }
-
-            const codigo = data.tipo.codigo;
-            const nome = data.tipo.nome;
-
-            let optionExistente = tipoSelectPrincipal.querySelector(`option[value="${codigo}"]`);
-            if (!optionExistente) {
-              optionExistente = new Option(nome, codigo, true, true);
-              tipoSelectPrincipal.add(optionExistente);
-            } else {
-              optionExistente.selected = true;
-            }
-
-            formNovoTipoRapido.reset();
-            document.getElementById('id_rapido_ordem').value = '100';
-            document.getElementById('id_rapido_ativo').checked = true;
-            if (modalNovoTipo) {
-              modalNovoTipo.hide();
-            }
-          } catch (errorPayload) {
-            const mensagens = [];
-            if (errorPayload && errorPayload.errors) {
-              Object.keys(errorPayload.errors).forEach((campo) => {
-                const errosCampo = errorPayload.errors[campo] || [];
-                errosCampo.forEach((erro) => {
-                  if (erro && erro.message) {
-                    mensagens.push(`${campo}: ${erro.message}`);
-                  }
-                });
-              });
-            }
-
-            feedbackNovoTipo.classList.remove('d-none');
-            feedbackNovoTipo.classList.add('alert-danger');
-            feedbackNovoTipo.innerHTML = mensagens.length ? mensagens.join('<br>') : 'Não foi possível criar o tipo agora.';
-          } finally {
-            submitButton.disabled = false;
-            submitButton.innerHTML = '<i class="bi bi-check2-circle"></i> Criar e usar este tipo';
-          }
-        });
-      }
-      {% endif %}
-      </script>
-
-
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'usuarios:usuario_list' %}" class="btn btn-outline">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      {% if usuario and user.is_superuser %}
+      <a href="{% url 'usuarios:usuario_troca_senha_emergencial' usuario.id %}" class="btn btn-outline">
+        <i class="bi bi-key"></i> Troca Emergencial de Senha
+      </a>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Salvar Usuário
+      </button>
+    </div>
+  </form>
+
 </div>
 
 {% if user.is_superuser %}
@@ -402,40 +275,108 @@
 </div>
 {% endif %}
 
-<!-- Estilo -->
-<style>
-  input:not([type="checkbox"]), select, textarea {
-    height: 42px !important;
-    border-radius: 8px !important;
-  }
+{% endblock %}
 
-  /* Override to increase visible rows for select lists with size attribute */
-  select.form-select[size], select.form-select[multiple] {
-    min-height: 220px !important;
-    height: auto !important;
-    overflow-y: auto;
-  }
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
+<script>
+document.getElementById('form-usuario').addEventListener('submit', function() {
+  document.getElementById('loading').classList.remove('d-none');
+});
 
-  .form-label {
-    margin-bottom: 0.5rem;
-  }
-  .text-danger {
-    font-size: 0.875rem;
-  }
+// Toggle visibilidade de senha
+document.querySelectorAll('.toggle-password').forEach(button => {
+  button.addEventListener('click', function(e) {
+    e.preventDefault();
+    const targetId = this.getAttribute('data-target');
+    const input = document.getElementById(targetId);
+    const icon = this.querySelector('i');
 
-  /* Estilo para input-group com toggle password */
-  .input-group .toggle-password {
-    border-radius: 0 8px 8px 0 !important;
-    cursor: pointer;
-    padding: 8px 14px;
-  }
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.classList.remove('bi-eye');
+      icon.classList.add('bi-eye-slash');
+    } else {
+      input.type = 'password';
+      icon.classList.remove('bi-eye-slash');
+      icon.classList.add('bi-eye');
+    }
+  });
+});
 
-  .input-group .form-control {
-    border-radius: 8px 0 0 8px !important;
-  }
+{% if user.is_superuser %}
+{% url 'usuarios:tipo_usuario_quick_create' as tipo_usuario_quick_create_url %}
+const formNovoTipoRapido = document.getElementById('form-novo-tipo-rapido');
+const feedbackNovoTipo = document.getElementById('feedback-novo-tipo');
+const tipoSelectPrincipal = document.getElementById('id_tipo');
+const modalNovoTipoElement = document.getElementById('modalNovoTipoRapido');
+const modalNovoTipo = modalNovoTipoElement ? bootstrap.Modal.getOrCreateInstance(modalNovoTipoElement) : null;
 
-  .toggle-password i {
-    font-size: 1rem;
-  }
-</style>
+if (formNovoTipoRapido && tipoSelectPrincipal) {
+  formNovoTipoRapido.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    feedbackNovoTipo.classList.add('d-none');
+    feedbackNovoTipo.className = 'alert d-none mt-3';
+
+    const submitButton = formNovoTipoRapido.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Salvando...';
+
+    try {
+      const formData = new FormData(formNovoTipoRapido);
+      const response = await fetch('{{ tipo_usuario_quick_create_url|default:"/usuarios/tipos/quick-create/" }}', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        throw data;
+      }
+
+      const codigo = data.tipo.codigo;
+      const nome = data.tipo.nome;
+
+      let optionExistente = tipoSelectPrincipal.querySelector(`option[value="${codigo}"]`);
+      if (!optionExistente) {
+        optionExistente = new Option(nome, codigo, true, true);
+        tipoSelectPrincipal.add(optionExistente);
+      } else {
+        optionExistente.selected = true;
+      }
+
+      formNovoTipoRapido.reset();
+      document.getElementById('id_rapido_ordem').value = '100';
+      document.getElementById('id_rapido_ativo').checked = true;
+      if (modalNovoTipo) {
+        modalNovoTipo.hide();
+      }
+    } catch (errorPayload) {
+      const mensagens = [];
+      if (errorPayload && errorPayload.errors) {
+        Object.keys(errorPayload.errors).forEach((campo) => {
+          const errosCampo = errorPayload.errors[campo] || [];
+          errosCampo.forEach((erro) => {
+            if (erro && erro.message) {
+              mensagens.push(`${campo}: ${erro.message}`);
+            }
+          });
+        });
+      }
+
+      feedbackNovoTipo.classList.remove('d-none');
+      feedbackNovoTipo.classList.add('alert-danger');
+      feedbackNovoTipo.innerHTML = mensagens.length ? mensagens.join('<br>') : 'Não foi possível criar o tipo agora.';
+    } finally {
+      submitButton.disabled = false;
+      submitButton.innerHTML = '<i class="bi bi-check2-circle"></i> Criar e usar este tipo';
+    }
+  });
+}
+{% endif %}
+</script>
 {% endblock %}

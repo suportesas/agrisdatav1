@@ -79,7 +79,7 @@
               {% if adiantamento.tipo_regra_desconto == 'VALOR_FIXO' %}
               Fixo: {{ adiantamento.moeda }} {{ adiantamento.valor_desconto_padrao|floatformat:2 }}/embarque
               {% else %}
-              {{ adiantamento.percentual_desconto|floatformat:2 }}% da invoice
+              {{ adiantamento.percentual_desconto|floatformat:"2g" }}% da invoice
               {% endif %}
             </dd>
             {% if adiantamento.invoice_origem %}

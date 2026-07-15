@@ -17,7 +17,7 @@
       </div>
       <div class="text-end">
         <div class="mb-2">
-          <span class="badge bg-primary fs-5">Estoque Atual: {{ produto.estoque_atual|floatformat:2 }} {{ produto.unidade_medida.sigla }}</span>
+          <span class="badge bg-primary fs-5">Estoque Atual: {{ produto.estoque_atual|floatformat:"2g" }} {{ produto.unidade_medida.sigla }}</span>
         </div>
         <a href="{% url 'produtos:produto_detail' produto.id %}" class="btn btn-outline-primary btn-sm">
           <i class="bi bi-box-seam"></i> Ver Produto
@@ -71,7 +71,7 @@
     <div class="col-md-2">
       <div class="card text-center">
         <div class="card-body">
-          <h3 class="mb-0">{{ produto.estoque_atual|floatformat:2 }}</h3>
+          <h3 class="mb-0">{{ produto.estoque_atual|floatformat:"2g" }}</h3>
           <small class="text-muted">Saldo Atual</small>
         </div>
       </div>
@@ -210,7 +210,7 @@
                     </td>
                     <td>
                       <strong class="{% if mov.tipo == 'ENTRADA' %}text-success{% elif mov.tipo == 'SAIDA' %}text-warning{% endif %}">
-                        {% if mov.tipo == 'ENTRADA' %}+{% elif mov.tipo == 'SAIDA' %}-{% endif %}{{ mov.quantidade|floatformat:2 }}
+                        {% if mov.tipo == 'ENTRADA' %}+{% elif mov.tipo == 'SAIDA' %}-{% endif %}{{ mov.quantidade|floatformat:"2g" }}
                       </strong>
                     </td>
                     <td>
@@ -292,7 +292,7 @@
                       </a>
                     </td>
                     <td>{{ item.pedido.fornecedor.nome_fantasia }}</td>
-                    <td><strong>{{ item.quantidade_pedida|floatformat:2 }}</strong></td>
+                    <td><strong>{{ item.quantidade_pedida|floatformat:"2g" }}</strong></td>
                     <td>R$ {{ item.preco_unitario|floatformat:2 }}</td>
                     <td><strong>R$ {{ item.preco_total|floatformat:2 }}</strong></td>
                     <td>
@@ -339,7 +339,7 @@
                       </a>
                     </td>
                     <td>{{ item.solicitacao.solicitante.get_full_name }}</td>
-                    <td><strong>{{ item.quantidade|floatformat:2 }}</strong></td>
+                    <td><strong>{{ item.quantidade|floatformat:"2g" }}</strong></td>
                     <td><small>{{ item.solicitacao.motivo|default:"-" }}</small></td>
                     <td>
                       <span class="badge bg-{{ item.solicitacao.status|lower }}">{{ item.solicitacao.get_status_display }}</span>
@@ -381,8 +381,8 @@
                   <td>{{ item.emprestimo.data_emprestimo|date:"d/m/Y" }}</td>
                   <td>{{ item.emprestimo.numero }}</td>
                   <td>{{ item.emprestimo.produtor.nome }}</td>
-                  <td><strong>{{ item.quantidade|floatformat:2 }}</strong></td>
-                  <td>{{ item.quantidade_devolvida|floatformat:2 }}</td>
+                  <td><strong>{{ item.quantidade|floatformat:"2g" }}</strong></td>
+                  <td>{{ item.quantidade_devolvida|floatformat:"2g" }}</td>
                   <td>
                     <span class="badge bg-{{ item.status|lower }}">{{ item.get_status_display }}</span>
                   </td>

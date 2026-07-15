@@ -4,94 +4,121 @@
 {% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <div class="card border-0 shadow-sm rounded-4">
-    <div class="card-body p-4">
-      <div class="d-flex justify-content-between align-items-center mb-4 gap-2 flex-wrap">
+<div class="container py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-person-badge"></i></span>
         <div>
-          <h4 class="fw-bold text-secondary mb-1">{{ action }} Tipo de Usuário</h4>
+          <h2>{{ action }} Tipo de Usuário</h2>
           <p class="text-muted mb-0">Defina o nome exibido e as permissões-base desse tipo.</p>
         </div>
-        <a href="{% url 'usuarios:tipo_usuario_list' %}" class="btn btn-outline-secondary">
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'usuarios:tipo_usuario_list' %}" class="btn btn-ghost">
           <i class="bi bi-arrow-left"></i> Voltar
         </a>
       </div>
+    </div>
+  </div>
 
-      <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-bold">{{ form.codigo.label }}</label>
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Identificação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4{% if form.codigo.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.codigo.label }}</label>
             {{ form.codigo }}
-            {% if form.codigo.errors %}<div class="text-danger small mt-1">{{ form.codigo.errors|join:', ' }}</div>{% endif %}
-            {% if form.codigo.help_text %}<div class="form-text">{{ form.codigo.help_text }}</div>{% endif %}
+            {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|join:', ' }}</div>{% endif %}
+            {% if form.codigo.help_text %}<div class="helper-note">{{ form.codigo.help_text }}</div>{% endif %}
           </div>
-          <div class="col-md-5">
-            <label class="form-label fw-bold">{{ form.nome.label }}</label>
+          <div class="field col-5{% if form.nome.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.nome.label }}</label>
             {{ form.nome }}
-            {% if form.nome.errors %}<div class="text-danger small mt-1">{{ form.nome.errors|join:', ' }}</div>{% endif %}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|join:', ' }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-bold">{{ form.ordem.label }}</label>
+          <div class="field col-3{% if form.ordem.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.ordem.label }}</label>
             {{ form.ordem }}
-            {% if form.ordem.errors %}<div class="text-danger small mt-1">{{ form.ordem.errors|join:', ' }}</div>{% endif %}
+            {% if form.ordem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ordem.errors|join:', ' }}</div>{% endif %}
           </div>
-
-          <div class="col-12">
-            <label class="form-label fw-bold">{{ form.descricao.label }}</label>
+          <div class="field col-12{% if form.descricao.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.descricao.label }}</label>
             {{ form.descricao }}
-            {% if form.descricao.errors %}<div class="text-danger small mt-1">{{ form.descricao.errors|join:', ' }}</div>{% endif %}
+            {% if form.descricao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.descricao.errors|join:', ' }}</div>{% endif %}
           </div>
+        </div>
+      </div>
+    </div>
 
-          <div class="col-12">
-            <div class="card bg-light border-0 rounded-4">
-              <div class="card-body">
-                <h6 class="fw-bold mb-3">Permissões-base</h6>
-                <div class="row g-3">
-                  <div class="col-md-6 col-lg-3">
-                    <div class="form-check">
-                      {{ form.ativo }}
-                      <label class="form-check-label" for="{{ form.ativo.id_for_label }}">Tipo ativo</label>
-                    </div>
-                  </div>
-                  <div class="col-md-6 col-lg-3">
-                    <div class="form-check">
-                      {{ form.administrador_empresa }}
-                      <label class="form-check-label" for="{{ form.administrador_empresa.id_for_label }}">Conta como admin</label>
-                    </div>
-                  </div>
-                  <div class="col-md-6 col-lg-3">
-                    <div class="form-check">
-                      {{ form.permite_gerenciar_usuarios }}
-                      <label class="form-check-label" for="{{ form.permite_gerenciar_usuarios.id_for_label }}">Gerencia usuários</label>
-                    </div>
-                  </div>
-                  <div class="col-md-6 col-lg-3">
-                    <div class="form-check">
-                      {{ form.permite_acessar_financeiro }}
-                      <label class="form-check-label" for="{{ form.permite_acessar_financeiro.id_for_label }}">Acessa financeiro</label>
-                    </div>
-                  </div>
-                  <div class="col-md-6 col-lg-3">
-                    <div class="form-check">
-                      {{ form.permite_fazer_vendas }}
-                      <label class="form-check-label" for="{{ form.permite_fazer_vendas.id_for_label }}">Pode vender</label>
-                    </div>
-                  </div>
-                </div>
-              </div>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm gray"><i class="bi bi-shield-check"></i></span>
+        <span class="title">Permissões-base</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.ativo.id_for_label }}">Tipo ativo</label>
+            </div>
+          </div>
+          <div class="field col-3">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.administrador_empresa }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.administrador_empresa.id_for_label }}">Conta como admin</label>
+            </div>
+          </div>
+          <div class="field col-3">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.permite_gerenciar_usuarios }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.permite_gerenciar_usuarios.id_for_label }}">Gerencia usuários</label>
+            </div>
+          </div>
+          <div class="field col-3">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.permite_acessar_financeiro }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.permite_acessar_financeiro.id_for_label }}">Acessa financeiro</label>
+            </div>
+          </div>
+          <div class="field col-3">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.permite_fazer_vendas }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.permite_fazer_vendas.id_for_label }}">Pode vender</label>
             </div>
           </div>
         </div>
-
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <a href="{% url 'usuarios:tipo_usuario_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-          <button type="submit" class="btn btn-success">
-            <i class="bi bi-save"></i> Salvar Tipo
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'usuarios:tipo_usuario_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Salvar Tipo
+      </button>
+    </div>
+  </form>
 </div>
 {% endblock %}

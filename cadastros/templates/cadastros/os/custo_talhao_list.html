@@ -125,7 +125,7 @@
       <div class="stat-card text-center h-100">
         <div class="stat-label text-uppercase">Custo Médio/ha</div>
         <div class="stat-value">R$ {{ resumo.custo_medio_ha|floatformat:2 }}</div>
-        <div class="small text-muted mt-1">{{ resumo.total_area|floatformat:2 }} ha</div>
+        <div class="small text-muted mt-1">{{ resumo.total_area|floatformat:"2g" }} ha</div>
       </div>
     </div>
     {% if producao_total %}
@@ -260,7 +260,7 @@
               <tr class="{% if talhao_mais_caro and item.talhao__nome == talhao_mais_caro.talhao__nome %}table-danger{% elif talhao_mais_barato and item.talhao__nome == talhao_mais_barato.talhao__nome %}table-success{% endif %}">
                 <td class="fw-semibold">{{ item.talhao__nome }}</td>
                 <td class="text-end">{{ item.total_os }}</td>
-                <td class="text-end">{{ item.total_area|default:0|floatformat:2 }}</td>
+                <td class="text-end">{{ item.total_area|default:0|floatformat:"2g" }}</td>
                 <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
@@ -341,7 +341,7 @@
               <tr>
                 <td class="fw-semibold">{{ item.safra_label }}</td>
                 <td class="text-end">{{ item.total_os }}</td>
-                <td class="text-end">{{ item.total_area|default:0|floatformat:2 }}</td>
+                <td class="text-end">{{ item.total_area|default:0|floatformat:"2g" }}</td>
                 <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
                 <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>

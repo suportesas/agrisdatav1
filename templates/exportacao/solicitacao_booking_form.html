@@ -1,173 +1,221 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ action }}{% endblock %}
 {% block page_title %}{{ action }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="card">
-    <div class="card-body">
-      <form method="post">
-        {% csrf_token %}
 
-        {% if form.non_field_errors %}
-          <div class="alert alert-danger">
-            {{ form.non_field_errors }}
-          </div>
-        {% endif %}
-
-        <!-- Identificação -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3 mt-1">Identificação</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
-              {{ form.nome.label }}
-            </label>
-            {{ form.nome }}
-            <div class="form-text text-muted">Exemplo: 202526 - SM19 &nbsp;(Safra - Semana)</div>
-            {% if form.nome.errors %}<div class="text-danger small mt-1">{{ form.nome.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">{{ form.status.label }}</label>
-            {{ form.status }}
-            {% if form.status.errors %}<div class="text-danger small mt-1">{{ form.status.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.data_prevista_embarque.id_for_label }}" class="form-label fw-semibold">{{ form.data_prevista_embarque.label }}</label>
-            {{ form.data_prevista_embarque }}
-            {% if form.data_prevista_embarque.errors %}<div class="text-danger small mt-1">{{ form.data_prevista_embarque.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <!-- Cultura e Quantidade -->
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.cultura.id_for_label }}" class="form-label fw-semibold">{{ form.cultura.label }}</label>
-            {{ form.cultura }}
-            {% if form.cultura.errors %}<div class="text-danger small mt-1">{{ form.cultura.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-3">
-            <label for="{{ form.quantidade.id_for_label }}" class="form-label fw-semibold">{{ form.quantidade.label }}</label>
-            {{ form.quantidade }}
-            {% if form.quantidade.errors %}<div class="text-danger small mt-1">{{ form.quantidade.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <!-- Dados Exportação da Cultura (preenchimento automático) -->
-        <div id="dados-exportacao-cultura" class="row g-3 mb-3" style="display:none;">
-          <div class="col-12">
-            <small class="text-muted fw-semibold text-uppercase">
-              <i class="bi bi-ship"></i> Dados de Exportação da Cultura
-            </small>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Temperatura</label>
-            <div class="input-group">
-              <input type="text" id="cultura-temperatura" class="form-control bg-light" readonly>
-              <span class="input-group-text">°C</span>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Humidade</label>
-            <div class="input-group">
-              <input type="text" id="cultura-humidade" class="form-control bg-light" readonly>
-              <span class="input-group-text">%</span>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Ventilação</label>
-            <div class="input-group">
-              <input type="text" id="cultura-ventilacao" class="form-control bg-light" readonly>
-              <span class="input-group-text">cbm/h</span>
-            </div>
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Rotas -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Rotas</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.porto_origem.id_for_label }}" class="form-label fw-semibold">{{ form.porto_origem.label }}</label>
-            {{ form.porto_origem }}
-            {% if form.porto_origem.errors %}<div class="text-danger small mt-1">{{ form.porto_origem.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label for="{{ form.porto_destino.id_for_label }}" class="form-label fw-semibold">{{ form.porto_destino.label }}</label>
-            {{ form.porto_destino }}
-            {% if form.porto_destino.errors %}<div class="text-danger small mt-1">{{ form.porto_destino.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Armador e Navio -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Armador / Navio</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <label for="{{ form.armador.id_for_label }}" class="form-label fw-semibold">{{ form.armador.label }}</label>
-            {{ form.armador }}
-            {% if form.armador.errors %}<div class="text-danger small mt-1">{{ form.armador.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-6">
-            <label for="{{ form.navio.id_for_label }}" class="form-label fw-semibold">{{ form.navio.label }}</label>
-            {{ form.navio }}
-            {% if form.navio.errors %}<div class="text-danger small mt-1">{{ form.navio.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Condições de Frete -->
-        <h6 class="text-uppercase text-muted fw-bold mb-3">Condições de Frete</h6>
-        <div class="row g-3 mb-3">
-          <div class="col-md-4">
-            <label for="{{ form.frete.id_for_label }}" class="form-label fw-semibold">{{ form.frete.label }}</label>
-            {{ form.frete }}
-            {% if form.frete.errors %}<div class="text-danger small mt-1">{{ form.frete.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.genset.id_for_label }}" class="form-label fw-semibold">{{ form.genset.label }}</label>
-            {{ form.genset }}
-            {% if form.genset.errors %}<div class="text-danger small mt-1">{{ form.genset.errors }}</div>{% endif %}
-          </div>
-          <div class="col-md-4">
-            <label for="{{ form.tipo_exportacao.id_for_label }}" class="form-label fw-semibold">{{ form.tipo_exportacao.label }}</label>
-            {{ form.tipo_exportacao }}
-            {% if form.tipo_exportacao.errors %}<div class="text-danger small mt-1">{{ form.tipo_exportacao.errors }}</div>{% endif %}
-          </div>
-        </div>
-        <div class="row g-3 mb-3" id="campo-tipo-outros" style="display:none;">
-          <div class="col-md-6">
-            <label for="{{ form.tipo_exportacao_outros.id_for_label }}" class="form-label fw-semibold">{{ form.tipo_exportacao_outros.label }}</label>
-            {{ form.tipo_exportacao_outros }}
-            {% if form.tipo_exportacao_outros.errors %}<div class="text-danger small mt-1">{{ form.tipo_exportacao_outros.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <hr class="my-3">
-
-        <!-- Observações -->
-        <div class="row g-3 mb-3">
-          <div class="col-12">
-            <label for="{{ form.observacoes.id_for_label }}" class="form-label fw-semibold">{{ form.observacoes.label }}</label>
-            {{ form.observacoes }}
-            {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
-          </div>
-        </div>
-
-        <div class="mt-4">
-          <button type="submit" class="btn btn-primary">Salvar</button>
-          <a href="{% url 'exportacao:solicitacao_booking_list' %}" class="btn btn-secondary ms-2">Cancelar</a>
-        </div>
-
-      </form>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-file-earmark-text"></i></span>
+        <h2>{{ action }}</h2>
+      </div>
     </div>
   </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <nav class="section-nav">
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-cultura" data-tab="sec-cultura">Cultura e Quantidade</a>
+      <a href="#sec-rotas" data-tab="sec-rotas">Rotas</a>
+      <a href="#sec-armador" data-tab="sec-armador">Armador / Navio</a>
+      <a href="#sec-frete" data-tab="sec-frete">Condições de Frete</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-box"></i></span>
+          <span class="title">Identificação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}</label>
+              {{ form.nome }}
+              <div class="helper-note">Exemplo: 202526 - SM19 (Safra - Semana)</div>
+              {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+              {{ form.status }}
+              {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.data_prevista_embarque.id_for_label }}" class="form-label">{{ form.data_prevista_embarque.label }}</label>
+              {{ form.data_prevista_embarque }}
+              {% if form.data_prevista_embarque.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_prevista_embarque.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-cultura" data-tab-panel="sec-cultura">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-flower2"></i></span>
+          <span class="title">Cultura e Quantidade</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.cultura.id_for_label }}" class="form-label">{{ form.cultura.label }}</label>
+              {{ form.cultura }}
+              {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-3">
+              <label for="{{ form.quantidade.id_for_label }}" class="form-label">{{ form.quantidade.label }}</label>
+              {{ form.quantidade }}
+              {% if form.quantidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade.errors }}</div>{% endif %}
+            </div>
+          </div>
+
+          <!-- Dados Exportação da Cultura (preenchimento automático) -->
+          <div id="dados-exportacao-cultura" class="mt-3" style="display:none;">
+            <div class="section-toolbar" style="padding-left:0;padding-right:0;">
+              <span class="title"><i class="bi bi-ship text-primary"></i>Dados de Exportação da Cultura</span>
+            </div>
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Temperatura</label>
+                <div class="input-group">
+                  <input type="text" id="cultura-temperatura" class="form-control bg-light" readonly>
+                  <span class="input-group-text">°C</span>
+                </div>
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Humidade</label>
+                <div class="input-group">
+                  <input type="text" id="cultura-humidade" class="form-control bg-light" readonly>
+                  <span class="input-group-text">%</span>
+                </div>
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Ventilação</label>
+                <div class="input-group">
+                  <input type="text" id="cultura-ventilacao" class="form-control bg-light" readonly>
+                  <span class="input-group-text">cbm/h</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-rotas" data-tab-panel="sec-rotas">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-signpost-split"></i></span>
+          <span class="title">Rotas</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.porto_origem.id_for_label }}" class="form-label">{{ form.porto_origem.label }}</label>
+              {{ form.porto_origem }}
+              {% if form.porto_origem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.porto_origem.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label for="{{ form.porto_destino.id_for_label }}" class="form-label">{{ form.porto_destino.label }}</label>
+              {{ form.porto_destino }}
+              {% if form.porto_destino.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.porto_destino.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-armador" data-tab-panel="sec-armador">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-truck"></i></span>
+          <span class="title">Armador / Navio</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label for="{{ form.armador.id_for_label }}" class="form-label">{{ form.armador.label }}</label>
+              {{ form.armador }}
+              {% if form.armador.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.armador.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label for="{{ form.navio.id_for_label }}" class="form-label">{{ form.navio.label }}</label>
+              {{ form.navio }}
+              {% if form.navio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.navio.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-frete" data-tab-panel="sec-frete">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-cash-coin"></i></span>
+          <span class="title">Condições de Frete</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label for="{{ form.frete.id_for_label }}" class="form-label">{{ form.frete.label }}</label>
+              {{ form.frete }}
+              {% if form.frete.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.frete.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.genset.id_for_label }}" class="form-label">{{ form.genset.label }}</label>
+              {{ form.genset }}
+              {% if form.genset.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.genset.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label for="{{ form.tipo_exportacao.id_for_label }}" class="form-label">{{ form.tipo_exportacao.label }}</label>
+              {{ form.tipo_exportacao }}
+              {% if form.tipo_exportacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_exportacao.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-6" id="campo-tipo-outros" style="display:none;">
+              <label for="{{ form.tipo_exportacao_outros.id_for_label }}" class="form-label">{{ form.tipo_exportacao_outros.label }}</label>
+              {{ form.tipo_exportacao_outros }}
+              {% if form.tipo_exportacao_outros.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_exportacao_outros.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+        <div class="form-section-header">
+          <span class="icon-badge sm gray"><i class="bi bi-chat-text"></i></span>
+          <span class="title">Observações</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label for="{{ form.observacoes.id_for_label }}" class="form-label">{{ form.observacoes.label }}</label>
+              {{ form.observacoes }}
+              {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'exportacao:solicitacao_booking_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+
+  </form>
 </div>
+{% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 (function () {
   const culturaSelect = document.getElementById('id_cultura');
@@ -223,5 +271,4 @@
   }
 })();
 </script>
-{% endblock %}
 {% endblock %}

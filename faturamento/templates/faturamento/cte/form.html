@@ -2,6 +2,15 @@
 {% load static %}
 {% block page_title %}{{ action }} CT-e{% endblock %}
 {% block content %}
+<style>
+  /* IBS/CBS — mesma divisão visual usada em nota_fiscal/form.html */
+  .fiscal-label { font-size: .68rem; font-weight: 700; color: #6c757d; margin-bottom: 2px; display: block; text-transform: uppercase; letter-spacing: .02em; }
+  .fiscal-section { border-left: 3px solid #dee2e6; padding: 6px 10px; margin-bottom: 6px; }
+  .fiscal-section.ibscbs { border-color: #198754; }
+  .fiscal-subtabs { margin-bottom: 8px; gap: 4px; }
+  .fiscal-subtabs .nav-link { font-size: .66rem; font-weight: 600; padding: 3px 9px; color: #6c757d; border-radius: 4px; background: #f1f3f5; }
+  .fiscal-subtabs .nav-link.active { background: #e7f1ff; color: #0d6efd; }
+</style>
 <div class="container-fluid mt-3 px-3 px-xl-4">
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h1 class="mb-0">{{ action }} CT-e</h1>
@@ -476,17 +485,59 @@
             </div>
           </div>
 
-          <!-- Sub: Reforma Tributária -->
+          <!-- Sub: Reforma Tributária (IBS/CBS) -->
           <div class="tab-pane fade" id="sub-reforma">
-            <p class="text-muted small mb-3">Campos da Reforma Tributária brasileira (NT 2024) — preencha quando exigido pela SEFAZ do seu estado.</p>
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">CST — Situação Tributária</label>
-                {{ form.reforma_cst }}
+            <p class="text-muted small mb-3">Grupo IBS/CBS da Reforma Tributária (NT 2025.001) — preencha quando exigido pela SEFAZ do seu estado.</p>
+
+            <div class="fiscal-section ibscbs d-flex flex-wrap gap-3 align-items-end mb-2">
+              <div>
+                <label class="fiscal-label">CST IBS/CBS</label>
+                {{ form.ibs_cbs_situacao_tributaria }}
               </div>
-              <div class="col-md-4">
-                <label class="form-label">Classificação Tributária</label>
-                {{ form.reforma_classificacao }}
+              <div>
+                <label class="fiscal-label">cClassTrib</label>
+                {{ form.ibs_cbs_classificacao_tributaria }}
+              </div>
+            </div>
+
+            <!-- Divisão clara IBS x CBS — cada tributo tem sua própria alíquota e
+                 redução (podem ter percentuais diferentes). Mesmo padrão da NF-e. -->
+            <ul class="nav nav-pills fiscal-subtabs mb-2" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="subtab-ibs-cte" data-bs-toggle="tab" data-bs-target="#subpane-ibs-cte" type="button" role="tab" aria-controls="subpane-ibs-cte" aria-selected="true">IBS</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="subtab-cbs-cte" data-bs-toggle="tab" data-bs-target="#subpane-cbs-cte" type="button" role="tab" aria-controls="subpane-cbs-cte" aria-selected="false">CBS</button>
+              </li>
+            </ul>
+            <div class="tab-content">
+              <div class="tab-pane fade show active" id="subpane-ibs-cte" role="tabpanel" aria-labelledby="subtab-ibs-cte">
+                <div class="fiscal-section d-flex flex-wrap gap-3 align-items-end">
+                  <div>
+                    <label class="fiscal-label">Alíq. IBS Estadual (%)</label>
+                    {{ form.ibs_cbs_aliquota_uf }}
+                  </div>
+                  <div>
+                    <label class="fiscal-label">Alíq. IBS Municipal (%)</label>
+                    {{ form.ibs_cbs_aliquota_municipal }}
+                  </div>
+                  <div>
+                    <label class="fiscal-label">% Redução IBS (CST 200)</label>
+                    {{ form.ibs_percentual_reducao }}
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="subpane-cbs-cte" role="tabpanel" aria-labelledby="subtab-cbs-cte">
+                <div class="fiscal-section d-flex flex-wrap gap-3 align-items-end">
+                  <div>
+                    <label class="fiscal-label">Alíq. CBS (%)</label>
+                    {{ form.ibs_cbs_aliquota_cbs }}
+                  </div>
+                  <div>
+                    <label class="fiscal-label">% Redução CBS (CST 200)</label>
+                    {{ form.cbs_percentual_reducao }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1369,6 +1420,34 @@ function adicionarLinhaPrestacao() {
 
   syncReadonly();
   calcIcms();
+})();
+</script>
+
+<script>
+// Filtra as opções de cClassTrib (IBS/CBS) conforme o CST selecionado.
+// Convenção: os 3 primeiros dígitos do cClassTrib (6 dígitos) coincidem com o
+// CST correspondente (ex: 200001 -> CST 200). Só UX — a validação que de fato
+// impede uma combinação inválida é server-side (ConhecimentoTransporteForm.clean()
+// e o checklist de pré-emissão em _validar_cte).
+(function () {
+  'use strict';
+  var cstSel = document.querySelector('.ibs-cbs-cst');
+  var cclasstribSel = document.querySelector('.ibs-cbs-cclasstrib');
+  if (!cstSel || !cclasstribSel) return;
+
+  function filterCclasstrib() {
+    var cst = cstSel.value;
+    Array.prototype.forEach.call(cclasstribSel.options, function (opt) {
+      if (!opt.value) { opt.hidden = false; return; }
+      opt.hidden = cst ? opt.value.slice(0, 3) !== cst : false;
+    });
+    if (cclasstribSel.selectedOptions[0] && cclasstribSel.selectedOptions[0].hidden) {
+      cclasstribSel.value = '';
+    }
+  }
+
+  cstSel.addEventListener('change', filterCclasstrib);
+  filterCclasstrib();
 })();
 </script>
 

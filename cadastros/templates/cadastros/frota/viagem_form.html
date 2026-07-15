@@ -2,19 +2,9 @@
 {% block title %}{{ title }} | Agrisdata{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-card {
-    border-left: 4px solid #3b82f6;
-    margin-bottom: 1.5rem;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="container py-4">
 
-  <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -24,42 +14,50 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0"><i class="bi bi-truck text-primary"></i> {{ title }}</h2>
-    <a href="{% url 'frota:viagem_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-truck"></i></span>
+        <h2>{{ title }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'frota:viagem_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post" novalidate>
     {% csrf_token %}
 
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-truck"></i> Dados da Viagem</h5>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-truck"></i></span>
+        <span class="title">Dados da Viagem</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6"><label class="form-label fw-semibold">Transportadora <span class="text-danger">*</span></label>{{ form.transportadora }}</div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Veículo</label>{{ form.vehicle }}</div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Motorista</label>{{ form.motorista }}</div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Data <span class="text-danger">*</span></label>{{ form.data }}</div>
-          <div class="col-md-3"><label class="form-label fw-semibold">Status</label>{{ form.status }}</div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Origem <span class="text-danger">*</span></label>{{ form.origem }}</div>
-          <div class="col-md-6"><label class="form-label fw-semibold">Destino <span class="text-danger">*</span></label>{{ form.destino }}</div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Valor do Frete (R$)</label>{{ form.valor_frete }}</div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Hodômetro Inicial (km)</label>{{ form.km_inicial }}</div>
-          <div class="col-md-4"><label class="form-label fw-semibold">Hodômetro Final (km)</label>{{ form.km_final }}</div>
-          <div class="col-12"><label class="form-label fw-semibold">Observações</label>{{ form.observacoes }}</div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6"><label class="form-label">Transportadora<span class="req">*</span></label>{{ form.transportadora }}</div>
+          <div class="field col-6"><label class="form-label">Veículo</label>{{ form.vehicle }}</div>
+          <div class="field col-6"><label class="form-label">Motorista</label>{{ form.motorista }}</div>
+          <div class="field col-3"><label class="form-label">Data<span class="req">*</span></label>{{ form.data }}</div>
+          <div class="field col-3"><label class="form-label">Status</label>{{ form.status }}</div>
+          <div class="field col-6"><label class="form-label">Origem<span class="req">*</span></label>{{ form.origem }}</div>
+          <div class="field col-6"><label class="form-label">Destino<span class="req">*</span></label>{{ form.destino }}</div>
+          <div class="field col-4"><label class="form-label">Valor do Frete (R$)</label>{{ form.valor_frete }}</div>
+          <div class="field col-4"><label class="form-label">Hodômetro Inicial (km)</label>{{ form.km_inicial }}</div>
+          <div class="field col-4"><label class="form-label">Hodômetro Final (km)</label>{{ form.km_final }}</div>
+          <div class="field col-12"><label class="form-label">Observações</label>{{ form.observacoes }}</div>
         </div>
       </div>
     </div>
 
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'frota:viagem_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'frota:viagem_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar
       </button>
     </div>

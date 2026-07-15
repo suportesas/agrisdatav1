@@ -5,13 +5,20 @@
 {% block content %}
 <div class="container-fluid py-4" style="max-width:700px">
 
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'faturamento:cte_detail' ct.pk %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <div>
-      <h4 class="mb-0 fw-bold"><i class="bi bi-truck text-danger me-2"></i>Insucesso na Entrega da Carga</h4>
-      <small class="text-muted">CT-e {{ ct.numero|stringformat:"09d" }}/{{ ct.serie }}</small>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge red"><i class="bi bi-truck"></i></span>
+        <div>
+          <h2>Insucesso na Entrega da Carga</h2>
+          <p class="text-muted mb-0">CT-e {{ ct.numero|stringformat:"09d" }}/{{ ct.serie }}</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'faturamento:cte_detail' ct.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
@@ -24,93 +31,96 @@
   <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2 mb-3">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
   {% endfor %}{% endif %}
 
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-header fw-semibold">Dados do CT-e</div>
-    <div class="card-body">
-      <table class="table table-sm mb-0">
-        <tr><th class="w-35 text-muted">Chave</th><td><code class="small">{{ ct.chave_acesso }}</code></td></tr>
-        <tr><th class="text-muted">Remetente</th><td>{{ ct.remetente.razao_social }}</td></tr>
-        <tr><th class="text-muted">Destinatário</th><td>{{ ct.destinatario.razao_social }}</td></tr>
-        <tr><th class="text-muted">Valor Frete</th><td><strong>R$ {{ ct.valor_servico|floatformat:2 }}</strong></td></tr>
-      </table>
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm"><i class="bi bi-file-text"></i></span>
+      <span class="title">Dados do CT-e</span>
+    </div>
+    <div class="form-section-body">
+      <dl class="row mb-0">
+        <dt class="col-4 text-muted">Chave</dt><dd class="col-8"><code class="small">{{ ct.chave_acesso }}</code></dd>
+        <dt class="col-4 text-muted">Remetente</dt><dd class="col-8">{{ ct.remetente.razao_social }}</dd>
+        <dt class="col-4 text-muted">Destinatário</dt><dd class="col-8">{{ ct.destinatario.razao_social }}</dd>
+        <dt class="col-4 text-muted">Valor Frete</dt><dd class="col-8"><strong>R$ {{ ct.valor_servico|floatformat:2 }}</strong></dd>
+      </dl>
     </div>
   </div>
 
-  <div class="card border-0 shadow-sm">
-    <div class="card-header fw-semibold">Dados do Insucesso</div>
-    <div class="card-body">
-      <form method="post">
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm red"><i class="bi bi-exclamation-triangle"></i></span>
+      <span class="title">Dados do Insucesso</span>
+    </div>
+    <div class="form-section-body">
+      <form method="post" id="insucesso-form">
         {% csrf_token %}
 
-        <div class="row g-3 mb-3">
-          <div class="col-md-7">
-            <label class="form-label fw-semibold">Data e Hora da Tentativa <span class="text-danger">*</span></label>
+        <div class="form-grid">
+          <div class="field col-7">
+            <label class="form-label">Data e Hora da Tentativa<span class="req">*</span></label>
             <input type="datetime-local" name="data_hora_tentativa" class="form-control"
                    value="{{ data_hora_tentativa|default:'' }}" required>
           </div>
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">Número de Tentativas <span class="text-danger">*</span></label>
+          <div class="field col-5">
+            <label class="form-label">Número de Tentativas<span class="req">*</span></label>
             <select name="numero_tentativas" class="form-select">
               <option value="1" {% if numero_tentativas != '2' %}selected{% endif %}>1</option>
               <option value="2" {% if numero_tentativas == '2' %}selected{% endif %}>2</option>
             </select>
           </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
-          <select name="motivo" class="form-select" required>
-            <option value="">— Selecione —</option>
-            {% for cod, desc in motivos %}
-            <option value="{{ cod }}" {% if motivo == cod %}selected{% endif %}>{{ desc }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Justificativa <span class="text-danger">*</span></label>
-          <textarea name="justificativa" id="id_justificativa" class="form-control" rows="4"
-                    placeholder="Descreva o motivo do insucesso (mínimo 15 caracteres)"
-                    maxlength="255">{{ justificativa|default:'' }}</textarea>
-          <div class="d-flex justify-content-between mt-1">
-            <small class="text-muted">Mínimo 15, máximo 255 caracteres.</small>
-            <small id="char-count" class="text-muted">0 / 255</small>
+          <div class="field col-12">
+            <label class="form-label">Motivo<span class="req">*</span></label>
+            <select name="motivo" class="form-select" required>
+              <option value="">— Selecione —</option>
+              {% for cod, desc in motivos %}
+              <option value="{{ cod }}" {% if motivo == cod %}selected{% endif %}>{{ desc }}</option>
+              {% endfor %}
+            </select>
           </div>
-        </div>
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">Chave da NF-e <span class="text-danger">*</span></label>
-          <input type="text" name="chave_nfe" class="form-control font-monospace"
-                 placeholder="44 dígitos" maxlength="44"
-                 value="{{ chave_nfe|default:'' }}" required>
-          <small class="text-muted">Chave de acesso da NF-e vinculada ao insucesso.</small>
+          <div class="field col-12">
+            <label class="form-label">Justificativa<span class="req">*</span></label>
+            <textarea name="justificativa" id="id_justificativa" class="form-control" rows="4"
+                      placeholder="Descreva o motivo do insucesso (mínimo 15 caracteres)"
+                      maxlength="255">{{ justificativa|default:'' }}</textarea>
+            <div class="d-flex justify-content-between mt-1">
+              <small class="text-muted">Mínimo 15, máximo 255 caracteres.</small>
+              <small id="char-count" class="text-muted">0 / 255</small>
+            </div>
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Chave da NF-e<span class="req">*</span></label>
+            <input type="text" name="chave_nfe" class="form-control font-monospace"
+                   placeholder="44 dígitos" maxlength="44"
+                   value="{{ chave_nfe|default:'' }}" required>
+            <div class="helper-note">Chave de acesso da NF-e vinculada ao insucesso.</div>
+          </div>
         </div>
 
         <hr class="my-3">
         <p class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>Ponto de Entrega — informações do equipamento do transportador (opcional)</p>
 
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
+        <div class="form-grid">
+          <div class="field col-6">
             <label class="form-label">Latitude</label>
             <input type="text" name="latitude" class="form-control"
                    placeholder="Ex: -5.123456" value="{{ latitude|default:'' }}">
           </div>
-          <div class="col-md-6">
+          <div class="field col-6">
             <label class="form-label">Longitude</label>
             <input type="text" name="longitude" class="form-control"
                    placeholder="Ex: -35.123456" value="{{ longitude|default:'' }}">
           </div>
         </div>
-
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-danger"
-                  onclick="return confirm('Confirma o registro do Insucesso na Entrega? Esta ação é irreversível.')">
-            <i class="bi bi-truck me-1"></i>Registrar Insucesso
-          </button>
-          <a href="{% url 'faturamento:cte_detail' ct.pk %}" class="btn btn-outline-secondary">Cancelar</a>
-        </div>
       </form>
     </div>
+  </div>
+
+  <div class="app-footer-bar">
+    <a href="{% url 'faturamento:cte_detail' ct.pk %}" class="btn btn-outline">Cancelar</a>
+    <button type="submit" form="insucesso-form" class="btn btn-primary"
+            onclick="return confirm('Confirma o registro do Insucesso na Entrega? Esta ação é irreversível.')">
+      <i class="bi bi-truck me-1"></i>Registrar Insucesso
+    </button>
   </div>
 
 </div>

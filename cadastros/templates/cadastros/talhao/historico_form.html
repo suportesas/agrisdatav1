@@ -3,30 +3,59 @@
 
 {% block content %}
 <div class="container py-4">
-  <h2>{{ action }} Histórico</h2>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-clock-history"></i></span>
+        <h2>{{ action }} Histórico</h2>
+      </div>
+    </div>
+  </div>
+
   <form method="post">
     {% csrf_token %}
-    {{ form.non_field_errors }}
-    <div class="mb-3">
-      {{ form.talhao.label_tag }}
-      {{ form.talhao }}
-    </div>
-    <div class="mb-3">
-      {{ form.cultura.label_tag }}
-      {{ form.cultura }}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">{{ form.talhao.label }}</label>
+            {{ form.talhao }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.cultura.label }}</label>
+            {{ form.cultura }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.data_plantio.label }}</label>
+            {{ form.data_plantio }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.data_colheita.label }}</label>
+            {{ form.data_colheita }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.producao_real.label }}</label>
+            {{ form.producao_real }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.custo_total.label }}</label>
+            {{ form.custo_total }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="row">
-      <div class="col-md-4 mb-3">{{ form.data_plantio.label_tag }}{{ form.data_plantio }}</div>
-      <div class="col-md-4 mb-3">{{ form.data_colheita.label_tag }}{{ form.data_colheita }}</div>
-      <div class="col-md-4 mb-3">{{ form.producao_real.label_tag }}{{ form.producao_real }}</div>
+    <div class="app-footer-bar">
+      <a href="{% if talhao %}{% url 'cadastros:talhao_detail' talhao.pk %}{% else %}{% url 'cadastros:talhao_list' %}{% endif %}" class="btn btn-outline">Cancelar</a>
+      <button class="btn btn-primary" type="submit">{{ action }}</button>
     </div>
-
-    <div class="mb-3">{{ form.custo_total.label_tag }}{{ form.custo_total }}</div>
-    <div class="mb-3">{{ form.observacoes.label_tag }}{{ form.observacoes }}</div>
-
-    <button class="btn btn-primary" type="submit">{{ action }}</button>
-    <a href="{% if talhao %}{% url 'cadastros:talhao_detail' talhao.pk %}{% else %}{% url 'cadastros:talhao_list' %}{% endif %}" class="btn btn-secondary">Cancelar</a>
   </form>
 </div>
 {% endblock %}

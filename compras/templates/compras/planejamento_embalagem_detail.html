@@ -153,7 +153,7 @@
             <td>{{ item.produto.categoria|default:"—" }}</td>
             <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
             <td>{{ item.data_prevista|date:"d/m/Y" }}</td>
-            <td class="text-end">{{ item.quantidade_planejada|floatformat:2 }}</td>
+            <td class="text-end">{{ item.quantidade_planejada|floatformat:"2g" }}</td>
             <td>{{ item.unidade_medida }}</td>
             <td class="text-end">R$ {{ item.preco_estimado_unitario|floatformat:4 }}</td>
             <td class="text-end">

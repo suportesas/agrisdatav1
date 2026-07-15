@@ -209,7 +209,7 @@
                 <small class="text-muted">
                   <i class="bi bi-map"></i> {{ talhao.area.nome }} 
                   {% if talhao.area.area_total %}
-                    (Área {{ talhao.area.area_total|floatformat:2 }} ha)
+                    (Área {{ talhao.area.area_total|floatformat:"2g" }} ha)
                   {% endif %}
                 </small>
                 {% endif %}
@@ -217,7 +217,7 @@
 
               <!-- Área -->
               <td class="text-end">
-                <strong>{{ talhao.area_hac|floatformat:2 }}</strong> ha
+                <strong>{{ talhao.area_hac|floatformat:"2g" }}</strong> ha
               </td>
 
               <!-- ✅ CULTURA ATUAL - CORRIGIDO -->

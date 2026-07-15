@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import MoneyBRInput
 from .models import UsinaFotovoltaica, UnidadeConsumidora, LancamentoMensal, RelatorioMensalUsina, OcorrenciaUsina
 
 _CTRL = {'class': 'form-control'}
@@ -113,9 +114,9 @@ class LancamentoMensalForm(forms.ModelForm):
             'energia_injetada_kwh': forms.NumberInput(attrs=_NUM),
             'credito_anterior_kwh': forms.NumberInput(attrs=_NUM),
             'credito_acumulado_kwh': forms.NumberInput(attrs=_NUM),
-            'valor_faturado_rs': forms.NumberInput(attrs=_NUM),
-            'valor_economizado_rs': forms.NumberInput(attrs=_NUM),
-            'desconto_incondicional_rs': forms.NumberInput(attrs=_NUM),
+            'valor_faturado_rs': MoneyBRInput(),
+            'valor_economizado_rs': MoneyBRInput(),
+            'desconto_incondicional_rs': MoneyBRInput(),
             'observacoes': forms.Textarea(attrs=_TEXTAREA),
         }
 

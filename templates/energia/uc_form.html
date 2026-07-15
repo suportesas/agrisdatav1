@@ -1,74 +1,84 @@
 {% extends 'base.html' %}
 {% block title %}{{ titulo }}{% endblock %}
 {% block content %}
-<div class="container-fluid">
-  <div class="d-flex align-items-center gap-2 mb-4">
-    <a href="{% url 'energia:uc_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i></a>
-    <h1 class="mb-0 fs-4">{{ titulo }}</h1>
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-plug-fill"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'energia:uc_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post">
     {% csrf_token %}
-    <div class="row g-4">
-      <div class="col-lg-8">
-        <div class="card mb-4">
-          <div class="card-header"><i class="bi bi-plug-fill text-info me-1"></i> Identificação</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-sm-8">
-                <label class="form-label">{{ form.nome.label }} *</label>
-                {{ form.nome }}
-                {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-4">
-                <label class="form-label">{{ form.tipo.label }} *</label>
-                {{ form.tipo }}
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.codigo_cliente.label }} *</label>
-                {{ form.codigo_cliente }}
-                {% if form.codigo_cliente.errors %}<div class="text-danger small">{{ form.codigo_cliente.errors.0 }}</div>{% endif %}
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.codigo_instalacao.label }}</label>
-                {{ form.codigo_instalacao }}
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.classificacao.label }}</label>
-                {{ form.classificacao }}
-                <small class="text-muted">Ex: B2 Rural - Agropecuária Rural</small>
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.tipo_fornecimento.label }}</label>
-                {{ form.tipo_fornecimento }}
-                <small class="text-muted">Ex: Conv. Monômia - Trifásico</small>
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.numero_medidor.label }}</label>
-                {{ form.numero_medidor }}
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ form.usina.label }}</label>
-                {{ form.usina }}
-                <small class="text-muted">Usina fotovoltaica associada</small>
-              </div>
-              <div class="col-12">
-                <div class="form-check">
-                  {{ form.ativa }}
-                  <label class="form-check-label ms-1">{{ form.ativa.label }}</label>
-                </div>
-              </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-plug-fill"></i></span>
+        <span class="title">Identificação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-8{% if form.nome.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.nome.label }}<span class="req">*</span></label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.tipo.label }}<span class="req">*</span></label>
+            {{ form.tipo }}
+          </div>
+          <div class="field col-6{% if form.codigo_cliente.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.codigo_cliente.label }}<span class="req">*</span></label>
+            {{ form.codigo_cliente }}
+            {% if form.codigo_cliente.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_cliente.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.codigo_instalacao.label }}</label>
+            {{ form.codigo_instalacao }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.classificacao.label }}</label>
+            {{ form.classificacao }}
+            <div class="helper-note">Ex: B2 Rural - Agropecuária Rural</div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.tipo_fornecimento.label }}</label>
+            {{ form.tipo_fornecimento }}
+            <div class="helper-note">Ex: Conv. Monômia - Trifásico</div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.numero_medidor.label }}</label>
+            {{ form.numero_medidor }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.usina.label }}</label>
+            {{ form.usina }}
+            <div class="helper-note">Usina fotovoltaica associada</div>
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativa }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label">{{ form.ativa.label }}</label>
             </div>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="col-lg-4">
-        <div class="d-grid gap-2">
-          <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-          <a href="{% url 'energia:uc_list' %}" class="btn btn-outline-secondary">Cancelar</a>
-        </div>
-      </div>
+    <div class="app-footer-bar">
+      <a href="{% url 'energia:uc_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
     </div>
   </form>
 </div>

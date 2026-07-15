@@ -3,19 +3,51 @@
 
 {% block content %}
 <div class="container py-4">
-  <h3>{{ action }} - {{ vehicle }}</h3>
-  <div class="card p-3 mt-3">
-    <form method="post">
-      {% csrf_token %}
-      <div class="mb-2">{{ form.placa.label_tag }}{{ form.placa }}</div>
-      <div class="mb-2">{{ form.vigencia_inicio.label_tag }}{{ form.vigencia_inicio }}<div class="form-text small">Data inicial da vigência da placa</div></div>
-      <div class="mb-2">{{ form.vigencia_fim.label_tag }}{{ form.vigencia_fim }}<div class="form-text small">Data final da vigência (opcional)</div></div>
-      <div class="mb-2">{{ form.atual }} <label for="id_atual" class="form-check-label">Marca como placa atual</label></div>
-      <div class="mt-3 d-flex gap-2">
-        <button class="btn btn-primary">Salvar</button>
-        <a href="{% url 'frota:vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-credit-card-2-front"></i></span>
+        <h2>{{ action }} - {{ vehicle }}</h2>
       </div>
-    </form>
+    </div>
   </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">{{ form.placa.label }}</label>
+            {{ form.placa }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">{{ form.vigencia_inicio.label }}</label>
+            {{ form.vigencia_inicio }}
+            <div class="helper-note">Data inicial da vigência da placa</div>
+          </div>
+          <div class="field col-3">
+            <label class="form-label">{{ form.vigencia_fim.label }}</label>
+            {{ form.vigencia_fim }}
+            <div class="helper-note">Data final da vigência (opcional)</div>
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.atual }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="id_atual">Marca como placa atual</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'frota:vehicle_detail' vehicle.pk %}" class="btn btn-outline">Cancelar</a>
+      <button class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

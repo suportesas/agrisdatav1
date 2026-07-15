@@ -135,7 +135,7 @@
                 </td>
                 <td class="text-end font-monospace text-success">{{ r.economia_rs|floatformat:2 }}</td>
                 <td class="text-end font-monospace">{{ r.faturado_rs|floatformat:2 }}</td>
-                <td class="text-end text-muted small">{{ r.co2_nao_produzido_t|floatformat:2 }}</td>
+                <td class="text-end text-muted small">{{ r.co2_nao_produzido_t|floatformat:"2g" }}</td>
                 <td class="text-center pe-3">
                   <a href="{% url 'energia:relatorio_usina_detail' r.pk %}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
                 </td>

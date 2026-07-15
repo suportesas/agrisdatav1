@@ -527,7 +527,11 @@ def motorista_vinculo_consulta_pdf(request):
 
 @login_required
 def motorista_set_pin(request, pk):
-    """Define matrícula e PIN para acesso ao Portal do Motorista."""
+    """Define matrícula e PIN de login (Usuario vinculado) para acesso ao Portal do Motorista."""
+    from django.contrib.auth.models import Group
+    from usuarios.models import Usuario
+    from .services.motorista_portal import gerar_username_motorista
+
     empresa = request.user.empresa
     motorista = get_object_or_404(Motorista, pk=pk, empresa=empresa)
 
@@ -536,8 +540,16 @@ def motorista_set_pin(request, pk):
         pin = request.POST.get('pin', '').strip()
         pin2 = request.POST.get('pin2', '').strip()
 
+        matricula_em_uso = Motorista.objects.filter(
+            empresa=empresa, matricula=matricula
+        ).exclude(pk=motorista.pk).exists() if matricula else False
+
         if not matricula:
             messages.error(request, 'A matrícula é obrigatória.')
+        elif matricula_em_uso:
+            messages.error(request, 'Essa matrícula já está em uso por outro motorista desta empresa.')
+        elif not motorista.usuario_vinculado_id and not pin:
+            messages.error(request, 'Defina um PIN para o primeiro acesso deste motorista.')
         elif pin and pin != pin2:
             messages.error(request, 'Os PINs não coincidem.')
         elif pin and not pin.isdigit():
@@ -546,10 +558,38 @@ def motorista_set_pin(request, pk):
             messages.error(request, 'O PIN deve ter pelo menos 4 dígitos.')
         else:
             motorista.matricula = matricula
-            if pin:
-                motorista.set_pin(pin)
-            motorista.save()
-            messages.success(request, f'Acesso ao portal configurado para {motorista.nome}.')
+            usuario = motorista.usuario_vinculado
+
+            if not usuario:
+                username = gerar_username_motorista(empresa.pk, matricula)
+                nome_partes = motorista.nome.strip().split(' ', 1)
+                usuario = Usuario(
+                    username=username,
+                    first_name=nome_partes[0],
+                    last_name=nome_partes[1] if len(nome_partes) > 1 else '',
+                    empresa=empresa,
+                    tipo='MOTORISTA',
+                    is_active=motorista.ativo,
+                )
+                usuario.set_password(pin)
+                usuario.save()
+
+                grupo, _ = Group.objects.get_or_create(name='MOTORISTA')
+                usuario.groups.add(grupo)
+
+                motorista.usuario_vinculado = usuario
+            else:
+                if pin:
+                    usuario.set_password(pin)
+                usuario.is_active = motorista.ativo
+                usuario.save()
+
+            motorista.save(update_fields=['matricula', 'usuario_vinculado'])
+            messages.success(
+                request,
+                f'Acesso ao portal configurado para {motorista.nome}. '
+                f'Login: "{usuario.username}" (informe ao motorista junto com o PIN).'
+            )
             return redirect('frota:motorista_detail', pk=motorista.pk)
 
     return render(request, 'cadastros/motorista/set_pin.html', {

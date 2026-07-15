@@ -584,6 +584,86 @@ class TestCalculoEstoque:
 
 
 @pytest.mark.django_db
+class TestCustoMedioPonderado:
+    """Testes para o cálculo do custo médio ponderado por lote"""
+
+    def test_custo_medio_pondera_por_quantidade_e_valor(self, setup_dados):
+        """Duas entradas com preços diferentes devem gerar média ponderada, não a última"""
+        dados = setup_dados
+        produto = dados['produto']
+
+        Lote.objects.create(
+            empresa=dados['empresa'],
+            produto=produto,
+            armazem=dados['armazem1'],
+            numero_lote='LOTE-CMP-001',
+            data_fabricacao=timezone.now().date(),
+            quantidade_inicial=100,
+            quantidade_atual=100,
+            unidade_medida=dados['unidade'],
+            cadastrado_por=dados['usuario'],
+            status='DISPONIVEL',
+            valor_unitario=Decimal('10.00'),
+        )
+        Lote.objects.create(
+            empresa=dados['empresa'],
+            produto=produto,
+            armazem=dados['armazem1'],
+            numero_lote='LOTE-CMP-002',
+            data_fabricacao=timezone.now().date(),
+            quantidade_inicial=50,
+            quantidade_atual=50,
+            unidade_medida=dados['unidade'],
+            cadastrado_por=dados['usuario'],
+            status='DISPONIVEL',
+            valor_unitario=Decimal('13.00'),
+        )
+
+        produto.refresh_from_db()
+        # (100*10 + 50*13) / 150 = 11.00 - nao deve ser 13.00 (ultimo preco)
+        assert produto.preco_custo == Decimal('11.00')
+
+    def test_custo_medio_ignora_lote_esgotado(self, setup_dados):
+        """Lote com quantidade_atual=0 não deve entrar na ponderação"""
+        dados = setup_dados
+        produto = dados['produto']
+
+        lote1 = Lote.objects.create(
+            empresa=dados['empresa'],
+            produto=produto,
+            armazem=dados['armazem1'],
+            numero_lote='LOTE-CMP-003',
+            data_fabricacao=timezone.now().date(),
+            quantidade_inicial=20,
+            quantidade_atual=20,
+            unidade_medida=dados['unidade'],
+            cadastrado_por=dados['usuario'],
+            status='DISPONIVEL',
+            valor_unitario=Decimal('5.00'),
+        )
+        Lote.objects.create(
+            empresa=dados['empresa'],
+            produto=produto,
+            armazem=dados['armazem1'],
+            numero_lote='LOTE-CMP-004',
+            data_fabricacao=timezone.now().date(),
+            quantidade_inicial=40,
+            quantidade_atual=40,
+            unidade_medida=dados['unidade'],
+            cadastrado_por=dados['usuario'],
+            status='DISPONIVEL',
+            valor_unitario=Decimal('20.00'),
+        )
+
+        # Esgota o lote1 - seu custo não deve mais pesar na média
+        lote1.quantidade_atual = 0
+        lote1.save()
+
+        produto.refresh_from_db()
+        assert produto.preco_custo == Decimal('20.00')
+
+
+@pytest.mark.django_db
 class TestValidacoesEstoque:
     """Testes para validações de estoque"""
     

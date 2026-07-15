@@ -1,21 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}{{ title }} | Agrisdata{% endblock %}
-{% block page_title %}{{ title }}{% endblock %}
-
-{% block extra_css %}
-<style>
-  .section-card {
-    border-left: 4px solid #3b82f6;
-    margin-bottom: 1.5rem;
-  }
-</style>
-{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
 
-  <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
@@ -25,118 +14,138 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0"><i class="bi bi-wrench text-warning"></i> {{ title }}</h2>
-    <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-wrench"></i></span>
+        <div>
+          <h2>{{ title }}</h2>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'frota:manutencao_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post" novalidate>
     {% csrf_token %}
 
-    <!-- Seção 1: Dados da Manutenção -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="bi bi-wrench"></i> Dados da Manutenção</h5>
+    <nav class="section-nav" id="manutencao-section-nav">
+      <a href="#sec-dados" data-tab="sec-dados">Dados da Manutenção</a>
+      <a href="#sec-local" data-tab="sec-local">Local de Execução</a>
+      {% if formset %}
+      <a href="#sec-pecas" data-tab="sec-pecas">Peças e Materiais</a>
+      {% endif %}
+    </nav>
+
+    <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-wrench"></i></span>
+        <span class="title">Dados da Manutenção</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Veículo <span class="text-danger">*</span></label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Veículo<span class="req">*</span></label>
             {{ form.vehicle }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Placa</label>
+          <div class="field col-6">
+            <label class="form-label">Placa</label>
             {{ form.placa }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo <span class="text-danger">*</span></label>
+          <div class="field col-3">
+            <label class="form-label">Tipo<span class="req">*</span></label>
             {{ form.tipo }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Status <span class="text-danger">*</span></label>
+          <div class="field col-3">
+            <label class="form-label">Status<span class="req">*</span></label>
             {{ form.status }}
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Descrição do Serviço <span class="text-danger">*</span></label>
+          <div class="field col-12">
+            <label class="form-label">Descrição do Serviço<span class="req">*</span></label>
             {{ form.descricao }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Data Abertura <span class="text-danger">*</span></label>
+          <div class="field col-3">
+            <label class="form-label">Data Abertura<span class="req">*</span></label>
             {{ form.data_abertura }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Data Conclusão</label>
+          <div class="field col-3">
+            <label class="form-label">Data Conclusão</label>
             {{ form.data_conclusao }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Hodômetro (km)</label>
+          <div class="field col-3">
+            <label class="form-label">Hodômetro (km)</label>
             {{ form.km_odometro }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Horímetro (h)</label>
+          <div class="field col-3">
+            <label class="form-label">Horímetro (h)</label>
             {{ form.horimetro }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Próxima Manutenção (data)</label>
+          <div class="field col-6">
+            <label class="form-label">Próxima Manutenção (data)</label>
             {{ form.proxima_data }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Próxima Manutenção (km)</label>
+          <div class="field col-6">
+            <label class="form-label">Próxima Manutenção (km)</label>
             {{ form.proximo_km }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 2: Local de Execução -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Local de Execução</h5>
+    <div class="form-section" id="sec-local" data-tab-panel="sec-local">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Local de Execução</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Oficina Própria?</label>
-            <div class="form-check mt-2">{{ form.eh_oficina_propria }} <span class="small">Sim — baixa no estoque</span></div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.eh_oficina_propria }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label">Oficina Própria? <span class="small">(baixa no estoque)</span></label>
+            </div>
           </div>
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">Armazém / Oficina</label>
+          <div class="field col-5">
+            <label class="form-label">Armazém / Oficina</label>
             {{ form.local_oficina }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Fornecedor Externo</label>
+          <div class="field col-4">
+            <label class="form-label">Fornecedor Externo</label>
             {{ form.fornecedor_externo }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Valor do Serviço (R$)</label>
+          <div class="field col-4">
+            <label class="form-label">Valor do Serviço (R$)</label>
             {{ form.valor_servico }}
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Observações</label>
+          <div class="field col-12">
+            <label class="form-label">Observações</label>
             {{ form.observacoes }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 3: Peças e Materiais -->
     {% if formset %}
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #6366f1; color: white;">
-        <div class="d-flex justify-content-between align-items-center">
-          <h5 class="mb-0"><i class="bi bi-list-check"></i> Peças e Materiais</h5>
-          <button type="button" id="btn-adicionar-peca" class="btn btn-sm btn-light">
-            <i class="bi bi-plus-circle"></i> Adicionar Peça
-          </button>
-        </div>
+    <div class="form-section" id="sec-pecas" data-tab-panel="sec-pecas">
+      <div class="section-toolbar">
+        <span class="title"><i class="bi bi-list-check text-primary"></i> Peças e Materiais</span>
+        <button type="button" id="btn-adicionar-peca" class="btn btn-sm btn-outline">
+          <i class="bi bi-plus-circle"></i> Adicionar Peça
+        </button>
       </div>
-      <div class="card-body p-4">
+      <div class="form-section-body">
         {{ formset.management_form }}
-        <div class="table-responsive">
-          <table class="table table-sm table-hover align-middle" id="pecas-table">
-            <thead class="table-light">
+        <div class="items-table-wrap">
+          <table class="items-table" id="pecas-table">
+            <thead>
               <tr>
                 <th>Produto</th>
                 <th style="width: 70px;">Und</th>
@@ -166,7 +175,7 @@
                   <input type="text" class="form-control-plaintext text-end fw-semibold valor-total" readonly>
                 </td>
                 <td class="text-center">
-                  <button type="button" class="btn btn-sm btn-outline-danger btn-remover-peca" title="Remover">
+                  <button type="button" class="row-action danger btn-remover-peca" title="Remover">
                     <i class="bi bi-trash"></i>
                   </button>
                 </td>
@@ -186,7 +195,7 @@
               {% endfor %}
             </tbody>
             <tfoot>
-              <tr class="table-light fw-bold">
+              <tr class="fw-bold">
                 <td colspan="5" class="text-end">Total Geral:</td>
                 <td class="text-end text-warning fs-6" id="total-geral">R$ 0,00</td>
                 <td></td>
@@ -227,7 +236,7 @@
               <input type="text" class="form-control-plaintext text-end fw-semibold valor-total" readonly>
             </td>
             <td class="text-center">
-              <button type="button" class="btn btn-sm btn-outline-danger btn-remover-peca" title="Remover">
+              <button type="button" class="row-action danger btn-remover-peca" title="Remover">
                 <i class="bi bi-trash"></i>
               </button>
             </td>
@@ -237,18 +246,20 @@
     </div>
     {% endif %}
 
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar
       </button>
     </div>
   </form>
 </div>
+{% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script src="{% static 'js/manutencao_form.js' %}"></script>
-{% endblock %}
 {% endblock %}

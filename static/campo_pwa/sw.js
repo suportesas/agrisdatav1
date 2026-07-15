@@ -176,8 +176,8 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: '/static/img/logo.png',
-      badge: '/static/img/logo.png',
+      icon: '/static/campo_pwa/icon-192.png',
+      badge: '/static/campo_pwa/icon-192.png',
       tag: 'campo-os',
       data: { url: data.url },
       vibrate: [200, 100, 200],

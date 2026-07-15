@@ -73,20 +73,9 @@ a    { text-decoration: none; color: inherit; }
 
 .nav-inner { width:100%; display:flex; align-items:center; justify-content:space-between; gap:32px; }
 
-.logo { display:flex; align-items:center; gap:9px; }
-.logo-mark {
-  width:32px; height:32px; border-radius:8px;
-  background: linear-gradient(135deg, var(--green), var(--green2));
-  display:flex; align-items:center; justify-content:center;
-  box-shadow: 0 2px 8px rgba(26,122,60,.3);
-}
-.logo-mark svg { width:16px; height:16px; color:#fff; }
-.logo-name {
-  font-family:'Space Grotesk',sans-serif;
-  font-size:20px; font-weight:700;
-  color: var(--text); letter-spacing:-.2px;
-}
-.logo-name b { color: var(--green2); font-weight:700; }
+.logo { display:flex; align-items:center; }
+.logo-img { height:36px; width:auto; display:block; }
+.footer-top .logo-img { height:32px; }
 
 .nav-links { display:flex; align-items:center; gap:32px; list-style:none; }
 .nav-links a {
@@ -579,12 +568,7 @@ footer {
 <nav id="nav">
   <div class="nav-inner">
     <a href="#" class="logo">
-      <div class="logo-mark">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2L3 7l9 5 9-5-9-5z"/><path d="M3 17l9 5 9-5"/><path d="M3 12l9 5 9-5"/>
-        </svg>
-      </div>
-      <span class="logo-name">Agrisdata</span>
+      <img src="{% static 'img/logo.png' %}" alt="Agrisdata" class="logo-img">
     </a>
 
     <ul class="nav-links">
@@ -1065,8 +1049,7 @@ footer {
     <div class="footer-top">
       <div>
         <a href="#" class="logo">
-          <div class="logo-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M12 2L3 7l9 5 9-5-9-5z"/><path d="M3 17l9 5 9-5"/><path d="M3 12l9 5 9-5"/></svg></div>
-          <span class="logo-name" style="color:#fff">Agrisdata</span>
+          <img src="{% static 'img/logo.png' %}" alt="Agrisdata" class="logo-img">
         </a>
         <p class="footer-desc">Plataforma SaaS de gestão agrícola completa. Do talhão ao mundo, com tecnologia e precisão.</p>
       </div>

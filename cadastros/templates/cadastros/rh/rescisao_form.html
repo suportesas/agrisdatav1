@@ -1,105 +1,72 @@
 {% extends 'base.html' %}
-{% load widget_tweaks %}
+{% load widget_tweaks static %}
 
 {% block title %}{{ title }} | Agrisdata{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="row justify-content-center">
-    <div class="col-xl-10">
 
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'rh:rescisao_list' %}">Rescisões</a></li>
-          <li class="breadcrumb-item active">{{ title }}</li>
-        </ol>
-      </nav>
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rescisao_list' %}">Rescisões</a></li>
+      <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+  </nav>
 
-      <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-person-x"></i></span>
         <div>
-          <h1 class="h3 mb-1">
-            <i class="fas fa-user-times text-secondary me-2"></i>
-            {{ title }}
-          </h1>
+          <h2>{{ title }}</h2>
           <p class="text-muted mb-0">Use o cálculo automático como estimativa inicial e confira os valores legais antes de concluir.</p>
         </div>
-        <a href="{% url 'rh:rescisao_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'rh:rescisao_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
         </a>
       </div>
+    </div>
+  </div>
 
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
+    <nav class="section-nav" id="rescisao-section-nav">
+      <a href="#sec-funcionario" data-tab="sec-funcionario">Funcionário</a>
+      <a href="#sec-dados" data-tab="sec-dados">Dados da Rescisão</a>
+      <a href="#sec-aviso" data-tab="sec-aviso">Aviso Prévio</a>
+      <a href="#sec-verbas" data-tab="sec-verbas">Verbas Rescisórias</a>
+      <a href="#sec-totais" data-tab="sec-totais">Totais e Direitos</a>
+      <a href="#sec-documentos" data-tab="sec-documentos">Documentos e Pagamento</a>
+    </nav>
 
-        <div class="card mb-3 border-0 shadow-sm">
-          <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Cálculo Assistido</h5>
-            <div class="d-flex gap-2">
-              <button type="button" class="btn btn-light btn-sm" id="btnCalcularRescisao">
-                <i class="fas fa-bolt me-1"></i>Calcular verbas automaticamente
-              </button>
-              <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalAjudaRescisao">
-                <i class="fas fa-circle-question me-1"></i>Ajuda
-              </button>
-            </div>
+    <div class="complex-layout">
+      <div class="complex-main">
+
+        <div class="form-section" id="sec-funcionario" data-tab-panel="sec-funcionario">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-person"></i></span>
+            <span class="title">Funcionário</span>
           </div>
-          <div class="card-body">
-            <div class="alert alert-info mb-3">
-              O cálculo automático usa salário, data de admissão, data de desligamento, tipo de rescisão e aviso prévio para preencher uma estimativa inicial das verbas.
-            </div>
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="border rounded p-3 h-100 bg-light">
-                  <div class="small text-muted text-uppercase">Salário Base</div>
-                  <div class="fw-semibold" id="baseSalario">-</div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="border rounded p-3 h-100 bg-light">
-                  <div class="small text-muted text-uppercase">Data de Admissão</div>
-                  <div class="fw-semibold" id="baseAdmissao">-</div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="border rounded p-3 h-100 bg-light">
-                  <div class="small text-muted text-uppercase">Tipo de Contrato</div>
-                  <div class="fw-semibold" id="baseContrato">-</div>
-                </div>
-              </div>
-            </div>
-            <div class="mt-3 d-none" id="memoriaCalculoWrapper">
-              <div class="border rounded p-3">
-                <div class="fw-semibold mb-2">Memória de cálculo</div>
-                <ul class="mb-0 ps-3" id="memoriaCalculo"></ul>
-              </div>
-            </div>
-            <div class="mt-3 d-none" id="calculoErro"></div>
-          </div>
-        </div>
-
-        <div class="card mb-3">
-          <div class="card-header bg-secondary text-white">
-            <h5 class="mb-0"><i class="fas fa-user me-2"></i>Funcionário</h5>
-          </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6{% if form.funcionario.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.funcionario.label }}<span class="req">*</span></label>
                 {{ form.funcionario|add_class:"form-select" }}
-                {% if form.funcionario.errors %}<div class="text-danger small">{{ form.funcionario.errors }}</div>{% endif %}
+                {% if form.funcionario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcionario.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-6">
+              <div class="field col-6">
                 {% if form.vinculo %}
                 <label class="form-label">{{ form.vinculo.label }}</label>
                 {{ form.vinculo|add_class:"form-select" }}
-                {% if form.vinculo.errors %}<div class="text-danger small">{{ form.vinculo.errors }}</div>{% endif %}
+                {% if form.vinculo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.vinculo.errors|striptags }}</div>{% endif %}
                 {% else %}
                 <label class="form-label">Base do cálculo</label>
                 <input type="text" class="form-control" value="Salário e data de admissão do cadastro do funcionário" readonly>
@@ -109,198 +76,213 @@
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Dados da Rescisão</h5>
+        <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+            <span class="title">Dados da Rescisão</span>
           </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">{{ form.tipo_rescisao.label }} <span class="text-danger">*</span></label>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4{% if form.tipo_rescisao.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.tipo_rescisao.label }}<span class="req">*</span></label>
                 {{ form.tipo_rescisao|add_class:"form-select" }}
-                {% if form.tipo_rescisao.errors %}<div class="text-danger small">{{ form.tipo_rescisao.errors }}</div>{% endif %}
+                {% if form.tipo_rescisao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_rescisao.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.data_aviso.label }} <span class="text-danger">*</span></label>
+              <div class="field col-4{% if form.data_aviso.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.data_aviso.label }}<span class="req">*</span></label>
                 {{ form.data_aviso|add_class:"form-control" }}
-                {% if form.data_aviso.errors %}<div class="text-danger small">{{ form.data_aviso.errors }}</div>{% endif %}
+                {% if form.data_aviso.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_aviso.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.data_desligamento.label }} <span class="text-danger">*</span></label>
+              <div class="field col-4{% if form.data_desligamento.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.data_desligamento.label }}<span class="req">*</span></label>
                 {{ form.data_desligamento|add_class:"form-control" }}
-                {% if form.data_desligamento.errors %}<div class="text-danger small">{{ form.data_desligamento.errors }}</div>{% endif %}
+                {% if form.data_desligamento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_desligamento.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-8">
+              <div class="field col-8">
                 <label class="form-label">{{ form.motivo_detalhado.label }}</label>
                 {{ form.motivo_detalhado|add_class:"form-control" }}
-                {% if form.motivo_detalhado.errors %}<div class="text-danger small">{{ form.motivo_detalhado.errors }}</div>{% endif %}
+                {% if form.motivo_detalhado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.motivo_detalhado.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.status.label }}</label>
                 {{ form.status|add_class:"form-select" }}
-                {% if form.status.errors %}<div class="text-danger small">{{ form.status.errors }}</div>{% endif %}
+                {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors|striptags }}</div>{% endif %}
               </div>
             </div>
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="card-header bg-warning">
-            <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Aviso Prévio</h5>
+        <div class="form-section" id="sec-aviso" data-tab-panel="sec-aviso">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-bell"></i></span>
+            <span class="title">Aviso Prévio</span>
           </div>
-          <div class="card-body">
-            <div class="row g-3 align-items-end">
-              <div class="col-md-4">
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
                 <label class="form-label">{{ form.dias_aviso_previo.label }}</label>
                 {{ form.dias_aviso_previo|add_class:"form-control" }}
-                {% if form.dias_aviso_previo.errors %}<div class="text-danger small">{{ form.dias_aviso_previo.errors }}</div>{% endif %}
+                {% if form.dias_aviso_previo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dias_aviso_previo.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.aviso_previo_indenizado.label }}</label>
                 {{ form.aviso_previo_indenizado|add_class:"form-control" }}
-                {% if form.aviso_previo_indenizado.errors %}<div class="text-danger small">{{ form.aviso_previo_indenizado.errors }}</div>{% endif %}
+                {% if form.aviso_previo_indenizado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.aviso_previo_indenizado.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="col-md-4">
-                <div class="form-check mt-4 pt-2">
-                  {{ form.trabalhou_aviso_previo|add_class:"form-check-input" }}
-                  <label class="form-check-label" for="{{ form.trabalhou_aviso_previo.id_for_label }}">
-                    {{ form.trabalhou_aviso_previo.label }}
+              <div class="field col-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.trabalhou_aviso_previo|add_class:"" }}
+                    <span class="slider"></span>
                   </label>
+                  <label class="switch-label" for="{{ form.trabalhou_aviso_previo.id_for_label }}">{{ form.trabalhou_aviso_previo.label }}</label>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Verbas Rescisórias</h5>
+        <div class="form-section" id="sec-verbas" data-tab-panel="sec-verbas">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-cash-stack"></i></span>
+            <span class="title">Verbas Rescisórias</span>
           </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
                 <label class="form-label">{{ form.saldo_salario.label }}</label>
                 {{ form.saldo_salario|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.ferias_vencidas.label }}</label>
                 {{ form.ferias_vencidas|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.ferias_proporcionais.label }}</label>
                 {{ form.ferias_proporcionais|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.decimo_terceiro_proporcional.label }}</label>
                 {{ form.decimo_terceiro_proporcional|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.multa_fgts.label }}</label>
                 {{ form.multa_fgts|add_class:"form-control campo-calculo" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.outros_valores.label }}</label>
                 {{ form.outros_valores|add_class:"form-control campo-calculo" }}
-                <small class="text-muted">O sistema lança aqui o 1/3 constitucional estimado.</small>
+                <div class="helper-note">O sistema lança aqui o 1/3 constitucional estimado.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Totais e Direitos</h5>
+        <div class="form-section" id="sec-totais" data-tab-panel="sec-totais">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-clipboard-check"></i></span>
+            <span class="title">Totais e Direitos</span>
           </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
                 <label class="form-label">Total Bruto Estimado</label>
                 <input type="text" class="form-control" id="valor_total_estimado" readonly>
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.descontos.label }}</label>
                 {{ form.descontos|add_class:"form-control campo-calculo" }}
-                <small class="text-muted">INSS, IRRF, adiantamentos e faltas devem ser revisados manualmente.</small>
+                <div class="helper-note">INSS, IRRF, adiantamentos e faltas devem ser revisados manualmente.</div>
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.valor_liquido.label }}</label>
                 {{ form.valor_liquido|add_class:"form-control" }}
               </div>
-              <div class="col-md-6">
-                <div class="form-check mt-2">
-                  {{ form.tem_direito_seguro_desemprego|add_class:"form-check-input" }}
-                  <label class="form-check-label" for="{{ form.tem_direito_seguro_desemprego.id_for_label }}">
-                    {{ form.tem_direito_seguro_desemprego.label }}
+              <div class="field col-6">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.tem_direito_seguro_desemprego|add_class:"" }}
+                    <span class="slider"></span>
                   </label>
+                  <label class="switch-label" for="{{ form.tem_direito_seguro_desemprego.id_for_label }}">{{ form.tem_direito_seguro_desemprego.label }}</label>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="form-check mt-2">
-                  {{ form.liberar_fgts|add_class:"form-check-input" }}
-                  <label class="form-check-label" for="{{ form.liberar_fgts.id_for_label }}">
-                    {{ form.liberar_fgts.label }}
+              <div class="field col-6">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.liberar_fgts|add_class:"" }}
+                    <span class="slider"></span>
                   </label>
+                  <label class="switch-label" for="{{ form.liberar_fgts.id_for_label }}">{{ form.liberar_fgts.label }}</label>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="card mb-3">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-file-lines me-2"></i>Documentos, Pagamento e Observações</h5>
+        <div class="form-section" id="sec-documentos" data-tab-panel="sec-documentos">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-file-earmark-lock"></i></span>
+            <span class="title">Documentos, Pagamento e Observações</span>
           </div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="form-check mt-4">
-                  {{ form.exame_demissional_realizado|add_class:"form-check-input" }}
-                  <label class="form-check-label" for="{{ form.exame_demissional_realizado.id_for_label }}">
-                    {{ form.exame_demissional_realizado.label }}
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.exame_demissional_realizado|add_class:"" }}
+                    <span class="slider"></span>
                   </label>
+                  <label class="switch-label" for="{{ form.exame_demissional_realizado.id_for_label }}">{{ form.exame_demissional_realizado.label }}</label>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.data_exame_demissional.label }}</label>
                 {{ form.data_exame_demissional|add_class:"form-control" }}
               </div>
-              <div class="col-md-4">
-                <div class="form-check mt-4">
-                  {{ form.trct_emitido|add_class:"form-check-input" }}
-                  <label class="form-check-label" for="{{ form.trct_emitido.id_for_label }}">
-                    {{ form.trct_emitido.label }}
+              <div class="field col-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.trct_emitido|add_class:"" }}
+                    <span class="slider"></span>
                   </label>
+                  <label class="switch-label" for="{{ form.trct_emitido.id_for_label }}">{{ form.trct_emitido.label }}</label>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.chave_conectividade_social.label }}</label>
                 {{ form.chave_conectividade_social|add_class:"form-control" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.arquivo_trct.label }}</label>
                 {{ form.arquivo_trct|add_class:"form-control" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.arquivo_exame.label }}</label>
                 {{ form.arquivo_exame|add_class:"form-control" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.data_homologacao.label }}</label>
                 {{ form.data_homologacao|add_class:"form-control" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.local_homologacao.label }}</label>
                 {{ form.local_homologacao|add_class:"form-control" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.data_pagamento.label }}</label>
                 {{ form.data_pagamento|add_class:"form-control" }}
               </div>
-              <div class="col-md-4">
+              <div class="field col-4">
                 <label class="form-label">{{ form.forma_pagamento.label }}</label>
                 {{ form.forma_pagamento|add_class:"form-control" }}
               </div>
-              <div class="col-md-8">
+              <div class="field col-8">
                 <label class="form-label">{{ form.observacoes.label }}</label>
                 {{ form.observacoes|add_class:"form-control" }}
               </div>
@@ -308,17 +290,50 @@
           </div>
         </div>
 
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'rh:rescisao_list' %}" class="btn btn-outline-secondary btn-lg px-5">
-            <i class="fas fa-times me-2"></i>Cancelar
-          </a>
-          <button type="submit" class="btn btn-success btn-lg px-5">
-            <i class="fas fa-save me-2"></i>Salvar Rescisão
-          </button>
+      </div>
+
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4><i class="bi bi-calculator"></i> Cálculo Assistido</h4>
+          <div class="helper-note">
+            O cálculo automático usa salário, data de admissão, data de desligamento, tipo de rescisão e aviso prévio para preencher uma estimativa inicial das verbas.
+          </div>
+          <div class="d-flex gap-2 mt-2 mb-3">
+            <button type="button" class="btn btn-primary btn-sm flex-grow-1" id="btnCalcularRescisao">
+              <i class="bi bi-lightning-charge"></i> Calcular verbas
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" data-bs-toggle="modal" data-bs-target="#modalAjudaRescisao">
+              <i class="bi bi-question-circle"></i>
+            </button>
+          </div>
+          <div class="summary-row">
+            <span>Salário Base</span>
+            <span id="baseSalario">-</span>
+          </div>
+          <div class="summary-row">
+            <span>Data de Admissão</span>
+            <span id="baseAdmissao">-</span>
+          </div>
+          <div class="summary-row">
+            <span>Tipo de Contrato</span>
+            <span id="baseContrato">-</span>
+          </div>
+          <div class="mt-3 d-none" id="memoriaCalculoWrapper">
+            <div class="fw-semibold mb-2">Memória de cálculo</div>
+            <ul class="mb-0 ps-3" id="memoriaCalculo"></ul>
+          </div>
+          <div class="mt-3 d-none" id="calculoErro"></div>
         </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'rh:rescisao_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Salvar Rescisão
+      </button>
+    </div>
+  </form>
 </div>
 
 <div class="modal fade" id="modalAjudaRescisao" tabindex="-1" aria-hidden="true">
@@ -362,6 +377,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 function parseNumber(value) {
   const parsed = parseFloat((value || '').toString().replace(',', '.'));

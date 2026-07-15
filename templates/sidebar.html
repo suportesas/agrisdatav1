@@ -5,19 +5,7 @@
   <!-- Logo e Empresa -->
   <div class="sidebar-brand">
     <div class="brand-logo">
-      {% if user.is_superuser %}
-      <i class="bi bi-grid-1x2-fill"></i>
-      {% else %}
-      <i class="bi bi-diagram-3-fill"></i>
-      {% endif %}
-    </div>
-    <div class="brand-text">
-      <h4>{% if user.is_superuser %}Agrisdata SaaS{% else %}Agrisdata{% endif %}</h4>
-      {% if user.empresa %}
-      <span class="brand-subtitle">{{ user.empresa.nome|truncatewords:3 }}</span>
-      {% elif user.is_superuser %}
-      <span class="brand-subtitle">Painel do Proprietário</span>
-      {% endif %}
+      <img src="{% static 'img/logo.png' %}" alt="AgrisData" class="brand-logo-img">
     </div>
   </div>
 

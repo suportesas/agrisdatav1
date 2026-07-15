@@ -2,126 +2,81 @@
 {% load static %}
 
 {% block title %}Registrar Ponto de Amostragem | Agrisdata{% endblock %}
-{% block page_title %}
-  <div class="d-flex align-items-center gap-2">
-    <span>Registrar Ponto {{ numero_ponto }} de {{ praga_mon.monitoramento.quantidade_pontos }}</span>
-    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#helpPontoForm" title="Ajuda">
-      <i class="bi bi-question-circle"></i>
-    </button>
-  </div>
-{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-  <div class="row">
-    <div class="col-lg-8 offset-lg-2">
-      
-      <!-- Progresso de Amostragem -->
-      <div class="mb-4">
-        <div class="d-flex justify-content-between mb-2">
-          <span class="fw-bold">Progresso de Amostragem</span>
-          <span class="badge bg-primary">{{ numero_ponto }}/{{ praga_mon.monitoramento.quantidade_pontos }}</span>
-        </div>
-        <div class="progress" style="height: 24px;">
-          <div class="progress-bar bg-success" role="progressbar" 
-               style="width: {{ progresso }}%" 
-               aria-valuenow="{{ numero_ponto }}" 
-               aria-valuemin="0" 
-               aria-valuemax="{{ praga_mon.monitoramento.quantidade_pontos }}">
-            {{ numero_ponto }}/{{ praga_mon.monitoramento.quantidade_pontos }}
-          </div>
+<div class="container-fluid py-4">
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-crosshair2"></i></span>
+        <div>
+          <h2>Ponto de Amostragem #{{ numero_ponto }}</h2>
+          <p class="text-muted mb-0">Registrar Ponto {{ numero_ponto }} de {{ praga_mon.monitoramento.quantidade_pontos }}</p>
         </div>
       </div>
-
-      <!-- Informações do Contexto -->
-      <div class="card shadow-sm border-0 rounded-4 mb-4 bg-light">
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-4">
-              <p class="mb-1 text-muted"><small>Monitoramento</small></p>
-              <p class="fw-bold mb-0">{{ praga_mon.monitoramento.numero }}</p>
-            </div>
-            <div class="col-md-4">
-              <p class="mb-1 text-muted"><small>Praga</small></p>
-              <p class="fw-bold mb-0">{{ praga_mon.praga.nome_comum }}</p>
-            </div>
-            <div class="col-md-4">
-              <p class="mb-1 text-muted"><small>Talhão</small></p>
-              <p class="fw-bold mb-0">{{ praga_mon.monitoramento.talhao.nome }}</p>
-            </div>
-          </div>
-        </div>
+      <div class="form-header-actions">
+        <button type="button" class="btn btn-ghost" data-bs-toggle="modal" data-bs-target="#helpPontoForm">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+        <a href="{% url 'mip:monitoramento_mip_praga_detail' praga_mon.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
       </div>
+    </div>
+  </div>
 
-      <!-- Formulário -->
-      <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-primary text-white rounded-top-4">
-          <h5 class="mb-0">
-            <i class="bi bi-crosshair2"></i> Ponto de Amostragem #{{ numero_ponto }}
-          </h5>
-        </div>
+  <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+    {% csrf_token %}
+    {{ form.numero_ponto }}
 
-        <div class="card-body p-4">
-          <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-            {% csrf_token %}
+    <nav class="section-nav" id="ponto-mip-section-nav">
+      <a href="#sec-deteccao" data-tab="sec-deteccao">Detecção</a>
+      <a href="#sec-localizacao" data-tab="sec-localizacao">Localização e Mídia</a>
+    </nav>
 
-            <!-- Número do Ponto (Hidden) -->
-            {{ form.numero_ponto }}
+    <div class="complex-layout">
+      <div class="complex-main">
 
-            <!-- Praga Presente (Toggle) -->
-            <div class="mb-4">
-              <label class="form-label"><i class="bi bi-bug"></i> Praga Presente?</label>
-              <div class="form-check form-switch ps-0">
-                <input class="form-check-input" type="checkbox" id="praga_presente" 
-                       name="{{ form.praga_presente.name }}" 
-                       {% if form.praga_presente.value %}checked{% endif %}
-                       style="width: 3em; height: 1.5em; cursor: pointer;">
-                <label class="form-check-label ms-3" for="praga_presente">
-                  Praga foi detectada neste ponto
-                </label>
+        <div class="form-section" id="sec-deteccao" data-tab-panel="sec-deteccao">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-bug"></i></span>
+            <span class="title">Detecção</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <label class="form-label">&nbsp;</label>
+                <div class="switch-row">
+                  <label class="switch">
+                    <input type="checkbox" id="praga_presente" name="{{ form.praga_presente.name }}" {% if form.praga_presente.value %}checked{% endif %}>
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="praga_presente">Praga foi detectada neste ponto</label>
+                </div>
               </div>
             </div>
 
-            <!-- Seção de Dados (visível apenas se praga presente) -->
             <div id="dados-praga" style="display: {% if form.praga_presente.value %}block{% else %}none{% endif %};">
-              
-              <!-- Quantidade -->
-              <div class="mb-4">
-                <label for="{{ form.quantidade.id_for_label }}" class="form-label">
-                  <i class="bi bi-123"></i> Quantidade de Indivíduos
-                </label>
-                {{ form.quantidade }}
-                {% if form.quantidade.errors %}
-                  <div class="invalid-feedback d-block">{{ form.quantidade.errors.0 }}</div>
-                {% endif %}
-                <small class="text-muted d-block mt-2">
-                  Número de pragas encontradas neste ponto
-                </small>
-              </div>
-
-              <!-- Estágio -->
-              <div class="mb-4">
-                <label for="{{ form.estagio.id_for_label }}" class="form-label">
-                  <i class="bi bi-diagram-3"></i> Estágio Predominante
-                </label>
-                {{ form.estagio }}
-                {% if form.estagio.errors %}
-                  <div class="invalid-feedback d-block">{{ form.estagio.errors.0 }}</div>
-                {% endif %}
-                <small class="text-muted d-block mt-2">
-                  Qual é o estágio predominante neste ponto?
-                </small>
-              </div>
-
-              <!-- Severidade -->
-              <div class="mb-4">
-                <label class="form-label">
-                  <i class="bi bi-exclamation-triangle"></i> Severidade do Dano
-                </label>
-                <div class="row g-2">
-                  {% for value, label in form.severidade.field.choices %}
+              <div class="form-grid">
+                <div class="field col-6{% if form.quantidade.errors %} has-error{% endif %}">
+                  <label for="{{ form.quantidade.id_for_label }}" class="form-label"><i class="bi bi-123"></i> Quantidade de Indivíduos</label>
+                  {{ form.quantidade }}
+                  {% if form.quantidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade.errors.0 }}</div>{% endif %}
+                  <div class="helper-note">Número de pragas encontradas neste ponto</div>
+                </div>
+                <div class="field col-6{% if form.estagio.errors %} has-error{% endif %}">
+                  <label for="{{ form.estagio.id_for_label }}" class="form-label"><i class="bi bi-diagram-3"></i> Estágio Predominante</label>
+                  {{ form.estagio }}
+                  {% if form.estagio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.estagio.errors.0 }}</div>{% endif %}
+                  <div class="helper-note">Qual é o estágio predominante neste ponto?</div>
+                </div>
+                <div class="field col-12{% if form.severidade.errors %} has-error{% endif %}">
+                  <label class="form-label"><i class="bi bi-exclamation-triangle"></i> Severidade do Dano</label>
+                  <div class="row g-2">
+                    {% for value, label in form.severidade.field.choices %}
                     <div class="col-auto">
-                      <input type="radio" class="btn-check" name="{{ form.severidade.name }}" 
+                      <input type="radio" class="btn-check" name="{{ form.severidade.name }}"
                              id="severidade_{{ value }}" value="{{ value }}"
                              {% if form.severidade.value == value|stringformat:"s" %}checked{% endif %}>
                       <label class="btn btn-outline-warning btn-sm" for="severidade_{{ value }}">
@@ -138,123 +93,123 @@
                         {% endif %}
                       </label>
                     </div>
-                  {% endfor %}
-                </div>
-                {% if form.severidade.errors %}
-                  <div class="invalid-feedback d-block">{{ form.severidade.errors.0 }}</div>
-                {% endif %}
-              </div>
-
-            </div>
-
-            <!-- Localização GPS (Sempre visível) -->
-            <div class="card mb-4 bg-light">
-              <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-geo-alt"></i> Localização GPS</h6>
-              </div>
-              <div class="card-body">
-                <div class="row">
-                  <div class="col-md-6 mb-3">
-                    <label for="{{ form.latitude.id_for_label }}" class="form-label">
-                      Latitude
-                    </label>
-                    {{ form.latitude }}
-                    <small class="text-muted d-block mt-2">
-                      Ex: -19.8711
-                    </small>
-                    {% if form.latitude.errors %}
-                      <div class="invalid-feedback d-block">{{ form.latitude.errors.0 }}</div>
-                    {% endif %}
+                    {% endfor %}
                   </div>
-                  <div class="col-md-6 mb-0">
-                    <label for="{{ form.longitude.id_for_label }}" class="form-label">
-                      Longitude
-                    </label>
-                    {{ form.longitude }}
-                    <small class="text-muted d-block mt-2">
-                      Ex: -51.7500
-                    </small>
-                    {% if form.longitude.errors %}
-                      <div class="invalid-feedback d-block">{{ form.longitude.errors.0 }}</div>
-                    {% endif %}
-                  </div>
+                  {% if form.severidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.severidade.errors.0 }}</div>{% endif %}
                 </div>
               </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Foto (Sempre visível) -->
-            <div class="mb-4">
-              <label for="{{ form.foto.id_for_label }}" class="form-label">
-                <i class="bi bi-camera"></i> Foto (Opcional)
-              </label>
-              {{ form.foto }}
-              {% if form.foto.errors %}
-                <div class="invalid-feedback d-block">{{ form.foto.errors.0 }}</div>
-              {% endif %}
-              <small class="text-muted d-block mt-2">
-                Tire uma foto do ponto ou da praga encontrada
-              </small>
-              {% if form.instance.foto %}
+        <div class="form-section" id="sec-localizacao" data-tab-panel="sec-localizacao">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+            <span class="title">Localização e Mídia</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6">
+                <label for="{{ form.latitude.id_for_label }}" class="form-label">Latitude</label>
+                {{ form.latitude }}
+                <div class="helper-note">Ex: -19.8711</div>
+                {% if form.latitude.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.latitude.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label for="{{ form.longitude.id_for_label }}" class="form-label">Longitude</label>
+                {{ form.longitude }}
+                <div class="helper-note">Ex: -51.7500</div>
+                {% if form.longitude.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.longitude.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-12">
+                <label for="{{ form.foto.id_for_label }}" class="form-label"><i class="bi bi-camera"></i> Foto (Opcional)</label>
+                {{ form.foto }}
+                {% if form.foto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.foto.errors.0 }}</div>{% endif %}
+                <div class="helper-note">Tire uma foto do ponto ou da praga encontrada</div>
+                {% if form.instance.foto %}
                 <div class="mt-3">
                   <p class="mb-2"><strong>Foto atual:</strong></p>
                   <img src="{{ form.instance.foto.url }}" alt="Ponto {{ numero_ponto }}" class="img-thumbnail" style="max-width: 300px;">
                 </div>
-              {% endif %}
-            </div>
-
-            <!-- Observações -->
-            <div class="mb-4">
-              <label for="observacoes" class="form-label">
-                <i class="bi bi-pencil-square"></i> Observações (Opcional)
-              </label>
-              <textarea class="form-control" id="observacoes" rows="3" 
-                        placeholder="Notas adicionais sobre este ponto..."></textarea>
-              <small class="text-muted d-block mt-2">
-                Registre qualquer detalhe importante do ponto
-              </small>
-            </div>
-
-            <!-- Botões -->
-            <div class="d-flex gap-2 justify-content-between">
-              <div>
-                {% if numero_ponto > 1 %}
-                  <a href="{% url 'mip:monitoramento_mip_add_ponto' praga_mon.pk %}?numero={{ numero_anterior }}" 
-                     class="btn btn-outline-secondary">
-                    <i class="bi bi-chevron-left"></i> Ponto Anterior
-                  </a>
                 {% endif %}
               </div>
-
-              <div class="d-flex gap-2">
-                <a href="{% url 'mip:monitoramento_mip_praga_detail' praga_mon.pk %}" 
-                   class="btn btn-outline-secondary">
-                  <i class="bi bi-x-circle"></i> Cancelar
-                </a>
-                <button type="submit" name="save_continue" class="btn btn-primary">
-                  <i class="bi bi-check-circle"></i> Salvar e Próximo
-                </button>
-              </div>
-
-              <div>
-                {% if numero_ponto < praga_mon.monitoramento.quantidade_pontos %}
-                  <!-- Próximo será automático -->
-                {% else %}
-                  <button type="submit" name="save_finish" class="btn btn-success">
-                    <i class="bi bi-check-circle-fill"></i> Finalizar
-                  </button>
-                {% endif %}
+              <div class="field col-12">
+                <label for="observacoes" class="form-label"><i class="bi bi-pencil-square"></i> Observações (Opcional)</label>
+                <textarea class="form-control" id="observacoes" rows="3" placeholder="Notas adicionais sobre este ponto..."></textarea>
+                <div class="helper-note">Registre qualquer detalhe importante do ponto</div>
               </div>
             </div>
-
-          </form>
+          </div>
         </div>
+
       </div>
 
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4>Progresso de Amostragem</h4>
+          <div class="summary-row">
+            <span>Pontos registrados</span>
+            <span>{{ numero_ponto }}/{{ praga_mon.monitoramento.quantidade_pontos }}</span>
+          </div>
+          <div class="progress" style="height: 20px;">
+            <div class="progress-bar bg-success" role="progressbar"
+                 style="width: {{ progresso }}%"
+                 aria-valuenow="{{ numero_ponto }}"
+                 aria-valuemin="0"
+                 aria-valuemax="{{ praga_mon.monitoramento.quantidade_pontos }}">
+              {{ numero_ponto }}/{{ praga_mon.monitoramento.quantidade_pontos }}
+            </div>
+          </div>
+        </div>
+        <div class="summary-card">
+          <h4>Contexto</h4>
+          <div class="summary-row">
+            <span>Monitoramento</span>
+            <span>{{ praga_mon.monitoramento.numero }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Praga</span>
+            <span>{{ praga_mon.praga.nome_comum }}</span>
+          </div>
+          <div class="summary-row">
+            <span>Talhão</span>
+            <span>{{ praga_mon.monitoramento.talhao.nome }}</span>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
+
+    <div class="app-footer-bar">
+      <div class="d-flex gap-2">
+        {% if numero_ponto > 1 %}
+        <a href="{% url 'mip:monitoramento_mip_add_ponto' praga_mon.pk %}?numero={{ numero_anterior }}" class="btn btn-outline">
+          <i class="bi bi-chevron-left"></i> Ponto Anterior
+        </a>
+        {% endif %}
+        <a href="{% url 'mip:monitoramento_mip_praga_detail' praga_mon.pk %}" class="btn btn-outline">
+          <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" name="save_continue" class="btn btn-primary">
+          <i class="bi bi-check-circle"></i> Salvar e Próximo
+        </button>
+        {% if numero_ponto >= praga_mon.monitoramento.quantidade_pontos %}
+        <button type="submit" name="save_finish" class="btn btn-success">
+          <i class="bi bi-check-circle-fill"></i> Finalizar
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </form>
 </div>
 
-<!-- Scripts -->
+{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const pragaCheckbox = document.getElementById('praga_presente');
@@ -273,8 +228,4 @@ document.addEventListener('DOMContentLoaded', function() {
   pragaCheckbox.addEventListener('change', toggleDadosPraga);
 });
 </script>
-
-<!-- Modals de Ajuda -->
-{% include 'cadastros/monitoramento_mip/_help_modals.html' %}
-
 {% endblock %}

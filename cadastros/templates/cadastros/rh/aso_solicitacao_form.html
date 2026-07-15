@@ -1,195 +1,235 @@
 {% extends 'base.html' %}
-{% load widget_tweaks %}
+{% load widget_tweaks static %}
 
 {% block title %}{{ title }} | Agrisdata{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-10">
 
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'rh:aso_solicitacao_list' %}">Solicitações de ASO</a></li>
-          <li class="breadcrumb-item active">{{ title }}</li>
-        </ol>
-      </nav>
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:aso_solicitacao_list' %}">Solicitações de ASO</a></li>
+      <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+  </nav>
 
-      <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-file-earmark-medical"></i></span>
         <div>
-          <h1 class="h3 mb-1"><i class="fas fa-file-signature me-2 text-primary"></i>{{ title }}</h1>
+          <h2>{{ title }}</h2>
           <p class="text-muted mb-0">Registre os exames obrigatórios e o destino da solicitação</p>
         </div>
-        <a href="{% url 'rh:aso_solicitacao_list' %}" class="btn btn-outline-secondary">
-          <i class="fas fa-arrow-left me-2"></i>Voltar
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'rh:aso_solicitacao_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
         </a>
       </div>
+    </div>
+  </div>
 
-      <form method="post">
-        {% csrf_token %}
+  <form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
 
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
+    <nav class="section-nav" id="aso-solicitacao-section-nav">
+      <a href="#sec-funcionario" data-tab="sec-funcionario">Funcionário e Riscos</a>
+      <a href="#sec-exame" data-tab="sec-exame">Datas e Exame</a>
+      <a href="#sec-status" data-tab="sec-status">Status e Alertas</a>
+    </nav>
 
-        <div class="card mb-3">
-          <div class="card-header bg-primary text-white"><strong>Dados da Solicitação</strong></div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-5">
-                <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
-                {{ form.funcionario|add_class:'form-select' }}
-                {% if form.funcionario.errors %}<div class="text-danger small">{{ form.funcionario.errors }}</div>{% endif %}
-              </div>
-
-              <div class="col-12">
-                <div class="card border-warning-subtle bg-warning bg-opacity-10">
-                  <div class="card-body py-3">
-                    <h6 class="fw-semibold mb-2">
-                      <i class="fas fa-triangle-exclamation me-1"></i> Riscos Ambientais da Função
-                    </h6>
-                    <div id="riscosAmbientaisWrapper">
-                      {% if riscos_ambientais_funcao %}
-                      <div class="table-responsive">
-                        <table class="table table-sm table-bordered align-middle mb-0">
-                          <thead class="table-light">
-                            <tr>
-                              <th>Categoria</th>
-                              <th>Agente</th>
-                              <th>Intensidade</th>
-                              <th>EPI</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {% for risco in riscos_ambientais_funcao %}
-                            <tr>
-                              <td>{{ risco.categoria.nome }}</td>
-                              <td>{{ risco.agente_especifico }}</td>
-                              <td>{{ risco.get_intensidade_display }}</td>
-                              <td>{{ risco.epi_obrigatorio|default:'-' }}</td>
-                            </tr>
-                            {% endfor %}
-                          </tbody>
-                        </table>
-                      </div>
-                      {% else %}
-                      <div class="text-muted small">Nenhum risco ambiental cadastrado para a função do funcionário selecionado.</div>
-                      {% endif %}
-                    </div>
+    <div class="form-section" id="sec-funcionario" data-tab-panel="sec-funcionario">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-person"></i></span>
+        <span class="title">Funcionário e Riscos</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-5{% if form.funcionario.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.funcionario.label }}<span class="req">*</span></label>
+            {{ form.funcionario|add_class:'form-select' }}
+            {% if form.funcionario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcionario.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.vinculo.label }}</label>
+            {{ form.vinculo|add_class:'form-select' }}
+            {% if form.vinculo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.vinculo.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-3{% if form.tipo_aso.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.tipo_aso.label }}<span class="req">*</span></label>
+            {{ form.tipo_aso|add_class:'form-select' }}
+            {% if form.tipo_aso.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_aso.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <div class="card border-warning-subtle bg-warning bg-opacity-10">
+              <div class="card-body py-3">
+                <h6 class="fw-semibold mb-2">
+                  <i class="fas fa-triangle-exclamation me-1"></i> Riscos Ambientais da Função
+                </h6>
+                <div id="riscosAmbientaisWrapper">
+                  {% if riscos_ambientais_funcao %}
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Categoria</th>
+                          <th>Agente</th>
+                          <th>Intensidade</th>
+                          <th>EPI</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for risco in riscos_ambientais_funcao %}
+                        <tr>
+                          <td>{{ risco.categoria.nome }}</td>
+                          <td>{{ risco.agente_especifico }}</td>
+                          <td>{{ risco.get_intensidade_display }}</td>
+                          <td>{{ risco.epi_obrigatorio|default:'-' }}</td>
+                        </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
                   </div>
+                  {% else %}
+                  <div class="text-muted small">Nenhum risco ambiental cadastrado para a função do funcionário selecionado.</div>
+                  {% endif %}
                 </div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.vinculo.label }}</label>
-                {{ form.vinculo|add_class:'form-select' }}
-                {% if form.vinculo.errors %}<div class="text-danger small">{{ form.vinculo.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">{{ form.tipo_aso.label }} <span class="text-danger">*</span></label>
-                {{ form.tipo_aso|add_class:'form-select' }}
-                {% if form.tipo_aso.errors %}<div class="text-danger small">{{ form.tipo_aso.errors }}</div>{% endif %}
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">{{ form.data_solicitacao.label }}</label>
-                {{ form.data_solicitacao|add_class:'form-control' }}
-                {% if form.data_solicitacao.errors %}<div class="text-danger small">{{ form.data_solicitacao.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.data_prevista_exame.label }} <span class="text-danger">*</span></label>
-                {{ form.data_prevista_exame|add_class:'form-control' }}
-                {% if form.data_prevista_exame.errors %}<div class="text-danger small">{{ form.data_prevista_exame.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.data_vencimento.label }}</label>
-                {{ form.data_vencimento|add_class:'form-control' }}
-                {% if form.data_vencimento.errors %}<div class="text-danger small">{{ form.data_vencimento.errors }}</div>{% endif %}
-              </div>
-
-              <div class="col-md-5">
-                <label class="form-label">{{ form.laboratorio_nome.label }}</label>
-                <div class="position-relative">
-                  <input type="text"
-                         id="busca_laboratorio_input"
-                         class="form-control"
-                         autocomplete="off"
-                         placeholder="Digite para buscar fornecedor..."
-                         value="{{ form.laboratorio_nome.value|default:'' }}">
-                  <input type="hidden"
-                         id="{{ form.laboratorio_nome.id_for_label }}"
-                         name="{{ form.laboratorio_nome.html_name }}"
-                         value="{{ form.laboratorio_nome.value|default:'' }}">
-                  <ul id="busca_laboratorio_dropdown"
-                      class="list-group position-absolute w-100 shadow-sm d-none"
-                      style="top:100%;left:0;max-height:220px;overflow-y:auto;z-index:1050;"></ul>
-                </div>
-                {% if form.laboratorio_nome.errors %}<div class="text-danger small">{{ form.laboratorio_nome.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.laboratorio_email.label }}</label>
-                {{ form.laboratorio_email|add_class:'form-control' }}
-                {% if form.laboratorio_email.errors %}<div class="text-danger small">{{ form.laboratorio_email.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">{{ form.trabalhador_whatsapp.label }}</label>
-                {{ form.trabalhador_whatsapp|add_class:'form-control' }}
-                {% if form.trabalhador_whatsapp.errors %}<div class="text-danger small">{{ form.trabalhador_whatsapp.errors }}</div>{% endif %}
-              </div>
-
-              <div class="col-md-8">
-                <label class="form-label">{{ form.exames.label }} <span class="text-danger">*</span></label>
-                {{ form.exames|add_class:'form-select' }}
-                <small class="text-muted">Use Ctrl para selecionar mais de um exame.</small>
-                {% if form.exames.errors %}<div class="text-danger small">{{ form.exames.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">{{ form.status.label }}</label>
-                {{ form.status|add_class:'form-select' }}
-                {% if form.status.errors %}<div class="text-danger small">{{ form.status.errors }}</div>{% endif %}
-
-                <div class="form-check mt-3" id="bloco_alerta_vencimento">
-                  {{ form.gerar_alerta_vencimento|add_class:'form-check-input' }}
-                  <label class="form-check-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">{{ form.gerar_alerta_vencimento.label }}</label>
-                </div>
-                <label class="form-label mt-2">{{ form.dias_antecedencia_alerta.label }}</label>
-                {{ form.dias_antecedencia_alerta|add_class:'form-control' }}
-                {% if form.dias_antecedencia_alerta.errors %}<div class="text-danger small">{{ form.dias_antecedencia_alerta.errors }}</div>{% endif %}
-
-                <div id="bloco_periodicidade_meses">
-                  <label class="form-label mt-2">{{ form.periodicidade_meses.label }}</label>
-                  {{ form.periodicidade_meses|add_class:'form-control' }}
-                  <small class="text-muted">Intervalo de renovação automática (ex: 12 = anual, 6 = semestral).</small>
-                  {% if form.periodicidade_meses.errors %}<div class="text-danger small">{{ form.periodicidade_meses.errors }}</div>{% endif %}
-                </div>
-              </div>
-
-              <div class="col-12">
-                <div class="form-check mb-2">
-                  {{ form.possui_outros_exames|add_class:'form-check-input' }}
-                  <label class="form-check-label" for="{{ form.possui_outros_exames.id_for_label }}">{{ form.possui_outros_exames.label }}</label>
-                </div>
-                <label class="form-label">{{ form.outros_exames_descricao.label }}</label>
-                {{ form.outros_exames_descricao|add_class:'form-control' }}
-                {% if form.outros_exames_descricao.errors %}<div class="text-danger small">{{ form.outros_exames_descricao.errors }}</div>{% endif %}
               </div>
             </div>
           </div>
         </div>
-
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'rh:aso_solicitacao_list' %}" class="btn btn-outline-secondary btn-lg px-5">Cancelar</a>
-          <button type="submit" class="btn btn-success btn-lg px-5">Salvar Solicitação</button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <div class="form-section" id="sec-exame" data-tab-panel="sec-exame">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-calendar-check"></i></span>
+        <span class="title">Datas e Exame</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">{{ form.data_solicitacao.label }}</label>
+            {{ form.data_solicitacao|add_class:'form-control' }}
+            {% if form.data_solicitacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_solicitacao.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4{% if form.data_prevista_exame.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.data_prevista_exame.label }}<span class="req">*</span></label>
+            {{ form.data_prevista_exame|add_class:'form-control' }}
+            {% if form.data_prevista_exame.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_prevista_exame.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.data_vencimento.label }}</label>
+            {{ form.data_vencimento|add_class:'form-control' }}
+            {% if form.data_vencimento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_vencimento.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-5">
+            <label class="form-label">{{ form.laboratorio_nome.label }}</label>
+            <div class="position-relative">
+              <input type="text"
+                     id="busca_laboratorio_input"
+                     class="form-control"
+                     autocomplete="off"
+                     placeholder="Digite para buscar fornecedor..."
+                     value="{{ form.laboratorio_nome.value|default:'' }}">
+              <input type="hidden"
+                     id="{{ form.laboratorio_nome.id_for_label }}"
+                     name="{{ form.laboratorio_nome.html_name }}"
+                     value="{{ form.laboratorio_nome.value|default:'' }}">
+              <ul id="busca_laboratorio_dropdown"
+                  class="list-group position-absolute w-100 shadow-sm d-none"
+                  style="top:100%;left:0;max-height:220px;overflow-y:auto;z-index:1050;"></ul>
+            </div>
+            {% if form.laboratorio_nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.laboratorio_nome.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.laboratorio_email.label }}</label>
+            {{ form.laboratorio_email|add_class:'form-control' }}
+            {% if form.laboratorio_email.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.laboratorio_email.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">{{ form.trabalhador_whatsapp.label }}</label>
+            {{ form.trabalhador_whatsapp|add_class:'form-control' }}
+            {% if form.trabalhador_whatsapp.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.trabalhador_whatsapp.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-8{% if form.exames.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.exames.label }}<span class="req">*</span></label>
+            {{ form.exames|add_class:'form-select' }}
+            <div class="helper-note">Use Ctrl para selecionar mais de um exame.</div>
+            {% if form.exames.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.exames.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-status" data-tab-panel="sec-status">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-bell"></i></span>
+        <span class="title">Status e Alertas</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">{{ form.status.label }}</label>
+            {{ form.status|add_class:'form-select' }}
+            {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4" id="bloco_alerta_vencimento">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.gerar_alerta_vencimento|add_class:'' }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.gerar_alerta_vencimento.id_for_label }}">{{ form.gerar_alerta_vencimento.label }}</label>
+            </div>
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.dias_antecedencia_alerta.label }}</label>
+            {{ form.dias_antecedencia_alerta|add_class:'form-control' }}
+            {% if form.dias_antecedencia_alerta.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dias_antecedencia_alerta.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4" id="bloco_periodicidade_meses">
+            <label class="form-label">{{ form.periodicidade_meses.label }}</label>
+            {{ form.periodicidade_meses|add_class:'form-control' }}
+            <div class="helper-note">Intervalo de renovação automática (ex: 12 = anual, 6 = semestral).</div>
+            {% if form.periodicidade_meses.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.periodicidade_meses.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.possui_outros_exames|add_class:'' }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.possui_outros_exames.id_for_label }}">{{ form.possui_outros_exames.label }}</label>
+            </div>
+          </div>
+          <div class="field col-12">
+            <label class="form-label">{{ form.outros_exames_descricao.label }}</label>
+            {{ form.outros_exames_descricao|add_class:'form-control' }}
+            {% if form.outros_exames_descricao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.outros_exames_descricao.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'rh:aso_solicitacao_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar Solicitação</button>
+    </div>
+  </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const funcionarioSelect = document.getElementById('id_funcionario');

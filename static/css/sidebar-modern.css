@@ -36,10 +36,6 @@
   --sb-green:    #178a45;
   --sb-green2:   #22a24f;
 }
-.sidebar-modern.saas-owner-nav .brand-logo {
-  background: linear-gradient(135deg, #178a45, #22a24f);
-  box-shadow: 0 3px 10px rgba(26,122,60,.25);
-}
 .sidebar-modern.saas-owner-nav .user-avatar {
   background: rgba(23,138,69,.18);
   border-color: #2f5138;
@@ -66,7 +62,6 @@
 
 .sidebar-modern.collapsed { width: var(--sidebar-collapsed-width); }
 
-.sidebar-modern.collapsed .brand-text,
 .sidebar-modern.collapsed .user-details,
 .sidebar-modern.collapsed .nav-link span,
 .sidebar-modern.collapsed .submenu-arrow,
@@ -84,35 +79,34 @@
 
 /* ── BRAND / LOGO ── */
 .sidebar-brand {
-  padding: 18px 16px;
+  padding: 14px 16px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 11px;
   border-bottom: 1px solid var(--sb-border);
   background: var(--sb-bg);
   position: relative;
 }
 
 .brand-logo {
-  width: 38px; height: 38px;
-  background: linear-gradient(135deg, var(--sb-green), var(--sb-green2));
-  border-radius: 10px;
+  width: 65%;
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(26,122,60,.22);
+  overflow: hidden;
 }
-.brand-logo i { font-size: 18px; color: #fff; }
+.brand-logo-img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
 
-.brand-text { flex: 1; transition: opacity var(--transition-speed); }
-.brand-text h4 {
-  margin: 0;
-  font-size: .95rem; font-weight: 700;
-  color: var(--sb-text-dark); line-height: 1.2; letter-spacing: -.01em;
-  font-family: 'Space Grotesk', 'Inter', sans-serif;
+.sidebar-modern.collapsed .brand-logo {
+  width: 32px; height: 32px;
+  justify-content: flex-start;
 }
-.brand-subtitle {
-  font-size: .7rem; color: var(--sb-muted);
-  display: block; margin-top: 2px; letter-spacing: .02em;
+.sidebar-modern.collapsed .brand-logo-img {
+  height: 100%; width: auto; max-width: none;
+  object-fit: cover;
+  object-position: left center;
 }
 
 .sidebar-collapse-btn {

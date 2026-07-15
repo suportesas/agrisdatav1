@@ -1,268 +1,276 @@
 {% extends 'base.html' %}
-{% load static %}
-{% load widget_tweaks %}
+{% load static widget_tweaks %}
 
 {% block title %}{{ title }} | Agrisdata{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-10">
 
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
-          <li class="breadcrumb-item"><a href="{% url 'rh:afastamento_list' %}">Afastamentos</a></li>
-          <li class="breadcrumb-item active">{{ title }}</li>
-        </ol>
-      </nav>
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:rh_dashboard' %}">RH</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'rh:afastamento_list' %}">Afastamentos</a></li>
+      <li class="breadcrumb-item active">{{ title }}</li>
+    </ol>
+  </nav>
 
-      <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-bandaid"></i></span>
         <div>
-          <h1 class="h3 mb-1">
-            <i class="bi bi-bandaid text-danger me-2"></i>
-            {{ title }}
-          </h1>
+          <h2>{{ title }}</h2>
         </div>
-        <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline-secondary">
-          <i class="bi bi-arrow-left me-2"></i>Voltar
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'rh:afastamento_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
         </a>
       </div>
-
-      <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-
-        {% if form.non_field_errors %}
-        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-        {% endif %}
-
-        <!-- Funcionário e Tipo -->
-        <div class="card mb-3">
-          <div class="card-header bg-danger text-white">
-            <h5 class="mb-0"><i class="bi bi-person me-2"></i>Dados Principais</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.funcionario.label }} <span class="text-danger">*</span></label>
-                {{ form.funcionario|add_class:"form-select" }}
-                {% if form.funcionario.errors %}<div class="text-danger small">{{ form.funcionario.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.tipo_afastamento.label }} <span class="text-danger">*</span></label>
-                {{ form.tipo_afastamento|add_class:"form-select" }}
-                {% if form.tipo_afastamento.errors %}<div class="text-danger small">{{ form.tipo_afastamento.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Datas -->
-        <div class="card mb-3">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>Período</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.data_inicio.label }} <span class="text-danger">*</span></label>
-                {{ form.data_inicio|add_class:"form-control" }}
-                {% if form.data_inicio.errors %}<div class="text-danger small">{{ form.data_inicio.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.data_prevista_retorno.label }}</label>
-                {{ form.data_prevista_retorno|add_class:"form-control" }}
-                {% if form.data_prevista_retorno.errors %}<div class="text-danger small">{{ form.data_prevista_retorno.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.data_retorno_efetivo.label }}</label>
-                {{ form.data_retorno_efetivo|add_class:"form-control" }}
-                {% if form.data_retorno_efetivo.errors %}<div class="text-danger small">{{ form.data_retorno_efetivo.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Informações Médicas -->
-        <div class="card mb-3">
-          <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="bi bi-clipboard2-pulse me-2"></i>Informações Médicas</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.cid.label }}</label>
-                {{ form.cid|add_class:"form-control" }}
-                {% if form.cid.errors %}<div class="text-danger small">{{ form.cid.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.numero_atestado.label }}</label>
-                {{ form.numero_atestado|add_class:"form-control" }}
-                {% if form.numero_atestado.errors %}<div class="text-danger small">{{ form.numero_atestado.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">{{ form.dias_afastamento.label }}</label>
-                {{ form.dias_afastamento|add_class:"form-control" }}
-                {% if form.dias_afastamento.errors %}<div class="text-danger small">{{ form.dias_afastamento.errors }}</div>{% endif %}
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.medico_responsavel.label }}</label>
-                {{ form.medico_responsavel|add_class:"form-control" }}
-                {% if form.medico_responsavel.errors %}<div class="text-danger small">{{ form.medico_responsavel.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.crm_medico.label }}</label>
-                {{ form.crm_medico|add_class:"form-control" }}
-                {% if form.crm_medico.errors %}<div class="text-danger small">{{ form.crm_medico.errors }}</div>{% endif %}
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">{{ form.motivo.label }}</label>
-              {{ form.motivo|add_class:"form-control" }}
-              {% if form.motivo.errors %}<div class="text-danger small">{{ form.motivo.errors }}</div>{% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- Acidente de Trabalho -->
-        <div class="card mb-3">
-          <div class="card-header bg-warning">
-            <h5 class="mb-0"><i class="bi bi-cone-striped me-2"></i>Acidente de Trabalho (CAT)</h5>
-          </div>
-          <div class="card-body">
-            <div class="form-check mb-3">
-              {{ form.e_acidente_trabalho }}
-              <label class="form-check-label" for="{{ form.e_acidente_trabalho.id_for_label }}">
-                {{ form.e_acidente_trabalho.label }}
-              </label>
-            </div>
-            <div class="row">
-              <div class="col-md-6 mb-3">
-                <div class="form-check">
-                  {{ form.cat_emitida }}
-                  <label class="form-check-label" for="{{ form.cat_emitida.id_for_label }}">
-                    {{ form.cat_emitida.label }}
-                  </label>
-                </div>
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">{{ form.numero_cat.label }}</label>
-                {{ form.numero_cat|add_class:"form-control" }}
-                {% if form.numero_cat.errors %}<div class="text-danger small">{{ form.numero_cat.errors }}</div>{% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- INSS -->
-        <div class="card mb-3">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>INSS / Benefícios</h5>
-          </div>
-          <div class="card-body">
-            <div class="form-check mb-3">
-              {{ form.requer_inss }}
-              <label class="form-check-label" for="{{ form.requer_inss.id_for_label }}">
-                {{ form.requer_inss.label }}
-              </label>
-              <small class="text-muted d-block">Afastamentos acima de 15 dias</small>
-            </div>
-            <div class="mb-3">
-              <label class="form-label">{{ form.numero_beneficio_inss.label }}</label>
-              {{ form.numero_beneficio_inss|add_class:"form-control" }}
-              {% if form.numero_beneficio_inss.errors %}<div class="text-danger small">{{ form.numero_beneficio_inss.errors }}</div>{% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- Documentos -->
-        <div class="card mb-3">
-          <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-cloud-upload me-2"></i>Documentação de Suporte</h5>
-          </div>
-          <div class="card-body">
-            <div class="alert alert-info mb-3">
-              <i class="bi bi-info-circle me-2"></i>
-              <strong>Dica:</strong> Anexe documentos como atestados médicos, CAT e outros arquivos comprobatórios (PDF, imagem, etc)
-            </div>
-
-            <!-- Arquivo do Atestado -->
-            <div class="mb-3">
-              <label class="form-label"><i class="bi bi-file-earmark-medical me-2"></i>{{ form.arquivo_atestado.label }}</label>
-              <div class="input-group">
-                {{ form.arquivo_atestado|add_class:"form-control" }}
-                <span class="input-group-text">
-                  <i class="bi bi-upload"></i>
-                </span>
-              </div>
-              <small class="text-muted d-block mt-1">Formatos aceitos: PDF, JPG, PNG (máx 5MB)</small>
-              {% if form.arquivo_atestado.errors %}<div class="text-danger small mt-1">{{ form.arquivo_atestado.errors }}</div>{% endif %}
-              {% if form.instance.arquivo_atestado %}
-              <div class="mt-2">
-                <a href="{{ form.instance.arquivo_atestado.url }}" target="_blank" class="badge bg-success">
-                  <i class="bi bi-file-earmark me-1"></i>Arquivo anexado
-                </a>
-              </div>
-              {% endif %}
-            </div>
-
-            <!-- Arquivo da CAT -->
-            <div class="mb-3">
-              <label class="form-label"><i class="bi bi-exclamation-triangle me-2"></i>{{ form.arquivo_cat.label }}</label>
-              <div class="input-group">
-                {{ form.arquivo_cat|add_class:"form-control" }}
-                <span class="input-group-text">
-                  <i class="bi bi-upload"></i>
-                </span>
-              </div>
-              <small class="text-muted d-block mt-1">Formulário de Comunicação de Acidente de Trabalho</small>
-              {% if form.arquivo_cat.errors %}<div class="text-danger small mt-1">{{ form.arquivo_cat.errors }}</div>{% endif %}
-              {% if form.instance.arquivo_cat %}
-              <div class="mt-2">
-                <a href="{{ form.instance.arquivo_cat.url }}" target="_blank" class="badge bg-success">
-                  <i class="bi bi-file-earmark me-1"></i>Arquivo anexado
-                </a>
-              </div>
-              {% endif %}
-            </div>
-
-            <!-- Observações -->
-            <div class="mb-3">
-              <label class="form-label"><i class="bi bi-chat-text me-2"></i>{{ form.observacoes.label }}</label>
-              {{ form.observacoes|add_class:"form-control" }}
-              <small class="text-muted d-block mt-1">Notas adicionais sobre este afastamento</small>
-              {% if form.observacoes.errors %}<div class="text-danger small mt-1">{{ form.observacoes.errors }}</div>{% endif %}
-            </div>
-          </div>
-        </div>
-
-        <!-- Status -->
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-flag me-2"></i>Status</h5>
-          </div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">{{ form.status.label }} <span class="text-danger">*</span></label>
-              {{ form.status|add_class:"form-select" }}
-            </div>
-          </div>
-        </div>
-
-        <div class="d-flex justify-content-between gap-3">
-          <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline-secondary btn-lg px-5">
-            <i class="bi bi-x-circle me-2"></i>Cancelar
-          </a>
-          <button type="submit" class="btn btn-success btn-lg px-5">
-            <i class="bi bi-check-circle me-2"></i>Salvar Afastamento
-          </button>
-        </div>
-      </form>
     </div>
   </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <nav class="section-nav" id="afastamento-section-nav">
+      <a href="#sec-principais" data-tab="sec-principais">Dados Principais</a>
+      <a href="#sec-periodo" data-tab="sec-periodo">Período</a>
+      <a href="#sec-medicas" data-tab="sec-medicas">Informações Médicas</a>
+      <a href="#sec-cat" data-tab="sec-cat">Acidente de Trabalho</a>
+      <a href="#sec-inss" data-tab="sec-inss">INSS / Benefícios</a>
+      <a href="#sec-documentos" data-tab="sec-documentos">Documentação</a>
+      <a href="#sec-status" data-tab="sec-status">Status</a>
+    </nav>
+
+    <div class="form-section" id="sec-principais" data-tab-panel="sec-principais">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-person"></i></span>
+        <span class="title">Dados Principais</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6{% if form.funcionario.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.funcionario.label }}<span class="req">*</span></label>
+            {{ form.funcionario|add_class:"form-select" }}
+            {% if form.funcionario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcionario.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6{% if form.tipo_afastamento.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.tipo_afastamento.label }}<span class="req">*</span></label>
+            {{ form.tipo_afastamento|add_class:"form-select" }}
+            {% if form.tipo_afastamento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_afastamento.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-periodo" data-tab-panel="sec-periodo">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-calendar3"></i></span>
+        <span class="title">Período</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4{% if form.data_inicio.errors %} has-error{% endif %}">
+            <label class="form-label">{{ form.data_inicio.label }}<span class="req">*</span></label>
+            {{ form.data_inicio|add_class:"form-control" }}
+            {% if form.data_inicio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_inicio.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.data_prevista_retorno.label }}</label>
+            {{ form.data_prevista_retorno|add_class:"form-control" }}
+            {% if form.data_prevista_retorno.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_prevista_retorno.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.data_retorno_efetivo.label }}</label>
+            {{ form.data_retorno_efetivo|add_class:"form-control" }}
+            {% if form.data_retorno_efetivo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_retorno_efetivo.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-medicas" data-tab-panel="sec-medicas">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-clipboard2-pulse"></i></span>
+        <span class="title">Informações Médicas</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">{{ form.cid.label }}</label>
+            {{ form.cid|add_class:"form-control" }}
+            {% if form.cid.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cid.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.numero_atestado.label }}</label>
+            {{ form.numero_atestado|add_class:"form-control" }}
+            {% if form.numero_atestado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_atestado.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.dias_afastamento.label }}</label>
+            {{ form.dias_afastamento|add_class:"form-control" }}
+            {% if form.dias_afastamento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dias_afastamento.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.medico_responsavel.label }}</label>
+            {{ form.medico_responsavel|add_class:"form-control" }}
+            {% if form.medico_responsavel.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.medico_responsavel.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.crm_medico.label }}</label>
+            {{ form.crm_medico|add_class:"form-control" }}
+            {% if form.crm_medico.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.crm_medico.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">{{ form.motivo.label }}</label>
+            {{ form.motivo|add_class:"form-control" }}
+            {% if form.motivo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.motivo.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-cat" data-tab-panel="sec-cat">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-cone-striped"></i></span>
+        <span class="title">Acidente de Trabalho (CAT)</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.e_acidente_trabalho|add_class:"" }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.e_acidente_trabalho.id_for_label }}">{{ form.e_acidente_trabalho.label }}</label>
+            </div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.cat_emitida|add_class:"" }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.cat_emitida.id_for_label }}">{{ form.cat_emitida.label }}</label>
+            </div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.numero_cat.label }}</label>
+            {{ form.numero_cat|add_class:"form-control" }}
+            {% if form.numero_cat.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_cat.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-inss" data-tab-panel="sec-inss">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+        <span class="title">INSS / Benefícios</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.requer_inss|add_class:"" }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.requer_inss.id_for_label }}">{{ form.requer_inss.label }}</label>
+            </div>
+            <div class="helper-note">Afastamentos acima de 15 dias</div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.numero_beneficio_inss.label }}</label>
+            {{ form.numero_beneficio_inss|add_class:"form-control" }}
+            {% if form.numero_beneficio_inss.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_beneficio_inss.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-documentos" data-tab-panel="sec-documentos">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-cloud-upload"></i></span>
+        <span class="title">Documentação de Suporte</span>
+      </div>
+      <div class="form-section-body">
+        <div class="alert alert-info mb-3">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Dica:</strong> Anexe documentos como atestados médicos, CAT e outros arquivos comprobatórios (PDF, imagem, etc)
+        </div>
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label"><i class="bi bi-file-earmark-medical me-1"></i>{{ form.arquivo_atestado.label }}</label>
+            {{ form.arquivo_atestado|add_class:"form-control" }}
+            <div class="helper-note">Formatos aceitos: PDF, JPG, PNG (máx 5MB)</div>
+            {% if form.arquivo_atestado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.arquivo_atestado.errors|striptags }}</div>{% endif %}
+            {% if form.instance.arquivo_atestado %}
+            <div class="mt-2">
+              <a href="{{ form.instance.arquivo_atestado.url }}" target="_blank" class="badge bg-success">
+                <i class="bi bi-file-earmark me-1"></i>Arquivo anexado
+              </a>
+            </div>
+            {% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label"><i class="bi bi-exclamation-triangle me-1"></i>{{ form.arquivo_cat.label }}</label>
+            {{ form.arquivo_cat|add_class:"form-control" }}
+            <div class="helper-note">Formulário de Comunicação de Acidente de Trabalho</div>
+            {% if form.arquivo_cat.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.arquivo_cat.errors|striptags }}</div>{% endif %}
+            {% if form.instance.arquivo_cat %}
+            <div class="mt-2">
+              <a href="{{ form.instance.arquivo_cat.url }}" target="_blank" class="badge bg-success">
+                <i class="bi bi-file-earmark me-1"></i>Arquivo anexado
+              </a>
+            </div>
+            {% endif %}
+          </div>
+          <div class="field col-12">
+            <label class="form-label"><i class="bi bi-chat-text me-1"></i>{{ form.observacoes.label }}</label>
+            {{ form.observacoes|add_class:"form-control" }}
+            <div class="helper-note">Notas adicionais sobre este afastamento</div>
+            {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-status" data-tab-panel="sec-status">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-flag"></i></span>
+        <span class="title">Status</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">{{ form.status.label }}<span class="req">*</span></label>
+            {{ form.status|add_class:"form-select" }}
+            {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'rh:afastamento_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar Afastamento
+      </button>
+    </div>
+  </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 {% endblock %}

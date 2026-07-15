@@ -4,10 +4,9 @@
 {% block title %}{{ action }} Endereço | Agrisdata{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
+<div class="container-fluid py-4">
+
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       {% if fornecedor %}
         <li class="breadcrumb-item"><a href="{% url 'cadastros:fornecedor_list' %}">Fornecedores</a></li>
@@ -25,167 +24,154 @@
     </ol>
   </nav>
 
-  <!-- Card do Formulário -->
-  <div class="card border-0 shadow-sm">
-    <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">
-        <i class="bi bi-geo-alt"></i> {{ action }} Endereço - {% if fornecedor %}{{ fornecedor.get_nome_exibicao }}{% else %}{{ fazenda.nome }}{% endif %}
-      </h5>
-    </div>
-    <div class="card-body p-4">
-      
-      <form method="post">
-        {% csrf_token %}
-
-        {% if debug_form %}
-          <div class="mb-3">
-            <label class="form-label fw-semibold">DEBUG: form.as_p</label>
-            <pre style="background:#f8f9fa;padding:1rem;border-radius:6px;">{{ form.as_p|escape }}</pre>
-          </div>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-geo-alt"></i></span>
+        <div>
+          <h2>{{ action }} Endereço</h2>
+          <p class="text-muted mb-0">{% if fornecedor %}{{ fornecedor.get_nome_exibicao }}{% else %}{{ fazenda.nome }}{% endif %}</p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        {% if fornecedor %}
+          <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Cancelar</a>
+        {% elif cliente %}
+          <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Cancelar</a>
+        {% elif fazenda %}
+          <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Cancelar</a>
+        {% else %}
+          <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-ghost"><i class="bi bi-arrow-left"></i> Cancelar</a>
         {% endif %}
+      </div>
+    </div>
+  </div>
 
-        <div class="row g-3">
-          
-          <!-- Tipo de Endereço -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo de Endereço *</label>
+  <form method="post">
+    {% csrf_token %}
+
+    {% if debug_form %}
+    <div class="alert alert-secondary">
+      <label class="form-label fw-semibold">DEBUG: form.as_p</label>
+      <pre style="background:#f8f9fa;padding:1rem;border-radius:6px;">{{ form.as_p|escape }}</pre>
+    </div>
+    {% endif %}
+
+    <nav class="section-nav" id="endereco-section-nav">
+      <a href="#sec-tipo" data-tab="sec-tipo">Tipo e Configurações</a>
+      <a href="#sec-localizacao" data-tab="sec-localizacao">Localização</a>
+    </nav>
+
+    <div class="form-section" id="sec-tipo" data-tab-panel="sec-tipo">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Tipo e Configurações</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Tipo de Endereço<span class="req">*</span></label>
             {{ form.tipo }}
-            {% if form.tipo.errors %}
-              <div class="text-danger small">{{ form.tipo.errors|striptags }}</div>
-            {% endif %}
+            {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors|striptags }}</div>{% endif %}
           </div>
-
-          <div class="col-md-4" id="notify-receiver-group" style="display:none;">
-            <label class="form-label fw-semibold">Destinatário</label>
+          <div class="field col-4" id="notify-receiver-group" style="display:none;">
+            <label class="form-label">Destinatário</label>
             {{ form.recebedor_notify }}
-            <small class="text-muted">Obrigatório apenas para endereço Notify</small>
+            <div class="helper-note">Obrigatório apenas para endereço Notify</div>
           </div>
+          <div class="field col-4">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.padrao }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.padrao.id_for_label }}">Definir como endereço padrão</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- CEP com busca -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">CEP *</label>
+    <div class="form-section" id="sec-localizacao" data-tab-panel="sec-localizacao">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Localização</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">CEP<span class="req">*</span></label>
             <div class="input-group">
               {{ form.cep }}
-              <button type="button" class="btn btn-primary btn-buscar-cep">
+              <button type="button" class="btn btn-outline btn-buscar-cep">
                 <i class="bi bi-search"></i>
               </button>
             </div>
-            {% if form.cep.errors %}
-              <div class="text-danger small">{{ form.cep.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted">Busca automática via CEP</small>
+            {% if form.cep.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cep.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Busca automática via CEP</div>
           </div>
-
-          <!-- Padrão -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Configurações</label>
-            <div class="form-check form-switch mt-2">
-              {{ form.padrao }}
-              <label class="form-check-label" for="{{ form.padrao.id_for_label }}">
-                Definir como endereço padrão
-              </label>
-            </div>
-          </div>
-
-          <!-- Logradouro -->
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Logradouro *</label>
+          <div class="field col-8">
+            <label class="form-label">Logradouro<span class="req">*</span></label>
             {{ form.logradouro }}
-            {% if form.logradouro.errors %}
-              <div class="text-danger small">{{ form.logradouro.errors|striptags }}</div>
-            {% endif %}
+            {% if form.logradouro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.logradouro.errors|striptags }}</div>{% endif %}
           </div>
-
-          <!-- Número -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Número</label>
+          <div class="field col-4">
+            <label class="form-label">Número</label>
             {{ form.numero }}
-            <small class="text-muted">Deixe vazio para S/N</small>
+            <div class="helper-note">Deixe vazio para S/N</div>
           </div>
-
-          <!-- Complemento -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Complemento</label>
+          <div class="field col-4">
+            <label class="form-label">Complemento</label>
             {{ form.complemento }}
           </div>
-
-          <!-- Bairro -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Bairro *</label>
+          <div class="field col-4">
+            <label class="form-label">Bairro<span class="req">*</span></label>
             {{ form.bairro }}
-            {% if form.bairro.errors %}
-              <div class="text-danger small">{{ form.bairro.errors|striptags }}</div>
-            {% endif %}
+            {% if form.bairro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.bairro.errors|striptags }}</div>{% endif %}
           </div>
-
-          <!-- Cidade -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Cidade *</label>
+          <div class="field col-6">
+            <label class="form-label">Cidade<span class="req">*</span></label>
             {{ form.cidade }}
-            {% if form.cidade.errors %}
-              <div class="text-danger small">{{ form.cidade.errors|striptags }}</div>
-            {% endif %}
+            {% if form.cidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cidade.errors|striptags }}</div>{% endif %}
           </div>
-
-          <!-- UF -->
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">UF *</label>
+          <div class="field col-2">
+            <label class="form-label">UF<span class="req">*</span></label>
             {{ form.uf }}
-            {% if form.uf.errors %}
-              <div class="text-danger small">{{ form.uf.errors|striptags }}</div>
-            {% endif %}
+            {% if form.uf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.uf.errors|striptags }}</div>{% endif %}
           </div>
-
-          <!-- Código IBGE -->
-          <div class="col-md-3" id="campo-ibge">
-            <label class="form-label fw-semibold">
+          <div class="field col-3" id="campo-ibge">
+            <label class="form-label">
               Código IBGE
               <span class="badge bg-warning text-dark ms-1" title="Obrigatório para emissão de NF-e">NF-e</span>
             </label>
             {{ form.codigo_municipio }}
-            {% if form.codigo_municipio.errors %}
-              <div class="text-danger small">{{ form.codigo_municipio.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted">7 dígitos — preenchido automaticamente pelo CEP</small>
+            {% if form.codigo_municipio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_municipio.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">7 dígitos — preenchido automaticamente pelo CEP</div>
           </div>
-
-          <!-- País -->
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">País</label>
+          <div class="field col-3">
+            <label class="form-label">País</label>
             {{ form.pais }}
           </div>
-
         </div>
-
-        <!-- Botões -->
-        <div class="d-flex justify-content-between gap-3 mt-4">
-          {% if fornecedor %}
-            <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% elif cliente %}
-            <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% elif fazenda %}
-            <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% else %}
-            <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
-          {% endif %}
-          <button type="submit" class="btn btn-success">
-            <i class="bi bi-check-circle"></i> Salvar Endereço
-          </button>
-        </div>
-
-      </form>
-
+      </div>
     </div>
-  </div>
 
+    <div class="app-footer-bar">
+      {% if fornecedor %}
+        <a href="{% url 'cadastros:fornecedor_detail' fornecedor.pk %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Cancelar</a>
+      {% elif cliente %}
+        <a href="{% url 'cadastros:cliente_detail' cliente.pk %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Cancelar</a>
+      {% elif fazenda %}
+        <a href="{% url 'cadastros:fazenda_detail' fazenda.pk %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Cancelar</a>
+      {% else %}
+        <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline"><i class="bi bi-arrow-left"></i> Cancelar</a>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar Endereço
+      </button>
+    </div>
+  </form>
 </div>
 
 <!-- Modal Loading -->
@@ -203,6 +189,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <datalist id="dl-mun-end"></datalist>
 <script src="{% static 'js/ibge_municipios.js' %}"></script>
 <script>
@@ -238,4 +226,3 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 {% endblock %}
-

@@ -624,7 +624,7 @@ def produto_create(request):
             messages.success(request, 'Produto cadastrado com sucesso!')
 
             continue_tab = request.POST.get('continue_tab')
-            if continue_tab in {'defensivo', 'fertilizante', 'fornecedores', 'fiscal'}:
+            if continue_tab in {'defensivo', 'fertilizante', 'fornecedores', 'fiscal', 'tributacoes'}:
                 return redirect(f"{reverse('produtos:produto_update', args=[produto.pk])}#{continue_tab}")
 
             return redirect('produtos:produto_list')

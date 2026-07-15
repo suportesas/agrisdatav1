@@ -3,35 +3,10 @@
 
 {% block title %}{{ action }} Fazenda | Agrisdata{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px 10px 0 0;
-    margin-bottom: 0;
-  }
-  .form-section {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  }
-  .cnpj-search-btn {
-    transition: all 0.3s ease;
-  }
-  .cnpj-search-btn:hover {
-    transform: scale(1.05);
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-  
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
+<div class="container-fluid py-4">
+
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'cadastros:fazenda_list' %}">Fazendas</a></li>
@@ -39,218 +14,192 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if fazenda %}pencil-square{% else %}plus-circle{% endif %} text-success"></i>
-        {{ action }} Fazenda
-      </h2>
-      {% if fazenda %}
-        <p class="text-muted mb-0">Editando: <strong>{{ fazenda.nome }}</strong></p>
-      {% else %}
-        <p class="text-muted mb-0">Preencha os dados da nova propriedade rural</p>
-      {% endif %}
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if fazenda %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <div>
+          <h2>{{ action }} Fazenda</h2>
+          {% if fazenda %}
+          <p class="text-muted mb-0">Editando: <strong>{{ fazenda.nome }}</strong></p>
+          {% else %}
+          <p class="text-muted mb-0">Preencha os dados da nova propriedade rural</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:fazenda_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
-    <a href="{% url 'cadastros:fazenda_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
   </div>
 
   <form method="post" enctype="multipart/form-data" id="fazendaForm">
     {% csrf_token %}
 
-    <!-- Seção 1: Dados Básicos -->
-    <div class="form-section mb-4">
-      <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Dados Básicos</h5>
-      </div>
-      <div class="p-4">
-        <div class="row g-3">
-          
-          <!-- Tipo de Pessoa -->
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Pessoa *</label>
-            {{ form.tipo_pessoa }}
-            {% if form.tipo_pessoa.errors %}
-              <div class="text-danger small">{{ form.tipo_pessoa.errors|striptags }}</div>
-            {% endif %}
-          </div>
+    <nav class="section-nav" id="fazenda-section-nav">
+      <a href="#sec-dados" data-tab="sec-dados">Dados Básicos</a>
+      <a href="#sec-documentacao" data-tab="sec-documentacao">Documentação</a>
+      <a href="#sec-propriedade" data-tab="sec-propriedade">Dados da Propriedade</a>
+      <a href="#sec-contato" data-tab="sec-contato">Contato</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
 
-          <!-- CNPJ/CPF com busca -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">CNPJ/CPF *</label>
+    <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+        <span class="title">Dados Básicos</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Tipo de Pessoa<span class="req">*</span></label>
+            {{ form.tipo_pessoa }}
+            {% if form.tipo_pessoa.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_pessoa.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">CNPJ/CPF<span class="req">*</span></label>
             <div class="input-group">
               {{ form.cnpj_cpf }}
-              <button type="button" class="btn btn-primary cnpj-search-btn" id="buscarCNPJ">
+              <button type="button" class="btn btn-outline" id="buscarCNPJ">
                 <i class="bi bi-search"></i> Buscar
               </button>
             </div>
-            {% if form.cnpj_cpf.errors %}
-              <div class="text-danger small">{{ form.cnpj_cpf.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted">Busca automática via CNPJ (apenas PJ)</small>
+            {% if form.cnpj_cpf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cnpj_cpf.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Busca automática via CNPJ (apenas PJ)</div>
           </div>
-
-          <!-- Status -->
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Status</label>
-            <div class="form-check form-switch mt-2">
-              {{ form.ativa }}
-              <label class="form-check-label" for="{{ form.ativa.id_for_label }}">
-                Fazenda Ativa
+          <div class="field col-3">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativa }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.ativa.id_for_label }}">Fazenda Ativa</label>
             </div>
           </div>
-
-          <!-- Nome -->
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Nome da Fazenda/Razão Social *</label>
+          <div class="field col-8">
+            <label class="form-label">Nome da Fazenda/Razão Social<span class="req">*</span></label>
             {{ form.nome }}
-            {% if form.nome.errors %}
-              <div class="text-danger small">{{ form.nome.errors|striptags }}</div>
-            {% endif %}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
           </div>
-
-          <!-- Nome Fantasia -->
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Nome Fantasia</label>
+          <div class="field col-4">
+            <label class="form-label">Nome Fantasia</label>
             {{ form.nome_fantasia }}
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- Seção 2: Documentação -->
-    <div class="form-section mb-4">
-      <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentação</h5>
+    <div class="form-section" id="sec-documentacao" data-tab-panel="sec-documentacao">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+        <span class="title">Documentação</span>
       </div>
-      <div class="p-4">
-        <div class="row g-3">
-          
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Inscrição Estadual</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Inscrição Estadual</label>
             {{ form.inscricao_estadual }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Inscrição Municipal</label>
+          <div class="field col-4">
+            <label class="form-label">Inscrição Municipal</label>
             {{ form.inscricao_municipal }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Código EORI</label>
+          <div class="field col-4">
+            <label class="form-label">Código EORI</label>
             {{ form.eori }}
-            <small class="text-muted d-block">Para exportação</small>
+            <div class="helper-note">Para exportação</div>
           </div>
-
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Regime Tributário *</label>
+          <div class="field col-12">
+            <label class="form-label">Regime Tributário<span class="req">*</span></label>
             {{ form.regime_tributario }}
-            {% if form.regime_tributario.errors %}
-              <div class="text-danger small">{{ form.regime_tributario.errors|striptags }}</div>
-            {% endif %}
+            {% if form.regime_tributario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.regime_tributario.errors|striptags }}</div>{% endif %}
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- Seção 3: Dados da Propriedade -->
-    <div class="form-section mb-4">
-      <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Dados da Propriedade</h5>
+    <div class="form-section" id="sec-propriedade" data-tab-panel="sec-propriedade">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Dados da Propriedade</span>
       </div>
-      <div class="p-4">
-        <div class="row g-3">
-          
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Área Total (hectares) *</label>
-            <div class="input-group">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Área Total (hectares)<span class="req">*</span></label>
+            <div class="input-suffix">
               {{ form.area_total }}
-              <span class="input-group-text">ha</span>
+              <span class="suffix-text">ha</span>
             </div>
-            {% if form.area_total.errors %}
-              <div class="text-danger small">{{ form.area_total.errors|striptags }}</div>
-            {% endif %}
+            {% if form.area_total.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area_total.errors|striptags }}</div>{% endif %}
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Área Agricultável (hectares)</label>
-            <div class="input-group">
+          <div class="field col-6">
+            <label class="form-label">Área Agricultável (hectares)</label>
+            <div class="input-suffix">
               {{ form.area_agricultavel }}
-              <span class="input-group-text">ha</span>
+              <span class="suffix-text">ha</span>
             </div>
-            <small class="text-muted">Área disponível para plantio</small>
-            <div>
-              <small class="text-muted">
-                <i class="bi bi-info-circle"></i>
-                Calculado automaticamente como soma das <strong>Áreas Plantáveis</strong> das seções (áreas) da fazenda. Edite as áreas para alterar este valor.
-              </small>
-            </div>
+            <div class="helper-note">Calculado automaticamente como soma das <strong>Áreas Plantáveis</strong> das seções (áreas) da fazenda. Edite as áreas para alterar este valor.</div>
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Latitude (GPS)</label>
+          <div class="field col-6">
+            <label class="form-label">Latitude (GPS)</label>
             {{ form.latitude }}
-            <small class="text-muted d-block">Ex: -5.1234567</small>
+            <div class="helper-note">Ex: -5.1234567</div>
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Longitude (GPS)</label>
+          <div class="field col-6">
+            <label class="form-label">Longitude (GPS)</label>
             {{ form.longitude }}
-            <small class="text-muted d-block">Ex: -37.1234567</small>
+            <div class="helper-note">Ex: -37.1234567</div>
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- Seção 4: Contato -->
-    <div class="form-section mb-4">
-      <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-telephone"></i> Informações de Contato</h5>
+    <div class="form-section" id="sec-contato" data-tab-panel="sec-contato">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-telephone"></i></span>
+        <span class="title">Informações de Contato</span>
       </div>
-      <div class="p-4">
-        <div class="row g-3">
-          
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Telefone</label>
             {{ form.telefone }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">E-mail</label>
+          <div class="field col-4">
+            <label class="form-label">E-mail</label>
             {{ form.email }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Website</label>
+          <div class="field col-4">
+            <label class="form-label">Website</label>
             {{ form.website }}
           </div>
-
         </div>
       </div>
     </div>
 
-    <!-- Seção 5: Observações -->
-    <div class="form-section mb-4">
-      <div class="section-header">
-        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações</h5>
+    <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-chat-text"></i></span>
+        <span class="title">Observações</span>
       </div>
-      <div class="p-4">
-        {{ form.observacoes }}
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12">
+            {{ form.observacoes }}
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Botões de Ação -->
-    <div class="d-flex justify-content-between gap-3">
-      <a href="{% url 'cadastros:fazenda_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:fazenda_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Fazenda
       </button>
     </div>
@@ -274,9 +223,11 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  
+
   // Busca automática de CNPJ
   const btnBuscarCNPJ = document.getElementById('buscarCNPJ');
   const inputCNPJ = document.getElementById('{{ form.cnpj_cpf.id_for_label }}');
@@ -285,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnBuscarCNPJ) {
     btnBuscarCNPJ.addEventListener('click', function() {
       const cnpj = inputCNPJ.value.replace(/\D/g, '');
-      
+
       if (cnpj.length !== 14) {
         alert('Por favor, digite um CNPJ válido (14 dígitos)');
         return;
@@ -305,7 +256,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         loadingModal.hide();
-        
+
         if (data.sucesso) {
           // Preenche campos
           const d = data.dados;
@@ -313,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('{{ form.nome_fantasia.id_for_label }}').value = d.nome_fantasia || '';
           document.getElementById('{{ form.telefone.id_for_label }}').value = d.telefone || '';
           document.getElementById('{{ form.email.id_for_label }}').value = d.email || '';
-          
+
           alert('✅ Dados preenchidos com sucesso!');
         } else {
           alert('❌ ' + (data.erro || 'Erro ao buscar CNPJ'));
@@ -331,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (inputCNPJ) {
     inputCNPJ.addEventListener('input', function(e) {
       let value = e.target.value.replace(/\D/g, '');
-      
+
       if (value.length <= 11) {
         // Máscara CPF: 000.000.000-00
         value = value.replace(/(\d{3})(\d)/, '$1.$2');
@@ -344,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
         value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
         value = value.replace(/(\d{4})(\d)/, '$1-$2');
       }
-      
+
       e.target.value = value;
     });
   }

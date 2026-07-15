@@ -1,47 +1,12 @@
 {% extends 'base.html' %}
-{% load static %}
-{% load widget_tweaks %}
+{% load static widget_tweaks %}
 
 {% block title %}{{ action }} Funcionário | Agrisdata{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-card {
-    border-left: 4px solid #3b82f6;
-    margin-bottom: 1.5rem;
-  }
-  .quick-add-btn {
-    transition: all 0.3s ease;
-  }
-  .quick-add-btn:hover {
-    transform: scale(1.05);
-  }
-
-  /* Increase visible size of select lists (override global 42px rule) */
-  select.form-select[size], #id_funcao {
-    min-height: 220px !important;
-    height: auto !important;
-    overflow-y: auto;
-  }
-  /* Specifically for multiple selects (roles) */
-  select.form-select[multiple], select.form-select[size][multiple] {
-    min-height: 220px !important;
-  }
-
-  /* Small screens: slightly smaller */
-  @media (max-width: 576px) {
-    select.form-select[size], #id_funcao {
-      min-height: 160px !important;
-    }
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-  
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
+<div class="container-fluid py-4">
+
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'rh:funcionario_list' %}">Funcionários</a></li>
@@ -49,346 +14,341 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0">
-      <i class="bi bi-person-badge text-primary"></i> {{ action }} Funcionário
-    </h2>
-    <a href="{% url 'rh:funcionario_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-person-badge"></i></span>
+        <div>
+          <h2>{{ action }} Funcionário</h2>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'rh:funcionario_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <!-- Seção 1: Dados Pessoais -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-person"></i> Dados Pessoais</h5>
+    <nav class="section-nav" id="funcionario-section-nav">
+      <a href="#sec-pessoais" data-tab="sec-pessoais">Dados Pessoais</a>
+      <a href="#sec-contato" data-tab="sec-contato">Contato</a>
+      <a href="#sec-endereco" data-tab="sec-endereco">Endereço</a>
+      <a href="#sec-profissionais" data-tab="sec-profissionais">Dados Profissionais</a>
+      <a href="#sec-bancarios" data-tab="sec-bancarios">Dados Bancários</a>
+      <a href="#sec-emergencia" data-tab="sec-emergencia">Contato de Emergência</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações e Foto</a>
+      <a href="#sec-documentos" data-tab="sec-documentos">Documentos</a>
+    </nav>
+
+    <div class="form-section" id="sec-pessoais" data-tab-panel="sec-pessoais">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-person"></i></span>
+        <span class="title">Dados Pessoais</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nome Completo *</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Nome Completo<span class="req">*</span></label>
             {{ form.nome_completo }}
-            {% if form.nome_completo.errors %}
-              <div class="text-danger small">{{ form.nome_completo.errors|striptags }}</div>
-            {% endif %}
+            {% if form.nome_completo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome_completo.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Código da Matrícula</label>
+          <div class="field col-3">
+            <label class="form-label">Código da Matrícula</label>
             {{ form.matricula }}
-            {% if form.matricula.errors %}
-              <div class="text-danger small">{{ form.matricula.errors|striptags }}</div>
-            {% endif %}
+            {% if form.matricula.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.matricula.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">CPF *</label>
+          <div class="field col-3">
+            <label class="form-label">CPF<span class="req">*</span></label>
             {{ form.cpf }}
-            {% if form.cpf.errors %}
-              <div class="text-danger small">{{ form.cpf.errors|striptags }}</div>
-            {% endif %}
+            {% if form.cpf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cpf.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">RG</label>
+          <div class="field col-3">
+            <label class="form-label">RG</label>
             {{ form.rg }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Data de Nascimento</label>
+          <div class="field col-3">
+            <label class="form-label">Data de Nascimento</label>
             {{ form.data_nascimento }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Gênero</label>
+          <div class="field col-3">
+            <label class="form-label">Gênero</label>
             {{ form.genero }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Estado Civil</label>
+          <div class="field col-3">
+            <label class="form-label">Estado Civil</label>
             {{ form.estado_civil }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 2: Contato -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-telephone"></i> Contato</h5>
+    <div class="form-section" id="sec-contato" data-tab-panel="sec-contato">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-telephone"></i></span>
+        <span class="title">Contato</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Telefone</label>
             {{ form.telefone }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Celular</label>
+          <div class="field col-4">
+            <label class="form-label">Celular</label>
             {{ form.celular }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">E-mail</label>
+          <div class="field col-4">
+            <label class="form-label">E-mail</label>
             {{ form.email }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 3: Endereço -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
+    <div class="form-section" id="sec-endereco" data-tab-panel="sec-endereco">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Endereço</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">CEP</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">CEP</label>
             <div class="input-group">
               {{ form.cep }}
-              <button type="button" class="btn btn-primary btn-buscar-cep" id="buscarCEPFunc">
+              <button type="button" class="btn btn-outline btn-buscar-cep" id="buscarCEPFunc">
                 <i class="bi bi-search"></i>
               </button>
             </div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Endereço</label>
+          <div class="field col-6">
+            <label class="form-label">Endereço</label>
             {{ form.endereco }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Número</label>
+          <div class="field col-3">
+            <label class="form-label">Número</label>
             {{ form.numero }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Complemento</label>
+          <div class="field col-4">
+            <label class="form-label">Complemento</label>
             {{ form.complemento }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Bairro</label>
+          <div class="field col-4">
+            <label class="form-label">Bairro</label>
             {{ form.bairro }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Cidade</label>
+          <div class="field col-3">
+            <label class="form-label">Cidade</label>
             {{ form.cidade }}
           </div>
-          <div class="col-md-1">
-            <label class="form-label fw-semibold">UF</label>
+          <div class="field col-1">
+            <label class="form-label">UF</label>
             {{ form.uf }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 4: Dados Profissionais -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="bi bi-briefcase"></i> Dados Profissionais</h5>
+    <div class="form-section" id="sec-profissionais" data-tab-panel="sec-profissionais">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-briefcase"></i></span>
+        <span class="title">Dados Profissionais</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Fazenda</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Fazenda</label>
             {{ form.fazenda }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Função/Cargo *</label>
+          <div class="field col-6">
+            <label class="form-label">Função/Cargo<span class="req">*</span></label>
             {{ form.funcao }}
-            {% if form.funcao.errors %}
-              <div class="text-danger small">{{ form.funcao.errors|striptags }}</div>
-            {% endif %}
+            {% if form.funcao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcao.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">&nbsp;</label>
-            <button type="button" class="btn btn-success w-100 quick-add-btn" data-bs-toggle="modal" data-bs-target="#modalNovaFuncao">
+          <div class="field col-2">
+            <label class="form-label">&nbsp;</label>
+            <button type="button" class="btn btn-outline w-100" data-bs-toggle="modal" data-bs-target="#modalNovaFuncao">
               <i class="bi bi-plus-circle"></i> Nova Função
             </button>
           </div>
 
           <!-- Campos específicos para Motorista (CNH) - inicialmente escondidos -->
-          <div id="motorista_fields" class="col-md-6 d-none">
-            <label class="form-label fw-semibold">CNH</label>
+          <div id="motorista_fields" class="field col-6 d-none">
+            <label class="form-label">CNH</label>
             {{ form.cnh }}
-            {% if form.cnh.errors %}
-              <div class="text-danger small">{{ form.cnh.errors|striptags }}</div>
-            {% endif %}
+            {% if form.cnh.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cnh.errors|striptags }}</div>{% endif %}
           </div>
-          <div id="motorista_fields_validade" class="col-md-6 d-none">
-            <label class="form-label fw-semibold">Validade CNH</label>
+          <div id="motorista_fields_validade" class="field col-6 d-none">
+            <label class="form-label">Validade CNH</label>
             {{ form.cnh_validade }}
-            {% if form.cnh_validade.errors %}
-              <div class="text-danger small">{{ form.cnh_validade.errors|striptags }}</div>
-            {% endif %}
+            {% if form.cnh_validade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cnh_validade.errors|striptags }}</div>{% endif %}
           </div>
 
           <!-- Escolaridade e CREA -->
-          <div class="col-md-7">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-book text-info"></i> Escolaridade
-            </label>
+          <div class="field col-7">
+            <label class="form-label"><i class="bi bi-book text-info"></i> Escolaridade</label>
             {% include 'widgets/select_field.html' with field=form.escolaridade %}
-            {% if form.escolaridade.errors %}
-              <div class="text-danger small">{{ form.escolaridade.errors|striptags }}</div>
-            {% endif %}
+            {% if form.escolaridade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.escolaridade.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">
-              <i class="bi bi-certificate text-success"></i> Número CREA
-            </label>
+          <div class="field col-5">
+            <label class="form-label"><i class="bi bi-certificate text-success"></i> Número CREA</label>
             {% include 'widgets/text_field.html' with field=form.numero_crea %}
-            {% if form.numero_crea.errors %}
-              <div class="text-danger small">{{ form.numero_crea.errors|striptags }}</div>
-            {% endif %}
+            {% if form.numero_crea.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_crea.errors|striptags }}</div>{% endif %}
           </div>
 
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo de Contrato *</label>
+          <div class="field col-4">
+            <label class="form-label">Tipo de Contrato<span class="req">*</span></label>
             {{ form.tipo_contrato }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Data de Admissão *</label>
+          <div class="field col-4">
+            <label class="form-label">Data de Admissão<span class="req">*</span></label>
             {{ form.data_admissao }}
-            {% if form.data_admissao.errors %}
-              <div class="text-danger small">{{ form.data_admissao.errors|striptags }}</div>
-            {% endif %}
+            {% if form.data_admissao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_admissao.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Salário (R$) *</label>
+          <div class="field col-4">
+            <label class="form-label">Salário (R$)<span class="req">*</span></label>
             <div class="input-group">
               <span class="input-group-text">R$</span>
               {{ form.salario }}
             </div>
-            {% if form.salario.errors %}
-              <div class="text-danger small">{{ form.salario.errors|striptags }}</div>
-            {% endif %}
+            {% if form.salario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.salario.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">CTPS</label>
+          <div class="field col-3">
+            <label class="form-label">CTPS</label>
             {{ form.ctps }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">PIS/PASEP</label>
+          <div class="field col-3">
+            <label class="form-label">PIS/PASEP</label>
             {{ form.pis }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Data de Demissão</label>
+          <div class="field col-3">
+            <label class="form-label">Data de Demissão</label>
             {{ form.data_demissao }}
           </div>
-          <div class="col-md-3">
-            <div class="form-check form-switch mt-4">
-              {{ form.ativo }}
-              <label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">
-                Funcionário Ativo
+          <div class="field col-3">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.ativo.id_for_label }}">Funcionário Ativo</label>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 5: Dados Bancários -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-secondary text-white">
-        <h5 class="mb-0"><i class="bi bi-bank"></i> Dados Bancários</h5>
+    <div class="form-section" id="sec-bancarios" data-tab-panel="sec-bancarios">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-bank"></i></span>
+        <span class="title">Dados Bancários</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Banco</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Banco</label>
             {{ form.banco }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Agência</label>
+          <div class="field col-3">
+            <label class="form-label">Agência</label>
             {{ form.agencia }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Conta</label>
+          <div class="field col-3">
+            <label class="form-label">Conta</label>
             {{ form.conta }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Conta</label>
+          <div class="field col-3">
+            <label class="form-label">Tipo de Conta</label>
             {{ form.tipo_conta }}
           </div>
         </div>
-        <div id="pix-options" class="row g-3 mt-3">
-          <div class="col-md-3">
-            <div class="form-check form-switch mt-2">
-              {{ form.pix_habilitado }} <label class="form-check-label" for="{{ form.pix_habilitado.id_for_label }}">PIX Habilitado</label>
+        <div class="form-grid mt-2" id="pix-options">
+          <div class="field col-3">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.pix_habilitado }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.pix_habilitado.id_for_label }}">PIX Habilitado</label>
             </div>
           </div>
-          <div id="tipo_chave_pix_field" class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Chave PIX</label>
+          <div id="tipo_chave_pix_field" class="field col-3">
+            <label class="form-label">Tipo de Chave PIX</label>
             {{ form.tipo_chave_pix }}
           </div>
-          <div id="chave_pix_field" class="col-md-6">
-            <label class="form-label fw-semibold">Chave PIX</label>
+          <div id="chave_pix_field" class="field col-6">
+            <label class="form-label">Chave PIX</label>
             {{ form.chave_pix }}
           </div>
         </div>
-        <script src="{% static 'js/cadastros_banking.js' %}"></script>      
       </div>
     </div>
 
-    <!-- Seção 6: Contato de Emergência -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Contato de Emergência</h5>
+    <div class="form-section" id="sec-emergencia" data-tab-panel="sec-emergencia">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-exclamation-triangle"></i></span>
+        <span class="title">Contato de Emergência</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Nome</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Nome</label>
             {{ form.contato_emergencia_nome }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone</label>
+          <div class="field col-4">
+            <label class="form-label">Telefone</label>
             {{ form.contato_emergencia_telefone }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Parentesco</label>
+          <div class="field col-4">
+            <label class="form-label">Parentesco</label>
             {{ form.contato_emergencia_parentesco }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 7: Observações e Foto -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-dark text-white">
-        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações e Foto</h5>
+    <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-chat-text"></i></span>
+        <span class="title">Observações e Foto</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Observações</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-8">
+            <label class="form-label">Observações</label>
             {{ form.observacoes }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Foto do Funcionário</label>
+          <div class="field col-4">
+            <label class="form-label">Foto do Funcionário</label>
             {{ form.foto }}
-            <small class="text-muted d-block">JPG, PNG (máx 2MB)</small>
+            <div class="helper-note">JPG, PNG (máx 2MB)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 8: Documentos -->
-
-      <!-- Seção 8: Documentos -->
-      <div class="card section-card border-0 shadow-sm">
-        <div class="card-header bg-success text-white">
-          <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> Documentos de Contratação</h5>
-        </div>
-        <div class="card-body p-4">
-          <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> Após cadastrar o funcionário, utilize o botão "Anexar Documento" na página de detalhes para anexar arquivos.
-          </div>
+    <div class="form-section" id="sec-documentos" data-tab-panel="sec-documentos">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-earmark-pdf"></i></span>
+        <span class="title">Documentos de Contratação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="alert alert-info mb-0">
+          <i class="bi bi-info-circle"></i> Após cadastrar o funcionário, utilize o botão "Anexar Documento" na página de detalhes para anexar arquivos.
         </div>
       </div>
+    </div>
 
-    <!-- Botões -->
-    <div class="d-flex justify-content-between gap-3">
-      <a href="{% url 'rh:funcionario_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'rh:funcionario_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Funcionário
       </button>
     </div>
@@ -400,13 +360,13 @@
       const formset = document.getElementById('formset_documentos');
       const totalForms = document.getElementById('id_documentofuncionario_set-TOTAL_FORMS');
       const numForms = parseInt(totalForms.value);
-      
+
       // Cria novo formulário baseado no template
       const novoForm = document.querySelector('.form-documento').cloneNode(true);
-      
+
       // Atualiza IDs e names para o novo índice
       novoForm.setAttribute('data-form-index', numForms);
-      
+
       // Limpa valores do formulário clonado
       novoForm.querySelectorAll('input[type="text"], input[type="date"], select, textarea, input[type="file"]').forEach(field => {
         field.value = '';
@@ -414,33 +374,33 @@
         const errorDiv = field.parentElement.querySelector('.text-danger');
         if (errorDiv) errorDiv.remove();
       });
-      
+
       // Remove checkbox de delete para novo formulário
       const deleteCheckbox = novoForm.querySelector('input[type="checkbox"]');
       if (deleteCheckbox && deleteCheckbox.name.includes('DELETE')) {
         deleteCheckbox.parentElement.parentElement.remove();
       }
-      
+
       // Atualiza números do formulário
       novoForm.querySelectorAll('[name*="documentofuncionario_set-"]').forEach(field => {
         const oldName = field.name;
         const newName = oldName.replace(/-\d+-/, `-${numForms}-`);
         field.name = newName;
         field.id = `id_${newName}`;
-        
+
         // Atualiza labels
         const label = novoForm.querySelector(`label[for="${field.id.replace(newName, oldName.match(/-\d+-(.+)$/)[1])}"]`);
         if (label && label.htmlFor) {
           label.htmlFor = field.id;
         }
       });
-      
+
       // Atualiza título do documento
       novoForm.querySelector('h6').textContent = `Documento #${numForms + 1}`;
-      
+
       // Adiciona novo formulário
       formset.appendChild(novoForm);
-      
+
       // Incrementa contador de formas
       totalForms.value = numForms + 1;
     }
@@ -571,6 +531,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
   window._cadastros_funcionario_config = {
     cep_selector: '#{{ form.cep.id_for_label }}',
@@ -583,12 +545,13 @@
   };
 </script>
 <script src="{% static 'js/cadastros_funcionario.js' %}"></script>
+<script src="{% static 'js/cadastros_banking.js' %}"></script>
 
 <script>
   // Debug e Auto-preenchimento de salário
   document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOMContentLoaded - Inicializando');
-    
+
     const funcaoSelect = document.getElementById('id_funcao');
     const salarioInput = document.getElementById('id_salario');
     const motoristaFields = document.getElementById('motorista_fields');
@@ -606,7 +569,7 @@
       funcaoSelect.addEventListener('change', function() {
         const funcaoId = this.value;
         console.log('✅ Mudança detectada. Função ID:', funcaoId);
-        
+
         if (!funcaoId) {
           salarioInput.value = '';
           console.log('⚪ Nenhuma função selecionada');

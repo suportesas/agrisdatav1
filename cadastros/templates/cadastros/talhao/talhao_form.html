@@ -3,210 +3,186 @@
 
 {% block title %}{{ action|default:title }} Talhão | Agrisdata{% endblock %}
 
-{% block extra_css %}
-<style>
-	.section-header {
-		background: linear-gradient(135deg, #0ea5a4 0%, #0891b2 100%);
-		color: white;
-		padding: 12px 18px;
-		border-radius: 10px 10px 0 0;
-		margin-bottom: 0;
-	}
-	.form-section {
-		background: white;
-		border-radius: 10px;
-		overflow: hidden;
-		box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-		margin-bottom: 20px;
-	}
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
 
-	<!-- Breadcrumb -->
-	<nav aria-label="breadcrumb" class="mb-4">
-		<ol class="breadcrumb">
-			<li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-			<li class="breadcrumb-item"><a href="{% url 'cadastros:talhao_list' %}">Talhões</a></li>
-			<li class="breadcrumb-item active">{{ action|default:'Novo' }} Talhão</li>
-		</ol>
-	</nav>
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'cadastros:talhao_list' %}">Talhões</a></li>
+      <li class="breadcrumb-item active">{{ action|default:'Novo' }} Talhão</li>
+    </ol>
+  </nav>
 
-	<!-- Header -->
-	<div class="d-flex justify-content-between align-items-center mb-4">
-		<div>
-			<h2 class="fw-bold mb-1">
-				<i class="bi bi-{% if talhao %}pencil-square{% else %}plus-circle{% endif %} text-info"></i>
-				{{ action|default:'Novo' }} Talhão
-			</h2>
-			{% if talhao %}
-				<p class="text-muted mb-0">Editando: <strong>{{ talhao.nome }}</strong></p>
-			{% else %}
-				<p class="text-muted mb-0">Cadastre um novo talhão vinculado a uma área</p>
-			{% endif %}
-		</div>
-		<a href="{% url 'cadastros:talhao_list' %}" class="btn btn-outline-secondary">
-			<i class="bi bi-arrow-left"></i> Voltar
-		</a>
-	</div>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if talhao %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <div>
+          <h2>{{ action|default:'Novo' }} Talhão</h2>
+          {% if talhao %}
+          <p class="text-muted mb-0">Editando: <strong>{{ talhao.nome }}</strong></p>
+          {% else %}
+          <p class="text-muted mb-0">Cadastre um novo talhão vinculado a uma área</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:talhao_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
 
-	<form method="post" novalidate>
-		{% csrf_token %}
+  <form method="post" novalidate>
+    {% csrf_token %}
 
-		<!-- Seção: Identificação -->
-		<div class="form-section">
-			<div class="section-header">
-				<h5 class="mb-0"><i class="bi bi-info-circle"></i> Identificação</h5>
-			</div>
-			<div class="p-4">
-				<div class="row g-3">
-					<div class="col-md-6">
-						<label class="form-label fw-semibold">{{ form.fazenda.label }} *</label>
-						{{ form.fazenda }}
-						{% if form.fazenda.errors %}
-							<div class="text-danger small">{{ form.fazenda.errors|striptags }}</div>
-						{% endif %}
-						<small class="text-muted d-block">Selecione a fazenda para carregar as áreas</small>
-					</div>
+    <nav class="section-nav" id="talhao-section-nav">
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-medidas" data-tab="sec-medidas">Medidas</a>
+      <a href="#sec-geo" data-tab="sec-geo">Geolocalização & Características</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
 
-					<div class="col-md-6">
-						<label class="form-label fw-semibold">{{ form.area.label }}</label>
-						{{ form.area }}
-						{% if form.area.errors %}
-							<div class="text-danger small">{{ form.area.errors|striptags }}</div>
-						{% endif %}
-					</div>
+    <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+        <span class="title">Identificação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">{{ form.fazenda.label }}<span class="req">*</span></label>
+            {{ form.fazenda }}
+            {% if form.fazenda.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fazenda.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Selecione a fazenda para carregar as áreas</div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.area.label }}</label>
+            {{ form.area }}
+            {% if form.area.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.nome.label }}<span class="req">*</span></label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.codigo.label }}</label>
+            {{ form.codigo }}
+            {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
 
-					<div class="col-md-6">
-						<label class="form-label fw-semibold">{{ form.nome.label }} *</label>
-						{{ form.nome }}
-						{% if form.nome.errors %}
-							<div class="text-danger small">{{ form.nome.errors|striptags }}</div>
-						{% endif %}
-					</div>
+    <div class="form-section" id="sec-medidas" data-tab-panel="sec-medidas">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-rulers"></i></span>
+        <span class="title">Medidas</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">{{ form.area_tamanho.label }}<span class="req">*</span></label>
+            <div class="input-suffix">
+              {{ form.area_tamanho }}
+              <span class="suffix-text">ha</span>
+            </div>
+            {% if form.area_tamanho.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area_tamanho.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Área em hectares (formato: 0.0001)</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-					<div class="col-md-6">
-						<label class="form-label fw-semibold">{{ form.codigo.label }}</label>
-						{{ form.codigo }}
-						{% if form.codigo.errors %}
-							<div class="text-danger small">{{ form.codigo.errors|striptags }}</div>
-						{% endif %}
-					</div>
-				</div>
-			</div>
-		</div>
+    <div class="form-section" id="sec-geo" data-tab-panel="sec-geo">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Geolocalização & Características</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">{{ form.latitude.label }}</label>
+            {{ form.latitude }}
+            {% if form.latitude.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.latitude.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.longitude.label }}</label>
+            {{ form.longitude }}
+            {% if form.longitude.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.longitude.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.declividade.label }}</label>
+            {{ form.declividade }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.exposicao_solar.label }}</label>
+            {{ form.exposicao_solar }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">{{ form.status.label }}</label>
+            {{ form.status }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.pronto_para_plantio }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.pronto_para_plantio.id_for_label }}">{{ form.pronto_para_plantio.label }}</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-		<!-- Seção: Medidas -->
-		<div class="form-section">
-			<div class="section-header">
-				<h5 class="mb-0"><i class="bi bi-rulers"></i> Medidas</h5>
-			</div>
-			<div class="p-4">
-				<div class="row g-3">
-					<div class="col-md-6">
-						<label class="form-label fw-semibold">{{ form.area_tamanho.label }} *</label>
-						<div class="input-group">
-							{{ form.area_tamanho }}
-							<span class="input-group-text">ha</span>
-						</div>
-						{% if form.area_tamanho.errors %}
-							<div class="text-danger small">{{ form.area_tamanho.errors|striptags }}</div>
-						{% endif %}
-						<small class="text-muted d-block">Área em hectares (formato: 0.0001)</small>
-					</div>
-				</div>
-			</div>
-		</div>
+    <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-chat-left-text"></i></span>
+        <span class="title">Observações</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-8">
+            <label class="form-label">{{ form.observacoes.label }}</label>
+            {{ form.observacoes }}
+            {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-		<!-- Seção: Geolocalização e Características -->
-		<div class="form-section">
-			<div class="section-header">
-				<h5 class="mb-0"><i class="bi bi-geo-alt"></i> Geolocalização & Características</h5>
-			</div>
-			<div class="p-4">
-				<div class="row g-3">
-					<div class="col-md-4">
-						<label class="form-label fw-semibold">{{ form.latitude.label }}</label>
-						{{ form.latitude }}
-						{% if form.latitude.errors %}
-							<div class="text-danger small">{{ form.latitude.errors|striptags }}</div>
-						{% endif %}
-					</div>
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:talhao_list' %}" class="btn btn-outline">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar Talhão
+      </button>
+    </div>
 
-					<div class="col-md-4">
-						<label class="form-label fw-semibold">{{ form.longitude.label }}</label>
-						{{ form.longitude }}
-						{% if form.longitude.errors %}
-							<div class="text-danger small">{{ form.longitude.errors|striptags }}</div>
-						{% endif %}
-					</div>
-
-					<div class="col-md-4">
-						<label class="form-label fw-semibold">{{ form.declividade.label }}</label>
-						{{ form.declividade }}
-					</div>
-
-					<div class="col-md-4">
-						<label class="form-label fw-semibold">{{ form.exposicao_solar.label }}</label>
-						{{ form.exposicao_solar }}
-					</div>
-
-					<div class="col-md-4">
-						<label class="form-label fw-semibold">{{ form.status.label }}</label>
-						{{ form.status }}
-					</div>
-
-					<div class="col-md-4 align-self-center">
-						<div class="form-check form-switch mt-2">
-							{{ form.pronto_para_plantio }}
-							<label class="form-check-label" for="{{ form.pronto_para_plantio.id_for_label }}">{{ form.pronto_para_plantio.label }}</label>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Seção: Observações e Status -->
-		<div class="form-section">
-			<div class="section-header">
-				<h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Observações</h5>
-			</div>
-			<div class="p-4">
-				<div class="row g-3">
-					<div class="col-md-8">
-						<label class="form-label fw-semibold">{{ form.observacoes.label }}</label>
-						{{ form.observacoes }}
-						{% if form.observacoes.errors %}
-							<div class="text-danger small">{{ form.observacoes.errors|striptags }}</div>
-						{% endif %}
-					</div>
-
-					<div class="col-md-4">
-						<div class="form-check form-switch mt-2">
-							{{ form.ativo }}
-							<label class="form-check-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Ações -->
-		<div class="d-flex justify-content-between gap-3">
-			<a href="{% url 'cadastros:talhao_list' %}" class="btn btn-outline-secondary btn-lg px-5">
-				<i class="bi bi-x-circle"></i> Cancelar
-			</a>
-			<button type="submit" class="btn btn-success btn-lg px-5">
-				<i class="bi bi-check-circle"></i> Salvar Talhão
-			</button>
-		</div>
-
-	</form>
+  </form>
 
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 {% comment %} JavaScript: carregar áreas via AJAX {% endcomment %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -253,5 +229,4 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 });
 </script>
-
 {% endblock %}

@@ -1,16 +1,8 @@
 {% extends 'base.html' %}
-
-{% block extra_css %}
-<style>
-  .section-card {
-    border-left: 4px solid #3b82f6;
-    margin-bottom: 1.5rem;
-  }
-</style>
-{% endblock %}
+{% load static %}
 
 {% block content %}
-<div class="container-fluid mt-3 px-3 px-xl-4">
+<div class="container-fluid py-4">
 
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb" class="mb-3">
@@ -21,14 +13,20 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0">
-      <i class="bi bi-box-seam text-primary"></i> {{ action }} Produto
-    </h2>
-    <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-box-seam"></i></span>
+        <div>
+          <h2>{{ action }} Produto</h2>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'produtos:produto_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   {% if form.errors %}
@@ -41,12 +39,28 @@
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
+    <nav class="section-nav" id="produto-section-nav">
+      <a href="#geral" data-tab="geral">Geral</a>
+      <a href="#fiscal" data-tab="fiscal">Fiscal</a>
+      <a href="#tributacoes" data-tab="tributacoes">Tributações</a>
+      <a href="#financeiro" data-tab="financeiro">Financeiro</a>
+      <a href="#estoque" data-tab="estoque">Estoque</a>
+      <a href="#agricola" data-tab="agricola" class="d-none">Classificação Agrícola</a>
+      <a href="#fornecedores" data-tab="fornecedores">Fornecedores</a>
+      <a href="#defensivo" data-tab="defensivo" class="d-none">Defensivo - Culturas/Pragas</a>
+      <a href="#fertilizante" data-tab="fertilizante" class="d-none">Fertilizantes</a>
+      {% if object.pk %}
+      <a href="#documentos" data-tab="documentos">Documentos</a>
+      {% endif %}
+    </nav>
+
     <!-- SEÇÃO GERAL -->
-    <div class="card section-card border-0 shadow-sm" id="geral">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informações Gerais</h5>
+    <div class="form-section" id="geral" data-tab-panel="geral">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+        <span class="title">Informações Gerais</span>
       </div>
-      <div class="card-body p-4">
+      <div class="form-section-body">
         <div class="row">
           <div class="col-md-3 mb-3">
             {{ form.codigo.label_tag }}
@@ -184,11 +198,12 @@
     </div>
 
     <!-- SEÇÃO FISCAL -->
-    <div class="card section-card border-0 shadow-sm" id="fiscal">
-      <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-receipt-cutoff"></i> Informações Fiscais</h5>
+    <div class="form-section" id="fiscal" data-tab-panel="fiscal">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-receipt-cutoff"></i></span>
+        <span class="title">Informações Fiscais</span>
       </div>
-      <div class="card-body p-4">
+      <div class="form-section-body">
         <div class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label">NCM <span class="text-danger">*</span></label>
@@ -244,21 +259,19 @@
             {{ form.tipo_item }}
           </div>
         </div>
+      </div>
+    </div>
 
-        {% if object.pk %}
-        <hr class="my-4">
-        
-        <!-- Seção de Tributações por CFOP -->
-        <div class="mt-4">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0">
-              <i class="bi bi-calculator me-2"></i>Tributações por CFOP
-            </h5>
-            <a href="{% url 'produtos:tributacao_create' object.pk %}" class="btn btn-primary btn-sm">
-              <i class="bi bi-plus-circle me-1"></i>Adicionar Tributação
-            </a>
-          </div>
-
+    <!-- SEÇÃO TRIBUTAÇÕES POR CFOP -->
+    <div class="form-section" id="tributacoes" data-tab-panel="tributacoes">
+      {% if object.pk %}
+      <div class="section-toolbar">
+        <span class="title"><i class="bi bi-calculator text-primary"></i> Tributações por CFOP</span>
+        <a href="{% url 'produtos:tributacao_create' object.pk %}" class="btn btn-sm btn-outline">
+          <i class="bi bi-plus-circle"></i> Adicionar Tributação
+        </a>
+      </div>
+      <div class="form-section-body">
           <!-- Tabela de Tributações -->
           <div class="table-responsive">
             <table class="table table-hover" id="tabelaTributacoes">
@@ -326,20 +339,20 @@
             <strong>Atenção:</strong> Salve o produto primeiro para poder cadastrar suas tributações por CFOP.
           </div>
           <p class="text-muted mb-3">Depois de salvar, o sistema volta automaticamente nesta aba para você continuar o cadastro.</p>
-          <button type="submit" class="btn btn-primary" name="continue_tab" value="fiscal">
-            <i class="bi bi-check-circle me-1"></i>Salvar e continuar em Fiscal
+          <button type="submit" class="btn btn-primary" name="continue_tab" value="tributacoes">
+            <i class="bi bi-check-circle me-1"></i>Salvar e continuar em Tributações
           </button>
         </div>
         {% endif %}
       </div>
-    </div>
 
     <!-- SEÇÃO FINANCEIRO -->
-    <div class="card section-card border-0 shadow-sm" id="financeiro">
-      <div class="card-header" style="background: #10b981; color: white;">
-        <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Informações Financeiras</h5>
+    <div class="form-section" id="financeiro" data-tab-panel="financeiro">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-cash-stack"></i></span>
+        <span class="title">Informações Financeiras</span>
       </div>
-      <div class="card-body p-4">
+      <div class="form-section-body">
         <div class="row">
           <div class="col-md-3 mb-3">
             {{ form.preco_custo.label_tag }}
@@ -362,11 +375,12 @@
     </div>
 
     <!-- SEÇÃO ESTOQUE -->
-    <div class="card section-card border-0 shadow-sm" id="estoque">
-      <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="bi bi-boxes"></i> Controle de Estoque</h5>
+    <div class="form-section" id="estoque" data-tab-panel="estoque">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-boxes"></i></span>
+        <span class="title">Controle de Estoque</span>
       </div>
-      <div class="card-body p-4">
+      <div class="form-section-body">
         <div class="form-check mb-3">
           {{ form.controla_estoque }} {{ form.controla_estoque.label_tag }}
         </div>
@@ -416,11 +430,12 @@
     </div>
 
     <!-- SEÇÃO AGRÍCOLA -->
-    <div class="card section-card border-0 shadow-sm" id="agricola-section" style="display: none;">
-      <div class="card-header" style="background: #6366f1; color: white;">
-        <h5 class="mb-0"><i class="bi bi-flower1"></i> Classificação Agrícola</h5>
+    <div class="form-section" id="agricola-section" data-tab-panel="agricola" style="display: none;">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-flower1"></i></span>
+        <span class="title">Classificação Agrícola</span>
       </div>
-      <div class="card-body p-4" id="agricola">
+      <div class="form-section-body" id="agricola">
         <!-- Campo hidden para categoria_agricola -->
         <div style="display: none;">
           {{ form.categoria_agricola }}
@@ -515,11 +530,12 @@
     </div>
 
     <!-- SEÇÃO FORNECEDORES -->
-    <div class="card section-card border-0 shadow-sm" id="fornecedores">
-      <div class="card-header" style="background: #8b5cf6; color: white;">
-        <h5 class="mb-0"><i class="bi bi-shop"></i> Fornecedores do Produto</h5>
+    <div class="form-section" id="fornecedores" data-tab-panel="fornecedores">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-shop"></i></span>
+        <span class="title">Fornecedores do Produto</span>
       </div>
-      <div class="card-body p-4">
+      <div class="form-section-body">
         {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
           <p class="text-muted mb-0">Gerencie os fornecedores e seus códigos específicos para este produto</p>
@@ -616,11 +632,12 @@
     </div>
 
     <!-- SEÇÃO DEFENSIVO - CULTURAS/PRAGAS -->
-    <div class="card section-card border-0 shadow-sm" id="defensivo-section" style="display: none;">
-      <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-shield-fill-exclamation"></i> Defensivo - Culturas/Pragas</h5>
+    <div class="form-section" id="defensivo-section" data-tab-panel="defensivo" style="display: none;">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-shield-fill-exclamation"></i></span>
+        <span class="title">Defensivo - Culturas/Pragas</span>
       </div>
-      <div class="card-body p-4" id="defensivo">
+      <div class="form-section-body" id="defensivo">
         {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
           <p class="text-muted mb-0">Registre para cada cultura as pragas combatidas e as dosagens específicas</p>
@@ -703,11 +720,12 @@
     </div>
 
     <!-- SEÇÃO FERTILIZANTE -->
-    <div class="card section-card border-0 shadow-sm" id="fertilizante-section" style="display: none;">
-      <div class="card-header" style="background: #f59e0b; color: white;">
-        <h5 class="mb-0"><i class="bi bi-droplet-fill"></i> Informações de Fertilizante</h5>
+    <div class="form-section" id="fertilizante-section" data-tab-panel="fertilizante" style="display: none;">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-droplet-fill"></i></span>
+        <span class="title">Informações de Fertilizante</span>
       </div>
-      <div class="card-body p-4" id="fertilizante">
+      <div class="form-section-body" id="fertilizante">
 
         <div class="alert alert-info">
           <i class="bi bi-info-circle me-2"></i>
@@ -765,11 +783,12 @@
 
     <!-- SEÇÃO DOCUMENTOS -->
     {% if object.pk %}
-    <div class="card section-card border-0 shadow-sm" id="documentos">
-      <div class="card-header bg-dark text-white">
-        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> Documentos do Produto</h5>
+    <div class="form-section" id="documentos" data-tab-panel="documentos">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+        <span class="title">Documentos do Produto</span>
       </div>
-      <div class="card-body p-4">
+      <div class="form-section-body">
         <div class="d-flex justify-content-end align-items-center mb-3">
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUploadDocumento">
             <i class="bi bi-cloud-upload me-1"></i>Adicionar Documento
@@ -842,14 +861,14 @@
         </div>
         {% endif %}
       </div>
-      {% endif %}
     </div>
+    {% endif %}
 
-    <div class="d-flex justify-content-between gap-3 mt-2">
-      <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'produtos:produto_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5" id="btnSalvarProduto">
+      <button type="submit" class="btn btn-primary" id="btnSalvarProduto">
         <i class="bi bi-check-circle"></i> Salvar Produto
       </button>
     </div>
@@ -1046,10 +1065,12 @@ document.addEventListener('DOMContentLoaded', function() {
       if (agricolaTabLi) {
         agricolaTabLi.style.display = (condiciona && !isFertilizante) ? 'block' : 'none';
       }
+      if (window.SectionNav) window.SectionNav.setTabVisible('agricola', condiciona && !isFertilizante);
       // Mostrar/ocultar aba Defensivo
       if (defensivoTabLi) {
         defensivoTabLi.style.display = (condiciona && !isFertilizante) ? 'block' : 'none';
       }
+      if (window.SectionNav) window.SectionNav.setTabVisible('defensivo', condiciona && !isFertilizante);
       // Opcional: mostrar alerta na aba agrícola se for condicional e produto novo
       if (alertDefensivoInfo) {
         if (condiciona && !isProdutoExistente && !isFertilizante) {
@@ -1110,6 +1131,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.warn('⚠️ Categoria não é fertilizante');
                 }
             }
+            if (window.SectionNav) window.SectionNav.setTabVisible('fertilizante', shouldShow);
         } else {
             console.error('❌ Elemento fertilizante-tab-li não encontrado no DOM!');
         }
@@ -1126,9 +1148,10 @@ document.addEventListener('DOMContentLoaded', function() {
       categoriaSelect.addEventListener('change', verificarCategoriaFertilizante);
       categoriaSelect.addEventListener('change', sincronizarCategoriaAgricola);
 
-      // Se a URL vier com hash de seção (ex: #defensivo), rola até a seção após aplicar regras de visibilidade.
+      // Se a URL vier com hash de seção (ex: #defensivo), ativa a aba correspondente e rola até a seção.
       const hash = window.location.hash;
       if (hash) {
+        if (window.SectionNav) window.SectionNav.activate(hash.replace('#', ''));
         const targetSection = document.querySelector(hash);
         if (targetSection && targetSection.offsetParent !== null) {
           targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2821,6 +2844,7 @@ function imprimirDocumentacao() {
 }
 </script>
 
+<script src="{% static 'js/section-nav.js' %}"></script>
 
 {% endblock %}
 

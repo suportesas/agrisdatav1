@@ -4,8 +4,8 @@
 {% block title %}{{ action }} Função | Agrisdata{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4 py-4">
-  <!-- Breadcrumb -->
+<div class="container-fluid py-4">
+
   <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}"><i class="bi bi-house-door"></i> Início</a></li>
@@ -14,324 +14,272 @@
     </ol>
   </nav>
 
-  <div class="row justify-content-center">
-    <div class="col-xl-8 col-lg-10">
-      <!-- Card Principal -->
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-primary text-white py-3">
-          <div class="d-flex align-items-center">
-            <i class="bi bi-person-badge fs-4 me-2"></i>
-            <div>
-              <h4 class="mb-0">{{ action }} Função de Funcionário</h4>
-              {% if request.user.empresa %}
-              <small class="opacity-75">
-                <i class="bi bi-building"></i> {{ request.user.empresa.nome }}
-              </small>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-
-        <div class="card-body p-4">
-          <!-- Alert Multi-tenant -->
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-person-badge"></i></span>
+        <div>
+          <h2>{{ action }} Função de Funcionário</h2>
           {% if request.user.empresa %}
-          <div class="alert alert-primary border-0 d-flex align-items-start mb-4">
-            <i class="bi bi-building fs-5 me-2"></i>
-            <div>
-              <strong>Função exclusiva da sua empresa</strong>
-              <p class="mb-0 small">Esta função/cargo será criada apenas para <strong>{{ request.user.empresa.nome }}</strong> e será utilizada no cadastro de funcionários.</p>
-            </div>
-          </div>
+          <p class="text-muted mb-0"><i class="bi bi-building"></i> {{ request.user.empresa.nome }}</p>
           {% endif %}
-
-          <form method="post" id="funcaoForm">
-            {% csrf_token %}
-
-            <!-- Erros Gerais -->
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-              <i class="bi bi-exclamation-triangle me-2"></i>
-              {{ form.non_field_errors }}
-              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endif %}
-
-            <!-- Nome da Função -->
-            <div class="mb-4">
-              <label for="{{ form.nome.id_for_label }}" class="form-label fw-semibold">
-                <i class="bi bi-tag text-primary me-1"></i>
-                {{ form.nome.label }} <span class="text-danger">*</span>
-              </label>
-              {{ form.nome }}
-              {% if form.nome.help_text %}<div class="form-text"><i class="bi bi-lightbulb text-warning"></i> {{ form.nome.help_text }}</div>{% endif %}
-              {% if form.nome.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.nome.errors.0 }}</div>{% endif %}
-            </div>
-
-            <!-- Descrição -->
-            <div class="mb-4">
-              <label for="{{ form.descricao.id_for_label }}" class="form-label fw-semibold">
-                <i class="bi bi-file-text text-primary me-1"></i>
-                {{ form.descricao.label }}
-              </label>
-              {{ form.descricao }}
-              {% if form.descricao.help_text %}<div class="form-text"><i class="bi bi-lightbulb text-warning"></i> {{ form.descricao.help_text }}</div>{% endif %}
-              {% if form.descricao.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.descricao.errors.0 }}</div>{% endif %}
-            </div>
-
-            <!-- Salário Base -->
-            <div class="mb-4">
-              <label for="{{ form.salario_base.id_for_label }}" class="form-label fw-semibold">
-                <i class="bi bi-cash text-primary me-1"></i>
-                {{ form.salario_base.label }}
-              </label>
-              <div class="input-group">
-                <span class="input-group-text">R$</span>
-                {{ form.salario_base }}
-              </div>
-              {% if form.salario_base.help_text %}<div class="form-text"><i class="bi bi-lightbulb text-warning"></i> {{ form.salario_base.help_text }}</div>{% endif %}
-              {% if form.salario_base.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.salario_base.errors.0 }}</div>{% endif %}
-            </div>
-
-            {% if funcao %}
-            <div class="mb-4">
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="id_aplicar_reajuste_todos" name="aplicar_reajuste_todos">
-                <label class="form-check-label" for="id_aplicar_reajuste_todos">
-                  Aplicar novo salário base para todos os funcionários desta função
-                </label>
-              </div>
-              <small class="text-muted d-block ms-4">
-                Quando marcado, o sistema atualiza o salário dos funcionários vinculados e registra histórico de reajuste.
-              </small>
-            </div>
-            {% endif %}
-
-            <!-- Função Ativa -->
-            <div class="mb-4">
-              <div class="form-check form-switch">
-                {{ form.ativa }}
-                <label class="form-check-label" for="{{ form.ativa.id_for_label }}">
-                  <i class="bi bi-toggle-on text-success me-1"></i>
-                  {{ form.ativa.label }}
-                </label>
-              </div>
-              <small class="text-muted ms-4">Funções inativas não aparecem nas opções de seleção</small>
-            </div>
-
-            <!-- Insalubridade (NR-15) -->
-            <div class="card border-warning mb-4">
-              <div class="card-header bg-warning bg-opacity-10 py-2">
-                <h6 class="mb-0 fw-semibold text-warning-emphasis">
-                  <i class="bi bi-exclamation-triangle me-1"></i> Insalubridade (NR-15)
-                </h6>
-              </div>
-              <div class="card-body">
-                <div class="mb-3">
-                  <div class="form-check form-switch">
-                    {{ form.possui_insalubridade }}
-                    <label class="form-check-label" for="{{ form.possui_insalubridade.id_for_label }}">
-                      {{ form.possui_insalubridade.label }}
-                    </label>
-                  </div>
-                </div>
-                <div id="div_grau_insalubridade">
-                  <label for="{{ form.grau_insalubridade.id_for_label }}" class="form-label fw-semibold">
-                    {{ form.grau_insalubridade.label }}
-                  </label>
-                  {{ form.grau_insalubridade }}
-                  {% if form.grau_insalubridade.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.grau_insalubridade.errors.0 }}</div>{% endif %}
-                </div>
-              </div>
-            </div>
-
-            <!-- Periculosidade (NR-16) -->
-            <div class="card border-danger mb-4">
-              <div class="card-header bg-danger bg-opacity-10 py-2">
-                <h6 class="mb-0 fw-semibold text-danger-emphasis">
-                  <i class="bi bi-radioactive me-1"></i> Periculosidade (NR-16)
-                </h6>
-              </div>
-              <div class="card-body">
-                <div class="mb-3">
-                  <div class="form-check form-switch">
-                    {{ form.possui_periculosidade }}
-                    <label class="form-check-label" for="{{ form.possui_periculosidade.id_for_label }}">
-                      {{ form.possui_periculosidade.label }}
-                    </label>
-                  </div>
-                </div>
-                <div id="div_percentual_periculosidade">
-                  <label for="{{ form.percentual_periculosidade.id_for_label }}" class="form-label fw-semibold">
-                    {{ form.percentual_periculosidade.label }}
-                  </label>
-                  <div class="input-group" style="max-width:200px;">
-                    {{ form.percentual_periculosidade }}
-                    <span class="input-group-text">%</span>
-                  </div>
-                  {% if form.percentual_periculosidade.help_text %}<div class="form-text">{{ form.percentual_periculosidade.help_text }}</div>{% endif %}
-                  {% if form.percentual_periculosidade.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.percentual_periculosidade.errors.0 }}</div>{% endif %}
-                </div>
-              </div>
-            </div>
-
-            <!-- Laudo Técnico -->
-            <div class="card border-info mb-4">
-              <div class="card-header bg-info bg-opacity-10 py-2">
-                <h6 class="mb-0 fw-semibold text-info-emphasis">
-                  <i class="bi bi-file-earmark-text me-1"></i> Laudo Técnico
-                </h6>
-              </div>
-              <div class="card-body">
-                <div class="mb-3">
-                  <div class="form-check form-switch">
-                    {{ form.requer_laudo }}
-                    <label class="form-check-label" for="{{ form.requer_laudo.id_for_label }}">
-                      {{ form.requer_laudo.label }}
-                    </label>
-                  </div>
-                </div>
-                <div class="row g-3" id="div_laudo">
-                  <div class="col-md-6">
-                    <label for="{{ form.validade_laudo.id_for_label }}" class="form-label fw-semibold">{{ form.validade_laudo.label }}</label>
-                    {{ form.validade_laudo }}
-                    {% if form.validade_laudo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.validade_laudo.errors.0 }}</div>{% endif %}
-                  </div>
-                  <div class="col-12">
-                    <label for="{{ form.observacoes_risco.id_for_label }}" class="form-label fw-semibold">{{ form.observacoes_risco.label }}</label>
-                    {{ form.observacoes_risco }}
-                    {% if form.observacoes_risco.help_text %}<div class="form-text">{{ form.observacoes_risco.help_text }}</div>{% endif %}
-                    {% if form.observacoes_risco.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.observacoes_risco.errors.0 }}</div>{% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Riscos Ambientais -->
-            <div class="card border-secondary mb-4">
-              <div class="card-header bg-secondary bg-opacity-10 py-2">
-                <h6 class="mb-0 fw-semibold text-secondary-emphasis">
-                  <i class="bi bi-shield-exclamation me-1"></i> Riscos Ambientais por Categoria
-                </h6>
-              </div>
-              <div class="card-body">
-                <p class="text-muted small mb-3">
-                  Selecione os riscos do catálogo por categoria para vincular à função.
-                </p>
-                <div class="mb-3">
-                  <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-sm btn-outline-secondary" target="_blank">
-                    <i class="bi bi-box-arrow-up-right"></i> Abrir catálogo de riscos
-                  </a>
-                </div>
-                <div class="row g-3">
-                  <div class="col-md-6">
-                    <label for="{{ form.riscos_fisicos_catalogo.id_for_label }}" class="form-label fw-semibold">{{ form.riscos_fisicos_catalogo.label }}</label>
-                    {{ form.riscos_fisicos_catalogo }}
-                    <div class="form-text">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
-                    {% if form.riscos_fisicos_catalogo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.riscos_fisicos_catalogo.errors.0 }}</div>{% endif %}
-                  </div>
-                  <div class="col-md-6">
-                    <label for="{{ form.riscos_quimicos_catalogo.id_for_label }}" class="form-label fw-semibold">{{ form.riscos_quimicos_catalogo.label }}</label>
-                    {{ form.riscos_quimicos_catalogo }}
-                    <div class="form-text">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
-                    {% if form.riscos_quimicos_catalogo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.riscos_quimicos_catalogo.errors.0 }}</div>{% endif %}
-                  </div>
-                  <div class="col-md-6">
-                    <label for="{{ form.riscos_biologicos_catalogo.id_for_label }}" class="form-label fw-semibold">{{ form.riscos_biologicos_catalogo.label }}</label>
-                    {{ form.riscos_biologicos_catalogo }}
-                    <div class="form-text">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
-                    {% if form.riscos_biologicos_catalogo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.riscos_biologicos_catalogo.errors.0 }}</div>{% endif %}
-                  </div>
-                  <div class="col-md-6">
-                    <label for="{{ form.riscos_ergonomicos_catalogo.id_for_label }}" class="form-label fw-semibold">{{ form.riscos_ergonomicos_catalogo.label }}</label>
-                    {{ form.riscos_ergonomicos_catalogo }}
-                    <div class="form-text">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
-                    {% if form.riscos_ergonomicos_catalogo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.riscos_ergonomicos_catalogo.errors.0 }}</div>{% endif %}
-                  </div>
-                  <div class="col-md-6">
-                    <label for="{{ form.riscos_acidentes_catalogo.id_for_label }}" class="form-label fw-semibold">{{ form.riscos_acidentes_catalogo.label }}</label>
-                    {{ form.riscos_acidentes_catalogo }}
-                    <div class="form-text">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
-                    {% if form.riscos_acidentes_catalogo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.riscos_acidentes_catalogo.errors.0 }}</div>{% endif %}
-                  </div>
-                  <div class="col-md-6">
-                    <label for="{{ form.riscos_outros_catalogo.id_for_label }}" class="form-label fw-semibold">{{ form.riscos_outros_catalogo.label }}</label>
-                    {{ form.riscos_outros_catalogo }}
-                    <div class="form-text">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
-                    {% if form.riscos_outros_catalogo.errors %}<div class="invalid-feedback d-block"><i class="bi bi-x-circle"></i> {{ form.riscos_outros_catalogo.errors.0 }}</div>{% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Exemplos -->
-            <div class="card bg-light border-0 mb-4">
-              <div class="card-body">
-                <h6 class="fw-semibold mb-3">
-                  <i class="bi bi-lightbulb text-warning me-1"></i>
-                  Exemplos de Funções Agrícolas:
-                </h6>
-                <div class="row g-2">
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Motorista</strong>
-                      <p class="small text-muted mb-0">Transporte de cargas e insumos</p>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Tratorista</strong>
-                      <p class="small text-muted mb-0">Operação de tratores e implementos</p>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Colhedor</strong>
-                      <p class="small text-muted mb-0">Colheita manual de culturas</p>
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="p-2 bg-white rounded border">
-                      <strong class="text-primary">Supervisor de Campo</strong>
-                      <p class="small text-muted mb-0">Supervisão de equipes rurais</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Botões -->
-            <div class="d-flex gap-2 justify-content-between align-items-center pt-3 border-top">
-              <a href="{% url 'rh:funcao_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-              </a>
-              <button type="submit" class="btn btn-primary btn-lg px-4">
-                <i class="bi bi-check-circle"></i> Salvar Função
-              </button>
-            </div>
-          </form>
         </div>
-
-        <!-- Footer -->
-        <div class="card-footer bg-light text-muted small">
-          <i class="bi bi-info-circle"></i>
-          Esta função poderá ser atribuída aos funcionários no cadastro de colaboradores.
-        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'rh:funcao_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
       </div>
     </div>
   </div>
-</div>
 
-<style>
-  .form-control:focus, .form-select:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-  }
-  .btn {
-    transition: all 0.2s;
-  }
-  .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  }
-</style>
+  <form method="post" id="funcaoForm">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <nav class="section-nav" id="funcao-section-nav">
+      <a href="#sec-dados" data-tab="sec-dados">Dados da Função</a>
+      <a href="#sec-riscos" data-tab="sec-riscos">Insalubridade e Periculosidade</a>
+      <a href="#sec-laudo" data-tab="sec-laudo">Laudo Técnico</a>
+      <a href="#sec-ambientais" data-tab="sec-ambientais">Riscos Ambientais</a>
+    </nav>
+
+    <div class="complex-layout">
+      <div class="complex-main">
+
+        <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+            <span class="title">Dados da Função</span>
+          </div>
+          <div class="form-section-body">
+            {% if request.user.empresa %}
+            <div class="alert alert-primary mb-3">
+              <i class="bi bi-building"></i>
+              <strong>Função exclusiva da sua empresa</strong>
+              <p class="mb-0 small">Esta função/cargo será criada apenas para <strong>{{ request.user.empresa.nome }}</strong> e será utilizada no cadastro de funcionários.</p>
+            </div>
+            {% endif %}
+            <div class="form-grid">
+              <div class="field col-6{% if form.nome.errors %} has-error{% endif %}">
+                <label class="form-label">{{ form.nome.label }}<span class="req">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.help_text %}<div class="helper-note">{{ form.nome.help_text }}</div>{% endif %}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">{{ form.salario_base.label }}</label>
+                <div class="input-group">
+                  <span class="input-group-text">R$</span>
+                  {{ form.salario_base }}
+                </div>
+                {% if form.salario_base.help_text %}<div class="helper-note">{{ form.salario_base.help_text }}</div>{% endif %}
+                {% if form.salario_base.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.salario_base.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">{{ form.descricao.label }}</label>
+                {{ form.descricao }}
+                {% if form.descricao.help_text %}<div class="helper-note">{{ form.descricao.help_text }}</div>{% endif %}
+                {% if form.descricao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.descricao.errors.0 }}</div>{% endif %}
+              </div>
+              {% if funcao %}
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    <input type="checkbox" id="id_aplicar_reajuste_todos" name="aplicar_reajuste_todos">
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="id_aplicar_reajuste_todos">Aplicar novo salário base para todos os funcionários desta função</label>
+                </div>
+                <div class="helper-note">Quando marcado, o sistema atualiza o salário dos funcionários vinculados e registra histórico de reajuste.</div>
+              </div>
+              {% endif %}
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativa }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.ativa.id_for_label }}">{{ form.ativa.label }}</label>
+                </div>
+                <div class="helper-note">Funções inativas não aparecem nas opções de seleção</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-riscos" data-tab-panel="sec-riscos">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-exclamation-triangle"></i></span>
+            <span class="title">Insalubridade e Periculosidade</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.possui_insalubridade }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.possui_insalubridade.id_for_label }}">{{ form.possui_insalubridade.label }}</label>
+                </div>
+              </div>
+              <div class="field col-6" id="div_grau_insalubridade">
+                <label class="form-label">{{ form.grau_insalubridade.label }}</label>
+                {{ form.grau_insalubridade }}
+                {% if form.grau_insalubridade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.grau_insalubridade.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.possui_periculosidade }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.possui_periculosidade.id_for_label }}">{{ form.possui_periculosidade.label }}</label>
+                </div>
+              </div>
+              <div class="field col-6" id="div_percentual_periculosidade">
+                <label class="form-label">{{ form.percentual_periculosidade.label }}</label>
+                <div class="input-group" style="max-width:200px;">
+                  {{ form.percentual_periculosidade }}
+                  <span class="input-group-text">%</span>
+                </div>
+                {% if form.percentual_periculosidade.help_text %}<div class="helper-note">{{ form.percentual_periculosidade.help_text }}</div>{% endif %}
+                {% if form.percentual_periculosidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.percentual_periculosidade.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-laudo" data-tab-panel="sec-laudo">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+            <span class="title">Laudo Técnico</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.requer_laudo }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.requer_laudo.id_for_label }}">{{ form.requer_laudo.label }}</label>
+                </div>
+              </div>
+              <div class="field col-6" id="div_laudo">
+                <label class="form-label">{{ form.validade_laudo.label }}</label>
+                {{ form.validade_laudo }}
+                {% if form.validade_laudo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.validade_laudo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">{{ form.observacoes_risco.label }}</label>
+                {{ form.observacoes_risco }}
+                {% if form.observacoes_risco.help_text %}<div class="helper-note">{{ form.observacoes_risco.help_text }}</div>{% endif %}
+                {% if form.observacoes_risco.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes_risco.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-ambientais" data-tab-panel="sec-ambientais">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-shield-exclamation"></i></span>
+            <span class="title">Riscos Ambientais por Categoria</span>
+          </div>
+          <div class="form-section-body">
+            <p class="text-muted small mb-3">Selecione os riscos do catálogo por categoria para vincular à função.</p>
+            <div class="mb-3">
+              <a href="{% url 'rh:risco_ambiental_catalogo_list' %}" class="btn btn-sm btn-outline" target="_blank">
+                <i class="bi bi-box-arrow-up-right"></i> Abrir catálogo de riscos
+              </a>
+            </div>
+            <div class="form-grid">
+              <div class="field col-6">
+                <label class="form-label">{{ form.riscos_fisicos_catalogo.label }}</label>
+                {{ form.riscos_fisicos_catalogo }}
+                <div class="helper-note">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
+                {% if form.riscos_fisicos_catalogo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.riscos_fisicos_catalogo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">{{ form.riscos_quimicos_catalogo.label }}</label>
+                {{ form.riscos_quimicos_catalogo }}
+                <div class="helper-note">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
+                {% if form.riscos_quimicos_catalogo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.riscos_quimicos_catalogo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">{{ form.riscos_biologicos_catalogo.label }}</label>
+                {{ form.riscos_biologicos_catalogo }}
+                <div class="helper-note">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
+                {% if form.riscos_biologicos_catalogo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.riscos_biologicos_catalogo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">{{ form.riscos_ergonomicos_catalogo.label }}</label>
+                {{ form.riscos_ergonomicos_catalogo }}
+                <div class="helper-note">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
+                {% if form.riscos_ergonomicos_catalogo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.riscos_ergonomicos_catalogo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">{{ form.riscos_acidentes_catalogo.label }}</label>
+                {{ form.riscos_acidentes_catalogo }}
+                <div class="helper-note">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
+                {% if form.riscos_acidentes_catalogo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.riscos_acidentes_catalogo.errors.0 }}</div>{% endif %}
+              </div>
+              <div class="field col-6">
+                <label class="form-label">{{ form.riscos_outros_catalogo.label }}</label>
+                {{ form.riscos_outros_catalogo }}
+                <div class="helper-note">Segure Ctrl (ou Cmd) para selecionar mais de um item.</div>
+                {% if form.riscos_outros_catalogo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.riscos_outros_catalogo.errors.0 }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4><i class="bi bi-lightbulb"></i> Exemplos de Funções Agrícolas</h4>
+          <div class="summary-row">
+            <span><strong>Motorista</strong></span>
+          </div>
+          <div class="helper-note mb-2">Transporte de cargas e insumos</div>
+          <div class="summary-row">
+            <span><strong>Tratorista</strong></span>
+          </div>
+          <div class="helper-note mb-2">Operação de tratores e implementos</div>
+          <div class="summary-row">
+            <span><strong>Colhedor</strong></span>
+          </div>
+          <div class="helper-note mb-2">Colheita manual de culturas</div>
+          <div class="summary-row">
+            <span><strong>Supervisor de Campo</strong></span>
+          </div>
+          <div class="helper-note">Supervisão de equipes rurais</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'rh:funcao_list' %}" class="btn btn-outline">
+        <i class="bi bi-arrow-left"></i> Voltar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar Função
+      </button>
+    </div>
+  </form>
+
+  <p class="text-muted small mt-3">
+    <i class="bi bi-info-circle"></i>
+    Esta função poderá ser atribuída aos funcionários no cadastro de colaboradores.
+  </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 {% endblock %}

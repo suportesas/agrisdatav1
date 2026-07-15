@@ -5,29 +5,6 @@
 
 {% block extra_css %}
 <style>
-  /* Layout geral */
-  .section-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    margin-bottom: 24px;
-    overflow: hidden;
-  }
-  
-  .section-header {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: white;
-    padding: 16px 24px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  
-  .section-body {
-    padding: 24px;
-  }
-
   /* Seleção de Talhões - Estilo Visual */
   .talhoes-grid {
     display: grid;
@@ -254,10 +231,9 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4">
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'cadastros:safra_list' %}">Safras</a></li>
@@ -265,117 +241,22 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if safra %}pencil-square{% else %}plus-circle{% endif %} text-success"></i>
-        {{ action|default:"Nova" }} Safra
-      </h2>
-      <p class="text-muted mb-0">Configure o planejamento e selecione os talhões</p>
-    </div>
-    <div class="d-flex gap-2">
-      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjudaSafra">
-        <i class="bi bi-question-circle"></i> Ajuda
-      </button>
-      <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Voltar
-      </a>
-    </div>
-  </div>
-
-  <!-- Modal de Ajuda: Passo a Passo do Cadastro de Safra -->
-  <div class="modal fade" id="modalAjudaSafra" tabindex="-1" aria-labelledby="modalAjudaSafraLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
-          <h5 class="modal-title fw-bold" id="modalAjudaSafraLabel">
-            <i class="bi bi-question-circle me-2"></i> Como cadastrar uma Safra
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if safra %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <div>
+          <h2>{{ action|default:"Nova" }} Safra</h2>
+          <p class="text-muted mb-0">Configure o planejamento e selecione os talhões</p>
         </div>
-        <div class="modal-body p-4">
-
-          <p class="text-muted mb-4">Siga os passos abaixo para cadastrar uma safra corretamente no sistema.</p>
-
-          <!-- Passo 1 -->
-          <div class="d-flex gap-3 mb-4">
-            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">1</div>
-            <div>
-              <h6 class="fw-bold mb-1">Nome da Safra</h6>
-              <p class="text-muted mb-0">Informe um nome identificador para a safra, como <strong>Safra 2024/25</strong>. O sistema pode preencher automaticamente com base nas datas de início e fim — basta preencher os períodos e o nome será gerado.</p>
-            </div>
-          </div>
-
-          <!-- Passo 2 -->
-          <div class="d-flex gap-3 mb-4">
-            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">2</div>
-            <div>
-              <h6 class="fw-bold mb-1">Fazenda e Cultura</h6>
-              <p class="text-muted mb-0">Selecione a <strong>fazenda</strong> onde a safra será realizada e a <strong>cultura</strong> que será plantada (ex.: Soja, Milho, Cana). Ambos os campos são obrigatórios. Ao trocar a fazenda, os talhões disponíveis serão carregados automaticamente.</p>
-            </div>
-          </div>
-
-          <!-- Passo 3 -->
-          <div class="d-flex gap-3 mb-4">
-            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">3</div>
-            <div>
-              <h6 class="fw-bold mb-1">Ano e Período</h6>
-              <p class="text-muted mb-0">Informe o <strong>ano</strong> da safra e as datas de <strong>início</strong> e <strong>fim</strong> do período de plantio. A data de início deve ser anterior à data de fim. O sistema não permitirá cadastrar duas safras com a mesma fazenda, cultura e ano.</p>
-            </div>
-          </div>
-
-          <!-- Passo 4 -->
-          <div class="d-flex gap-3 mb-4">
-            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">4</div>
-            <div>
-              <h6 class="fw-bold mb-1">Status da Safra</h6>
-              <p class="text-muted mb-0">Defina o status inicial da safra:
-                <ul class="mt-1 mb-0">
-                  <li><strong>Planejada</strong> — safra ainda não iniciada, em fase de planejamento.</li>
-                  <li><strong>Em Andamento</strong> — plantio ou colheita em execução.</li>
-                  <li><strong>Finalizada</strong> — safra concluída.</li>
-                </ul>
-              </p>
-            </div>
-          </div>
-
-          <!-- Passo 5 -->
-          <div class="d-flex gap-3 mb-4">
-            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">5</div>
-            <div>
-              <h6 class="fw-bold mb-1">Imagem (opcional)</h6>
-              <p class="text-muted mb-0">Você pode anexar uma <strong>foto ou imagem</strong> representativa da safra (ex.: foto da lavoura). Este campo é opcional e aceita formatos JPG, PNG e similares.</p>
-            </div>
-          </div>
-
-          <!-- Passo 6 -->
-          <div class="d-flex gap-3 mb-4">
-            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">6</div>
-            <div>
-              <h6 class="fw-bold mb-1">Seleção de Talhões</h6>
-              <p class="text-muted mb-0">Após selecionar a fazenda, os talhões disponíveis serão exibidos em cards. Clique nos talhões que farão parte desta safra. Use os filtros para exibir apenas talhões <strong>Disponíveis</strong>, <strong>Plantados</strong> ou <strong>Em Preparação</strong>. Talhões bloqueados (<span class="text-danger fw-semibold">Em uso</span>) já estão vinculados a outra safra ativa e não podem ser selecionados.</p>
-              <div class="alert alert-warning mt-2 mb-0 py-2">
-                <i class="bi bi-exclamation-triangle me-1"></i> <strong>Atenção:</strong> a seleção de talhões é opcional — você pode salvar a safra e adicionar os talhões depois.
-              </div>
-            </div>
-          </div>
-
-          <!-- Passo 7 -->
-          <div class="d-flex gap-3 mb-2">
-            <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">7</div>
-            <div>
-              <h6 class="fw-bold mb-1">Salvar a Safra</h6>
-              <p class="text-muted mb-0">Revise todas as informações e clique em <strong>Salvar Safra</strong>. Após salvar, você poderá acessar o detalhamento da safra para adicionar o <strong>planejamento de produção</strong> (área, produtividade esperada, custos) e registrar os <strong>resultados reais</strong> ao final da safra.</p>
-            </div>
-          </div>
-
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-success" data-bs-dismiss="modal">
-            <i class="bi bi-check-circle me-1"></i> Entendido, vamos começar!
-          </button>
-        </div>
+      </div>
+      <div class="form-header-actions">
+        <button type="button" class="btn btn-ghost" data-bs-toggle="modal" data-bs-target="#modalAjudaSafra">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+        <a href="{% url 'cadastros:safra_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
       </div>
     </div>
   </div>
@@ -383,95 +264,73 @@
   <form method="post" id="safra-form">
     {% csrf_token %}
 
-    <!-- Seção 1: Informações Básicas -->
-    <div class="section-card">
-      <div class="section-header">
-        <i class="bi bi-info-circle fs-5"></i>
-        <span>Informações Básicas</span>
+    <nav class="section-nav" id="safra-section-nav">
+      <a href="#sec-basicas" data-tab="sec-basicas">Informações Básicas</a>
+      <a href="#sec-talhoes" data-tab="sec-talhoes">Seleção de Talhões</a>
+    </nav>
+
+    <div class="form-section" id="sec-basicas" data-tab-panel="sec-basicas">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+        <span class="title">Informações Básicas</span>
       </div>
-      <div class="section-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.nome.label }} *</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">{{ form.nome.label }}<span class="req">*</span></label>
             {{ form.nome }}
-            {% if form.nome.errors %}
-              <div class="text-danger small">{{ form.nome.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted">Ex: Safra 2024/25</small>
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Ex: Safra 2024/25</div>
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.fazenda.label }} *</label>
+          <div class="field col-6">
+            <label class="form-label">{{ form.fazenda.label }}<span class="req">*</span></label>
             {{ form.fazenda }}
-            {% if form.fazenda.errors %}
-              <div class="text-danger small">{{ form.fazenda.errors|striptags }}</div>
-            {% endif %}
+            {% if form.fazenda.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fazenda.errors|striptags }}</div>{% endif %}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.codigo.label }}</label>
+          <div class="field col-4">
+            <label class="form-label">{{ form.codigo.label }}</label>
             {{ form.codigo }}
-            {% if form.codigo.errors %}
-              <div class="text-danger small">{{ form.codigo.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted">Prefixo do código de barras dos pallets. Ex: 202526</small>
+            {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Prefixo do código de barras dos pallets. Ex: 202526</div>
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.cultura.label }} *</label>
+          <div class="field col-6">
+            <label class="form-label">{{ form.cultura.label }}<span class="req">*</span></label>
             {{ form.cultura }}
-            {% if form.cultura.errors %}
-              <div class="text-danger small">{{ form.cultura.errors|striptags }}</div>
-            {% endif %}
+            {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors|striptags }}</div>{% endif %}
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">{{ form.status.label }}</label>
+          <div class="field col-6">
+            <label class="form-label">{{ form.status.label }}</label>
             {{ form.status }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.ano.label }} *</label>
+          <div class="field col-4">
+            <label class="form-label">{{ form.ano.label }}<span class="req">*</span></label>
             {{ form.ano }}
-            {% if form.ano.errors %}
-              <div class="text-danger small">{{ form.ano.errors|striptags }}</div>
-            {% endif %}
+            {% if form.ano.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ano.errors|striptags }}</div>{% endif %}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.periodo_inicio.label }}</label>
+          <div class="field col-4">
+            <label class="form-label">{{ form.periodo_inicio.label }}</label>
             {{ form.periodo_inicio }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">{{ form.periodo_fim.label }}</label>
+          <div class="field col-4">
+            <label class="form-label">{{ form.periodo_fim.label }}</label>
             {{ form.periodo_fim }}
           </div>
-
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">{{ form.imagem.label }}</label>
-            <div class="input-group">
-              {{ form.imagem }}
-              <small class="text-muted d-block mt-2">{% if form.instance.imagem %}<a href="{{ form.instance.imagem.url }}" target="_blank" class="btn btn-sm btn-link">📸 Ver imagem atual</a>{% endif %}</small>
-            </div>
-            {% if form.imagem.errors %}
-              <div class="text-danger small">{{ form.imagem.errors|striptags }}</div>
-            {% endif %}
+          <div class="field col-12">
+            <label class="form-label">{{ form.imagem.label }}</label>
+            {{ form.imagem }}
+            {% if form.instance.imagem %}<div class="mt-2"><a href="{{ form.instance.imagem.url }}" target="_blank" class="btn btn-sm btn-link">📸 Ver imagem atual</a></div>{% endif %}
+            {% if form.imagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.imagem.errors|striptags }}</div>{% endif %}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 2: Seleção de Talhões -->
-    <div class="section-card">
-      <div class="section-header">
-        <i class="bi bi-grid-3x3 fs-5"></i>
-        <span>Seleção de Talhões</span>
-        <span class="ms-auto" id="talhoes-counter" style="font-size: 14px; opacity: 0.9;">
-          <i class="bi bi-check-circle"></i> <span id="selected-count">0</span> selecionados
-        </span>
+    <div class="form-section" id="sec-talhoes" data-tab-panel="sec-talhoes">
+      <div class="section-toolbar">
+        <span class="title"><i class="bi bi-grid-3x3-gap text-primary"></i> Seleção de Talhões</span>
+        <span class="count-badge"><i class="bi bi-check-circle"></i> <span id="selected-count">0</span> selecionados</span>
       </div>
-      <div class="section-body">
+      <div class="form-section-body">
 
         <!-- Filtros -->
         <div class="talhoes-filters" id="talhoes-filters" style="display: none;">
@@ -490,12 +349,12 @@
                 <i class="bi bi-tools"></i> Em Preparação
               </button>
             </div>
-            
+
             <!-- Botão de Ajuda -->
-            <button 
-              type="button" 
-              class="btn btn-sm btn-outline-info ms-auto" 
-              data-bs-toggle="tooltip" 
+            <button
+              type="button"
+              class="btn btn-sm btn-outline ms-auto"
+              data-bs-toggle="tooltip"
               data-bs-title="Clique nas abas para filtrar os talhões por status. Você pode selecionar múltiplos talhões de diferentes abas!"
               id="talhoes-help-btn"
             >
@@ -553,12 +412,11 @@
       </div>
     </div>
 
-    <!-- Ações -->
-    <div class="d-flex justify-content-between gap-3">
-      <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:safra_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Safra
       </button>
     </div>
@@ -567,6 +425,106 @@
 
 </div>
 
+<!-- Modal de Ajuda: Passo a Passo do Cadastro de Safra -->
+<div class="modal fade" id="modalAjudaSafra" tabindex="-1" aria-labelledby="modalAjudaSafraLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+        <h5 class="modal-title fw-bold" id="modalAjudaSafraLabel">
+          <i class="bi bi-question-circle me-2"></i> Como cadastrar uma Safra
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-4">
+
+        <p class="text-muted mb-4">Siga os passos abaixo para cadastrar uma safra corretamente no sistema.</p>
+
+        <!-- Passo 1 -->
+        <div class="d-flex gap-3 mb-4">
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">1</div>
+          <div>
+            <h6 class="fw-bold mb-1">Nome da Safra</h6>
+            <p class="text-muted mb-0">Informe um nome identificador para a safra, como <strong>Safra 2024/25</strong>. O sistema pode preencher automaticamente com base nas datas de início e fim — basta preencher os períodos e o nome será gerado.</p>
+          </div>
+        </div>
+
+        <!-- Passo 2 -->
+        <div class="d-flex gap-3 mb-4">
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">2</div>
+          <div>
+            <h6 class="fw-bold mb-1">Fazenda e Cultura</h6>
+            <p class="text-muted mb-0">Selecione a <strong>fazenda</strong> onde a safra será realizada e a <strong>cultura</strong> que será plantada (ex.: Soja, Milho, Cana). Ambos os campos são obrigatórios. Ao trocar a fazenda, os talhões disponíveis serão carregados automaticamente.</p>
+          </div>
+        </div>
+
+        <!-- Passo 3 -->
+        <div class="d-flex gap-3 mb-4">
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">3</div>
+          <div>
+            <h6 class="fw-bold mb-1">Ano e Período</h6>
+            <p class="text-muted mb-0">Informe o <strong>ano</strong> da safra e as datas de <strong>início</strong> e <strong>fim</strong> do período de plantio. A data de início deve ser anterior à data de fim. O sistema não permitirá cadastrar duas safras com a mesma fazenda, cultura e ano.</p>
+          </div>
+        </div>
+
+        <!-- Passo 4 -->
+        <div class="d-flex gap-3 mb-4">
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">4</div>
+          <div>
+            <h6 class="fw-bold mb-1">Status da Safra</h6>
+            <p class="text-muted mb-0">Defina o status inicial da safra:
+              <ul class="mt-1 mb-0">
+                <li><strong>Planejada</strong> — safra ainda não iniciada, em fase de planejamento.</li>
+                <li><strong>Em Andamento</strong> — plantio ou colheita em execução.</li>
+                <li><strong>Finalizada</strong> — safra concluída.</li>
+              </ul>
+            </p>
+          </div>
+        </div>
+
+        <!-- Passo 5 -->
+        <div class="d-flex gap-3 mb-4">
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">5</div>
+          <div>
+            <h6 class="fw-bold mb-1">Imagem (opcional)</h6>
+            <p class="text-muted mb-0">Você pode anexar uma <strong>foto ou imagem</strong> representativa da safra (ex.: foto da lavoura). Este campo é opcional e aceita formatos JPG, PNG e similares.</p>
+          </div>
+        </div>
+
+        <!-- Passo 6 -->
+        <div class="d-flex gap-3 mb-4">
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">6</div>
+          <div>
+            <h6 class="fw-bold mb-1">Seleção de Talhões</h6>
+            <p class="text-muted mb-0">Após selecionar a fazenda, os talhões disponíveis serão exibidos em cards. Clique nos talhões que farão parte desta safra. Use os filtros para exibir apenas talhões <strong>Disponíveis</strong>, <strong>Plantados</strong> ou <strong>Em Preparação</strong>. Talhões bloqueados (<span class="text-danger fw-semibold">Em uso</span>) já estão vinculados a outra safra ativa e não podem ser selecionados.</p>
+            <div class="alert alert-warning mt-2 mb-0 py-2">
+              <i class="bi bi-exclamation-triangle me-1"></i> <strong>Atenção:</strong> a seleção de talhões é opcional — você pode salvar a safra e adicionar os talhões depois.
+            </div>
+          </div>
+        </div>
+
+        <!-- Passo 7 -->
+        <div class="d-flex gap-3 mb-2">
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">7</div>
+          <div>
+            <h6 class="fw-bold mb-1">Salvar a Safra</h6>
+            <p class="text-muted mb-0">Revise todas as informações e clique em <strong>Salvar Safra</strong>. Após salvar, você poderá acessar o detalhamento da safra para adicionar o <strong>planejamento de produção</strong> (área, produtividade esperada, custos) e registrar os <strong>resultados reais</strong> ao final da safra.</p>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+          <i class="bi bi-check-circle me-1"></i> Entendido, vamos começar!
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Aplicar classes Bootstrap
@@ -613,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
   setTimeout(() => {
     if (initialSelectedIds.length > 0) {
       selectedIds = new Set(initialSelectedIds);
-      
+
       // Marcar os cards como selecionados
       selectedIds.forEach(id => {
         const card = document.querySelector(`.talhao-card[data-id="${id}"]`);
@@ -621,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function() {
           card.classList.add('selected');
         }
       });
-      
+
       // Atualizar UI
       updateHiddenInput();
       updateSummary();
@@ -635,13 +593,13 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const url = "{% url 'cadastros:ajax_talhoes_fazenda' 0 %}".replace('/0/', `/${fazendaId}/`);
       const response = await fetch(url);
-      
+
       if (!response.ok) throw new Error('Erro ao carregar talhões');
-      
+
       talhoesData = await response.json();
       renderTalhoes(talhoesData, currentFilter); // 🔥 Usa o filtro atualmente selecionado
       filters.style.display = 'flex';
-      
+
     } catch (error) {
       console.error('Erro:', error);
       talhoesGrid.innerHTML = '<div class="alert alert-danger">Erro ao carregar talhões. Tente novamente.</div>';
@@ -658,21 +616,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Filtrar talhões
-    const talhoesFiltrados = filtro === 'todos' 
-      ? talhoes 
+    const talhoesFiltrados = filtro === 'todos'
+      ? talhoes
       : talhoes.filter(t => t.status === filtro);
 
     talhoesGrid.innerHTML = '';
-    
+
     talhoesFiltrados.forEach(talhao => {
       const isSelected = selectedIds.has(talhao.id);
       const isDisabled = talhao.in_use && !isSelected;
-      
+
       const card = document.createElement('div');
       card.className = `talhao-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`;
       card.dataset.id = talhao.id;
       card.dataset.area = talhao.area_hac || 0;
-      
+
       if (!isDisabled) {
         card.onclick = () => toggleTalhao(talhao.id, card);
       }
@@ -720,7 +678,7 @@ document.addEventListener('DOMContentLoaded', function() {
     talhoesGrid.style.display = 'grid';
     emptyState.style.display = 'none';
     loadingState.style.display = 'none';
-    
+
     // Backwards-compatibility: populate a hidden select (#id_talhoes) so older clients/tests
     // that expect <select><option> elements (Choices.js workflows) keep working
     (function(){
@@ -748,7 +706,7 @@ document.addEventListener('DOMContentLoaded', function() {
         select.appendChild(opt);
       });
     })();
-    
+
     updateSummary();
   }
 
@@ -761,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
       selectedIds.add(id);
       card.classList.add('selected');
     }
-    
+
     updateHiddenInput();
     updateSummary();
   }
@@ -775,14 +733,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // Atualizar resumo da seleção
   function updateSummary() {
     const count = selectedIds.size;
-    
+
     if (count === 0) {
       selectionSummary.classList.remove('active');
       return;
     }
 
     selectionSummary.classList.add('active');
-    
+
     let totalArea = 0;
     let totalProd = 0;
 
@@ -791,7 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (card) {
         const area = parseFloat(card.dataset.area || 0);
         totalArea += area;
-        
+
         // Busca a produtividade do talhão (padrão: 25 ton/ha)
         const talhao = talhoesData.find(t => t.id === id);
         const produtividade = (talhao && talhao.produtividade_estimada) ? parseFloat(talhao.produtividade_estimada) : 25;
@@ -807,12 +765,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Limpar seleção
   window.limparSelecao = function() {
     if (!confirm('Deseja realmente limpar toda a seleção?')) return;
-    
+
     selectedIds.clear();
     document.querySelectorAll('.talhao-card.selected').forEach(card => {
       card.classList.remove('selected');
     });
-    
+
     updateHiddenInput();
     updateSummary();
   };
@@ -823,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
       e.preventDefault();
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       this.classList.add('active');
-      
+
       currentFilter = this.dataset.filter; // 🔥 Salva o filtro selecionado
       renderTalhoes(talhoesData, currentFilter);
     });
@@ -846,7 +804,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear compatibility select if present
     const compatSelect = document.getElementById('id_talhoes');
     if (compatSelect) compatSelect.innerHTML = '';
-    
+
     if (msg) {
       emptyState.querySelector('p').textContent = msg;
     }

@@ -1,46 +1,12 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Endereço | Armador{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-header {
-    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px 10px 0 0;
-    margin-bottom: 0;
-  }
-  .form-section {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    margin-bottom: 1rem;
-  }
-  .form-section-body { padding: 1.25rem; }
-  
-  /* Garantir visibilidade dos campos */
-  input[name="logradouro"],
-  input[name="numero"],
-  input[name="complemento"],
-  input[name="cep"],
-  input[name="bairro"],
-  input[name="cidade"],
-  select[name="uf"],
-  select[name="pais"],
-  select[name="tipo"] {
-    display: block !important;
-    visibility: visible !important;
-    width: 100%;
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-  <nav aria-label="breadcrumb" class="mb-4">
+<div class="container-fluid py-4">
+
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'cadastros:armador_list' %}">Armadores</a></li>
@@ -49,83 +15,113 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
-        {% if form.instance.id %}Editar Endereço{% else %}Novo Endereço{% endif %}
-      </h2>
-      <p class="text-muted mb-0">Armador: <strong>{{ armador.nome }}</strong></p>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if form.instance.id %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <div>
+          <h2>{% if form.instance.id %}Editar Endereço{% else %}Novo Endereço{% endif %}</h2>
+          <p class="text-muted mb-0">Armador: <strong>{{ armador.nome }}</strong></p>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
-    <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
   </div>
 
   <form method="post" enctype="multipart/form-data" id="enderecoForm">
     {% csrf_token %}
 
-    <div class="form-section">
-      <div class="section-header">
-        <h5 class="mb-0">Informações do Endereço</h5>
+    <nav class="section-nav" id="armador-endereco-section-nav">
+      <a href="#sec-tipo" data-tab="sec-tipo">Tipo e Configurações</a>
+      <a href="#sec-localizacao" data-tab="sec-localizacao">Localização</a>
+    </nav>
+
+    <div class="form-section" id="sec-tipo" data-tab-panel="sec-tipo">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Tipo e Configurações</span>
       </div>
       <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo *</label>
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Tipo<span class="req">*</span></label>
             {{ form.tipo }}
-            {% if form.tipo.errors %}<div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>{% endif %}
+            {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <div class="form-check form-switch mt-4">
-              {{ form.padrao }}
-              <label class="form-check-label" for="{{ form.padrao.id_for_label }}">
-                <strong>Usar como endereço padrão</strong>
+          <div class="field col-6">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.padrao }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.padrao.id_for_label }}">Usar como endereço padrão</label>
             </div>
           </div>
+          {% if form.preenchido_via_api %}
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.preenchido_via_api }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.preenchido_via_api.id_for_label }}">Preenchido via API ViaCEP</label>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
 
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">CEP</label>
+    <div class="form-section" id="sec-localizacao" data-tab-panel="sec-localizacao">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Localização</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">CEP</label>
             <div class="input-group">
               {{ form.cep }}
-              <button type="button" class="btn btn-primary btn-buscar-cep">
+              <button type="button" class="btn btn-outline btn-buscar-cep">
                 <i class="bi bi-search"></i>
               </button>
             </div>
-            {% if form.cep.errors %}<div class="invalid-feedback d-block">{{ form.cep.errors.0 }}</div>{% endif %}
+            {% if form.cep.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cep.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-9">
-            <label class="form-label fw-semibold">Endereço *</label>
+          <div class="field col-9">
+            <label class="form-label">Endereço<span class="req">*</span></label>
             {{ form.logradouro }}
-            {% if form.logradouro.errors %}<div class="invalid-feedback d-block">{{ form.logradouro.errors.0 }}</div>{% endif %}
+            {% if form.logradouro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.logradouro.errors.0 }}</div>{% endif %}
           </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Número *</label>
+          <div class="field col-3">
+            <label class="form-label">Número<span class="req">*</span></label>
             {{ form.numero }}
-            {% if form.numero.errors %}<div class="invalid-feedback d-block">{{ form.numero.errors.0 }}</div>{% endif %}
+            {% if form.numero.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-9">
-            <label class="form-label fw-semibold">Complemento</label>
+          <div class="field col-9">
+            <label class="form-label">Complemento</label>
             {{ form.complemento }}
-            {% if form.complemento.errors %}<div class="invalid-feedback d-block">{{ form.complemento.errors.0 }}</div>{% endif %}
+            {% if form.complemento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.complemento.errors.0 }}</div>{% endif %}
           </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Bairro *</label>
+          <div class="field col-6">
+            <label class="form-label">Bairro<span class="req">*</span></label>
             {{ form.bairro }}
-            {% if form.bairro.errors %}<div class="invalid-feedback d-block">{{ form.bairro.errors.0 }}</div>{% endif %}
+            {% if form.bairro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.bairro.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Cidade *</label>
+          <div class="field col-6">
+            <label class="form-label">Cidade<span class="req">*</span></label>
             {{ form.cidade }}
-            {% if form.cidade.errors %}<div class="invalid-feedback d-block">{{ form.cidade.errors.0 }}</div>{% endif %}
+            {% if form.cidade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cidade.errors.0 }}</div>{% endif %}
           </div>
-
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">UF *</label>
-            <select name="uf" id="id_uf" class="form-control" required>
+          <div class="field col-3">
+            <label class="form-label">UF<span class="req">*</span></label>
+            <select name="uf" id="id_uf" class="form-select" required>
               <option value="">Selecione...</option>
               <option value="AC">AC</option>
               <option value="AL">AL</option>
@@ -155,33 +151,22 @@
               <option value="SE">SE</option>
               <option value="TO">TO</option>
             </select>
-            {% if form.uf.errors %}<div class="invalid-feedback d-block">{{ form.uf.errors.0 }}</div>{% endif %}
+            {% if form.uf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.uf.errors.0 }}</div>{% endif %}
           </div>
-          <div class="col-md-9">
-            <label class="form-label fw-semibold">País *</label>
+          <div class="field col-9">
+            <label class="form-label">País<span class="req">*</span></label>
             {{ form.pais }}
-            {% if form.pais.errors %}<div class="invalid-feedback d-block">{{ form.pais.errors.0 }}</div>{% endif %}
+            {% if form.pais.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.pais.errors.0 }}</div>{% endif %}
           </div>
-
-          {% if form.preenchido_via_api %}
-          <div class="col-md-12">
-            <div class="form-check">
-              {{ form.preenchido_via_api }}
-              <label class="form-check-label" for="{{ form.preenchido_via_api.id_for_label }}">
-                Preenchido via API ViaCEP
-              </label>
-            </div>
-          </div>
-          {% endif %}
         </div>
       </div>
     </div>
 
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:armador_detail' armador.id %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Endereço
       </button>
     </div>
@@ -190,6 +175,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Busca CEP para formulário de endereço do armador
@@ -197,10 +184,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnBuscarCEP) {
     btnBuscarCEP.addEventListener('click', async function(e) {
       e.preventDefault();
-      
+
       const form = document.querySelector('form');
       const cepInput = form.querySelector('input[name="cep"]');
-      
+
       if (!cepInput) {
         alert('Campo CEP não encontrado');
         return;
@@ -213,7 +200,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       const csrf = form.querySelector('input[name=csrfmiddlewaretoken]').value;
-      
+
       try {
         btnBuscarCEP.disabled = true;
         const originalHTML = btnBuscarCEP.innerHTML;
@@ -267,4 +254,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-

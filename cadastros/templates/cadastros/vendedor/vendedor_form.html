@@ -1,27 +1,12 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ action }} Vendedor | Agrisdata{% endblock %}
 
-{% block extra_css %}
-<style>
-  .section-card {
-    border-left: 4px solid #3b82f6;
-    margin-bottom: 1.5rem;
-  }
-  .quick-add-btn {
-    transition: all 0.3s ease;
-  }
-  .quick-add-btn:hover {
-    transform: scale(1.05);
-  }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container py-4">
-  
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb" class="mb-4">
+<div class="container-fluid py-4">
+
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'cadastros:vendedor_list' %}">Vendedores</a></li>
@@ -29,375 +14,379 @@
     </ol>
   </nav>
 
-  <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0">
-      <i class="bi bi-person-badge text-primary"></i> {{ action }} Vendedor
-    </h2>
-    <a href="{% url 'cadastros:vendedor_list' %}" class="btn btn-outline-secondary">
-      <i class="bi bi-arrow-left"></i> Voltar
-    </a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-person-badge"></i></span>
+        <div>
+          <h2>{{ action }} Vendedor</h2>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:vendedor_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <!-- Seção 1: Dados Pessoais -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-person"></i> Dados Pessoais</h5>
+    <nav class="section-nav" id="vendedor-section-nav">
+      <a href="#sec-pessoais" data-tab="sec-pessoais">Dados Pessoais</a>
+      <a href="#sec-tipo" data-tab="sec-tipo">Tipo de Vendedor</a>
+      <a href="#sec-contato" data-tab="sec-contato">Contato</a>
+      <a href="#sec-endereco" data-tab="sec-endereco">Endereço</a>
+      <a href="#sec-comerciais" data-tab="sec-comerciais">Dados Comerciais</a>
+      <a href="#sec-bancarios" data-tab="sec-bancarios">Dados Bancários</a>
+      <a href="#sec-documentacao" data-tab="sec-documentacao">Documentação</a>
+      <a href="#sec-hierarquia" data-tab="sec-hierarquia">Hierarquia e Gestão</a>
+      <a href="#sec-administrativo" data-tab="sec-administrativo">Controle Administrativo</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações e Idiomas</a>
+    </nav>
+
+    <div class="form-section" id="sec-pessoais" data-tab-panel="sec-pessoais">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-person"></i></span>
+        <span class="title">Dados Pessoais</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Nome Completo *</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-8">
+            <label class="form-label">Nome Completo<span class="req">*</span></label>
             {{ form.nome_completo }}
-            {% if form.nome_completo.errors %}
-              <div class="text-danger small">{{ form.nome_completo.errors|striptags }}</div>
-            {% endif %}
+            {% if form.nome_completo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome_completo.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">CPF *</label>
+          <div class="field col-4">
+            <label class="form-label">CPF<span class="req">*</span></label>
             {{ form.cpf }}
-            {% if form.cpf.errors %}
-              <div class="text-danger small">{{ form.cpf.errors|striptags }}</div>
-            {% endif %}
+            {% if form.cpf.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cpf.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">RG</label>
+          <div class="field col-3">
+            <label class="form-label">RG</label>
             {{ form.rg }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Data de Nascimento</label>
+          <div class="field col-3">
+            <label class="form-label">Data de Nascimento</label>
             {{ form.data_nascimento }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Foto</label>
+          <div class="field col-6">
+            <label class="form-label">Foto</label>
             {{ form.foto }}
-            <small class="text-muted d-block">JPG, PNG (máx 2MB)</small>
+            <div class="helper-note">JPG, PNG (máx 2MB)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 2: Tipo de Vendedor -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-briefcase"></i> Tipo de Vendedor</h5>
+    <div class="form-section" id="sec-tipo" data-tab-panel="sec-tipo">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-briefcase"></i></span>
+        <span class="title">Tipo de Vendedor</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de Mercado *</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Tipo de Mercado<span class="req">*</span></label>
             {{ form.tipo_mercado }}
-            <small class="text-muted d-block">Mercado Interno, Exportação ou Ambos</small>
-            {% if form.tipo_mercado.errors %}
-              <div class="text-danger small">{{ form.tipo_mercado.errors|striptags }}</div>
-            {% endif %}
+            <div class="helper-note">Mercado Interno, Exportação ou Ambos</div>
+            {% if form.tipo_mercado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_mercado.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo de Vínculo</label>
+          <div class="field col-6">
+            <label class="form-label">Tipo de Vínculo</label>
             {{ form.tipo_vinculo }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 3: Contato -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-telephone"></i> Contato</h5>
+    <div class="form-section" id="sec-contato" data-tab-panel="sec-contato">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-telephone"></i></span>
+        <span class="title">Contato</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone Principal *</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Telefone Principal<span class="req">*</span></label>
             {{ form.telefone_principal }}
-            {% if form.telefone_principal.errors %}
-              <div class="text-danger small">{{ form.telefone_principal.errors|striptags }}</div>
-            {% endif %}
+            {% if form.telefone_principal.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.telefone_principal.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Telefone Secundário</label>
+          <div class="field col-4">
+            <label class="form-label">Telefone Secundário</label>
             {{ form.telefone_secundario }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">WhatsApp</label>
+          <div class="field col-4">
+            <label class="form-label">WhatsApp</label>
             {{ form.whatsapp }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">E-mail Corporativo *</label>
+          <div class="field col-6">
+            <label class="form-label">E-mail Corporativo<span class="req">*</span></label>
             {{ form.email_corporativo }}
-            {% if form.email_corporativo.errors %}
-              <div class="text-danger small">{{ form.email_corporativo.errors|striptags }}</div>
-            {% endif %}
+            {% if form.email_corporativo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.email_corporativo.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">E-mail Pessoal</label>
+          <div class="field col-6">
+            <label class="form-label">E-mail Pessoal</label>
             {{ form.email_pessoal }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 4: Endereço -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-warning text-dark">
-        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Endereço</h5>
+    <div class="form-section" id="sec-endereco" data-tab-panel="sec-endereco">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Endereço</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">CEP</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">CEP</label>
             <div class="input-group">
               {{ form.cep }}
-              <button type="button" class="btn btn-primary btn-buscar-cep" id="buscarCEPVend">
+              <button type="button" class="btn btn-outline btn-buscar-cep" id="buscarCEPVend">
                 <i class="bi bi-search"></i>
               </button>
             </div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Logradouro</label>
+          <div class="field col-6">
+            <label class="form-label">Logradouro</label>
             {{ form.logradouro }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Número</label>
+          <div class="field col-3">
+            <label class="form-label">Número</label>
             {{ form.numero }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Complemento</label>
+          <div class="field col-4">
+            <label class="form-label">Complemento</label>
             {{ form.complemento }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Bairro</label>
+          <div class="field col-4">
+            <label class="form-label">Bairro</label>
             {{ form.bairro }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Cidade</label>
+          <div class="field col-3">
+            <label class="form-label">Cidade</label>
             {{ form.cidade }}
           </div>
-          <div class="col-md-1">
-            <label class="form-label fw-semibold">UF</label>
+          <div class="field col-1">
+            <label class="form-label">UF</label>
             {{ form.uf }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">País</label>
+          <div class="field col-4">
+            <label class="form-label">País</label>
             {{ form.pais }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 5: Dados Comerciais -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #10b981; color: white;">
-        <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Dados Comerciais</h5>
+    <div class="form-section" id="sec-comerciais" data-tab-panel="sec-comerciais">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-cash-stack"></i></span>
+        <span class="title">Dados Comerciais</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Comissão Mercado Interno (%)</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Comissão Mercado Interno (%)</label>
             <div class="input-group">
               {{ form.comissao_mercado_interno }}
               <span class="input-group-text">%</span>
             </div>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Comissão Exportação (%)</label>
+          <div class="field col-3">
+            <label class="form-label">Comissão Exportação (%)</label>
             <div class="input-group">
               {{ form.comissao_exportacao }}
               <span class="input-group-text">%</span>
             </div>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Comissão Fixa Mensal (R$)</label>
+          <div class="field col-3">
+            <label class="form-label">Comissão Fixa Mensal (R$)</label>
             <div class="input-group">
               <span class="input-group-text">R$</span>
               {{ form.comissao_fixa_mensal }}
             </div>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Meta Mensal</label>
+          <div class="field col-3">
+            <label class="form-label">Meta Mensal</label>
             <div class="input-group">
               <span class="input-group-text">R$</span>
               {{ form.meta_mensal }}
             </div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Moeda Padrão</label>
+          <div class="field col-4">
+            <label class="form-label">Moeda Padrão</label>
             {{ form.moeda_padrao }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Forma de Pagamento Comissão</label>
+          <div class="field col-4">
+            <label class="form-label">Forma de Pagamento Comissão</label>
             {{ form.forma_pagamento_comissao }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Regiões de Atuação</label>
+          <div class="field col-6">
+            <label class="form-label">Regiões de Atuação</label>
             {{ form.regioes_atuacao }}
-            <small class="text-muted">Ex: Norte, Nordeste, Sul (separar por vírgula)</small>
+            <div class="helper-note">Ex: Norte, Nordeste, Sul (separar por vírgula)</div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Países de Atuação</label>
+          <div class="field col-6">
+            <label class="form-label">Países de Atuação</label>
             {{ form.paises_atuacao }}
-            <small class="text-muted">Ex: USA, Europa, Ásia (separar por vírgula)</small>
+            <div class="helper-note">Ex: USA, Europa, Ásia (separar por vírgula)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 6: Dados Bancários -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #6366f1; color: white;">
-        <h5 class="mb-0"><i class="bi bi-bank"></i> Dados Bancários</h5>
+    <div class="form-section" id="sec-bancarios" data-tab-panel="sec-bancarios">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-bank"></i></span>
+        <span class="title">Dados Bancários</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Banco</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Banco</label>
             {{ form.banco }}
           </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Agência</label>
+          <div class="field col-2">
+            <label class="form-label">Agência</label>
             {{ form.agencia }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Conta</label>
+          <div class="field col-3">
+            <label class="form-label">Conta</label>
             {{ form.conta_bancaria }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tipo de Conta</label>
+          <div class="field col-3">
+            <label class="form-label">Tipo de Conta</label>
             {{ form.tipo_conta_bancaria }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Chave PIX</label>
+          <div class="field col-6">
+            <label class="form-label">Chave PIX</label>
             {{ form.pix }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 7: Documentação (Exportação) -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #8b5cf6; color: white;">
-        <h5 class="mb-0"><i class="bi bi-passport"></i> Documentação (Exportação)</h5>
+    <div class="form-section" id="sec-documentacao" data-tab-panel="sec-documentacao">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-passport"></i></span>
+        <span class="title">Documentação (Exportação)</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Número do Passaporte</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Número do Passaporte</label>
             {{ form.passaporte_numero }}
-            {% if form.passaporte_numero.errors %}
-              <div class="text-danger small">{{ form.passaporte_numero.errors|striptags }}</div>
-            {% endif %}
-            <small class="text-muted d-block">Obrigatório para vendedores de exportação</small>
+            {% if form.passaporte_numero.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.passaporte_numero.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">Obrigatório para vendedores de exportação</div>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Validade do Passaporte</label>
+          <div class="field col-4">
+            <label class="form-label">Validade do Passaporte</label>
             {{ form.passaporte_validade }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Visto de Trabalho</label>
+          <div class="field col-4">
+            <label class="form-label">Visto de Trabalho</label>
             {{ form.visto_trabalho }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">CNH</label>
+          <div class="field col-4">
+            <label class="form-label">CNH</label>
             {{ form.cnh }}
           </div>
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Certificações</label>
+          <div class="field col-8">
+            <label class="form-label">Certificações</label>
             {{ form.certificacoes }}
-            <small class="text-muted d-block">Ex: SISCOMEX, Comércio Exterior, etc.</small>
+            <div class="helper-note">Ex: SISCOMEX, Comércio Exterior, etc.</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 8: Hierarquia e Gestão -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header" style="background: #f59e0b; color: white;">
-        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Hierarquia e Gestão</h5>
+    <div class="form-section" id="sec-hierarquia" data-tab-panel="sec-hierarquia">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-diagram-3"></i></span>
+        <span class="title">Hierarquia e Gestão</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Supervisor/Gerente</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Supervisor/Gerente</label>
             {{ form.supervisor }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Nível de Autonomia</label>
+          <div class="field col-4">
+            <label class="form-label">Nível de Autonomia</label>
             {{ form.nivel_autonomia }}
           </div>
-          <div class="col-md-4">
-            <div class="form-check form-switch mt-4">
-              {{ form.acesso_crm }}
-              <label class="form-check-label fw-semibold" for="{{ form.acesso_crm.id_for_label }}">
-                Acesso ao CRM Completo
+          <div class="field col-4">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.acesso_crm }}
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="{{ form.acesso_crm.id_for_label }}">Acesso ao CRM Completo</label>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 9: Controle Administrativo -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Controle Administrativo</h5>
+    <div class="form-section" id="sec-administrativo" data-tab-panel="sec-administrativo">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-calendar-check"></i></span>
+        <span class="title">Controle Administrativo</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Data de Admissão *</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Data de Admissão<span class="req">*</span></label>
             {{ form.data_admissao }}
-            {% if form.data_admissao.errors %}
-              <div class="text-danger small">{{ form.data_admissao.errors|striptags }}</div>
-            {% endif %}
+            {% if form.data_admissao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_admissao.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Data de Desligamento</label>
+          <div class="field col-4">
+            <label class="form-label">Data de Desligamento</label>
             {{ form.data_desligamento }}
-            {% if form.data_desligamento.errors %}
-              <div class="text-danger small">{{ form.data_desligamento.errors|striptags }}</div>
-            {% endif %}
+            {% if form.data_desligamento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_desligamento.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Status</label>
+          <div class="field col-4">
+            <label class="form-label">Status</label>
             {{ form.status }}
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Seção 10: Observações e Idiomas -->
-    <div class="card section-card border-0 shadow-sm">
-      <div class="card-header bg-dark text-white">
-        <h5 class="mb-0"><i class="bi bi-chat-text"></i> Observações e Idiomas</h5>
+    <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-chat-text"></i></span>
+        <span class="title">Observações e Idiomas</span>
       </div>
-      <div class="card-body p-4">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Observações</label>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-8">
+            <label class="form-label">Observações</label>
             {{ form.observacoes }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Experiência (anos)</label>
+          <div class="field col-4">
+            <label class="form-label">Experiência (anos)</label>
             {{ form.experiencia_anos }}
           </div>
-          <div class="col-md-12">
-            <label class="form-label fw-semibold">Idiomas</label>
+          <div class="field col-12">
+            <label class="form-label">Idiomas</label>
             {{ form.idiomas }}
-            <small class="text-muted d-block">Ex: Português (nativo), Inglês (fluente), Espanhol (intermediário)</small>
+            <div class="helper-note">Ex: Português (nativo), Inglês (fluente), Espanhol (intermediário)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Botões -->
-    <div class="d-flex justify-content-between gap-3">
-      <a href="{% url 'cadastros:vendedor_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:vendedor_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" class="btn btn-success btn-lg px-5">
+      <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Vendedor
       </button>
     </div>
@@ -421,6 +410,8 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
@@ -430,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnBuscarCEP) {
     btnBuscarCEP.addEventListener('click', function() {
       const cep = document.getElementById('{{ form.cep.id_for_label }}').value.replace(/\D/g, '');
-      
+
       if (cep.length !== 8) {
         alert('Digite um CEP válido');
         return;
@@ -450,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         loadingModal.hide();
-        
+
         if (data.sucesso) {
           const d = data.dados;
           document.getElementById('{{ form.logradouro.id_for_label }}').value = d.logradouro || '';
@@ -472,12 +463,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Validação dinâmica: se tipo_mercado for EXTERNO ou AMBOS, passaporte é obrigatório
   const tipoMercado = document.getElementById('{{ form.tipo_mercado.id_for_label }}');
   const passaporteNumero = document.getElementById('{{ form.passaporte_numero.id_for_label }}');
-  
+
   if (tipoMercado && passaporteNumero) {
     tipoMercado.addEventListener('change', function() {
       if (this.value === 'EXTERNO' || this.value === 'AMBOS') {
         passaporteNumero.setAttribute('required', 'required');
-        passaporteNumero.parentElement.querySelector('label').innerHTML = 
+        passaporteNumero.parentElement.querySelector('label').innerHTML =
           'Número do Passaporte <span class="text-danger">*</span>';
       } else {
         passaporteNumero.removeAttribute('required');

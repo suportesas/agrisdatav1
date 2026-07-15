@@ -1,111 +1,157 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ title }} | Agrisdata{% endblock %}
-{% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-  <div class="row justify-content-center">
-    <div class="col-lg-9">
+<div class="container-fluid py-4">
 
-      <div class="card border-0 shadow-sm rounded-4">
-        <div class="card-header bg-white border-0 pt-3 pb-0">
-          <h6 class="fw-bold text-secondary"><i class="bi bi-clipboard-data text-warning me-2"></i>{{ title }}</h6>
-        </div>
-        <div class="card-body">
-          {% if safra_pre %}
-          <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
-            <i class="bi bi-info-circle-fill"></i>
-            <span>Criando planejamento para a safra <strong>{{ safra_pre }}</strong> — campos pré-preenchidos automaticamente.</span>
-          </div>
-          {% endif %}
-
-          <form method="post" novalidate>
-            {% csrf_token %}
-            {% if form.non_field_errors %}
-            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-            {% endif %}
-
-            <!-- Identificação -->
-            <div class="card border-0 bg-light rounded-3 mb-4 p-3">
-              <h6 class="fw-semibold text-secondary mb-3"><i class="bi bi-tag me-2"></i>Identificação</h6>
-              <div class="row g-3">
-                <div class="col-12">
-                  <label class="form-label fw-semibold">Nome do Planejamento <span class="text-danger">*</span></label>
-                  {{ form.nome }}
-                  {% if form.nome.errors %}<div class="text-danger small">{{ form.nome.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Cultura <span class="text-danger">*</span></label>
-                  {{ form.cultura }}
-                  {% if form.cultura.errors %}<div class="text-danger small">{{ form.cultura.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Safra <small class="text-muted fw-normal">(opcional)</small></label>
-                  {{ form.safra }}
-                  {% if form.safra.errors %}<div class="text-danger small">{{ form.safra.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Talhão <small class="text-muted fw-normal">(opcional)</small></label>
-                  {{ form.talhao }}
-                  {% if form.talhao.errors %}<div class="text-danger small">{{ form.talhao.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label fw-semibold">Área Total (ha) <span class="text-danger">*</span></label>
-                  {{ form.area_ha }}
-                  {% if form.area_ha.errors %}<div class="text-danger small">{{ form.area_ha.errors }}</div>{% endif %}
-                </div>
-              </div>
-            </div>
-
-            <!-- Receita esperada -->
-            <div class="card border-0 bg-light rounded-3 mb-4 p-3">
-              <h6 class="fw-semibold text-secondary mb-1"><i class="bi bi-graph-up-arrow me-2 text-success"></i>Receita Esperada <small class="text-muted fw-normal">(para margem e break-even — opcional)</small></h6>
-              <p class="text-muted small mb-3">Preencha para calcular a margem bruta e o ponto de equilíbrio do planejamento.</p>
-              <div class="row g-3">
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Produtividade Esperada (por ha)</label>
-                  {{ form.produtividade_esperada_ha }}
-                  {% if form.produtividade_esperada_ha.errors %}<div class="text-danger small">{{ form.produtividade_esperada_ha.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2">
-                  <label class="form-label fw-semibold">Unidade</label>
-                  {{ form.unidade_producao }}
-                  {% if form.unidade_producao.errors %}<div class="text-danger small">{{ form.unidade_producao.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-4">
-                  <label class="form-label fw-semibold">Preço de Venda (R$/unidade)</label>
-                  {{ form.preco_venda_unitario }}
-                  {% if form.preco_venda_unitario.errors %}<div class="text-danger small">{{ form.preco_venda_unitario.errors }}</div>{% endif %}
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                  <div id="receita-preview" class="w-100 p-2 rounded-3 bg-success bg-opacity-10 text-center d-none">
-                    <small class="text-muted d-block">Receita estimada</small>
-                    <span class="fw-bold text-success" id="receita-valor">—</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Observações -->
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Observações</label>
-              {{ form.observacoes }}
-            </div>
-
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-warning px-4"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-              <a href="{% if editing %}{% url 'operacoes_campo:planejamento_custo_detail' plan.pk %}{% else %}{% url 'operacoes_campo:planejamento_custo_list' %}{% endif %}"
-                 class="btn btn-outline-secondary"><i class="bi bi-x me-1"></i>Cancelar</a>
-            </div>
-          </form>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-clipboard-data"></i></span>
+        <div>
+          <h2>{{ title }}</h2>
         </div>
       </div>
-
+      <div class="form-header-actions">
+        <a href="{% if editing %}{% url 'operacoes_campo:planejamento_custo_detail' plan.pk %}{% else %}{% url 'operacoes_campo:planejamento_custo_list' %}{% endif %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
-</div>
 
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <nav class="section-nav" id="planejamento-custo-section-nav">
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-receita" data-tab="sec-receita">Receita Esperada</a>
+      <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
+    </nav>
+
+    <div class="complex-layout">
+      <div class="complex-main">
+
+        <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+            <span class="title">Identificação</span>
+          </div>
+          <div class="form-section-body">
+            {% if safra_pre %}
+            <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+              <i class="bi bi-info-circle-fill"></i>
+              <span>Criando planejamento para a safra <strong>{{ safra_pre }}</strong> — campos pré-preenchidos automaticamente.</span>
+            </div>
+            {% endif %}
+            <div class="form-grid">
+              <div class="field col-12">
+                <label class="form-label">Nome do Planejamento<span class="req">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Cultura<span class="req">*</span></label>
+                {{ form.cultura }}
+                {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Safra <small class="text-muted fw-normal">(opcional)</small></label>
+                {{ form.safra }}
+                {% if form.safra.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Talhão <small class="text-muted fw-normal">(opcional)</small></label>
+                {{ form.talhao }}
+                {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Área Total (ha)<span class="req">*</span></label>
+                {{ form.area_ha }}
+                {% if form.area_ha.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.area_ha.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-receita" data-tab-panel="sec-receita">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-graph-up-arrow"></i></span>
+            <span class="title">Receita Esperada</span>
+          </div>
+          <div class="form-section-body">
+            <p class="text-muted small mb-3">Preencha para calcular a margem bruta e o ponto de equilíbrio do planejamento (opcional).</p>
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Produtividade Esperada (por ha)</label>
+                {{ form.produtividade_esperada_ha }}
+                {% if form.produtividade_esperada_ha.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produtividade_esperada_ha.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-3">
+                <label class="form-label">Unidade</label>
+                {{ form.unidade_producao }}
+                {% if form.unidade_producao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_producao.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-5">
+                <label class="form-label">Preço de Venda (R$/unidade)</label>
+                {{ form.preco_venda_unitario }}
+                {% if form.preco_venda_unitario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.preco_venda_unitario.errors|striptags }}</div>{% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="sec-observacoes" data-tab-panel="sec-observacoes">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-chat-dots"></i></span>
+            <span class="title">Observações</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="complex-summary">
+        <div class="summary-card">
+          <h4>Receita Estimada</h4>
+          <div id="receita-preview" class="d-none">
+            <div class="summary-total">
+              <span>Receita esperada</span>
+              <span id="receita-valor">—</span>
+            </div>
+          </div>
+          <div class="helper-note" id="receita-vazio">Preencha produtividade e preço de venda para calcular.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% if editing %}{% url 'operacoes_campo:planejamento_custo_detail' plan.pk %}{% else %}{% url 'operacoes_campo:planejamento_custo_list' %}{% endif %}" class="btn btn-outline">
+        <i class="bi bi-x"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> Salvar
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const culturaEl   = document.getElementById('id_cultura');
@@ -117,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const unidEl      = document.getElementById('id_unidade_producao');
   const receitaBox  = document.getElementById('receita-preview');
   const receitaVal  = document.getElementById('receita-valor');
+  const receitaVazio = document.getElementById('receita-vazio');
   let lastAutoArea  = '';
 
   // ── Preview de receita estimada ──────────────────────────────────────
@@ -128,8 +175,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const receita = area * prod * preco;
       receitaVal.textContent = 'R$ ' + receita.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
       receitaBox.classList.remove('d-none');
+      receitaVazio.classList.add('d-none');
     } else {
       receitaBox.classList.add('d-none');
+      receitaVazio.classList.remove('d-none');
     }
   }
   [areaEl, prodEl, precoEl].forEach(el => el?.addEventListener('input', atualizarReceita));

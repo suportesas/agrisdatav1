@@ -5,23 +5,6 @@
 
 {% block extra_css %}
 <style>
-  .section-header {
-    color: white;
-    padding: 15px 20px;
-    border-radius: 10px 10px 0 0;
-    margin-bottom: 0;
-  }
-  .form-section {
-    background: white;
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-    margin-bottom: 1rem;
-  }
-  .form-section-body { padding: 1.25rem; }
-  .cnpj-search-btn { transition: all 0.3s ease; }
-  .cnpj-search-btn:hover { transform: scale(1.05); }
-
   @media print {
     body * { visibility: hidden !important; }
     #ajuda-print-area, #ajuda-print-area * { visibility: visible !important; }
@@ -48,8 +31,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-  <nav aria-label="breadcrumb" class="mb-4">
+<div class="container-fluid py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
       <li class="breadcrumb-item"><a href="{% url 'cadastros:cliente_list' %}">Clientes</a></li>
@@ -57,207 +40,26 @@
     </ol>
   </nav>
 
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-1">
-        <i class="bi bi-{% if cliente %}pencil-square{% else %}plus-circle{% endif %} text-primary"></i>
-        {{ action }} Cliente
-      </h2>
-      {% if cliente %}
-        <p class="text-muted mb-0">Editando: <strong>{{ cliente.razao_social }}</strong></p>
-      {% else %}
-        <p class="text-muted mb-0">Preencha os dados do cliente</p>
-      {% endif %}
-    </div>
-    <div class="d-flex gap-2">
-      <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#ajudaClienteModal">
-        <i class="bi bi-question-circle"></i> Ajuda
-      </button>
-      <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left"></i> Voltar
-      </a>
-    </div>
-  </div>
-
-  <!-- Modal de Ajuda do Cadastro de Cliente -->
-  <div class="modal fade" id="ajudaClienteModal" tabindex="-1" aria-labelledby="ajudaClienteModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%); color: white;">
-          <h5 class="modal-title" id="ajudaClienteModalLabel">
-            <i class="bi bi-question-circle-fill"></i> Guia de Cadastro de Cliente
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-{% if cliente %}pencil-square{% else %}plus-circle{% endif %}"></i></span>
+        <div>
+          <h2>{{ action }} Cliente</h2>
+          {% if cliente %}
+          <p class="text-muted mb-0">Editando: <strong>{{ cliente.razao_social }}</strong></p>
+          {% else %}
+          <p class="text-muted mb-0">Preencha os dados do cliente</p>
+          {% endif %}
         </div>
-        <div class="modal-body p-4">
-
-          <p class="text-muted mb-4">Este formulário registra todos os dados de um cliente no sistema. Abaixo você encontra a explicação de cada seção, campo e as tabelas do banco de dados envolvidas.</p>
-
-          <div class="accordion" id="ajudaAccordion">
-
-            <!-- Dados Básicos -->
-            <div class="accordion-item border-0 mb-2 shadow-sm">
-              <h2 class="accordion-header">
-                <button class="accordion-button fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaDadosBasicos">
-                  <i class="bi bi-person-fill text-primary me-2"></i> Dados Básicos
-                </button>
-              </h2>
-              <div id="ajudaDadosBasicos" class="accordion-collapse collapse show" data-bs-parent="#ajudaAccordion">
-                <div class="accordion-body">
-                  <table class="table table-sm table-bordered mb-0">
-                    <thead class="table-light"><tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
-                    <tbody>
-                      <tr><td><strong>Razão Social / Nome</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Nome completo ou razão social do cliente. Para pessoa física, use o nome completo.</td></tr>
-                      <tr><td><strong>Nome Comercial</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Nome fantasia ou nome de uso comercial (diferente da razão social).</td></tr>
-                      <tr><td><strong>CNPJ/CPF</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Documento fiscal principal. O botão <em>Buscar</em> consulta a Receita Federal via API ReceitaWS e preenche automaticamente endereço, razão social e dados de contato.</td></tr>
-                      <tr><td><strong>Tipo Cliente</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td><strong>Nacional:</strong> cliente dentro do Brasil. <strong>Importador:</strong> cliente no exterior — habilita campos de exportação.</td></tr>
-                      <tr><td><strong>Tipo Pessoa</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td><strong>PJ:</strong> Pessoa Jurídica (CNPJ). <strong>PF:</strong> Pessoa Física (CPF). Afeta o Indicador IE e validações fiscais.</td></tr>
-                      <tr><td><strong>Contato Principal</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Nome, telefone e e-mail do contato principal do cliente. Pode ser complementado com contatos adicionais após o cadastro inicial.</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Documentação Fiscal -->
-            <div class="accordion-item border-0 mb-2 shadow-sm">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaFiscal">
-                  <i class="bi bi-file-earmark-text text-warning me-2"></i> Documentação Fiscal
-                </button>
-              </h2>
-              <div id="ajudaFiscal" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
-                <div class="accordion-body">
-                  <table class="table table-sm table-bordered mb-0">
-                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
-                    <tbody>
-                      <tr><td><strong>Inscrição Estadual (IE)</strong></td><td>Número do registro estadual para contribuintes de ICMS. Obrigatório para emissão de NF-e em algumas operações.</td></tr>
-                      <tr><td><strong>Inscrição Municipal (IM)</strong></td><td>Número do cadastro municipal — necessário para serviços e NFS-e.</td></tr>
-                      <tr><td><strong>Inscrição SUFRAMA</strong></td><td>Obrigatório para clientes na Zona Franca de Manaus — garante benefícios fiscais da SUFRAMA.</td></tr>
-                      <tr><td><strong>EORI</strong></td><td>Economic Operators Registration and Identification — número de registro aduaneiro da União Europeia para exportações.</td></tr>
-                      <tr><td><strong>Regime Tributário</strong></td><td>Regime fiscal do cliente: Simples Nacional, Lucro Presumido, Lucro Real etc. Impacta o cálculo de impostos nas vendas.</td></tr>
-                      <tr><td><strong>VAT / Número Registro</strong></td><td>Identificação fiscal para clientes no exterior (IVA europeu, Tax ID americano, etc.).</td></tr>
-                      <tr><td><strong>Contribuinte ICMS</strong></td><td>Marque se o cliente é contribuinte do ICMS. Afeta o campo Indicador IE automaticamente.</td></tr>
-                      <tr><td><strong>Indicador IE</strong></td><td>Preenchido automaticamente com base em Tipo Pessoa e Contribuinte ICMS. Valores: <strong>1</strong>=Contribuinte ICMS, <strong>2</strong>=PJ isenta de IE, <strong>9</strong>=Não contribuinte (PF).</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Exportação / Importação -->
-            <div class="accordion-item border-0 mb-2 shadow-sm">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaExport">
-                  <i class="bi bi-globe text-success me-2"></i> Exportação / Importação
-                </button>
-              </h2>
-              <div id="ajudaExport" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
-                <div class="accordion-body">
-                  <p class="text-muted small">Campos relevantes principalmente para clientes do tipo <strong>Importador</strong> (exterior).</p>
-                  <table class="table table-sm table-bordered mb-0">
-                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
-                    <tbody>
-                      <tr><td><strong>País</strong></td><td>País de localização do cliente. Padrão: Brasil.</td></tr>
-                      <tr><td><strong>Moeda Padrão</strong></td><td>Moeda utilizada nas negociações com este cliente (ex: USD, EUR). Requer cadastro prévio em <em>Moedas</em> — ou crie direto aqui pelo botão <em>Adicionar</em>.</td></tr>
-                      <tr><td><strong>Porto Destino</strong></td><td>Porto de destino padrão para embarques. Vinculado ao cadastro de Portos do sistema.</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dados Comerciais -->
-            <div class="accordion-item border-0 mb-2 shadow-sm">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaComercial">
-                  <i class="bi bi-cash-stack text-danger me-2"></i> Dados Comerciais
-                </button>
-              </h2>
-              <div id="ajudaComercial" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
-                <div class="accordion-body">
-                  <table class="table table-sm table-bordered mb-0">
-                    <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
-                    <tbody>
-                      <tr><td><strong>Limite de Crédito</strong></td><td>Valor máximo de crédito concedido ao cliente. Utilizado para controle de risco nas vendas.</td></tr>
-                      <tr><td><strong>Forma de Pagamento Padrão</strong></td><td>Método de pagamento preferencial (Boleto, PIX, Transferência, Cartão etc.). Pode ser sobrescrito em cada pedido.</td></tr>
-                      <tr><td><strong>Desconto Padrão (%)</strong></td><td>Percentual de desconto concedido automaticamente nos pedidos deste cliente.</td></tr>
-                      <tr><td><strong>Vendedor Responsável</strong></td><td>Vendedor da empresa responsável pelo atendimento deste cliente. Vinculado ao cadastro de Vendedores.</td></tr>
-                      <tr><td><strong>Preset Prazo</strong></td><td>Define o prazo de pagamento padrão a partir de um conjunto de presets da empresa (ex: 30/60/90 dias). Crie novos presets clicando no botão <strong>+</strong>.</td></tr>
-                      <tr><td><strong>Observações Comerciais</strong></td><td>Campo livre para anotações internas sobre negociações, condições especiais ou histórico comercial.</td></tr>
-                      <tr><td><strong>Acesso ao Portal</strong></td><td>Habilita o acesso do cliente ao Portal do Produtor/Cliente. O campo <em>Usuário Vinculado</em> é preenchido automaticamente com o usuário logado.</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tabelas Relacionadas -->
-            <div class="accordion-item border-0 mb-2 shadow-sm">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaTabelas">
-                  <i class="bi bi-diagram-3 text-info me-2"></i> Tabelas Relacionadas no Banco de Dados
-                </button>
-              </h2>
-              <div id="ajudaTabelas" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
-                <div class="accordion-body">
-                  <p class="text-muted small mb-3">O registro de cliente se relaciona com as seguintes tabelas. As tabelas marcadas com <span class="badge bg-danger">CASCADE</span> são excluídas junto com o cliente; as com <span class="badge bg-warning text-dark">SET NULL</span> apenas perdem a referência.</p>
-                  <table class="table table-sm table-bordered mb-3">
-                    <thead class="table-primary"><tr><th>Tabela</th><th>Relação</th><th>Comportamento</th><th>Descrição</th></tr></thead>
-                    <tbody>
-                      <tr><td><code>cadastros_cliente</code></td><td>—</td><td><span class="badge bg-primary">Principal</span></td><td>Tabela principal com todos os dados do cliente.</td></tr>
-                      <tr><td><code>empresas_empresa</code></td><td>ForeignKey → Empresa</td><td><span class="badge bg-danger">CASCADE</span></td><td>Empresa proprietária do cliente (multi-tenant).</td></tr>
-                      <tr><td><code>cadastros_endereçocliente</code></td><td>← EnderecoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Endereços do cliente: Principal, Faturamento, Cobrança, Entrega, Notify.</td></tr>
-                      <tr><td><code>cadastros_contatocliente</code></td><td>← ContatoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Contatos adicionais: Principal, Financeiro, Operacional, Técnico, Emergência.</td></tr>
-                      <tr><td><code>cadastros_contabancáriacliente</code></td><td>← ContaBancariaCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Contas bancárias e chaves PIX, SWIFT e IBAN do cliente.</td></tr>
-                      <tr><td><code>cadastros_documentocliente</code></td><td>← DocumentoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Documentos anexados: contratos, certidões, licenças etc.</td></tr>
-                      <tr><td><code>cadastros_vendedor</code></td><td>ForeignKey → Vendedor</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Vendedor responsável pela conta do cliente.</td></tr>
-                      <tr><td><code>cadastros_prazopagamentopadrao</code></td><td>ForeignKey → PrazoPagamentoPadrao</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Preset de prazo de pagamento (ex: 30/60/90 dias).</td></tr>
-                      <tr><td><code>cadastros_porto</code></td><td>ForeignKey → Porto</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Porto de destino padrão para operações de exportação.</td></tr>
-                      <tr><td><code>usuarios_usuario</code></td><td>ForeignKey → Usuario</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Usuário vinculado ao portal do cliente e usuário que realizou o cadastro.</td></tr>
-                    </tbody>
-                  </table>
-                  <div class="alert alert-info mb-0 small">
-                    <i class="bi bi-lightbulb-fill me-1"></i>
-                    <strong>Dados adicionados após o cadastro:</strong> Endereços, contatos adicionais, contas bancárias e documentos são gerenciados na página de <strong>detalhes do cliente</strong>, após salvar o cadastro inicial.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Fluxo de Cadastro -->
-            <div class="accordion-item border-0 mb-2 shadow-sm">
-              <h2 class="accordion-header">
-                <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaFluxo">
-                  <i class="bi bi-signpost-split text-secondary me-2"></i> Fluxo Recomendado de Cadastro
-                </button>
-              </h2>
-              <div id="ajudaFluxo" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
-                <div class="accordion-body">
-                  <ol class="mb-0">
-                    <li class="mb-2">Informe o <strong>CNPJ/CPF</strong> e clique em <strong>Buscar</strong> para preenchimento automático via Receita Federal.</li>
-                    <li class="mb-2">Confirme ou ajuste <strong>Razão Social</strong>, <strong>Tipo Cliente</strong> e <strong>Tipo Pessoa</strong>.</li>
-                    <li class="mb-2">Preencha os dados fiscais relevantes (IE, regime tributário, SUFRAMA se for Zona Franca).</li>
-                    <li class="mb-2">Para clientes no exterior: preencha <strong>País</strong>, <strong>Moeda Padrão</strong> e <strong>Porto Destino</strong>.</li>
-                    <li class="mb-2">Defina as condições comerciais: <strong>Limite de Crédito</strong>, <strong>Forma de Pagamento</strong>, <strong>Desconto</strong> e <strong>Vendedor Responsável</strong>.</li>
-                    <li class="mb-2">Selecione o <strong>Preset de Prazo</strong> de pagamento (crie novos presets pelo botão <strong>+</strong> se necessário).</li>
-                    <li class="mb-2">Clique em <strong>Salvar Cliente</strong>.</li>
-                    <li>Na página de detalhes, adicione <strong>endereços adicionais</strong>, <strong>contatos</strong>, <strong>contas bancárias</strong> e <strong>documentos</strong>.</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-
-          </div><!-- /accordion -->
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-primary" id="btnImprimirAjuda">
-            <i class="bi bi-printer"></i> Imprimir
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="bi bi-x-circle"></i> Fechar
-          </button>
-        </div>
+      </div>
+      <div class="form-header-actions">
+        <button type="button" class="btn btn-ghost" data-bs-toggle="modal" data-bs-target="#ajudaClienteModal">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+        <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
       </div>
     </div>
   </div>
@@ -265,116 +67,121 @@
   <form method="post" enctype="multipart/form-data" id="clienteForm">
     {% csrf_token %}
 
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);">
-        <h5 class="mb-0">Dados Básicos</h5>
+    <nav class="section-nav" id="cliente-section-nav">
+      <a href="#sec-basicos" data-tab="sec-basicos">Dados Básicos</a>
+      <a href="#sec-fiscal" data-tab="sec-fiscal">Documentação Fiscal</a>
+      <a href="#sec-exportacao" data-tab="sec-exportacao">Exportação / Importação</a>
+      <a href="#sec-comercial" data-tab="sec-comercial">Dados Comerciais</a>
+    </nav>
+
+    <div class="form-section" id="sec-basicos" data-tab-panel="sec-basicos">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-person"></i></span>
+        <span class="title">Dados Básicos</span>
       </div>
       <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Razão Social / Nome *</label>
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Razão Social / Nome<span class="req">*</span></label>
             {{ form.razao_social }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nome Comercial</label>
+          <div class="field col-6">
+            <label class="form-label">Nome Comercial</label>
             {{ form.nome_comercial }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">CNPJ/CPF *</label>
+          <div class="field col-4">
+            <label class="form-label">CNPJ/CPF<span class="req">*</span></label>
             <div class="input-group">
               {{ form.cnpj_cpf }}
-              <button type="button" class="btn btn-primary cnpj-search-btn" id="buscarCNPJ"> <i class="bi bi-search"></i> Buscar</button>
+              <button type="button" class="btn btn-outline" id="buscarCNPJ"><i class="bi bi-search"></i> Buscar</button>
             </div>
-            <div id="cnpjFeedback" class="form-text mt-1 text-muted">&nbsp;</div>
+            <div id="cnpjFeedback" class="helper-note">&nbsp;</div>
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo Cliente</label>
+          <div class="field col-4">
+            <label class="form-label">Tipo Cliente</label>
             {{ form.tipo_cliente }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Tipo Pessoa</label>
+          <div class="field col-4">
+            <label class="form-label">Tipo Pessoa</label>
             {{ form.tipo_pessoa }}
           </div>
-
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Contato Principal - Nome</label>
+          <div class="field col-4">
+            <label class="form-label">Contato Principal - Nome</label>
             {{ form.contato_principal_nome }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Contato Principal - Telefone</label>
+          <div class="field col-4">
+            <label class="form-label">Contato Principal - Telefone</label>
             {{ form.contato_principal_telefone }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Contato Principal - E-mail</label>
+          <div class="field col-4">
+            <label class="form-label">Contato Principal - E-mail</label>
             {{ form.contato_principal_email }}
           </div>
-
         </div>
       </div>
     </div>
 
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #198754 0%, #157347 100%);">
-        <h5 class="mb-0">Documentação Fiscal</h5>
+    <div class="form-section" id="sec-fiscal" data-tab-panel="sec-fiscal">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+        <span class="title">Documentação Fiscal</span>
       </div>
       <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Inscrição Estadual</label>
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Inscrição Estadual</label>
             {{ form.inscricao_estadual }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Inscrição Municipal</label>
+          <div class="field col-4">
+            <label class="form-label">Inscrição Municipal</label>
             {{ form.inscricao_municipal }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Inscrição SUFRAMA</label>
+          <div class="field col-4">
+            <label class="form-label">Inscrição SUFRAMA</label>
             {{ form.inscricao_suframa }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">EORI</label>
+          <div class="field col-4">
+            <label class="form-label">EORI</label>
             {{ form.eori }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Regime Tributário</label>
+          <div class="field col-4">
+            <label class="form-label">Regime Tributário</label>
             {{ form.regime_tributario }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">VAT / Número Registro (Exterior)</label>
+          <div class="field col-4">
+            <label class="form-label">VAT / Número Registro (Exterior)</label>
             {{ form.vat }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Contribuinte ICMS</label>
+          <div class="field col-4">
+            <label class="form-label">Contribuinte ICMS</label>
             {{ form.contribuinte_icms }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Indicador IE <small class="text-muted">(preenchido automaticamente)</small></label>
+          <div class="field col-4">
+            <label class="form-label">Indicador IE <small class="text-muted">(automático)</small></label>
             <input type="text" class="form-control" readonly value="{{ form.instance.indicador_ie|default:'' }}">
-            <div class="form-text small text-muted">Valores: 1=Contribuinte ICMS, 2=Contribuinte isento de IE (PJ), 9=Não Contribuinte (PF)</div>
+            <div class="helper-note">Valores: 1=Contribuinte ICMS, 2=Contribuinte isento de IE (PJ), 9=Não Contribuinte (PF)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa8cc 100%);">
-        <h5 class="mb-0">Exportação / Importação</h5>
+    <div class="form-section" id="sec-exportacao" data-tab-panel="sec-exportacao">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-globe"></i></span>
+        <span class="title">Exportação / Importação</span>
       </div>
       <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">País</label>
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">País</label>
             {{ form.pais }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Cód. IBGE País <small class="text-muted">(NF-e)</small></label>
+          <div class="field col-3">
+            <label class="form-label">Cód. IBGE País <small class="text-muted">(NF-e)</small></label>
             {{ form.codigo_pais }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Moeda Padrão</label>
+          <div class="field col-6">
+            <label class="form-label">Moeda Padrão</label>
             <div class="d-flex gap-2 align-items-center">
               <select name="moeda_padrao" id="id_moeda_padrao" class="form-select">
                 <option value="">-- Nenhum --</option>
@@ -382,78 +189,47 @@
                   <option value="{{ m.codigo }}" {% if selected_moeda == m.codigo %}selected{% endif %}>{{ m.nome }} ({{ m.codigo }})</option>
                 {% endfor %}
               </select>
-              <button type="button" class="btn btn-outline-secondary btn-sm" id="addMoedaBtn">Adicionar</button>
+              <button type="button" class="btn btn-outline btn-sm" id="addMoedaBtn">Adicionar</button>
             </div>
             {% if not moedas_exist %}
-              <div class="form-text small text-muted mt-1">Nenhuma moeda definida. Você pode adicioná-la aqui mesmo.</div>
+              <div class="helper-note">Nenhuma moeda definida. Você pode adicioná-la aqui mesmo.</div>
             {% endif %}
           </div>
-
-          <!-- Modal para adicionar moeda -->
-          <div class="modal fade" id="moedaModal" tabindex="-1" aria-hidden="true" data-a11y="true">
-            <div class="modal-dialog">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title">Adicionar Moeda</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                  <div id="moedaForm">
-                    <div class="mb-3">
-                      <label class="form-label">Código (ex: JPY)</label>
-                      <input type="text" class="form-control" id="moeda_codigo" maxlength="4" required>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">Nome</label>
-                      <input type="text" class="form-control" id="moeda_nome" required>
-                    </div>
-                    <div id="moedaFeedback" class="text-danger small"></div>
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                  <button type="button" class="btn btn-primary" id="moedaSaveBtn">Salvar Moeda</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Porto Destino</label>
+          <div class="field col-4">
+            <label class="form-label">Porto Destino</label>
             {{ form.porto_destino }}
           </div>
         </div>
       </div>
     </div>
 
-    <div class="form-section">
-      <div class="section-header" style="background: linear-gradient(135deg, #ffc107 0%, #d39e00 100%); color: #212529;">
-        <h5 class="mb-0">Dados Comerciais</h5>
+    <div class="form-section" id="sec-comercial" data-tab-panel="sec-comercial">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-cash-stack"></i></span>
+        <span class="title">Dados Comerciais</span>
       </div>
       <div class="form-section-body">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Limite de Crédito</label>
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Limite de Crédito</label>
             {{ form.limite_credito }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Forma de Pagamento Padrão</label>
+          <div class="field col-3">
+            <label class="form-label">Forma de Pagamento Padrão</label>
             {{ form.forma_pagamento_padrao }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Desconto Padrão (%)</label>
+          <div class="field col-3">
+            <label class="form-label">Desconto Padrão (%)</label>
             {{ form.desconto_padrao }}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Vendedor Responsável</label>
+          <div class="field col-3">
+            <label class="form-label">Vendedor Responsável</label>
             {{ form.vendedor_responsavel }}
           </div>
-        </div>
-
-        <div class="row g-3 mt-3">
-          <div class="col-md-6">
+          <div class="field col-6">
             <div class="d-flex align-items-center gap-2">
-              <label class="form-label fw-semibold mb-0">Preset Prazo <span class="text-danger">*</span></label>
-              <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#novoPresetModal" title="Adicionar novo preset prazo">
+              <label class="form-label mb-0">Preset Prazo <span class="req">*</span></label>
+              <button type="button" class="btn btn-sm btn-outline" data-bs-toggle="modal" data-bs-target="#novoPresetModal" title="Adicionar novo preset prazo">
                 <i class="bi bi-plus-circle"></i>
               </button>
             </div>
@@ -464,28 +240,25 @@
               {% endfor %}
             </select>
             <select id="id_prazo_pagamento_padrao_terms" class="form-select mt-2" style="display:none;"></select>
-            <small class="form-text text-muted d-block mt-2">Selecione um preset para escolher os termos de prazo</small>
+            <div class="helper-note">Selecione um preset para escolher os termos de prazo</div>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Observações Comerciais</label>
+          <div class="field col-6">
+            <label class="form-label">Observações Comerciais</label>
             {{ form.observacoes_comerciais }}
           </div>
-        </div>
-
-        <div class="row g-3 mt-3">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Usuario Vinculado (Portal)</label>
-            <!-- Mostrar apenas o nome do usuario logado em um campo readonly -->
+          <div class="field col-4">
+            <label class="form-label">Usuario Vinculado (Portal)</label>
             <input type="text" class="form-control" readonly value="{{ user.get_full_name|default:user.username }}" title="Usuario automaticamente vinculado ao cliente">
-            <!-- Ambos os hidden inputs: o que foi setado automaticamente no __init__ do form -->
             {{ form.usuario_vinculado }}
           </div>
-          <div class="col-md-2 d-flex align-items-end">
-            <div class="form-check form-check-lg">
-              <label class="form-check-label fw-semibold" for="id_acesso_portal">
+          <div class="field col-4">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
                 {{ form.acesso_portal }}
-                Acesso ao Portal
+                <span class="slider"></span>
               </label>
+              <label class="switch-label" for="id_acesso_portal">Acesso ao Portal</label>
             </div>
           </div>
         </div>
@@ -495,154 +268,231 @@
       </div>
     </div>
 
-    <div class="d-flex justify-content-between gap-3 mt-4">
-      <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline-secondary btn-lg px-5">
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:cliente_list' %}" class="btn btn-outline">
         <i class="bi bi-x-circle"></i> Cancelar
       </a>
-      <button type="submit" id="clienteSaveBtn" class="btn btn-success btn-lg px-5">
+      <button type="submit" id="clienteSaveBtn" class="btn btn-primary">
         <i class="bi bi-check-circle"></i> Salvar Cliente
       </button>
     </div>
 
-      <!-- Hidden sync container: JS will append hidden inputs here before submit to ensure values are posted -->
-      <div id="cliente_hidden_sync" style="display:none"></div>
+    <!-- Hidden sync container: JS will append hidden inputs here before submit to ensure values are posted -->
+    <div id="cliente_hidden_sync" style="display:none"></div>
   </form>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-// Mark auto-fillable fields for accessibility and visual cueing
-document.addEventListener('DOMContentLoaded', function(){
-  try {
-    const toAuto = ['id_razao_social','id_nome_comercial','id_contato_principal_telefone','id_contato_principal_email'];
-    toAuto.forEach(id => { const el = document.getElementById(id); if (el) el.setAttribute('data-auto','true'); });
-  } catch(e){}
+<!-- Modal de Ajuda do Cadastro de Cliente -->
+<div class="modal fade" id="ajudaClienteModal" tabindex="-1" aria-labelledby="ajudaClienteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%); color: white;">
+        <h5 class="modal-title" id="ajudaClienteModalLabel">
+          <i class="bi bi-question-circle-fill"></i> Guia de Cadastro de Cliente
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body p-4">
 
-  // Gerenciar seleção de Preset Prazo
-  try {
-    const presetSelect = document.getElementById('id_prazo_pagamento_padrao_select');
-    const prazoTermsSelect = document.getElementById('id_prazo_pagamento_padrao_terms');
-    const prazoInput = document.getElementById('id_prazo_pagamento');
-    const hiddenPresetInput = document.getElementById('id_prazo_pagamento_padrao');
-    
-    if (presetSelect) {
-      // Função para atualizar termos quando um preset muda
-      function atualizarTermos() {
-        const selectedOption = presetSelect.options[presetSelect.selectedIndex];
-        const termsStr = selectedOption.getAttribute('data-terms') || '';
-        
-        // Preencher o hidden input com o ID do preset selecionado
-        if (hiddenPresetInput) {
-          hiddenPresetInput.value = presetSelect.value;
-        }
-        
-        // Limpar termos anteriores
-        prazoTermsSelect.innerHTML = '';
-        
-        if (termsStr && termsStr.trim()) {
-          // Mostrar o select de termos
-          prazoTermsSelect.style.display = 'block';
-          
-          // Parsear os termos (esperado formato: "30,60,90" ou "30/60/90")
-          let terms = [];
-          if (termsStr.includes(',')) {
-            terms = termsStr.split(',').map(t => t.trim()).filter(t => t);
-          } else if (termsStr.includes('/')) {
-            terms = termsStr.split('/').map(t => t.trim()).filter(t => t);
-          } else {
-            terms = [termsStr.trim()];
-          }
-          
-          // Adicionar opção padrão
-          const optDefault = document.createElement('option');
-          optDefault.value = '';
-          optDefault.textContent = '-- Selecione um termo --';
-          prazoTermsSelect.appendChild(optDefault);
-          
-          // Adicionar cada termo como opção
-          terms.forEach(term => {
-            const opt = document.createElement('option');
-            opt.value = term;
-            opt.textContent = term + ' dias';
-            prazoTermsSelect.appendChild(opt);
-          });
-          
-          // Se houver valor atual no prazoInput, tentar selecionar termo correspondente
-          if (prazoInput && prazoInput.value) {
-            prazoTermsSelect.value = prazoInput.value;
-          } else if (terms.length > 0) {
-            // Selecionar o primeiro termo por padrão
-            prazoTermsSelect.value = terms[0];
-            if (prazoInput) {
-              prazoInput.value = terms[0];
-            }
-          }
-        } else {
-          // Nenhum termo, ocultar o select
-          prazoTermsSelect.style.display = 'none';
-          if (prazoInput) prazoInput.value = '';
-        }
-      }
-      
-      // Event listener para quando o preset muda
-      presetSelect.addEventListener('change', atualizarTermos);
-      
-      // Event listener para quando um termo é selecionado
-      prazoTermsSelect.addEventListener('change', function() {
-        if (this.value && prazoInput) {
-          prazoInput.value = this.value;
-        }
-      });
-      
-      // Na inicialização, sincronizar com valores salvos
-      // Se há um preset salvo (no hidden input), atualizar o select visível
-      if (hiddenPresetInput && hiddenPresetInput.value) {
-        // Esperar um pouco para garantir que o DOM esteja pronto
-        setTimeout(() => {
-          presetSelect.value = hiddenPresetInput.value;
-          console.log('Sincronizado preset:', hiddenPresetInput.value);
-        }, 10);
-      }
-      
-      // Chamar uma vez na inicialização para popular termos se houver preset pré-selecionado
-      setTimeout(atualizarTermos, 50);
-      
-      // Se há um prazo já salvo, selecionar o termo correspondente
-      if (prazoInput && prazoInput.value) {
-        // Usar setTimeout para garantir que as opções foram criadas
-        setTimeout(function() {
-          if (prazoTermsSelect.offsetParent !== null) {
-            prazoTermsSelect.value = prazoInput.value;
-            console.log('Sincronizado prazo:', prazoInput.value);
-          }
-        }, 150);
-      }
-      
-      // ⚡ IMPORTANTE: Sincronizar valores antes de submeter o formulário (SEM BLOQUEAR)
-      document.getElementById('clienteForm').addEventListener('submit', function(e) {
-        // Sincronizar preset_id do select visível para hidden input (se preenchido)
-        if (presetSelect && presetSelect.value && hiddenPresetInput) {
-          hiddenPresetInput.value = presetSelect.value;
-          console.log('✓ Form submit - Sincronizado preset:', hiddenPresetInput.value);
-        }
-        
-        // Sincronizar prazo_pagamento do terms select para hidden input (se preenchido)
-        if (prazoTermsSelect && prazoTermsSelect.value && prazoInput) {
-          prazoInput.value = prazoTermsSelect.value;
-          console.log('✓ Form submit - Sincronizado prazo:', prazoInput.value);
-        }
-        
-        // NÃO bloquear submit - deixar o usuário salvar mesmo sem preencher prazo
-        console.log('✓ Formulário permitido para submission');
-        // return true; // Permitir submit normalmente
-      });
-    }
-  } catch(e) {
-    console.error('Erro ao inicializar Preset Prazo:', e);
-  }
-});
-</script>
+        <p class="text-muted mb-4">Este formulário registra todos os dados de um cliente no sistema. Abaixo você encontra a explicação de cada seção, campo e as tabelas do banco de dados envolvidas.</p>
+
+        <div class="accordion" id="ajudaAccordion">
+
+          <!-- Dados Básicos -->
+          <div class="accordion-item border-0 mb-2 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaDadosBasicos">
+                <i class="bi bi-person-fill text-primary me-2"></i> Dados Básicos
+              </button>
+            </h2>
+            <div id="ajudaDadosBasicos" class="accordion-collapse collapse show" data-bs-parent="#ajudaAccordion">
+              <div class="accordion-body">
+                <table class="table table-sm table-bordered mb-0">
+                  <thead class="table-light"><tr><th>Campo</th><th>Obrigatório</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Razão Social / Nome</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Nome completo ou razão social do cliente. Para pessoa física, use o nome completo.</td></tr>
+                    <tr><td><strong>Nome Comercial</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Nome fantasia ou nome de uso comercial (diferente da razão social).</td></tr>
+                    <tr><td><strong>CNPJ/CPF</strong></td><td class="text-center"><span class="badge bg-danger">Sim</span></td><td>Documento fiscal principal. O botão <em>Buscar</em> consulta a Receita Federal via API ReceitaWS e preenche automaticamente endereço, razão social e dados de contato.</td></tr>
+                    <tr><td><strong>Tipo Cliente</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td><strong>Nacional:</strong> cliente dentro do Brasil. <strong>Importador:</strong> cliente no exterior — habilita campos de exportação.</td></tr>
+                    <tr><td><strong>Tipo Pessoa</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td><strong>PJ:</strong> Pessoa Jurídica (CNPJ). <strong>PF:</strong> Pessoa Física (CPF). Afeta o Indicador IE e validações fiscais.</td></tr>
+                    <tr><td><strong>Contato Principal</strong></td><td class="text-center"><span class="badge bg-secondary">Não</span></td><td>Nome, telefone e e-mail do contato principal do cliente. Pode ser complementado com contatos adicionais após o cadastro inicial.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Documentação Fiscal -->
+          <div class="accordion-item border-0 mb-2 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaFiscal">
+                <i class="bi bi-file-earmark-text text-warning me-2"></i> Documentação Fiscal
+              </button>
+            </h2>
+            <div id="ajudaFiscal" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+              <div class="accordion-body">
+                <table class="table table-sm table-bordered mb-0">
+                  <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Inscrição Estadual (IE)</strong></td><td>Número do registro estadual para contribuintes de ICMS. Obrigatório para emissão de NF-e em algumas operações.</td></tr>
+                    <tr><td><strong>Inscrição Municipal (IM)</strong></td><td>Número do cadastro municipal — necessário para serviços e NFS-e.</td></tr>
+                    <tr><td><strong>Inscrição SUFRAMA</strong></td><td>Obrigatório para clientes na Zona Franca de Manaus — garante benefícios fiscais da SUFRAMA.</td></tr>
+                    <tr><td><strong>EORI</strong></td><td>Economic Operators Registration and Identification — número de registro aduaneiro da União Europeia para exportações.</td></tr>
+                    <tr><td><strong>Regime Tributário</strong></td><td>Regime fiscal do cliente: Simples Nacional, Lucro Presumido, Lucro Real etc. Impacta o cálculo de impostos nas vendas.</td></tr>
+                    <tr><td><strong>VAT / Número Registro</strong></td><td>Identificação fiscal para clientes no exterior (IVA europeu, Tax ID americano, etc.).</td></tr>
+                    <tr><td><strong>Contribuinte ICMS</strong></td><td>Marque se o cliente é contribuinte do ICMS. Afeta o campo Indicador IE automaticamente.</td></tr>
+                    <tr><td><strong>Indicador IE</strong></td><td>Preenchido automaticamente com base em Tipo Pessoa e Contribuinte ICMS. Valores: <strong>1</strong>=Contribuinte ICMS, <strong>2</strong>=PJ isenta de IE, <strong>9</strong>=Não contribuinte (PF).</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Exportação / Importação -->
+          <div class="accordion-item border-0 mb-2 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaExport">
+                <i class="bi bi-globe text-success me-2"></i> Exportação / Importação
+              </button>
+            </h2>
+            <div id="ajudaExport" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+              <div class="accordion-body">
+                <p class="text-muted small">Campos relevantes principalmente para clientes do tipo <strong>Importador</strong> (exterior).</p>
+                <table class="table table-sm table-bordered mb-0">
+                  <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>País</strong></td><td>País de localização do cliente. Padrão: Brasil.</td></tr>
+                    <tr><td><strong>Moeda Padrão</strong></td><td>Moeda utilizada nas negociações com este cliente (ex: USD, EUR). Requer cadastro prévio em <em>Moedas</em> — ou crie direto aqui pelo botão <em>Adicionar</em>.</td></tr>
+                    <tr><td><strong>Porto Destino</strong></td><td>Porto de destino padrão para embarques. Vinculado ao cadastro de Portos do sistema.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dados Comerciais -->
+          <div class="accordion-item border-0 mb-2 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaComercial">
+                <i class="bi bi-cash-stack text-danger me-2"></i> Dados Comerciais
+              </button>
+            </h2>
+            <div id="ajudaComercial" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+              <div class="accordion-body">
+                <table class="table table-sm table-bordered mb-0">
+                  <thead class="table-light"><tr><th>Campo</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Limite de Crédito</strong></td><td>Valor máximo de crédito concedido ao cliente. Utilizado para controle de risco nas vendas.</td></tr>
+                    <tr><td><strong>Forma de Pagamento Padrão</strong></td><td>Método de pagamento preferencial (Boleto, PIX, Transferência, Cartão etc.). Pode ser sobrescrito em cada pedido.</td></tr>
+                    <tr><td><strong>Desconto Padrão (%)</strong></td><td>Percentual de desconto concedido automaticamente nos pedidos deste cliente.</td></tr>
+                    <tr><td><strong>Vendedor Responsável</strong></td><td>Vendedor da empresa responsável pelo atendimento deste cliente. Vinculado ao cadastro de Vendedores.</td></tr>
+                    <tr><td><strong>Preset Prazo</strong></td><td>Define o prazo de pagamento padrão a partir de um conjunto de presets da empresa (ex: 30/60/90 dias). Crie novos presets clicando no botão <strong>+</strong>.</td></tr>
+                    <tr><td><strong>Observações Comerciais</strong></td><td>Campo livre para anotações internas sobre negociações, condições especiais ou histórico comercial.</td></tr>
+                    <tr><td><strong>Acesso ao Portal</strong></td><td>Habilita o acesso do cliente ao Portal do Produtor/Cliente. O campo <em>Usuário Vinculado</em> é preenchido automaticamente com o usuário logado.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabelas Relacionadas -->
+          <div class="accordion-item border-0 mb-2 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaTabelas">
+                <i class="bi bi-diagram-3 text-info me-2"></i> Tabelas Relacionadas no Banco de Dados
+              </button>
+            </h2>
+            <div id="ajudaTabelas" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+              <div class="accordion-body">
+                <p class="text-muted small mb-3">O registro de cliente se relaciona com as seguintes tabelas. As tabelas marcadas com <span class="badge bg-danger">CASCADE</span> são excluídas junto com o cliente; as com <span class="badge bg-warning text-dark">SET NULL</span> apenas perdem a referência.</p>
+                <table class="table table-sm table-bordered mb-3">
+                  <thead class="table-primary"><tr><th>Tabela</th><th>Relação</th><th>Comportamento</th><th>Descrição</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>cadastros_cliente</code></td><td>—</td><td><span class="badge bg-primary">Principal</span></td><td>Tabela principal com todos os dados do cliente.</td></tr>
+                    <tr><td><code>empresas_empresa</code></td><td>ForeignKey → Empresa</td><td><span class="badge bg-danger">CASCADE</span></td><td>Empresa proprietária do cliente (multi-tenant).</td></tr>
+                    <tr><td><code>cadastros_endereçocliente</code></td><td>← EnderecoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Endereços do cliente: Principal, Faturamento, Cobrança, Entrega, Notify.</td></tr>
+                    <tr><td><code>cadastros_contatocliente</code></td><td>← ContatoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Contatos adicionais: Principal, Financeiro, Operacional, Técnico, Emergência.</td></tr>
+                    <tr><td><code>cadastros_contabancáriacliente</code></td><td>← ContaBancariaCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Contas bancárias e chaves PIX, SWIFT e IBAN do cliente.</td></tr>
+                    <tr><td><code>cadastros_documentocliente</code></td><td>← DocumentoCliente</td><td><span class="badge bg-danger">CASCADE</span></td><td>Documentos anexados: contratos, certidões, licenças etc.</td></tr>
+                    <tr><td><code>cadastros_vendedor</code></td><td>ForeignKey → Vendedor</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Vendedor responsável pela conta do cliente.</td></tr>
+                    <tr><td><code>cadastros_prazopagamentopadrao</code></td><td>ForeignKey → PrazoPagamentoPadrao</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Preset de prazo de pagamento (ex: 30/60/90 dias).</td></tr>
+                    <tr><td><code>cadastros_porto</code></td><td>ForeignKey → Porto</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Porto de destino padrão para operações de exportação.</td></tr>
+                    <tr><td><code>usuarios_usuario</code></td><td>ForeignKey → Usuario</td><td><span class="badge bg-warning text-dark">SET NULL</span></td><td>Usuário vinculado ao portal do cliente e usuário que realizou o cadastro.</td></tr>
+                  </tbody>
+                </table>
+                <div class="alert alert-info mb-0 small">
+                  <i class="bi bi-lightbulb-fill me-1"></i>
+                  <strong>Dados adicionados após o cadastro:</strong> Endereços, contatos adicionais, contas bancárias e documentos são gerenciados na página de <strong>detalhes do cliente</strong>, após salvar o cadastro inicial.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fluxo de Cadastro -->
+          <div class="accordion-item border-0 mb-2 shadow-sm">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#ajudaFluxo">
+                <i class="bi bi-signpost-split text-secondary me-2"></i> Fluxo Recomendado de Cadastro
+              </button>
+            </h2>
+            <div id="ajudaFluxo" class="accordion-collapse collapse" data-bs-parent="#ajudaAccordion">
+              <div class="accordion-body">
+                <ol class="mb-0">
+                  <li class="mb-2">Informe o <strong>CNPJ/CPF</strong> e clique em <strong>Buscar</strong> para preenchimento automático via Receita Federal.</li>
+                  <li class="mb-2">Confirme ou ajuste <strong>Razão Social</strong>, <strong>Tipo Cliente</strong> e <strong>Tipo Pessoa</strong>.</li>
+                  <li class="mb-2">Preencha os dados fiscais relevantes (IE, regime tributário, SUFRAMA se for Zona Franca).</li>
+                  <li class="mb-2">Para clientes no exterior: preencha <strong>País</strong>, <strong>Moeda Padrão</strong> e <strong>Porto Destino</strong>.</li>
+                  <li class="mb-2">Defina as condições comerciais: <strong>Limite de Crédito</strong>, <strong>Forma de Pagamento</strong>, <strong>Desconto</strong> e <strong>Vendedor Responsável</strong>.</li>
+                  <li class="mb-2">Selecione o <strong>Preset de Prazo</strong> de pagamento (crie novos presets pelo botão <strong>+</strong> se necessário).</li>
+                  <li class="mb-2">Clique em <strong>Salvar Cliente</strong>.</li>
+                  <li>Na página de detalhes, adicione <strong>endereços adicionais</strong>, <strong>contatos</strong>, <strong>contas bancárias</strong> e <strong>documentos</strong>.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /accordion -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" id="btnImprimirAjuda">
+          <i class="bi bi-printer"></i> Imprimir
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="bi bi-x-circle"></i> Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para adicionar moeda -->
+<div class="modal fade" id="moedaModal" tabindex="-1" aria-hidden="true" data-a11y="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Adicionar Moeda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="moedaForm">
+          <div class="mb-3">
+            <label class="form-label">Código (ex: JPY)</label>
+            <input type="text" class="form-control" id="moeda_codigo" maxlength="4" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nome</label>
+            <input type="text" class="form-control" id="moeda_nome" required>
+          </div>
+          <div id="moedaFeedback" class="text-danger small"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="moedaSaveBtn">Salvar Moeda</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal para criar novo Preset Prazo -->
 <div class="modal fade" id="novoPresetModal" tabindex="-1" aria-labelledby="novoPresetModalLabel" aria-hidden="true">
@@ -683,120 +533,6 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
   </div>
 </div>
-
-<script>
-// Gerenciar modal para novo Preset Prazo
-document.addEventListener('DOMContentLoaded', function() {
-  try {
-    const presetNomeInput = document.getElementById('presetNome');
-    const presetTermosInput = document.getElementById('presetTermos');
-    const presetPreview = document.getElementById('presetPreview');
-    const presetPreviewText = document.getElementById('presetPreviewText');
-    const salvarPresetBtn = document.getElementById('salvarPresetBtn');
-    const novoPresetModal = document.getElementById('novoPresetModal');
-    const presetSelectElement = document.getElementById('id_prazo_pagamento_padrao_select');
-    
-    // Atualizar preview enquanto digita
-    function atualizarPreviewPreset() {
-      const nome = presetNomeInput.value.trim();
-      const termos = presetTermosInput.value.trim();
-      
-      if (nome && termos) {
-        const displayText = `<strong>${nome}</strong> (${termos})`;
-        presetPreviewText.innerHTML = displayText;
-        presetPreview.style.display = 'block';
-      } else {
-        presetPreview.style.display = 'none';
-      }
-    }
-    
-    presetNomeInput.addEventListener('input', atualizarPreviewPreset);
-    presetTermosInput.addEventListener('input', atualizarPreviewPreset);
-    
-    // Salvar novo preset via AJAX
-    salvarPresetBtn.addEventListener('click', function() {
-      const nome = presetNomeInput.value.trim();
-      const termos = presetTermosInput.value.trim();
-      
-      if (!nome || !termos) {
-        alert('Por favor, preencha o nome e os termos');
-        return;
-      }
-      
-      // Validar formato dos termos (deve ser números separados por vírgula)
-      const termosArray = termos.split(',').map(t => t.trim());
-      if (!termosArray.every(t => /^\d+$/.test(t))) {
-        alert('Formato inválido! Digite apenas números separados por vírgula (ex: 30,60,90)');
-        return;
-      }
-      
-      // Desabilitar botão enquanto processa
-      salvarPresetBtn.disabled = true;
-      salvarPresetBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
-      
-      // Enviar dados via AJAX
-      fetch('{% url "cadastros:prazo_pagamento_create" %}', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        },
-        body: JSON.stringify({
-          nome: nome,
-          termos: termos,
-          ajax: true
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Adicionar nova opção ao select
-          const novaOpcao = document.createElement('option');
-          novaOpcao.value = data.preset_id;
-          novaOpcao.setAttribute('data-terms', data.termos);
-          novaOpcao.textContent = `${data.nome} (${data.termos})`;
-          presetSelectElement.appendChild(novaOpcao);
-          
-          // Selecionar o novo preset
-          presetSelectElement.value = data.preset_id;
-          presetSelectElement.dispatchEvent(new Event('change'));
-          
-          // Fechar modal e limpar form
-          const modal = bootstrap.Modal.getInstance(novoPresetModal);
-          modal.hide();
-          
-          presetNomeInput.value = '';
-          presetTermosInput.value = '';
-          presetPreview.style.display = 'none';
-          
-          // Mostrar mensagem de sucesso
-          const alertDiv = document.createElement('div');
-          alertDiv.className = 'alert alert-success alert-dismissible fade show';
-          alertDiv.role = 'alert';
-          alertDiv.innerHTML = `
-            <i class="bi bi-check-circle"></i> Novo preset "${data.nome}" criado com sucesso!
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
-          `;
-          document.querySelector('.container').insertBefore(alertDiv, document.querySelector('form'));
-          setTimeout(() => alertDiv.remove(), 5000);
-        } else {
-          alert('Erro ao criar preset: ' + data.message);
-        }
-      })
-      .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao criar preset. Tente novamente.');
-      })
-      .finally(() => {
-        salvarPresetBtn.disabled = false;
-        salvarPresetBtn.innerHTML = '<i class="bi bi-check-circle"></i> Salvar Preset';
-      });
-    });
-  } catch(e) {
-    console.error('Erro ao inicializar modal de novo preset:', e);
-  }
-});
-</script>
 
 <!-- Área de impressão do Guia de Cadastro (oculta na tela, visível apenas no print) -->
 <div id="ajuda-print-area" style="display:none;">
@@ -893,6 +629,257 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
+<script>
+// Mark auto-fillable fields for accessibility and visual cueing
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    const toAuto = ['id_razao_social','id_nome_comercial','id_contato_principal_telefone','id_contato_principal_email'];
+    toAuto.forEach(id => { const el = document.getElementById(id); if (el) el.setAttribute('data-auto','true'); });
+  } catch(e){}
+
+  // Gerenciar seleção de Preset Prazo
+  try {
+    const presetSelect = document.getElementById('id_prazo_pagamento_padrao_select');
+    const prazoTermsSelect = document.getElementById('id_prazo_pagamento_padrao_terms');
+    const prazoInput = document.getElementById('id_prazo_pagamento');
+    const hiddenPresetInput = document.getElementById('id_prazo_pagamento_padrao');
+
+    if (presetSelect) {
+      // Função para atualizar termos quando um preset muda
+      function atualizarTermos() {
+        const selectedOption = presetSelect.options[presetSelect.selectedIndex];
+        const termsStr = selectedOption.getAttribute('data-terms') || '';
+
+        // Preencher o hidden input com o ID do preset selecionado
+        if (hiddenPresetInput) {
+          hiddenPresetInput.value = presetSelect.value;
+        }
+
+        // Limpar termos anteriores
+        prazoTermsSelect.innerHTML = '';
+
+        if (termsStr && termsStr.trim()) {
+          // Mostrar o select de termos
+          prazoTermsSelect.style.display = 'block';
+
+          // Parsear os termos (esperado formato: "30,60,90" ou "30/60/90")
+          let terms = [];
+          if (termsStr.includes(',')) {
+            terms = termsStr.split(',').map(t => t.trim()).filter(t => t);
+          } else if (termsStr.includes('/')) {
+            terms = termsStr.split('/').map(t => t.trim()).filter(t => t);
+          } else {
+            terms = [termsStr.trim()];
+          }
+
+          // Adicionar opção padrão
+          const optDefault = document.createElement('option');
+          optDefault.value = '';
+          optDefault.textContent = '-- Selecione um termo --';
+          prazoTermsSelect.appendChild(optDefault);
+
+          // Adicionar cada termo como opção
+          terms.forEach(term => {
+            const opt = document.createElement('option');
+            opt.value = term;
+            opt.textContent = term + ' dias';
+            prazoTermsSelect.appendChild(opt);
+          });
+
+          // Se houver valor atual no prazoInput, tentar selecionar termo correspondente
+          if (prazoInput && prazoInput.value) {
+            prazoTermsSelect.value = prazoInput.value;
+          } else if (terms.length > 0) {
+            // Selecionar o primeiro termo por padrão
+            prazoTermsSelect.value = terms[0];
+            if (prazoInput) {
+              prazoInput.value = terms[0];
+            }
+          }
+        } else {
+          // Nenhum termo, ocultar o select
+          prazoTermsSelect.style.display = 'none';
+          if (prazoInput) prazoInput.value = '';
+        }
+      }
+
+      // Event listener para quando o preset muda
+      presetSelect.addEventListener('change', atualizarTermos);
+
+      // Event listener para quando um termo é selecionado
+      prazoTermsSelect.addEventListener('change', function() {
+        if (this.value && prazoInput) {
+          prazoInput.value = this.value;
+        }
+      });
+
+      // Na inicialização, sincronizar com valores salvos
+      // Se há um preset salvo (no hidden input), atualizar o select visível
+      if (hiddenPresetInput && hiddenPresetInput.value) {
+        // Esperar um pouco para garantir que o DOM esteja pronto
+        setTimeout(() => {
+          presetSelect.value = hiddenPresetInput.value;
+          console.log('Sincronizado preset:', hiddenPresetInput.value);
+        }, 10);
+      }
+
+      // Chamar uma vez na inicialização para popular termos se houver preset pré-selecionado
+      setTimeout(atualizarTermos, 50);
+
+      // Se há um prazo já salvo, selecionar o termo correspondente
+      if (prazoInput && prazoInput.value) {
+        // Usar setTimeout para garantir que as opções foram criadas
+        setTimeout(function() {
+          if (prazoTermsSelect.offsetParent !== null) {
+            prazoTermsSelect.value = prazoInput.value;
+            console.log('Sincronizado prazo:', prazoInput.value);
+          }
+        }, 150);
+      }
+
+      // ⚡ IMPORTANTE: Sincronizar valores antes de submeter o formulário (SEM BLOQUEAR)
+      document.getElementById('clienteForm').addEventListener('submit', function(e) {
+        // Sincronizar preset_id do select visível para hidden input (se preenchido)
+        if (presetSelect && presetSelect.value && hiddenPresetInput) {
+          hiddenPresetInput.value = presetSelect.value;
+          console.log('✓ Form submit - Sincronizado preset:', hiddenPresetInput.value);
+        }
+
+        // Sincronizar prazo_pagamento do terms select para hidden input (se preenchido)
+        if (prazoTermsSelect && prazoTermsSelect.value && prazoInput) {
+          prazoInput.value = prazoTermsSelect.value;
+          console.log('✓ Form submit - Sincronizado prazo:', prazoInput.value);
+        }
+
+        // NÃO bloquear submit - deixar o usuário salvar mesmo sem preencher prazo
+        console.log('✓ Formulário permitido para submission');
+        // return true; // Permitir submit normalmente
+      });
+    }
+  } catch(e) {
+    console.error('Erro ao inicializar Preset Prazo:', e);
+  }
+});
+</script>
+
+<script>
+// Gerenciar modal para novo Preset Prazo
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    const presetNomeInput = document.getElementById('presetNome');
+    const presetTermosInput = document.getElementById('presetTermos');
+    const presetPreview = document.getElementById('presetPreview');
+    const presetPreviewText = document.getElementById('presetPreviewText');
+    const salvarPresetBtn = document.getElementById('salvarPresetBtn');
+    const novoPresetModal = document.getElementById('novoPresetModal');
+    const presetSelectElement = document.getElementById('id_prazo_pagamento_padrao_select');
+
+    // Atualizar preview enquanto digita
+    function atualizarPreviewPreset() {
+      const nome = presetNomeInput.value.trim();
+      const termos = presetTermosInput.value.trim();
+
+      if (nome && termos) {
+        const displayText = `<strong>${nome}</strong> (${termos})`;
+        presetPreviewText.innerHTML = displayText;
+        presetPreview.style.display = 'block';
+      } else {
+        presetPreview.style.display = 'none';
+      }
+    }
+
+    presetNomeInput.addEventListener('input', atualizarPreviewPreset);
+    presetTermosInput.addEventListener('input', atualizarPreviewPreset);
+
+    // Salvar novo preset via AJAX
+    salvarPresetBtn.addEventListener('click', function() {
+      const nome = presetNomeInput.value.trim();
+      const termos = presetTermosInput.value.trim();
+
+      if (!nome || !termos) {
+        alert('Por favor, preencha o nome e os termos');
+        return;
+      }
+
+      // Validar formato dos termos (deve ser números separados por vírgula)
+      const termosArray = termos.split(',').map(t => t.trim());
+      if (!termosArray.every(t => /^\d+$/.test(t))) {
+        alert('Formato inválido! Digite apenas números separados por vírgula (ex: 30,60,90)');
+        return;
+      }
+
+      // Desabilitar botão enquanto processa
+      salvarPresetBtn.disabled = true;
+      salvarPresetBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Salvando...';
+
+      // Enviar dados via AJAX
+      fetch('{% url "cadastros:prazo_pagamento_create" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+          nome: nome,
+          termos: termos,
+          ajax: true
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Adicionar nova opção ao select
+          const novaOpcao = document.createElement('option');
+          novaOpcao.value = data.preset_id;
+          novaOpcao.setAttribute('data-terms', data.termos);
+          novaOpcao.textContent = `${data.nome} (${data.termos})`;
+          presetSelectElement.appendChild(novaOpcao);
+
+          // Selecionar o novo preset
+          presetSelectElement.value = data.preset_id;
+          presetSelectElement.dispatchEvent(new Event('change'));
+
+          // Fechar modal e limpar form
+          const modal = bootstrap.Modal.getInstance(novoPresetModal);
+          modal.hide();
+
+          presetNomeInput.value = '';
+          presetTermosInput.value = '';
+          presetPreview.style.display = 'none';
+
+          // Mostrar mensagem de sucesso
+          const alertDiv = document.createElement('div');
+          alertDiv.className = 'alert alert-success alert-dismissible fade show';
+          alertDiv.role = 'alert';
+          alertDiv.innerHTML = `
+            <i class="bi bi-check-circle"></i> Novo preset "${data.nome}" criado com sucesso!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+          `;
+          document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('form'));
+          setTimeout(() => alertDiv.remove(), 5000);
+        } else {
+          alert('Erro ao criar preset: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao criar preset. Tente novamente.');
+      })
+      .finally(() => {
+        salvarPresetBtn.disabled = false;
+        salvarPresetBtn.innerHTML = '<i class="bi bi-check-circle"></i> Salvar Preset';
+      });
+    });
+  } catch(e) {
+    console.error('Erro ao inicializar modal de novo preset:', e);
+  }
+});
+</script>
 
 <script>
 document.getElementById('btnImprimirAjuda').addEventListener('click', function() {
@@ -975,5 +962,4 @@ document.getElementById('btnImprimirAjuda').addEventListener('click', function()
   });
 })();
 </script>
-
 {% endblock %}

@@ -16,6 +16,17 @@ logger = logging.getLogger(__name__)
 
 _ONLY_DIGITS = re.compile(r'\D')
 
+# CST 40/41 (isenta/não tributada) usam o grupo ICMS40 da NF-e, que não tem
+# modBC/vBC/pICMS/vICMS — nenhum item nessas CSTs declara vBC. O total do
+# cabeçalho (vBC) deve somar só os itens que efetivamente declaram vBC, senão
+# a SEFAZ rejeita com o erro 531 (total da BC ICMS difere do somatório dos itens).
+CST_ICMS_SEM_TRIBUTACAO = {'40', '41'}
+
+
+def _item_tem_vbc_icms(item) -> bool:
+    cst_icms = item.cst_icms or '40'
+    return cst_icms not in CST_ICMS_SEM_TRIBUTACAO and bool(item.aliquota_icms) and float(item.aliquota_icms) > 0
+
 
 # ─── Certificate helpers ──────────────────────────────────────────────────────
 
@@ -1014,8 +1025,7 @@ class IntegranNotasClient:
         # tem modBC/vBC/pICMS/vICMS — só CST + desoneração opcional. Gate por
         # CST (não só por alíquota>0) para nunca enviar esse grupo nesses CSTs,
         # mesmo que aliquota_icms guarde um valor residual/hipotético.
-        CST_ICMS_SEM_TRIBUTACAO = {'40', '41'}
-        if cst_icms not in CST_ICMS_SEM_TRIBUTACAO and item.aliquota_icms and float(item.aliquota_icms) > 0:
+        if _item_tem_vbc_icms(item):
             icms_block.update({
                 'modalidade_base_calculo': modalidade_bc,
                 'valor_base_calculo': str(item.icms_base_calculo),
@@ -1193,7 +1203,12 @@ class IntegranNotasClient:
     def _build_totais(self, nf) -> dict:
         itens = list(nf.itens.all())
         return {
-            'icms_base_calculo': str(sum(i.icms_base_calculo for i in itens)),
+            # Soma só os itens que efetivamente declaram vBC no XML (mesmo gate
+            # de _build_impostos) — itens CST 40/41 ou sem alíquota não entram,
+            # senão o total diverge do somatório real e a SEFAZ rejeita (erro 531).
+            'icms_base_calculo': str(sum(
+                i.icms_base_calculo for i in itens if _item_tem_vbc_icms(i)
+            )),
             'icms_valor_total': str(nf.valor_icms),
             'icms_st_valor_total': str(getattr(nf, 'valor_icms_st', 0) or 0),
             'icms_st_base_calculo': str(sum(getattr(i, 'icms_st_base_calculo', 0) or 0 for i in itens)),

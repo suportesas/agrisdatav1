@@ -830,12 +830,11 @@ class ItemNotaFiscal(models.Model):
             self.fcp_st_base_calculo = _0
             self.fcp_st_valor = _0
 
-        # Desoneração ICMS (calculada quando motivo preenchido e CST sem débito)
-        CST_DESONERACAO = {'20', '30', '40', '41', '50', '51', '60', '70', '90',
-                           '300', '400', '500', '900'}
-        if self.icms_motivo_desoneracao and self.cst_icms in CST_DESONERACAO:
-            self.icms_valor_desoneracao = self.valor_total * d(self.aliquota_icms) / _100
-        elif not self.icms_motivo_desoneracao:
+        # Desoneração ICMS: valor é informado manualmente pelo usuário (não dá
+        # para derivar de aliquota_icms — para CST 40/41 esse campo é zerado no
+        # formulário, já que o grupo ICMS40 da NF-e não tem alíquota nenhuma).
+        # Só zeramos quando o motivo não está preenchido.
+        if not self.icms_motivo_desoneracao:
             self.icms_valor_desoneracao = _0
 
         # IBS/CBS — Reforma Tributária (grupo_ibs_cbs: BC comum + alíquotas por ente).

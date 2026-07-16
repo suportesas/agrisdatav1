@@ -22,6 +22,14 @@ _ONLY_DIGITS = re.compile(r'\D')
 # a SEFAZ rejeita com o erro 531 (total da BC ICMS difere do somatório dos itens).
 CST_ICMS_SEM_TRIBUTACAO = {'40', '41'}
 
+# PIS/COFINS — conforme o schema real do endpoint /nfe da IntegraNotas (bloco
+# impostos.pis / impostos.cofins): valor_base_calculo/aliquota (grupo PISAliq/
+# COFINSAliq) só são aceitos nos CST 01, 02 e 49-99; quantidade_vendida/
+# aliquota_valor (grupo PISQtde/COFINSQtde) só nos CST 03 e 49-99. O campo
+# "valor" é sempre obrigatório, independente do CST.
+CST_PIS_COFINS_ALIQ = {'01', '02', '49', '98', '99'}
+CST_PIS_COFINS_QTD = {'03'}
+
 
 def _item_tem_vbc_icms(item) -> bool:
     cst_icms = item.cst_icms or '40'
@@ -907,6 +915,17 @@ class IntegranNotasClient:
         if rastro:
             item_dict['rastros'] = [rastro]
 
+        # DFeReferenciado — referenciamento por item, obrigatório em devolução
+        # de mercadoria (finNFe=4) a partir de 01/09/2026 (NT 2025.002-RTC
+        # v1.50, regra VC02-14), em substituição ao NFref de cabeçalho.
+        chave_ref_item = (getattr(item, 'dfe_ref_chave_acesso', '') or '').strip()
+        if chave_ref_item:
+            dfe_ref = {'chave': chave_ref_item}
+            nitem_ref = getattr(item, 'dfe_ref_nitem', None)
+            if nitem_ref:
+                dfe_ref['numero_item'] = str(nitem_ref)
+            item_dict['dfe_referenciado'] = dfe_ref
+
         return item_dict
 
     def _build_di(self, item) -> dict | None:
@@ -1109,40 +1128,39 @@ class IntegranNotasClient:
             if cnpj_produtor:
                 impostos['ipi']['cnpj_produtor'] = cnpj_produtor
 
-        # PIS
+        # PIS — "valor" é sempre obrigatório no schema da IntegraNotas; os
+        # demais campos dependem do grupo (Aliq x Qtde) conforme o CST.
         cst_pis = item.cst_pis or '07'
-        pis_block: dict = {'situacao_tributaria': cst_pis}
-        nat_pis = (getattr(item, 'natureza_receita_pis', '') or '').strip()
-        if nat_pis:
-            pis_block['natureza_receita'] = nat_pis
-        if item.aliquota_pis and float(item.aliquota_pis) > 0:
+        pis_block: dict = {
+            'situacao_tributaria': cst_pis,
+            'valor': str(item.valor_pis),
+        }
+        if cst_pis in CST_PIS_COFINS_ALIQ and item.aliquota_pis and float(item.aliquota_pis) > 0:
             # IntegraNotas aceita no máximo 4 casas decimais para aliquota
             _aliq_pis = f"{float(item.aliquota_pis):.4f}".rstrip('0').rstrip('.')
-            pis_block.update({
-                'valor_base_calculo': str(item.pis_base_calculo),
-                'aliquota': _aliq_pis,
-                'valor': str(item.valor_pis),
-            })
-        else:
-            pis_block['valor'] = '0.00'
+            pis_block['valor_base_calculo'] = str(item.pis_base_calculo)
+            pis_block['aliquota'] = _aliq_pis
+        if cst_pis in CST_PIS_COFINS_QTD and item.pis_aliquota_valor and float(item.pis_aliquota_valor) > 0:
+            _aliqv_pis = f"{float(item.pis_aliquota_valor):.4f}".rstrip('0').rstrip('.')
+            pis_block['quantidade_vendida'] = str(item.quantidade)
+            pis_block['aliquota_valor'] = _aliqv_pis
         impostos['pis'] = pis_block
 
-        # COFINS
+        # COFINS — mesmo critério do PIS.
         cst_cofins = item.cst_cofins or '07'
-        cofins_block: dict = {'situacao_tributaria': cst_cofins}
-        nat_cofins = (getattr(item, 'natureza_receita_cofins', '') or '').strip()
-        if nat_cofins:
-            cofins_block['natureza_receita'] = nat_cofins
-        if item.aliquota_cofins and float(item.aliquota_cofins) > 0:
+        cofins_block: dict = {
+            'situacao_tributaria': cst_cofins,
+            'valor': str(item.valor_cofins),
+        }
+        if cst_cofins in CST_PIS_COFINS_ALIQ and item.aliquota_cofins and float(item.aliquota_cofins) > 0:
             # IntegraNotas aceita no máximo 4 casas decimais para aliquota
             _aliq_cofins = f"{float(item.aliquota_cofins):.4f}".rstrip('0').rstrip('.')
-            cofins_block.update({
-                'valor_base_calculo': str(item.cofins_base_calculo),
-                'aliquota': _aliq_cofins,
-                'valor': str(item.valor_cofins),
-            })
-        else:
-            cofins_block['valor'] = '0.00'
+            cofins_block['valor_base_calculo'] = str(item.cofins_base_calculo)
+            cofins_block['aliquota'] = _aliq_cofins
+        if cst_cofins in CST_PIS_COFINS_QTD and item.cofins_aliquota_valor and float(item.cofins_aliquota_valor) > 0:
+            _aliqv_cofins = f"{float(item.cofins_aliquota_valor):.4f}".rstrip('0').rstrip('.')
+            cofins_block['quantidade_vendida'] = str(item.quantidade)
+            cofins_block['aliquota_valor'] = _aliqv_cofins
         impostos['cofins'] = cofins_block
 
         # IBS/CBS — Reforma Tributária (NT 2024/2025, grupo_ibs_cbs). Estrutura
@@ -1579,6 +1597,12 @@ class IntegranNotasClient:
             icms['valor'] = str(ct.valor_icms)
         if red > 0:
             icms['aliquota_reducao_base_calculo'] = str(ct.reducao_base_icms)
+
+        # Crédito Outorgado/Presumido (vCred) — Convênio ICMS 106/96. Só existe
+        # nos grupos ICMS60 e ICMS90 do schema do CT-e (MOC Anexo I).
+        vcred = float(getattr(ct, 'valor_credito_outorgado_icms', 0) or 0)
+        if cst in ('60', '90') and vcred > 0:
+            icms['valor_credito_outorgado'] = str(ct.valor_credito_outorgado_icms)
 
         # Partilha ICMS (interestadual) — só inclui se houver valor preenchido
         pb = float(getattr(ct, 'partilha_bc_icms', 0) or 0)

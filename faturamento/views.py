@@ -1828,6 +1828,12 @@ def nota_fiscal_devolucao(request, pk):
             item.pk          = None
             item.nota_fiscal = nf_dev
             item.cfop        = _cfop_devolucao(item.cfop)
+            # Referenciamento por item (NT 2025.002-RTC v1.50, regra VC02-14): em
+            # devolução, o DFeReferenciado por item substitui o NFref de cabeçalho.
+            # numero_item ainda não foi alterado neste ponto — reflete o item da
+            # NF-e original.
+            item.dfe_ref_chave_acesso = nf_orig.chave_acesso
+            item.dfe_ref_nitem        = item.numero_item
             # Auto-preenche DI para itens com CFOP 3xxx (retorno de exportação/drawback).
             # Convenção SEFAZ: nDI = zeros quando não há DI real de importação.
             if item.cfop.startswith('3') and not (item.di_numero or '').strip():

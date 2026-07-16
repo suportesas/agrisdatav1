@@ -1,14 +1,24 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{{ title }}{% endblock %}
-{% block page_title %}{{ title }}{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% if invoice %}{% url 'faturamento:invoice_detail' invoice.pk %}{% else %}{% url 'faturamento:invoice_list' %}{% endif %}" class="btn btn-outline-secondary me-3">
-      <i class="bi bi-arrow-left"></i>
-    </a>
-    <h3 class="mb-0">{{ title }}</h3>
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-globe-americas"></i></span>
+        <div>
+          <h2>{{ title }}</h2>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% if invoice %}{% url 'faturamento:invoice_detail' invoice.pk %}{% else %}{% url 'faturamento:invoice_list' %}{% endif %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   {% if editing_emitida %}
@@ -40,213 +50,218 @@
     <div class="alert alert-danger">{{ form.non_field_errors }}</div>
     {% endif %}
 
-    <div class="row g-3">
-      <!-- Booking e Partes -->
-      <div class="col-md-8">
-        <div class="card border-0 shadow-sm mb-3">
-          <div class="card-header fw-semibold">Dados da Invoice</div>
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Booking (Confirmado)</label>
-                {{ form.booking }}
-                {% if form.booking.errors %}<div class="text-danger small">{{ form.booking.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Importador / Cliente *</label>
-                {{ form.cliente }}
-                {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Data de Emissão *</label>
-                {{ form.data_emissao }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Data de Embarque Previsto</label>
-                {{ form.data_embarque_previsto }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Incoterm *</label>
-                {{ form.incoterm }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Moeda *</label>
-                {{ form.moeda }}
-              </div>
-              <div class="col-md-4">
-                <label class="form-label d-flex justify-content-between">
-                  Taxa de Câmbio (R$)
-                  <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
-                    <i class="bi bi-bank me-1"></i>Buscar BCB
-                  </button>
-                </label>
-                {{ form.taxa_cambio }}
-                <div id="info-cotacao" class="form-text text-success mt-1" style="display:none"></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Condição de Pagamento</label>
-                {{ form.condicao_pagamento }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Porto de Embarque</label>
-                {{ form.porto_embarque }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Porto de Destino</label>
-                {{ form.porto_destino }}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <nav class="section-nav" id="invoice-section-nav">
+      <a href="#sec-dados" data-tab="sec-dados">Dados da Invoice</a>
+      <a href="#sec-valores" data-tab="sec-valores">Valores e Dados Bancários</a>
+      <a href="#sec-drawback" data-tab="sec-drawback">Drawback e Observações</a>
+      <a href="#sec-itens" data-tab="sec-itens">Itens</a>
+    </nav>
 
-      <!-- Financeiro e Obs -->
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm mb-3">
-          <div class="card-header fw-semibold">Valores</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">Frete</label>
-              {{ form.valor_frete }}
-            </div>
-            <div class="mb-3">
-              <label class="form-label">Seguro</label>
-              {{ form.valor_seguro }}
-            </div>
-          </div>
-        </div>
-        <div class="card border-0 shadow-sm mb-3">
-          <div class="card-header fw-semibold">Dados Bancários</div>
-          <div class="card-body">
-            <div class="mb-2">
-              <label class="form-label small">Nome do Beneficiário</label>
-              {{ form.banco_beneficiario_nome }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">Banco</label>
-              {{ form.banco_nome }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">Endereço do Banco</label>
-              {{ form.banco_endereco }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">SWIFT/BIC</label>
-              {{ form.banco_swift }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">IBAN</label>
-              {{ form.banco_iban }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">Número da Conta</label>
-              {{ form.banco_numero_conta }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">Banco Correspondente</label>
-              {{ form.banco_correspondente_nome }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">SWIFT Banco Correspondente</label>
-              {{ form.banco_correspondente_swift }}
-            </div>
-            <div class="mb-0">
-              <label class="form-label small">Observações Bancárias (texto livre)</label>
-              {{ form.banco_beneficiario }}
-            </div>
-          </div>
-        </div>
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold">Drawback / Ato Concessório</div>
-          <div class="card-body">
-            <div class="mb-2">
-              <label class="form-label small">Regime</label>
-              {{ form.regime_drawback }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">Nº do Ato Concessório</label>
-              {{ form.ato_concessorio_numero }}
-            </div>
-            <div class="mb-2">
-              <label class="form-label small">Data do Ato Concessório</label>
-              {{ form.ato_concessorio_data }}
-            </div>
-            <div class="mb-0">
-              <label class="form-label small">Validade do Ato Concessório</label>
-              {{ form.ato_concessorio_validade }}
-            </div>
-          </div>
-        </div>
+    <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-earmark-text"></i></span>
+        <span class="title">Dados da Invoice</span>
       </div>
-
-      <!-- Observações -->
-      <div class="col-12">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold">Observações</div>
-          <div class="card-body">{{ form.observacoes }}</div>
-        </div>
-      </div>
-
-      <!-- Itens -->
-      <div class="col-12">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            Itens da Invoice
-            <button type="button" class="btn btn-sm btn-outline-primary" id="add-item">
-              <i class="bi bi-plus"></i> Adicionar Item
-            </button>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Booking (Confirmado)</label>
+            {{ form.booking }}
+            {% if form.booking.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.booking.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-bordered table-sm mb-0" id="items-table">
-                <thead class="table-light">
-                  <tr>
-                    <th>Container</th>
-                    <th>Descrição *</th>
-                    <th style="width:80px">Qtd</th>
-                    <th style="width:60px">UN</th>
-                    <th style="width:100px">Peso Bruto (kg)</th>
-                    <th style="width:100px">Peso Líq. (kg)</th>
-                    <th style="width:110px">Vl. Unit. FOB</th>
-                    <th>Marks & Numbers</th>
-                    <th style="width:40px"></th>
-                  </tr>
-                </thead>
-                <tbody id="items-body">
-                  {% for item_form in formset %}
-                  <tr class="item-row">
-                    <td>{{ item_form.id }}{{ item_form.DELETE }}{{ item_form.container }}</td>
-                    <td>{{ item_form.descricao }}</td>
-                    <td>{{ item_form.quantidade }}</td>
-                    <td>{{ item_form.unidade }}</td>
-                    <td>{{ item_form.peso_bruto_kg }}</td>
-                    <td>{{ item_form.peso_liquido_kg }}</td>
-                    <td>{{ item_form.valor_unitario_fob }}</td>
-                    <td>{{ item_form.marks_numbers }}</td>
-                    <td>
-                      <button type="button" class="btn btn-sm btn-outline-danger remove-item">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
+          <div class="field col-6">
+            <label class="form-label">Importador / Cliente<span class="req">*</span></label>
+            {{ form.cliente }}
+            {% if form.cliente.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cliente.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Data de Emissão<span class="req">*</span></label>
+            {{ form.data_emissao }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Data de Embarque Previsto</label>
+            {{ form.data_embarque_previsto }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Incoterm<span class="req">*</span></label>
+            {{ form.incoterm }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Moeda<span class="req">*</span></label>
+            {{ form.moeda }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label d-flex justify-content-between">
+              Taxa de Câmbio (R$)
+              <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
+                <i class="bi bi-bank me-1"></i>Buscar BCB
+              </button>
+            </label>
+            {{ form.taxa_cambio }}
+            <div id="info-cotacao" class="helper-note text-success" style="display:none"></div>
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Condição de Pagamento</label>
+            {{ form.condicao_pagamento }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Porto de Embarque</label>
+            {{ form.porto_embarque }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Porto de Destino</label>
+            {{ form.porto_destino }}
           </div>
         </div>
       </div>
     </div>
 
-    <div class="d-flex gap-2 mt-4">
+    <div class="form-section" id="sec-valores" data-tab-panel="sec-valores">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-cash-stack"></i></span>
+        <span class="title">Valores e Dados Bancários</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Frete</label>
+            {{ form.valor_frete }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Seguro</label>
+            {{ form.valor_seguro }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Nome do Beneficiário</label>
+            {{ form.banco_beneficiario_nome }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Banco</label>
+            {{ form.banco_nome }}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Endereço do Banco</label>
+            {{ form.banco_endereco }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">SWIFT/BIC</label>
+            {{ form.banco_swift }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">IBAN</label>
+            {{ form.banco_iban }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Número da Conta</label>
+            {{ form.banco_numero_conta }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Banco Correspondente</label>
+            {{ form.banco_correspondente_nome }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">SWIFT Banco Correspondente</label>
+            {{ form.banco_correspondente_swift }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Observações Bancárias (texto livre)</label>
+            {{ form.banco_beneficiario }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-drawback" data-tab-panel="sec-drawback">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-file-earmark-ruled"></i></span>
+        <span class="title">Drawback e Observações</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Regime</label>
+            {{ form.regime_drawback }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Nº do Ato Concessório</label>
+            {{ form.ato_concessorio_numero }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Data do Ato Concessório</label>
+            {{ form.ato_concessorio_data }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Validade do Ato Concessório</label>
+            {{ form.ato_concessorio_validade }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-itens" data-tab-panel="sec-itens">
+      <div class="section-toolbar">
+        <span class="title"><i class="bi bi-box-seam text-primary"></i> Itens da Invoice</span>
+        <button type="button" class="btn btn-sm btn-outline" id="add-item">
+          <i class="bi bi-plus-circle"></i> Adicionar Item
+        </button>
+      </div>
+      <div class="form-section-body">
+        <div class="items-table-wrap">
+          <table class="items-table" id="items-table">
+            <thead>
+              <tr>
+                <th>Container</th>
+                <th>Descrição *</th>
+                <th style="width:80px">Qtd</th>
+                <th style="width:60px">UN</th>
+                <th style="width:100px">Peso Bruto (kg)</th>
+                <th style="width:100px">Peso Líq. (kg)</th>
+                <th style="width:110px">Vl. Unit. FOB</th>
+                <th>Marks & Numbers</th>
+                <th style="width:40px"></th>
+              </tr>
+            </thead>
+            <tbody id="items-body">
+              {% for item_form in formset %}
+              <tr class="item-row">
+                <td>{{ item_form.id }}{{ item_form.DELETE }}{{ item_form.container }}</td>
+                <td>{{ item_form.descricao }}</td>
+                <td>{{ item_form.quantidade }}</td>
+                <td>{{ item_form.unidade }}</td>
+                <td>{{ item_form.peso_bruto_kg }}</td>
+                <td>{{ item_form.peso_liquido_kg }}</td>
+                <td>{{ item_form.valor_unitario_fob }}</td>
+                <td>{{ item_form.marks_numbers }}</td>
+                <td class="text-center">
+                  <button type="button" class="row-action danger remove-item">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-outline">Cancelar</a>
       <button type="submit" class="btn btn-primary">
         <i class="bi bi-check-circle me-1"></i>Salvar
       </button>
-      <a href="{% url 'faturamento:invoice_list' %}" class="btn btn-outline-secondary">Cancelar</a>
     </div>
   </form>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 const PEDIDO_ITEMS = {{ pedido_items_json|default:"[]" }};
 

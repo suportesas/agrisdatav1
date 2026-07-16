@@ -11,16 +11,28 @@
   .fiscal-subtabs .nav-link { font-size: .66rem; font-weight: 600; padding: 3px 9px; color: #6c757d; border-radius: 4px; background: #f1f3f5; }
   .fiscal-subtabs .nav-link.active { background: #e7f1ff; color: #0d6efd; }
 </style>
-<div class="container-fluid mt-3 px-3 px-xl-4">
-  <div class="d-flex align-items-center justify-content-between mb-3">
-    <h1 class="mb-0">{{ action }} CT-e</h1>
-    <div class="d-flex gap-2">
-      <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarNFe">
-        <i class="bi bi-download me-1"></i> Importar de NF-e
-      </button>
-      <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i> Voltar
-      </a>
+<div class="container-fluid py-4">
+
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-truck"></i></span>
+        <div>
+          <h2>{{ action }} CT-e</h2>
+        </div>
+      </div>
+      <div class="form-header-actions">
+        <button type="button" id="btn-ajuda-aba" class="btn btn-ghost" title="Ajuda sobre esta aba"
+                data-bs-toggle="modal" data-bs-target="#modalAjudaAba">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+        <button type="button" class="btn btn-ghost" data-bs-toggle="modal" data-bs-target="#modalImportarNFe">
+          <i class="bi bi-download"></i> Importar de NF-e
+        </button>
+        <a href="{% url 'faturamento:cte_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
   </div>
 
@@ -31,64 +43,25 @@
   <form method="post">
     {% csrf_token %}
 
-    <!-- Abas principais -->
-    <ul class="nav nav-tabs mb-0" id="cteTabs" role="tablist" style="border-bottom:2px solid var(--bs-border-color)">
-      <li class="nav-item">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-geral" type="button">
-          <i class="bi bi-person-lines-fill me-1"></i>Geral
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-percurso" type="button">
-          <i class="bi bi-map me-1"></i>Percurso
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-carga" type="button">
-          <i class="bi bi-boxes me-1"></i>Carga e Modal
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-cobrancas" type="button">
-          <i class="bi bi-receipt me-1"></i>Valores e Cobranças
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tributos" type="button">
-          <i class="bi bi-bank me-1"></i>Tributação
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documentos" type="button">
-          <i class="bi bi-file-earmark-text me-1"></i>Documentos (NF-e)
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-obs" type="button">
-          <i class="bi bi-chat-left-text me-1"></i>Informações Adicionais
-        </button>
-      </li>
-      <li class="nav-item ms-auto d-flex align-items-center pe-1">
-        <button type="button" id="btn-ajuda-aba"
-                class="btn btn-link p-0 text-muted"
-                style="font-size:1.1rem;line-height:1;opacity:.55;"
-                title="Ajuda sobre esta aba"
-                data-bs-toggle="modal" data-bs-target="#modalAjudaAba">
-          <i class="bi bi-question-circle"></i>
-        </button>
-      </li>
-    </ul>
-
-    <div class="tab-content border border-top-0 rounded-bottom p-3 bg-white" style="border-color:var(--bs-border-color)!important">
-
+    <nav class="section-nav" id="cte-section-nav">
+      <a href="#tab-geral" data-tab="tab-geral">Geral</a>
+      <a href="#tab-percurso" data-tab="tab-percurso">Percurso</a>
+      <a href="#tab-carga" data-tab="tab-carga">Carga e Modal</a>
+      <a href="#tab-cobrancas" data-tab="tab-cobrancas">Valores e Cobranças</a>
+      <a href="#tab-tributos" data-tab="tab-tributos">Tributação</a>
+      <a href="#tab-documentos" data-tab="tab-documentos">Documentos (NF-e)</a>
+      <a href="#tab-obs" data-tab="tab-obs">Informações Adicionais</a>
+    </nav>
 
       <!-- ═══ ABA GERAL ═══════════════════════════════════════════════════════ -->
-      <div class="tab-pane fade show active" id="tab-geral">
+      <div class="form-section" id="tab-geral" data-tab-panel="tab-geral">
 
         <!-- Partes envolvidas -->
-        <div class="card mb-3">
-          <div class="card-header py-2"><i class="bi bi-people me-1"></i> Partes Envolvidas</div>
-          <div class="card-body">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-people"></i></span>
+          <span class="title">Partes Envolvidas</span>
+        </div>
+        <div class="form-section-body">
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label">Tomador do Serviço <span class="text-danger">*</span></label>
@@ -127,13 +100,14 @@
                 {{ form.veiculo }}
               </div>
             </div>
-          </div>
         </div>
 
         <!-- Documento -->
-        <div class="card mb-3">
-          <div class="card-header py-2"><i class="bi bi-file-earmark me-1"></i> Dados do Documento</div>
-          <div class="card-body">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-file-earmark"></i></span>
+          <span class="title">Dados do Documento</span>
+        </div>
+        <div class="form-section-body">
             <div class="row g-3">
               <div class="col-auto">
                 <label class="form-label">Série <span class="text-danger">*</span></label>
@@ -189,16 +163,17 @@
               <div class="form-text">Número do manifesto/despacho que agrupa as NF-e.</div>
             </div>
           </div>
-        </div>
 
       </div><!-- /tab-geral -->
 
 
       <!-- ═══ ABA PERCURSO ════════════════════════════════════════════════════ -->
-      <div class="tab-pane fade" id="tab-percurso">
-        <div class="card">
-          <div class="card-header py-2"><i class="bi bi-map me-1"></i> Percurso (Origem → Destino)</div>
-          <div class="card-body">
+      <div class="form-section" id="tab-percurso" data-tab-panel="tab-percurso">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-map"></i></span>
+            <span class="title">Percurso (Origem → Destino)</span>
+          </div>
+          <div class="form-section-body">
             <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-3" style="font-size:.85rem;">
               <i class="bi bi-magic"></i>
               <span>Preencha a <strong>UF</strong> e depois escolha o <strong>Município</strong> na lista — o código IBGE será preenchido automaticamente.</span>
@@ -248,17 +223,18 @@
               </div>
             </div>
           </div>
-        </div>
       </div><!-- /tab-percurso -->
 
 
       <!-- ═══ ABA CARGA E MODAL ═══════════════════════════════════════════════ -->
-      <div class="tab-pane fade" id="tab-carga">
+      <div class="form-section" id="tab-carga" data-tab-panel="tab-carga">
 
         <!-- Carga -->
-        <div class="card mb-3">
-          <div class="card-header py-2"><i class="bi bi-boxes me-1"></i> Carga e Transporte</div>
-          <div class="card-body">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-boxes"></i></span>
+          <span class="title">Carga e Transporte</span>
+        </div>
+        <div class="form-section-body">
             <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label">Valor da Carga (R$)</label>
@@ -277,13 +253,14 @@
                 {{ form.produto_predominante }}
               </div>
             </div>
-          </div>
         </div>
 
         <!-- Modal Rodoviário -->
-        <div class="card">
-          <div class="card-header py-2"><i class="bi bi-truck me-1"></i> Modal Rodoviário</div>
-          <div class="card-body">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-truck"></i></span>
+          <span class="title">Modal Rodoviário</span>
+        </div>
+        <div class="form-section-body">
             <div class="row g-3 align-items-end">
               <div class="col-md-3">
                 <label class="form-label">Placa do Veículo</label>
@@ -296,20 +273,20 @@
                 <div class="form-text">Preenchido automaticamente. Edite se necessário.</div>
               </div>
             </div>
-          </div>
         </div>
 
       </div><!-- /tab-carga -->
 
 
-      <!-- ═══ ABA TRIBUTAÇÃO ══════════════════════════════════════════════════ -->
       <!-- ═══ ABA VALORES E COBRANÇAS ════════════════════════════════════════ -->
-      <div class="tab-pane fade" id="tab-cobrancas">
+      <div class="form-section" id="tab-cobrancas" data-tab-panel="tab-cobrancas">
 
         <!-- Serviços -->
-        <div class="card mb-3">
-          <div class="card-header py-2"><i class="bi bi-currency-dollar me-1"></i> Serviços</div>
-          <div class="card-body">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-currency-dollar"></i></span>
+          <span class="title">Serviços</span>
+        </div>
+        <div class="form-section-body">
             <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label">Valor Total da Prestação <span class="text-danger">*</span></label>
@@ -324,13 +301,14 @@
                 {{ form.valor_aproximado_tributos }}
               </div>
             </div>
-          </div>
         </div>
 
         <!-- Fatura -->
-        <div class="card mb-3">
-          <div class="card-header py-2"><i class="bi bi-receipt-cutoff me-1"></i> Fatura</div>
-          <div class="card-body">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-receipt-cutoff"></i></span>
+          <span class="title">Fatura</span>
+        </div>
+        <div class="form-section-body">
             <div class="row g-3">
               <div class="col-md-3">
                 <label class="form-label">Número</label>
@@ -349,18 +327,20 @@
                 <input type="text" id="fatura-valor-final" class="form-control bg-light" readonly placeholder="Calculado automaticamente">
               </div>
             </div>
-          </div>
         </div>
 
         <!-- Prestações (componentes do frete) -->
-        <div class="card">
-          <div class="card-header py-2">
-            Prestações <span class="badge bg-secondary ms-1" style="font-size:.7rem;">componentes do valor do frete</span>
-          </div>
-          <div class="card-body">
+        <div class="section-toolbar">
+          <span class="title">Prestações <span class="badge bg-secondary ms-1" style="font-size:.7rem;">componentes do valor do frete</span></span>
+          <button type="button" class="btn btn-sm btn-outline" onclick="adicionarLinhaPrestacao()">
+            <i class="bi bi-plus-circle"></i> Adicionar Prestação
+          </button>
+        </div>
+        <div class="form-section-body">
             {{ comp_formset.management_form }}
-            <table class="table table-sm" id="comp-table">
-              <thead class="table-light">
+            <div class="items-table-wrap">
+            <table class="items-table" id="comp-table">
+              <thead>
                 <tr>
                   <th>Nome</th>
                   <th style="width:160px;">Valor (R$)</th>
@@ -377,6 +357,7 @@
                 {% endfor %}
               </tbody>
             </table>
+            </div>
             <table style="display:none"><tbody id="comp-empty-row">
               <tr id="comp-template-row">
                 <td><input type="text" name="comp-__prefix__-nome" maxlength="60" class="form-control form-control-sm" placeholder="Ex: FRETE PESO, FRETE VALOR, SEC/CAT, ADEME…" id="id_comp-__prefix__-nome"></td>
@@ -385,17 +366,13 @@
                     <input type="hidden" name="comp-__prefix__-id" id="id_comp-__prefix__-id"></td>
               </tr>
             </tbody></table>
-            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="adicionarLinhaPrestacao()">
-              <i class="bi bi-plus-circle me-1"></i> Adicionar Prestação
-            </button>
-          </div>
         </div>
 
       </div><!-- /tab-cobrancas -->
 
 
       <!-- ═══ ABA TRIBUTAÇÃO ══════════════════════════════════════════════════ -->
-      <div class="tab-pane fade" id="tab-tributos">
+      <div class="form-section" id="tab-tributos" data-tab-panel="tab-tributos">
         <ul class="nav nav-tabs mb-0" id="tributoSubTabs" role="tablist">
           <li class="nav-item">
             <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sub-icms" type="button">
@@ -443,6 +420,11 @@
                   </span>
                 </label>
                 {{ form.valor_icms }}
+              </div>
+              <div class="col-md-3" id="icms-cred-outorgado-wrap" style="display:none;">
+                <label class="form-label">Crédito Outorgado/Presumido (vCred)</label>
+                {{ form.valor_credito_outorgado_icms }}
+                <div class="form-text">Convênio ICMS 106/96 — só aplicável aos CST 60 e 90.</div>
               </div>
             </div>
           </div>
@@ -547,15 +529,17 @@
 
 
       <!-- ═══ ABA DOCUMENTOS (NF-e / CT-e) ════════════════════════════════════ -->
-      <div class="tab-pane fade" id="tab-documentos">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h6 class="mb-0">Documentos Transportados (NF-e / CT-e)</h6>
-          <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalImportarDocs">
-            <i class="bi bi-download me-1"></i> Importar NF-e / CT-e
+      <div class="form-section" id="tab-documentos" data-tab-panel="tab-documentos">
+        <div class="section-toolbar">
+          <span class="title">Documentos Transportados (NF-e / CT-e)</span>
+          <button type="button" class="btn btn-sm btn-outline" data-bs-toggle="modal" data-bs-target="#modalImportarDocs">
+            <i class="bi bi-download"></i> Importar NF-e / CT-e
           </button>
         </div>
+        <div class="form-section-body">
         {{ docs_formset.management_form }}
-        <table class="table table-sm" id="docs-table">
+        <div class="items-table-wrap">
+        <table class="items-table" id="docs-table">
           <thead class="table-light">
             <tr>
               <th>Chave NF-e (44 dígitos)</th>
@@ -579,6 +563,7 @@
             {% endfor %}
           </tbody>
         </table>
+        </div>
         <table style="display:none"><tbody id="docs-empty-row">
           <tr id="docs-template-row">
             <td><input type="text" name="docs-__prefix__-chave_nfe" maxlength="44" class="form-control form-control-sm" placeholder="Chave NF-e (44 dígitos)" id="id_docs-__prefix__-chave_nfe"></td>
@@ -597,32 +582,34 @@
                 onclick="adicionarLinhaFormset('', '')">
           <i class="bi bi-plus-circle me-1"></i> Adicionar Chave NF-e
         </button>
+        </div>
       </div><!-- /tab-documentos -->
 
 
       <!-- ═══ ABA INFORMAÇÕES ADICIONAIS ═════════════════════════════════════ -->
-      <div class="tab-pane fade" id="tab-obs">
-        <div class="card">
-          <div class="card-header py-2"><i class="bi bi-chat-left-text me-1"></i> Informações Adicionais</div>
-          <div class="card-body">
+      <div class="form-section" id="tab-obs" data-tab-panel="tab-obs">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-chat-left-text"></i></span>
+          <span class="title">Informações Adicionais</span>
+        </div>
+        <div class="form-section-body">
             <div class="row g-3">
               <div class="col-12">
                 <label class="form-label">Observações Gerais</label>
                 {{ form.observacoes }}
               </div>
             </div>
-          </div>
         </div>
       </div><!-- /tab-obs -->
 
-    </div><!-- /tab-content principal -->
-
-    <div class="mt-3 d-flex gap-2">
+    <div class="app-footer-bar">
+      <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline">Cancelar</a>
       <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i> Salvar CT-e</button>
-      <a href="{% url 'faturamento:cte_list' %}" class="btn btn-outline-secondary">Cancelar</a>
     </div>
   </form>
 </div>
+
+<script src="{% static 'js/section-nav.js' %}"></script>
 
 <!-- Modal: Ajuda por aba -->
 <div class="modal fade" id="modalAjudaAba" tabindex="-1" aria-labelledby="modalAjudaAbaLbl" aria-hidden="true">
@@ -1018,8 +1005,7 @@ function adicionarLinhaFormset(chave, descricao) {
     });
 
     // Redirecionar para aba Documentos após importar
-    var tabDocBtn = document.querySelector('[data-bs-target="#tab-documentos"]');
-    if (tabDocBtn) tabDocBtn.click();
+    if (window.SectionNav) window.SectionNav.activate('tab-documentos');
 
     var modalEl = document.getElementById('modalImportarNFe');
     if (modalEl && window.bootstrap) {
@@ -1247,8 +1233,7 @@ function adicionarLinhaFormset(chave, descricao) {
       adicionarLinhaFormset(item.chave, descricao.substring(0, 200));
     });
 
-    var tabDocBtn = document.querySelector('[data-bs-target="#tab-documentos"]');
-    if (tabDocBtn) tabDocBtn.click();
+    if (window.SectionNav) window.SectionNav.activate('tab-documentos');
 
     var bsModal = bootstrap.Modal.getInstance(modalEl);
     if (bsModal) bsModal.hide();
@@ -1424,6 +1409,24 @@ function adicionarLinhaPrestacao() {
 </script>
 
 <script>
+// vCred (crédito outorgado/presumido, Convênio ICMS 106/96) só existe nos
+// grupos ICMS60 e ICMS90 do CT-e (MOC Anexo I) — oculto para os demais CST.
+(function () {
+  'use strict';
+  var cstSel = document.getElementById('id_cst_icms');
+  var wrap   = document.getElementById('icms-cred-outorgado-wrap');
+  if (!cstSel || !wrap) return;
+
+  function toggleCred() {
+    wrap.style.display = (cstSel.value === '60' || cstSel.value === '90') ? '' : 'none';
+  }
+
+  cstSel.addEventListener('change', toggleCred);
+  toggleCred();
+})();
+</script>
+
+<script>
 // Filtra as opções de cClassTrib (IBS/CBS) conforme o CST selecionado.
 // Convenção: os 3 primeiros dígitos do cClassTrib (6 dígitos) coincidem com o
 // CST correspondente (ex: 200001 -> CST 200). Só UX — a validação que de fato
@@ -1448,6 +1451,43 @@ function adicionarLinhaPrestacao() {
 
   cstSel.addEventListener('change', filterCclasstrib);
   filterCclasstrib();
+})();
+</script>
+
+<script>
+// Auto-preenchimento das alíquotas de IBS/CBS conforme o ano de emissão.
+// NT 2025.001 (regras 007/015/023, Art. 343/344 da LC 214/25) fixa em lei:
+//   2026: IBS-UF 0,10% | IBS-Mun 0%   | CBS 0,90%
+//   2027-2028: IBS-UF 0,05% | IBS-Mun 0,05% | CBS ainda não fixada em lei
+// A partir de 2029 as alíquotas passam a ser de referência (por UF/Município),
+// portanto não preenchemos automaticamente.
+(function () {
+  'use strict';
+  var ALIQUOTAS_POR_ANO = {
+    2026: {uf: '0.1000', mun: '0.0000', cbs: '0.9000'},
+    2027: {uf: '0.0500', mun: '0.0500', cbs: null},
+    2028: {uf: '0.0500', mun: '0.0500', cbs: null},
+  };
+  var cstSel = document.querySelector('.ibs-cbs-cst');
+  var dataEmissao = document.getElementById('id_data_emissao');
+  var ufInput = document.getElementById('id_ibs_cbs_aliquota_uf');
+  var munInput = document.getElementById('id_ibs_cbs_aliquota_municipal');
+  var cbsInput = document.getElementById('id_ibs_cbs_aliquota_cbs');
+  if (!cstSel || !dataEmissao) return;
+
+  function preencheAliquotasReforma() {
+    if (!cstSel.value || !dataEmissao.value) return;
+    var ano = parseInt(dataEmissao.value.slice(0, 4), 10);
+    var rates = ALIQUOTAS_POR_ANO[ano];
+    if (!rates) return;
+    if (ufInput && !parseFloat(ufInput.value || 0)) ufInput.value = rates.uf;
+    if (munInput && !parseFloat(munInput.value || 0)) munInput.value = rates.mun;
+    if (cbsInput && rates.cbs && !parseFloat(cbsInput.value || 0)) cbsInput.value = rates.cbs;
+  }
+
+  cstSel.addEventListener('change', preencheAliquotasReforma);
+  dataEmissao.addEventListener('change', preencheAliquotasReforma);
+  preencheAliquotasReforma();
 })();
 </script>
 
@@ -1704,8 +1744,8 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!modal) return;
 
   modal.addEventListener('show.bs.modal', function () {
-    var abaAtiva = document.querySelector('#cteTabs .nav-link.active');
-    var abaId = abaAtiva ? abaAtiva.getAttribute('data-bs-target').replace('#', '') : null;
+    var abaAtiva = document.querySelector('#cte-section-nav a.active');
+    var abaId = abaAtiva ? abaAtiva.getAttribute('data-tab') : null;
     var info = (abaId && AJUDA[abaId]) ? AJUDA[abaId] : { titulo: 'Ajuda', corpo: '<p>Nenhuma informação disponível para esta aba.</p>' };
     document.getElementById('ajuda-titulo').textContent = info.titulo;
     document.getElementById('ajuda-corpo').innerHTML = info.corpo;

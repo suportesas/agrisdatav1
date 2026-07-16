@@ -501,12 +501,36 @@ class ItemNotaFiscal(models.Model):
         'Valor ICMS Diferido', max_digits=14, decimal_places=2, default=0,
         help_text='vICMSDif — valor do ICMS cujo lançamento foi diferido (calculado).',
     )
+    icms_valor_operacao = models.DecimalField(
+        'Valor ICMS da Operação', max_digits=14, decimal_places=2, default=0,
+        help_text='vICMSOp — valor do ICMS como se não houvesse diferimento (calculado). CST 51.',
+    )
     # ICMS ST
+    ICMS_ST_MODALIDADE_BC_CHOICES = [
+        ('0', '0 - Preço tabelado ou máximo sugerido'),
+        ('1', '1 - Lista Negativa (valor)'),
+        ('2', '2 - Lista Positiva (valor)'),
+        ('3', '3 - Lista Neutra (valor)'),
+        ('4', '4 - Margem Valor Agregado (%)'),
+        ('5', '5 - Pauta (valor)'),
+    ]
+    icms_st_modalidade_base = models.CharField(
+        'Modalidade BC ICMS ST', max_length=1, default='4', choices=ICMS_ST_MODALIDADE_BC_CHOICES,
+        help_text='modBCST — modalidade de determinação da BC do ICMS ST. CST 10/30/70/90.',
+    )
     icms_st_aliquota = models.DecimalField('Alíq. ICMS ST (%)', max_digits=5, decimal_places=2, default=0)
     icms_st_mva = models.DecimalField('MVA ST (%)', max_digits=5, decimal_places=2, default=0)
     icms_st_reducao_base = models.DecimalField('Redução BC ST (%)', max_digits=5, decimal_places=2, default=0)
     icms_st_base_calculo = models.DecimalField('BC ICMS ST', max_digits=14, decimal_places=2, default=0)
     valor_icms_st = models.DecimalField('Valor ICMS ST', max_digits=14, decimal_places=2, default=0)
+    # ICMS CST 60 — "cobrado anteriormente por ST": não recalcula MVA/alíquota, apenas
+    # informa os valores retidos na operação anterior (vBCSTRet/vICMSSTRet do leiaute).
+    icms_st_base_calculo_retido = models.DecimalField('BC ICMS ST Retido Anteriormente', max_digits=14, decimal_places=2, default=0)
+    icms_st_aliquota_suportada = models.DecimalField(
+        'Alíq. Suportada pelo Consumidor Final (%)', max_digits=5, decimal_places=2, default=0,
+        help_text='pST — alíquota do cálculo do ICMS-ST já retido, incluindo o FCP quando incidente. CST 60.',
+    )
+    icms_st_valor_retido = models.DecimalField('Valor ICMS ST Retido Anteriormente', max_digits=14, decimal_places=2, default=0)
     # IPI
     cst_ipi = models.CharField('CST IPI', max_length=2, blank=True, default='99')
     aliquota_ipi = models.DecimalField('Alíq. IPI (%)', max_digits=5, decimal_places=2, default=0)
@@ -521,12 +545,18 @@ class ItemNotaFiscal(models.Model):
     aliquota_pis = models.DecimalField('Alíq. PIS (%)', max_digits=9, decimal_places=6, default=0)
     valor_pis = models.DecimalField('Valor PIS', max_digits=14, decimal_places=2, default=0)
     pis_base_calculo = models.DecimalField('Base de Cálculo PIS', max_digits=14, decimal_places=2, default=0)
+    pis_aliquota_valor = models.DecimalField('Alíq. PIS (R$/un)', max_digits=9, decimal_places=4, default=0,
+        help_text='vAliqProd — valor da alíquota do PIS em R$ por unidade de produto. '
+                   'Grupo PISQtde, exclusivo do CST 03 (tributável por unidade).')
     natureza_receita_pis = models.CharField('Natureza da Receita PIS', max_length=3, blank=True,
         help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99.')
     # COFINS
     aliquota_cofins = models.DecimalField('Alíq. COFINS (%)', max_digits=9, decimal_places=6, default=0)
     valor_cofins = models.DecimalField('Valor COFINS', max_digits=14, decimal_places=2, default=0)
     cofins_base_calculo = models.DecimalField('Base de Cálculo COFINS', max_digits=14, decimal_places=2, default=0)
+    cofins_aliquota_valor = models.DecimalField('Alíq. COFINS (R$/un)', max_digits=9, decimal_places=4, default=0,
+        help_text='vAliqProd — valor da alíquota da COFINS em R$ por unidade de produto. '
+                   'Grupo COFINSQtde, exclusivo do CST 03 (tributável por unidade).')
     natureza_receita_cofins = models.CharField('Natureza da Receita COFINS', max_length=3, blank=True,
         help_text='Código 3 dígitos — obrigatório para CST 04-09, 49, 99.')
     origem_mercadoria = models.CharField('Origem da Mercadoria', max_length=1, default='0', help_text='0=Nacional, 1-8=Estrangeira')
@@ -627,6 +657,11 @@ class ItemNotaFiscal(models.Model):
     fcp_st_base_calculo = models.DecimalField('Base Cálculo FCP ST', max_digits=14, decimal_places=2, default=0)
     fcp_st_aliquota    = models.DecimalField('Alíq. FCP ST (%)', max_digits=5, decimal_places=2, default=0)
     fcp_st_valor       = models.DecimalField('Valor FCP ST', max_digits=14, decimal_places=2, default=0)
+    # FCP retido anteriormente (vBCFCPSTRet/pFCPSTRet/vFCPSTRet) — exclusivo do
+    # CST 60, espelha o FCP já retido na operação anterior (não é calculado).
+    fcp_st_base_calculo_retido = models.DecimalField('BC FCP ST Retido Anteriormente', max_digits=14, decimal_places=2, default=0)
+    fcp_st_aliquota_retido     = models.DecimalField('Alíq. FCP ST Retido Anteriormente (%)', max_digits=5, decimal_places=2, default=0)
+    fcp_st_valor_retido        = models.DecimalField('Valor FCP ST Retido Anteriormente', max_digits=14, decimal_places=2, default=0)
 
     # ── Informações adicionais do produto (DANFE / infAdProd) ────────────────
     complemento_descricao = models.CharField('Complemento da Descrição', max_length=500, blank=True,
@@ -652,6 +687,23 @@ class ItemNotaFiscal(models.Model):
         null=True,
         blank=True,
         help_text='Item do recebimento de compra que originou este item na NF-e de devolução.',
+    )
+
+    # ── Referenciamento por item (Grupo VC/DFeReferenciado) ──────────────────
+    # NT 2025.002-RTC v1.50, regra VC02-14: em devolução de mercadoria (finNFe=4),
+    # fica proibido referenciar a nota original pelo NFref de cabeçalho — o
+    # referenciamento passa a ser exclusivamente por item, neste grupo.
+    # Produção a partir de 01/09/2026.
+    dfe_ref_chave_acesso = models.CharField(
+        'Chave NF-e Referenciada (Item)', max_length=44, blank=True,
+        help_text='DFeReferenciado/chaveAcesso — chave de acesso do DF-e referenciado a '
+                   'nível de item. Obrigatório em devolução de mercadoria (finNFe=4) a '
+                   'partir de 01/09/2026 (NT 2025.002-RTC v1.50, regra VC02-14).',
+    )
+    dfe_ref_nitem = models.PositiveIntegerField(
+        'Nº Item NF-e Referenciada', null=True, blank=True,
+        help_text='DFeReferenciado/nItem — número do item na NF-e original referenciada '
+                   '(regra VC03-20). Obrigatório sempre que dfe_ref_chave_acesso for informado.',
     )
 
     # ── Reforma Tributária — IBS/CBS (itens.imposto.ibs_cbs da IntegraNotas) ──
@@ -697,6 +749,17 @@ class ItemNotaFiscal(models.Model):
     IBS_CBS_CCLASSTRIB_CHOICES = [('', '--- Não informado ---')] + [
         par for pares in IBS_CBS_CST_CCLASSTRIB_MAP.values() for par in pares
     ]
+    # Alíquotas de transição fixadas em lei (NT 2025.002-RTC, regras UB18-10/
+    # UB37-10/UB56-10) — não são de livre digitação, dependem só do ano de
+    # emissão. Nenhum dos CSTs do escopo desta fazenda (000/200/410/515/550)
+    # tem indicador de "Tributação Regular" (que zeraria a alíquota), então o
+    # valor da tabela sempre se aplica. Anos sem valor publicado (>= 2029)
+    # ficam de fora — o campo permanece editável nesse caso.
+    IBS_UF_ALIQUOTA_POR_ANO = {2025: Decimal('0.1'), 2026: Decimal('0.1'),
+                               2027: Decimal('0.05'), 2028: Decimal('0.05')}
+    IBS_MUN_ALIQUOTA_POR_ANO = {2025: Decimal('0'), 2026: Decimal('0'),
+                                2027: Decimal('0.05'), 2028: Decimal('0.05')}
+    CBS_ALIQUOTA_POR_ANO = {2025: Decimal('0.9'), 2026: Decimal('0.9')}
     ibs_cbs_situacao_tributaria = models.CharField(
         'CST IBS/CBS', max_length=3, blank=True, choices=IBS_CBS_CST_CHOICES,
         help_text='Código de Situação Tributária do IBS/CBS (CST da Reforma Tributária).',
@@ -787,10 +850,15 @@ class ItemNotaFiscal(models.Model):
         self.valor_icms = self.icms_base_calculo * d(self.aliquota_icms) / _100
 
         # ICMS diferimento (CST 51)
-        if self.cst_icms == '51' and d(self.icms_percentual_diferimento) > _0:
-            self.icms_valor_diferido = self.valor_icms * d(self.icms_percentual_diferimento) / _100
-            self.valor_icms = self.valor_icms - self.icms_valor_diferido
+        if self.cst_icms == '51':
+            self.icms_valor_operacao = self.valor_icms
+            if d(self.icms_percentual_diferimento) > _0:
+                self.icms_valor_diferido = self.valor_icms * d(self.icms_percentual_diferimento) / _100
+                self.valor_icms = self.valor_icms - self.icms_valor_diferido
+            else:
+                self.icms_valor_diferido = _0
         else:
+            self.icms_valor_operacao = _0
             self.icms_valor_diferido = _0
 
         # ICMS ST
@@ -800,6 +868,11 @@ class ItemNotaFiscal(models.Model):
             bc_st  = self.valor_total * (_100 + mva) / _100 * (_100 - red_st) / _100
             self.icms_st_base_calculo = bc_st
             self.valor_icms_st = max(bc_st * d(self.icms_st_aliquota) / _100 - self.valor_icms, _0)
+        elif self.cst_icms == '60':
+            # CST 60 não recalcula MVA/alíquota — apenas espelha o que foi retido
+            # na operação anterior (vBCSTRet/vICMSSTRet), informado manualmente.
+            self.icms_st_base_calculo = d(self.icms_st_base_calculo_retido)
+            self.valor_icms_st = d(self.icms_st_valor_retido)
         else:
             self.icms_st_base_calculo = _0
             self.valor_icms_st = _0
@@ -807,13 +880,30 @@ class ItemNotaFiscal(models.Model):
         # IPI
         self.valor_ipi = self.valor_total * d(self.aliquota_ipi) / _100
 
-        # PIS
-        self.pis_base_calculo = self.valor_total
-        self.valor_pis = self.pis_base_calculo * d(self.aliquota_pis) / _100
+        # PIS — grupo depende do CST (Anexo I, Grupo Q do Manual NF-e 6.0):
+        # CST 03 (PISQtde) = qBCProd (quantidade) x vAliqProd (R$/un), sem BC.
+        # CST 01/02/49/98/99 (PISAliq/PISOutr) = BC x alíquota (%).
+        # CST 04-09 (PISNT) = nenhum campo de valor.
+        if self.cst_pis == '03':
+            self.pis_base_calculo = _0
+            self.valor_pis = self.quantidade * d(self.pis_aliquota_valor)
+        elif self.cst_pis in ('01', '02', '49', '98', '99'):
+            self.pis_base_calculo = self.valor_total
+            self.valor_pis = self.pis_base_calculo * d(self.aliquota_pis) / _100
+        else:
+            self.pis_base_calculo = _0
+            self.valor_pis = _0
 
-        # COFINS
-        self.cofins_base_calculo = self.valor_total
-        self.valor_cofins = self.cofins_base_calculo * d(self.aliquota_cofins) / _100
+        # COFINS — mesmo critério do PIS (Anexo I, Grupo S do Manual NF-e 6.0).
+        if self.cst_cofins == '03':
+            self.cofins_base_calculo = _0
+            self.valor_cofins = self.quantidade * d(self.cofins_aliquota_valor)
+        elif self.cst_cofins in ('01', '02', '49', '98', '99'):
+            self.cofins_base_calculo = self.valor_total
+            self.valor_cofins = self.cofins_base_calculo * d(self.aliquota_cofins) / _100
+        else:
+            self.cofins_base_calculo = _0
+            self.valor_cofins = _0
 
         # FCP
         if d(self.fcp_aliquota) > _0:
@@ -843,6 +933,18 @@ class ItemNotaFiscal(models.Model):
         # vIBSUF/vIBSMun/vCBS sejam calculados com a alíquota EFETIVA quando há
         # redução (ex: cClassTrib 200034/200036/200038 têm 60% de redução).
         if self.ibs_cbs_situacao_tributaria:
+            # Alíquotas nominais de IBS/CBS são fixadas por lei durante a fase
+            # de transição (NT 2025.002-RTC, regras UB18-10/UB37-10/UB56-10) —
+            # sobrescreve o que veio do formulário, não é campo de escolha do
+            # usuário. Anos sem valor publicado (>= 2029) mantêm o valor informado.
+            ano_emissao = self.nota_fiscal.data_emissao.year if self.nota_fiscal_id else None
+            if ano_emissao in self.IBS_UF_ALIQUOTA_POR_ANO:
+                self.ibs_cbs_aliquota_uf = self.IBS_UF_ALIQUOTA_POR_ANO[ano_emissao]
+            if ano_emissao in self.IBS_MUN_ALIQUOTA_POR_ANO:
+                self.ibs_cbs_aliquota_municipal = self.IBS_MUN_ALIQUOTA_POR_ANO[ano_emissao]
+            if ano_emissao in self.CBS_ALIQUOTA_POR_ANO:
+                self.ibs_cbs_aliquota_cbs = self.CBS_ALIQUOTA_POR_ANO[ano_emissao]
+
             self.ibs_cbs_base_calculo = self.valor_total
             aliq_efet_uf = d(self.ibs_cbs_aliquota_uf) * (_100 - d(self.ibs_percentual_reducao)) / _100
             aliq_efet_mun = d(self.ibs_cbs_aliquota_municipal) * (_100 - d(self.ibs_percentual_reducao)) / _100
@@ -1349,6 +1451,11 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     reducao_base_icms  = models.DecimalField('% Redução BC ICMS', max_digits=5, decimal_places=2, default=0)
     aliquota_icms      = models.DecimalField('Alíquota ICMS (%)', max_digits=5, decimal_places=2, default=0)
     valor_icms         = models.DecimalField('Valor ICMS', max_digits=14, decimal_places=2, default=0)
+    valor_credito_outorgado_icms = models.DecimalField(
+        'Valor Crédito Outorgado/Presumido ICMS', max_digits=14, decimal_places=2, default=0,
+        help_text='vCred — crédito outorgado do Convênio ICMS 106/96 (20% do ICMS-ST retido). '
+                   'Aplicável apenas aos CST 60 e 90.',
+    )
 
     # Modal Rodoviário
     placa_veiculo_override = models.CharField(
@@ -1389,6 +1496,14 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
     IBS_CBS_CCLASSTRIB_CHOICES = [('', '--- Não informado ---')] + [
         par for pares in IBS_CBS_CST_CCLASSTRIB_MAP.values() for par in pares
     ]
+    # Alíquotas de transição fixadas em lei (NT 2025.001, Art. 343/344 da LC
+    # 214/2025) — mesma tabela usada em ItemNotaFiscal. Não são de livre
+    # digitação, dependem só do ano de emissão; sobrescritas em save().
+    IBS_UF_ALIQUOTA_POR_ANO = {2025: Decimal('0.1'), 2026: Decimal('0.1'),
+                               2027: Decimal('0.05'), 2028: Decimal('0.05')}
+    IBS_MUN_ALIQUOTA_POR_ANO = {2025: Decimal('0'), 2026: Decimal('0'),
+                                2027: Decimal('0.05'), 2028: Decimal('0.05')}
+    CBS_ALIQUOTA_POR_ANO = {2025: Decimal('0.9'), 2026: Decimal('0.9')}
     ibs_cbs_situacao_tributaria = models.CharField(
         'CST IBS/CBS', max_length=3, blank=True, choices=IBS_CBS_CST_CHOICES,
         help_text='Código de Situação Tributária do IBS/CBS (CST da Reforma Tributária).',
@@ -1483,6 +1598,18 @@ class ConhecimentoTransporte(FaturamentoBaseModel):
         # que vIBSUF/vIBSMun/vCBS sejam calculados com a alíquota EFETIVA quando
         # há redução (ex: cClassTrib 200001 tem 100% de redução → imposto zero).
         if self.ibs_cbs_situacao_tributaria:
+            # Alíquotas nominais de IBS/CBS são fixadas por lei durante a fase de
+            # transição — sobrescreve o que veio do formulário, não é campo de
+            # escolha do usuário. Anos sem valor publicado (>= 2029) mantêm o
+            # valor informado (mesmo critério do ItemNotaFiscal).
+            ano_emissao = self.data_emissao.year if self.data_emissao else None
+            if ano_emissao in self.IBS_UF_ALIQUOTA_POR_ANO:
+                self.ibs_cbs_aliquota_uf = self.IBS_UF_ALIQUOTA_POR_ANO[ano_emissao]
+            if ano_emissao in self.IBS_MUN_ALIQUOTA_POR_ANO:
+                self.ibs_cbs_aliquota_municipal = self.IBS_MUN_ALIQUOTA_POR_ANO[ano_emissao]
+            if ano_emissao in self.CBS_ALIQUOTA_POR_ANO:
+                self.ibs_cbs_aliquota_cbs = self.CBS_ALIQUOTA_POR_ANO[ano_emissao]
+
             self.ibs_cbs_base_calculo = self.valor_servico
             aliq_efet_uf = d(self.ibs_cbs_aliquota_uf) * (_100 - d(self.ibs_percentual_reducao)) / _100
             aliq_efet_mun = d(self.ibs_cbs_aliquota_municipal) * (_100 - d(self.ibs_percentual_reducao)) / _100

@@ -767,6 +767,51 @@ class Empresa(models.Model):
         return self.cnpj
 
 
+class Programa(models.Model):
+    """
+    Representa uma tela/ação do sistema (uma URL nomeada do Django), descoberta
+    automaticamente via introspecção de `django.urls.get_resolver()`.
+
+    É a unidade de concessão de acesso do novo sistema de permissões: uma Role
+    concede acesso a Programas específicos (`Role.programas`), substituindo o
+    uso de `auth.Permission`/`auth.Group` para controle de acesso do ERP.
+    Ver `empresas/programa_discovery.py` para a lógica de descoberta.
+    """
+
+    TIPO_ACAO_CHOICES = [
+        ('abrir', 'Abrir/Ver'),
+        ('criar', 'Criar'),
+        ('editar', 'Editar'),
+        ('excluir', 'Excluir'),
+        ('outro', 'Outro'),
+    ]
+
+    url_name = models.CharField('Nome da URL', max_length=200, unique=True)
+    app_label = models.CharField('App', max_length=100, db_index=True)
+    grupo_tela = models.CharField('Grupo de Tela', max_length=150, db_index=True)
+    nome = models.CharField('Nome amigável', max_length=150)
+    nome_customizado = models.BooleanField(
+        'Nome editado manualmente', default=False,
+        help_text='Se True, a sincronização automática não sobrescreve o nome.'
+    )
+    tipo_acao = models.CharField('Tipo de Ação', max_length=20, choices=TIPO_ACAO_CHOICES, default='outro')
+    caminho_menu = models.CharField('Caminho no Menu', max_length=200, blank=True)
+    ativo = models.BooleanField(
+        'Ativo', default=True,
+        help_text='Desativado automaticamente quando a URL some do sistema (não é excluído, para preservar concessões).'
+    )
+    data_descoberta = models.DateTimeField('Descoberto em', auto_now_add=True)
+    data_atualizacao = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Programa (Tela)'
+        verbose_name_plural = 'Programas (Telas)'
+        ordering = ['app_label', 'grupo_tela', 'tipo_acao']
+
+    def __str__(self):
+        return f"{self.nome} ({self.url_name})"
+
+
 class Role(models.Model):
     """
     Função (Role) vinculada a uma Empresa.
@@ -793,6 +838,12 @@ class Role(models.Model):
         'Padrão do sistema',
         default=False,
         help_text='Função criada automaticamente pelo seed'
+    )
+    programas = models.ManyToManyField(
+        Programa,
+        blank=True,
+        related_name='roles',
+        verbose_name='Telas com acesso'
     )
     data_criacao = models.DateTimeField('Criado em', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Atualizado em', auto_now=True)
@@ -852,6 +903,22 @@ class Role(models.Model):
         if not self.group:
             return Permission.objects.none()
         return self.group.permissions.all()
+
+    def set_programas(self, programa_ids, actor=None):
+        """Sincroniza os Programas (telas) que esta Role pode acessar.
+
+        Substitui `set_permissions()` como fonte de verdade para o controle
+        de acesso do ERP (ver `core/middleware/programa_enforcement.py`).
+        `Group`/`Permission` continuam existindo apenas para o Django admin.
+        """
+        programas = Programa.objects.filter(id__in=programa_ids, ativo=True)
+        self.programas.set(programas)
+
+        try:
+            details = {'programas': list(programas.values_list('url_name', flat=True))}
+            RoleAudit.objects.create(role=self, actor=actor, action='permissions_updated', details=details)
+        except Exception:
+            pass
 
 
 class RoleAudit(models.Model):

@@ -352,6 +352,13 @@ main {
   gap: 6px;
 }
 
+.btn.btn-sm {
+  font-size: 0.78rem;
+  padding: 5px 11px;
+  gap: 5px;
+  border-radius: calc(var(--radius-btn) - 2px);
+}
+
 .btn-primary {
   background: var(--color-primary);
   border-color: transparent;
@@ -622,6 +629,7 @@ main {
 .status-pill {
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 0.75rem;
@@ -636,6 +644,7 @@ main {
 .status-pill.blue   { background: var(--pastel-blue-bg);   color: var(--pastel-blue-text);   border-color: var(--pastel-blue-border); }
 .status-pill.orange { background: var(--pastel-orange-bg); color: var(--pastel-orange-text); border-color: var(--pastel-orange-border); }
 .status-pill.red    { background: var(--pastel-red-bg);    color: var(--pastel-red-text);    border-color: var(--pastel-red-border); }
+.status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
 /* Required marker + helper text */
 .req {
@@ -1256,6 +1265,24 @@ table.items-table tbody tr:hover {
 .stat-icon-gray   { background: var(--pastel-gray-bg);   color: var(--pastel-gray-text); }
 
 /* ==============================
+   Stat Grid — responsive auto-fit wrapper for .stat-card rows
+   (use instead of Bootstrap .row/.col when cards should reflow freely)
+================================ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.stat-grid > * { min-width: 0; }
+
+/* Compact variant — denser value cards for detail pages (Totais, Resumo) */
+.stat-grid.compact { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.stat-grid.compact .stat-card { padding: 12px 14px; }
+.stat-grid.compact .stat-value { font-size: 1.2rem; margin-bottom: 2px; }
+.stat-grid.compact .stat-label { font-size: 0.68rem; }
+.stat-grid.compact .stat-sub { font-size: 0.68rem; margin-top: 1px; }
+
+/* ==============================
    Stat Cards helper
 ================================ */
 .stat-card {
@@ -1290,12 +1317,20 @@ table.items-table tbody tr:hover {
   letter-spacing: -0.03em;
   line-height: 1;
   margin-bottom: 4px;
+  overflow-wrap: break-word;
 }
 
 .stat-card .stat-label {
   font-size: 0.83rem;
   color: var(--color-text-muted);
   font-weight: 500;
+}
+
+.stat-card .stat-sub {
+  font-size: 0.76rem;
+  color: var(--color-text-secondary);
+  margin-top: 3px;
+  overflow-wrap: break-word;
 }
 
 /* ==============================
@@ -1433,6 +1468,263 @@ table.items-table tbody tr:hover {
   background: var(--pastel-green-bg);
   color: var(--pastel-green-text);
 }
+
+/* ==============================
+   Detail Page — Two-column layout
+================================ */
+.two-col {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.two-col > * { min-width: 0; }
+@media (max-width: 920px) {
+  .two-col { grid-template-columns: 1fr; }
+}
+
+/* ==============================
+   Detail Page — Key/value list (dl)
+================================ */
+.kv { display: flex; flex-direction: column; }
+.kv .kv-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.85rem;
+}
+.kv .kv-row:last-child { border-bottom: none; }
+.kv .kv-row dt { color: var(--color-text-muted); font-weight: 500; margin: 0; flex-shrink: 0; }
+.kv .kv-row dd { margin: 0; text-align: right; font-weight: 600; color: var(--color-text-primary); min-width: 0; overflow-wrap: break-word; }
+
+/* ==============================
+   Detail Page — Chip (small inline tag, distinct from status-pill)
+================================ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--pastel-gray-bg);
+  color: var(--pastel-gray-text);
+  border: 1px solid var(--pastel-gray-border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/* ==============================
+   Detail Page — Modern tabs (opt-in via .tabs-modern, wraps nav-tabs)
+   Usage: <ul class="nav nav-tabs tabs-modern"> ... <button class="nav-link">Label <span class="tab-count">3</span></button>
+================================ */
+.tabs-modern {
+  border-bottom: 1px solid var(--color-border);
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.tabs-modern .nav-link {
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.84rem;
+  padding: 13px 14px;
+  white-space: nowrap;
+}
+.tabs-modern .nav-link:hover { color: var(--color-text-secondary); border-color: transparent; }
+.tabs-modern .nav-link.active {
+  color: var(--color-primary);
+  background: none;
+  border-color: var(--color-primary);
+}
+.tabs-modern .tab-count {
+  background: var(--pastel-gray-bg);
+  color: var(--pastel-gray-text);
+  border-radius: 999px;
+  padding: 1px 7px;
+  font-size: 0.72rem;
+  margin-left: 4px;
+}
+.tabs-modern .nav-link.active .tab-count {
+  background: var(--pastel-green-bg);
+  color: var(--pastel-green-text);
+}
+
+/* ==============================
+   Detail Page — Stepper (document lifecycle / status progression)
+================================ */
+.stepper {
+  display: flex;
+  align-items: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 18px 24px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+.step { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.step .step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--pastel-gray-bg);
+  color: var(--pastel-gray-text);
+  border: 1px solid var(--pastel-gray-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step.done .step-num { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.step.current .step-num { background: var(--pastel-orange-bg); color: var(--pastel-orange-text); border-color: var(--pastel-orange-border); }
+.step .step-txt { font-size: 0.82rem; font-weight: 600; color: var(--color-text-muted); }
+.step.done .step-txt, .step.current .step-txt { color: var(--color-text-primary); }
+.step-line { width: 44px; height: 1px; background: var(--color-border); margin: 0 12px; flex-shrink: 0; }
+.step.done + .step-line { background: var(--color-primary); }
+
+/* ==============================
+   Detail Page — Timeline (audit/history feed)
+================================ */
+.timeline { position: relative; padding-left: 22px; }
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 1px;
+  background: var(--color-border);
+}
+.tl-item { position: relative; padding-bottom: 18px; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-item::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  top: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+.tl-item .tl-date {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.tl-item .tl-body { font-size: 0.84rem; margin-top: 2px; }
+
+/* ==============================
+   Detail Page — Progress track (parcelas pagas, etc.)
+================================ */
+.progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  margin: 6px 0;
+}
+.progress-track .progress-fill { height: 100%; background: var(--color-primary); border-radius: 999px; }
+
+/* ==============================
+   Detail Page — Key block (access keys, hashes, protocol numbers)
+================================ */
+.key-block {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  padding: 12px 16px;
+  margin-bottom: 18px;
+}
+.key-block .key-label {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.key-block code {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  letter-spacing: 0.03em;
+  word-break: break-all;
+  color: var(--color-text-primary);
+}
+.copy-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.copy-btn:hover { border-color: var(--color-primary-light); color: var(--color-primary); }
+
+/* ==============================
+   Detail Page — Soft alert (pastel, replaces raw alert-warning/alert-danger)
+================================ */
+.alert-soft {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--pastel-orange-border);
+  background: var(--pastel-orange-bg);
+  color: var(--pastel-orange-text);
+  margin-bottom: 20px;
+  font-size: 0.86rem;
+}
+.alert-soft.red  { border-color: var(--pastel-red-border);  background: var(--pastel-red-bg);  color: var(--pastel-red-text); }
+.alert-soft.blue { border-color: var(--pastel-blue-border); background: var(--pastel-blue-bg); color: var(--pastel-blue-text); }
+.alert-soft .icon { flex-shrink: 0; margin-top: 2px; font-size: 1.1rem; }
+.alert-soft > div { min-width: 0; }
+.alert-soft strong { color: var(--color-text-primary); }
+.alert-soft a.link { color: inherit; font-weight: 700; text-decoration: underline; }
+
+/* ==============================
+   Detail Page — Callout (inline suggested action)
+================================ */
+.callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--pastel-green-bg);
+  border: 1px solid var(--pastel-green-border);
+  border-radius: var(--radius-card);
+  padding: 14px 18px;
+  margin-top: 16px;
+}
+.callout .callout-txt { font-size: 0.85rem; color: var(--pastel-green-text); }
+.callout .callout-txt strong { display: block; color: var(--color-text-primary); font-size: 0.9rem; margin-bottom: 2px; }
+.callout.warning { background: var(--pastel-orange-bg); border-color: var(--pastel-orange-border); }
+.callout.warning .callout-txt { color: var(--pastel-orange-text); }
+.callout.warning .callout-txt strong { color: var(--color-text-primary); }
 
 /* ==============================
    Utilities

@@ -16,3 +16,28 @@ class MoneyBRInput(forms.TextInput):
         else:
             merged = base_attrs
         super().__init__(attrs=merged)
+
+
+class DecimalBRInput(forms.TextInput):
+    """Input de texto para valores decimais com máscara BR (1.234,5678) via static/js/money-mask.js.
+
+    Igual ao MoneyBRInput, mas com número de casas decimais configurável — usado
+    para quantidades, preços unitários, taxas de câmbio e alíquotas com 3-4 casas.
+    O valor é armazenado/enviado ao servidor como decimal simples (ex: "1234.5678").
+    """
+
+    def __init__(self, attrs=None, decimals=2):
+        placeholder = '0,' + '0' * decimals if decimals > 0 else '0'
+        base_attrs = {
+            'class': 'form-control money-mask-input',
+            'inputmode': 'decimal',
+            'placeholder': placeholder,
+            'autocomplete': 'off',
+            'data-decimals': str(decimals),
+        }
+        if attrs:
+            base_attrs['class'] = (base_attrs['class'] + ' ' + attrs.get('class', '')).strip()
+            merged = {**base_attrs, **{k: v for k, v in attrs.items() if k != 'class'}}
+        else:
+            merged = base_attrs
+        super().__init__(attrs=merged)

@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
+from core.widgets import MoneyBRInput, DecimalBRInput
 from .models import PedidoVenda, ItemPedidoVenda, TabelaPreco
 
 
@@ -21,12 +22,12 @@ class PedidoVendaForm(forms.ModelForm):
             'data_entrega_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'tipo_venda': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_venda'}),
             'moeda': forms.Select(attrs={'class': 'form-select'}),
-            'taxa_cambio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'taxa_cambio': DecimalBRInput(decimals=4),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
             'condicao_pagamento': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 30/60/90 dias'}),
             'forma_pagamento': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Boleto, TED, Wire Transfer'}),
-            'valor_desconto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
-            'valor_frete': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'valor_desconto': MoneyBRInput(),
+            'valor_frete': MoneyBRInput(),
             'gerar_nota_fiscal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'gerar_conta_receber': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -55,9 +56,9 @@ class ItemPedidoVendaForm(forms.ModelForm):
             'ncm': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '00000000'}),
             'cfop': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '5102'}),
             'unidade': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'UN'}),
-            'quantidade': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.001'}),
-            'preco_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.0001'}),
-            'desconto_item': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'min': '0'}),
+            'quantidade': DecimalBRInput(attrs={'class': 'form-control-sm'}, decimals=3),
+            'preco_unitario': DecimalBRInput(attrs={'class': 'form-control-sm'}, decimals=4),
+            'desconto_item': MoneyBRInput(attrs={'class': 'form-control-sm'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -93,7 +94,7 @@ class TabelaPrecoForm(forms.ModelForm):
             'produto': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
             'moeda': forms.Select(attrs={'class': 'form-select'}),
-            'preco_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'preco_unitario': DecimalBRInput(decimals=4),
             'vigencia_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'vigencia_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

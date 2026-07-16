@@ -482,7 +482,7 @@
                 <td><input type="text" name="cont-__prefix__-cpf_cnpj" maxlength="14" class="form-control form-control-sm" placeholder="CPF ou CNPJ" id="id_cont-__prefix__-cpf_cnpj"></td>
                 <td><input type="text" name="cont-__prefix__-ie" maxlength="14" class="form-control form-control-sm" id="id_cont-__prefix__-ie"></td>
                 <td><input type="text" name="cont-__prefix__-n_contrato" maxlength="20" class="form-control form-control-sm" id="id_cont-__prefix__-n_contrato"></td>
-                <td><input type="number" name="cont-__prefix__-v_contrato" step="0.01" class="form-control form-control-sm" id="id_cont-__prefix__-v_contrato"></td>
+                <td><input type="text" inputmode="decimal" autocomplete="off" name="cont-__prefix__-v_contrato" data-decimals="2" class="form-control form-control-sm money-mask-input" id="id_cont-__prefix__-v_contrato"></td>
                 <td>
                   <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
                   <input type="checkbox" name="cont-__prefix__-DELETE" id="id_cont-__prefix__-DELETE" class="form-check-input" style="display:none">
@@ -516,7 +516,7 @@
               <tr id="vale-template-row">
                 <td><input type="text" name="vale-__prefix__-cnpj_fornecedor" maxlength="14" class="form-control form-control-sm" id="id_vale-__prefix__-cnpj_fornecedor"></td>
                 <td><input type="text" name="vale-__prefix__-n_compra" maxlength="20" class="form-control form-control-sm" id="id_vale-__prefix__-n_compra"></td>
-                <td><input type="number" name="vale-__prefix__-valor" step="0.01" class="form-control form-control-sm" id="id_vale-__prefix__-valor"></td>
+                <td><input type="text" inputmode="decimal" autocomplete="off" name="vale-__prefix__-valor" data-decimals="2" class="form-control form-control-sm money-mask-input" id="id_vale-__prefix__-valor"></td>
                 <td>
                   <select name="vale-__prefix__-tp_vale" class="form-select form-select-sm" id="id_vale-__prefix__-tp_vale">
                     <option value="">—</option>
@@ -574,7 +574,7 @@
                     <option value="1">1 - A Prazo</option>
                   </select>
                 </td>
-                <td><input type="number" name="pagfrete-__prefix__-vr_total" step="0.01" class="form-control form-control-sm" id="id_pagfrete-__prefix__-vr_total"></td>
+                <td><input type="text" inputmode="decimal" autocomplete="off" name="pagfrete-__prefix__-vr_total" data-decimals="2" class="form-control form-control-sm money-mask-input" id="id_pagfrete-__prefix__-vr_total"></td>
                 <td>
                   <button type="button" class="btn btn-outline-danger btn-sm" onclick="var r=this.closest('tr');r.querySelector('input[type=checkbox]').checked=true;r.style.display='none'"><i class="bi bi-trash"></i></button>
                   <input type="checkbox" name="pagfrete-__prefix__-DELETE" id="id_pagfrete-__prefix__-DELETE" class="form-check-input" style="display:none">
@@ -903,6 +903,7 @@
       if (afterClone) afterClone(novaLinha, idx);
       document.getElementById(tbodyId).appendChild(novaLinha);
       totalInput.value = idx + 1;
+      if (window.MoneyMask) MoneyMask.init(novaLinha);
     });
   };
 
@@ -1160,12 +1161,12 @@
       somaPeso  += item.peso;
     });
 
-    const vcInput = document.getElementById('id_valor_carga');
-    if (vcInput) vcInput.value = somaValor.toFixed(2);
+    if (window.MoneyMask) MoneyMask.setValue('id_valor_carga', somaValor);
+    else { const vcInput = document.getElementById('id_valor_carga'); if (vcInput) vcInput.value = somaValor.toFixed(2); }
 
     if (somaPeso > 0) {
-      const pkInput = document.getElementById('id_peso_bruto_kg');
-      if (pkInput) pkInput.value = somaPeso.toFixed(3);
+      if (window.MoneyMask) MoneyMask.setValue('id_peso_bruto_kg', somaPeso);
+      else { const pkInput = document.getElementById('id_peso_bruto_kg'); if (pkInput) pkInput.value = somaPeso.toFixed(3); }
     }
 
     selectedDocs.forEach(item => {

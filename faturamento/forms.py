@@ -5,6 +5,8 @@ from django import forms
 from django.core.validators import MinLengthValidator
 from django.forms import inlineformset_factory, BaseInlineFormSet
 
+from core.widgets import MoneyBRInput, DecimalBRInput
+
 from .models import (
     CartaCorrecaoNFe,
     CiotMDFe,
@@ -1294,9 +1296,6 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'fatura_numero', 'fatura_valor_original', 'fatura_valor_desconto',
             'observacoes',
         ]
-        _dec2 = {'class': 'form-control', 'step': '0.01', 'min': '0'}
-        _dec4 = {'class': 'form-control', 'step': '0.0001', 'min': '0'}
-        _pct  = {'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}
         widgets = {
             'serie':             forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width:80px'}),
             'tipo_cte':          forms.Select(attrs={'class': 'form-select'}),
@@ -1327,43 +1326,43 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'municipio_fim':             forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_municipio_fim':      forms.TextInput(attrs={'class': 'form-control', 'maxlength': '7', 'placeholder': '3550308'}),
             'modalidade_frete':  forms.Select(attrs={'class': 'form-select'}),
-            'valor_servico':          forms.NumberInput(attrs=_dec2),
-            'valor_receber':          forms.NumberInput(attrs=_dec2),
-            'valor_aproximado_tributos': forms.NumberInput(attrs=_dec2),
+            'valor_servico':          MoneyBRInput(),
+            'valor_receber':          MoneyBRInput(),
+            'valor_aproximado_tributos': MoneyBRInput(),
             'produto_predominante':   forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: SOJA, MILHO'}),
-            'valor_carga':            forms.NumberInput(attrs=_dec2),
-            'peso_bruto_kg':          forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'min': '0'}),
+            'valor_carga':            MoneyBRInput(),
+            'peso_bruto_kg':          DecimalBRInput(decimals=3),
             # ICMS
             'cst_icms':          forms.Select(attrs={'class': 'form-select'}),
-            'base_calculo_icms': forms.NumberInput(attrs=_dec2),
-            'reducao_base_icms': forms.NumberInput(attrs=_pct),
-            'aliquota_icms':     forms.NumberInput(attrs=_pct),
-            'valor_icms':        forms.NumberInput(attrs=_dec2),
-            'valor_credito_outorgado_icms': forms.NumberInput(attrs=_dec2),
+            'base_calculo_icms': MoneyBRInput(),
+            'reducao_base_icms': MoneyBRInput(),
+            'aliquota_icms':     MoneyBRInput(),
+            'valor_icms':        MoneyBRInput(),
+            'valor_credito_outorgado_icms': MoneyBRInput(),
             # Partilha ICMS
-            'partilha_bc_icms':              forms.NumberInput(attrs=_dec2),
-            'partilha_aliq_interna_uf_fim':  forms.NumberInput(attrs=_pct),
-            'partilha_aliq_interestadual':   forms.NumberInput(attrs=_pct),
-            'partilha_percentual_uf_fim':    forms.NumberInput(attrs=_pct),
-            'partilha_valor_icms_uf_inicio': forms.NumberInput(attrs=_dec2),
-            'partilha_valor_icms_uf_fim':    forms.NumberInput(attrs=_dec2),
-            'partilha_percentual_fcp_uf_fim': forms.NumberInput(attrs=_pct),
-            'partilha_valor_fcp_uf_fim':     forms.NumberInput(attrs=_dec2),
+            'partilha_bc_icms':              MoneyBRInput(),
+            'partilha_aliq_interna_uf_fim':  MoneyBRInput(),
+            'partilha_aliq_interestadual':   MoneyBRInput(),
+            'partilha_percentual_uf_fim':    MoneyBRInput(),
+            'partilha_valor_icms_uf_inicio': MoneyBRInput(),
+            'partilha_valor_icms_uf_fim':    MoneyBRInput(),
+            'partilha_percentual_fcp_uf_fim': MoneyBRInput(),
+            'partilha_valor_fcp_uf_fim':     MoneyBRInput(),
             # Modal rodoviário
             'placa_veiculo_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Preenchida ao selecionar o veículo'}),
             'rntrc_override': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Preenchido ao selecionar a transportadora'}),
             # Reforma tributária (IBS/CBS)
             'ibs_cbs_situacao_tributaria':      forms.Select(attrs={'class': 'form-select ibs-cbs-cst'}),
             'ibs_cbs_classificacao_tributaria': forms.Select(attrs={'class': 'form-select ibs-cbs-cclasstrib'}),
-            'ibs_cbs_aliquota_uf':        forms.NumberInput(attrs=_dec4),
-            'ibs_cbs_aliquota_municipal': forms.NumberInput(attrs=_dec4),
-            'ibs_cbs_aliquota_cbs':       forms.NumberInput(attrs=_dec4),
-            'ibs_percentual_reducao':     forms.NumberInput(attrs=_dec4),
-            'cbs_percentual_reducao':     forms.NumberInput(attrs=_dec4),
+            'ibs_cbs_aliquota_uf':        DecimalBRInput(decimals=4),
+            'ibs_cbs_aliquota_municipal': DecimalBRInput(decimals=4),
+            'ibs_cbs_aliquota_cbs':       DecimalBRInput(decimals=4),
+            'ibs_percentual_reducao':     DecimalBRInput(decimals=4),
+            'cbs_percentual_reducao':     DecimalBRInput(decimals=4),
             # Fatura
             'fatura_numero':         forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 001'}),
-            'fatura_valor_original': forms.NumberInput(attrs=_dec2),
-            'fatura_valor_desconto': forms.NumberInput(attrs=_dec2),
+            'fatura_valor_original': MoneyBRInput(),
+            'fatura_valor_desconto': MoneyBRInput(),
             'observacoes':       forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -1448,10 +1447,7 @@ class ComponenteValorCTeForm(forms.ModelForm):
                 'class': 'form-control form-control-sm',
                 'placeholder': 'Ex: FRETE PESO, FRETE VALOR, SEC/CAT, ADEME…',
             }),
-            'valor': forms.NumberInput(attrs={
-                'class': 'form-control form-control-sm text-end',
-                'step': '0.01', 'min': '0',
-            }),
+            'valor': MoneyBRInput(attrs={'class': 'form-control-sm text-end'}),
         }
 
 
@@ -1498,8 +1494,8 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'uf_fim':                         forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'MG'}),
             'tipo_emitente':             forms.Select(attrs={'class': 'form-select'}),
             'tipo_transporte':           forms.Select(attrs={'class': 'form-select'}),
-            'valor_carga':               forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'peso_bruto_kg':             forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'valor_carga':               MoneyBRInput(),
+            'peso_bruto_kg':             DecimalBRInput(decimals=3),
             'rntrc_veiculo':             forms.TextInput(attrs={'class': 'form-control', 'maxlength': '8', 'placeholder': '00000000'}),
             'cod_ag_porto':              forms.TextInput(attrs={'class': 'form-control', 'maxlength': '8'}),
             'tipo_carroceria':           forms.Select(attrs={'class': 'form-select'}),
@@ -1705,7 +1701,7 @@ class ContratanteMDFeForm(forms.ModelForm):
             'cpf_cnpj':   forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CPF ou CNPJ'}),
             'ie':         forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14'}),
             'n_contrato': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20'}),
-            'v_contrato': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'v_contrato': MoneyBRInput(attrs={'class': 'form-control-sm'}),
         }
 
 
@@ -1725,7 +1721,7 @@ class ValePedagioMDFeForm(forms.ModelForm):
         widgets = {
             'cnpj_fornecedor': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CNPJ do fornecedor'}),
             'n_compra':        forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '20', 'placeholder': 'Número da compra'}),
-            'valor':           forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'valor':           MoneyBRInput(attrs={'class': 'form-control-sm'}),
             'tp_vale':         forms.Select(attrs={'class': 'form-select form-select-sm'}),
         }
 
@@ -1749,7 +1745,7 @@ class PagamentoFreteMDFeForm(forms.ModelForm):
             'cpf_cnpj':         forms.TextInput(attrs={'class': 'form-control form-control-sm', 'maxlength': '14', 'placeholder': 'CPF ou CNPJ'}),
             'ind_pag':          forms.Select(attrs={'class': 'form-select form-select-sm'},
                                              choices=[('', '---------'), ('0', '0 - À Vista'), ('1', '1 - A Prazo')]),
-            'vr_total':         forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01'}),
+            'vr_total':         MoneyBRInput(attrs={'class': 'form-control-sm'}),
             'tp_antecip':       forms.Select(attrs={'class': 'form-select form-select-sm'},
                                              choices=[('', '---------'), ('1', '1 - Antecipado'), ('2', '2 - Não Antecipado')]),
             'componentes_json': forms.Textarea(attrs={'class': 'form-control form-control-sm', 'rows': 2,
@@ -1798,7 +1794,7 @@ class ProdutoPredominanteMDFeForm(forms.ModelForm):
             'x_prod':       forms.TextInput(attrs={'class': 'form-control', 'maxlength': '120', 'placeholder': 'Descrição do produto'}),
             'tipo_carga':   forms.Select(attrs={'class': 'form-select'}),
             'tipo_medida':  forms.Select(attrs={'class': 'form-select'}),
-            'q_carga':      forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
+            'q_carga':      DecimalBRInput(decimals=4),
         }
 
     def clean(self):

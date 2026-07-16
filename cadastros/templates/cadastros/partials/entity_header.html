@@ -1,11 +1,24 @@
-{% comment %} Shared header for entity detail pages (Fazenda, Cliente) {% endcomment %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h2 class="fw-bold mb-1">{% if icon %}<span class="me-2">{{ icon|safe }}</span>{% endif %}{{ title }}</h2>
-    {% if subtitle %}<small class="text-muted">{{ subtitle }}</small>{% endif %}
+{% comment %} Shared header for entity detail pages (Fazenda, Cliente, ...).
+  Params: title, subtitle, icon (raw <i> html, no color class), icon_color (green|blue|orange|red|gray, default green),
+          status_html (raw html, e.g. a .status-pill span), back_url, edit_url, delete_url {% endcomment %}
+<div class="page-header">
+  <div class="d-flex align-items-center gap-3">
+    {% if back_url %}
+    <a href="{{ back_url }}" class="btn btn-outline-secondary" style="width:36px;height:36px;padding:0;justify-content:center">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    {% endif %}
+    <span class="page-header-icon {{ icon_color|default:'green' }}">{% if icon %}{{ icon|safe }}{% else %}<i class="bi bi-file-earmark"></i>{% endif %}</span>
+    <div>
+      <h2>{{ title }}</h2>
+      <p class="text-muted mb-0 d-flex align-items-center gap-2 flex-wrap">
+        {% if subtitle %}<span>{{ subtitle }}</span>{% endif %}
+        {% if status_html %}{{ status_html|safe }}{% endif %}
+      </p>
+    </div>
   </div>
-  <div class="btn-group">
-    {% if edit_url %}<a href="{{ edit_url }}" class="btn btn-outline-secondary">Editar</a>{% endif %}
-    {% if delete_url %}<a href="{{ delete_url }}" class="btn btn-outline-danger">Excluir</a>{% endif %}
+  <div class="d-flex gap-2 flex-wrap">
+    {% if edit_url %}<a href="{{ edit_url }}" class="btn btn-outline-secondary"><i class="bi bi-pencil"></i> Editar</a>{% endif %}
+    {% if delete_url %}<a href="{{ delete_url }}" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Excluir</a>{% endif %}
   </div>
 </div>

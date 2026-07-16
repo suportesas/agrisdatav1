@@ -5,104 +5,118 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1><i class="bi bi-file-earmark-check"></i> {{ conta.numero }}</h1>
-                    <p class="text-muted">{{ conta.fornecedor.nome }} | {{ conta.data_emissao|date:'d/m/Y' }}</p>
-                </div>
-                <div>
-                    {% if conta.status == 'PAGA' or parcelas_pagas == total_parcelas and total_parcelas > 0 %}
-                    <span class="badge bg-success fs-6">Pago</span>
-                    {% elif parcelas_pagas > 0 %}
-                    <span class="badge bg-warning text-dark fs-6">Pendente {{ parcelas_pagas }}/{{ total_parcelas }}</span>
-                    {% else %}
-                    <span class="badge bg-{% if conta.status == 'APROVADA' %}info{% elif conta.status == 'CANCELADA' %}danger{% else %}warning text-dark{% endif %} fs-6">
-                        {{ conta.get_status_display }}
-                    </span>
-                    {% endif %}
-                </div>
-            </div>
+
+    <div class="page-header">
+      <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-outline-secondary" style="width:36px;height:36px;padding:0;justify-content:center">
+          <i class="bi bi-arrow-left"></i>
+        </a>
+        <span class="page-header-icon orange"><i class="bi bi-file-earmark-check"></i></span>
+        <div>
+          <h2>Conta a Pagar <span class="text-mono">{{ conta.numero }}</span></h2>
+          <p class="text-muted mb-0 d-flex align-items-center gap-2 flex-wrap">
+            <span>{{ conta.fornecedor.nome }}</span>
+            <span>&middot; {{ conta.data_emissao|date:'d/m/Y' }}</span>
+            {% if conta.status == 'PAGA' or parcelas_pagas == total_parcelas and total_parcelas > 0 %}
+            <span class="status-pill green"><span class="dot"></span>Paga</span>
+            {% elif parcelas_pagas > 0 %}
+            <span class="status-pill orange"><span class="dot"></span>Pendente {{ parcelas_pagas }}/{{ total_parcelas }}</span>
+            {% else %}
+            <span class="status-pill {% if conta.status == 'APROVADA' %}blue{% elif conta.status == 'CANCELADA' %}red{% else %}gray{% endif %}">
+              <span class="dot"></span>{{ conta.get_status_display }}
+            </span>
+            {% endif %}
+          </p>
         </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        {% if conta.status == 'ABERTA' and conta.requer_aprovacao %}
+        <a href="{% url 'financeiro:conta_pagar_aprovar' conta.id %}" class="btn btn-success">
+          <i class="bi bi-check-circle"></i> Aprovar Conta
+        </a>
+        {% endif %}
+        {% if conta.status == 'ABERTA' %}
+        <a href="{% url 'financeiro:conta_pagar_edit' conta.id %}" class="btn btn-outline-secondary">
+          <i class="bi bi-pencil"></i> Editar
+        </a>
+        {% endif %}
+      </div>
     </div>
 
     <!-- Resumo de Valores -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted small">Valor Total</div>
-                    <div class="fs-5 fw-bold">R$ {{ conta.valor_total|floatformat:2 }}</div>
-                </div>
+    <div class="stat-grid compact mb-4">
+        <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-wallet2"></i></div>
+            <div>
+                <div class="stat-label text-uppercase">Valor Total</div>
+                <div class="stat-value">R$ {{ conta.valor_total|floatformat:2 }}</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted small">Desconto</div>
-                    <div class="fs-5 fw-bold text-success">-R$ {{ conta.desconto_negociado|floatformat:2 }}</div>
-                </div>
+        <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-percent"></i></div>
+            <div>
+                <div class="stat-label text-uppercase">Desconto</div>
+                <div class="stat-value" style="color:var(--pastel-green-text)">-R$ {{ conta.desconto_negociado|floatformat:2 }}</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted small">Valor Ajustado</div>
-                    <div class="fs-5 fw-bold">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
-                </div>
+        <div class="stat-card d-flex align-items-center gap-3">
+            <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-credit-card"></i></div>
+            <div>
+                <div class="stat-label text-uppercase">Valor Ajustado</div>
+                <div class="stat-value">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card {% if saldo_devedor > 0 %}border-warning{% endif %}">
-                <div class="card-body">
-                    <div class="text-muted small">Pago</div>
-                    <div class="fs-5 fw-bold text-primary">R$ {{ total_pago|floatformat:2 }}</div>
-                    <div class="small {% if saldo_devedor > 0 %}text-warning fw-semibold{% else %}text-muted{% endif %}">
-                        Saldo: R$ {{ saldo_devedor|floatformat:2 }}
-                    </div>
-                    {% if saldo_devedor > 0 and saldo_devedor <= 50 %}
-                    <form method="post" action="{% url 'financeiro:conta_quitar_saldo' conta.pk %}" class="mt-2"
-                          onsubmit="return confirm('Quitar saldo residual de R$ {{ saldo_devedor|floatformat:2 }}?\n\nUm ajuste de desconto será registrado automaticamente.')">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-warning w-100">
-                            <i class="bi bi-check2-circle"></i> Quitar R$ {{ saldo_devedor|floatformat:2 }}
-                        </button>
-                    </form>
-                    {% elif saldo_devedor > 50 %}
-                    <div class="small text-danger mt-1">
-                        <i class="bi bi-exclamation-triangle"></i> Registre pagamento ou ajuste manual
-                    </div>
-                    {% endif %}
+        <div class="stat-card{% if saldo_devedor > 0 %} stat-icon-orange{% endif %}" style="{% if saldo_devedor > 0 %}border-color:var(--pastel-orange-border){% endif %}">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="stat-icon {% if saldo_devedor > 0 %}stat-icon-orange{% else %}stat-icon-green{% endif %} mb-0"><i class="bi bi-{% if saldo_devedor > 0 %}exclamation-triangle{% else %}check-circle{% endif %}"></i></div>
+                <div>
+                    <div class="stat-label text-uppercase">Saldo Devedor</div>
+                    <div class="stat-value" style="{% if saldo_devedor > 0 %}color:var(--pastel-orange-text){% endif %}">R$ {{ saldo_devedor|floatformat:2 }}</div>
                 </div>
             </div>
+            {% if total_parcelas > 0 %}
+            <div class="progress-track"><div class="progress-fill" style="width:{% widthratio parcelas_pagas total_parcelas 100 %}%"></div></div>
+            <div class="stat-sub">{{ parcelas_pagas }} de {{ total_parcelas }} parcelas pagas &middot; Pago: R$ {{ total_pago|floatformat:2 }}</div>
+            {% endif %}
+            {% if saldo_devedor > 0 and saldo_devedor <= 50 %}
+            <form method="post" action="{% url 'financeiro:conta_quitar_saldo' conta.pk %}" class="mt-2"
+                  onsubmit="return confirm('Quitar saldo residual de R$ {{ saldo_devedor|floatformat:2 }}?\n\nUm ajuste de desconto será registrado automaticamente.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-warning w-100">
+                    <i class="bi bi-check2-circle"></i> Quitar R$ {{ saldo_devedor|floatformat:2 }}
+                </button>
+            </form>
+            {% elif saldo_devedor > 50 %}
+            <div class="small mt-1" style="color:var(--pastel-red-text)">
+                <i class="bi bi-exclamation-triangle"></i> Registre pagamento ou ajuste manual
+            </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Abas -->
     <div class="card mb-4">
         <div class="card-body">
-            <ul class="nav nav-tabs" role="tablist">
+            <ul class="nav nav-tabs tabs-modern" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="parcelas-tab" data-bs-toggle="tab" data-bs-target="#parcelas" type="button">
-                        <i class="bi bi-calendar-check"></i> Parcelas ({{ parcelas.count }})
+                        <i class="bi bi-calendar-check"></i> Parcelas <span class="tab-count">{{ parcelas.count }}</span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="pagamentos-tab" data-bs-toggle="tab" data-bs-target="#pagamentos" type="button">
-                        <i class="bi bi-check-circle"></i> Pagamentos ({{ pagamentos.count }})
+                        <i class="bi bi-check-circle"></i> Pagamentos <span class="tab-count">{{ pagamentos.count }}</span>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="ajustes-tab" data-bs-toggle="tab" data-bs-target="#ajustes" type="button">
-                        <i class="bi bi-arrow-repeat"></i> Ajustes ({{ ajustes.count }})
+                        <i class="bi bi-arrow-repeat"></i> Ajustes <span class="tab-count">{{ ajustes.count }}</span>
                     </button>
                 </li>
                 {% if logs_auditoria %}
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="historico-tab" data-bs-toggle="tab" data-bs-target="#historico" type="button">
-                        <i class="bi bi-shield-check text-warning"></i> Histórico ({{ logs_auditoria.count }})
+                        <i class="bi bi-shield-check"></i> Histórico <span class="tab-count">{{ logs_auditoria.count }}</span>
                     </button>
                 </li>
                 {% endif %}
@@ -112,34 +126,34 @@
                 <!-- Parcelas -->
                 <div class="tab-pane fade show active" id="parcelas" role="tabpanel">
                     <div class="table-responsive">
-                        <table class="table">
-                            <thead class="table-light">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
                                 <tr>
-                                    <th>Parcela</th>
+                                    <th class="ps-4">Parcela</th>
                                     <th>Vencimento</th>
                                     <th>Valor</th>
                                     <th>Juros</th>
                                     <th>Multa</th>
                                     <th>Total</th>
                                     <th>Status</th>
-                                    <th>Ação</th>
+                                    <th class="pe-4">Ação</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for parcela in parcelas %}
                                 <tr>
-                                    <td><strong>{{ parcela.numero_parcela }}</strong></td>
-                                    <td>{{ parcela.data_vencimento|date:'d/m/Y' }}</td>
-                                    <td>R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
-                                    <td>R$ {{ parcela.juros_parcela|floatformat:2 }}</td>
-                                    <td>R$ {{ parcela.multa_parcela|floatformat:2 }}</td>
-                                    <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                                    <td class="ps-4 text-mono">{{ parcela.numero_parcela }}</td>
+                                    <td class="text-mono">{{ parcela.data_vencimento|date:'d/m/Y' }}</td>
+                                    <td class="text-mono">R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
+                                    <td class="text-mono">R$ {{ parcela.juros_parcela|floatformat:2 }}</td>
+                                    <td class="text-mono">R$ {{ parcela.multa_parcela|floatformat:2 }}</td>
+                                    <td class="text-mono fw-semibold">R$ {{ parcela.valor_total_parcela|floatformat:2 }}</td>
                                     <td>
-                                        <span class="badge bg-{% if parcela.status == 'PAGA' %}success{% elif parcela.status == 'VENCIDA' %}danger{% else %}warning{% endif %}">
+                                        <span class="status-pill {% if parcela.status == 'PAGA' %}green{% elif parcela.status == 'VENCIDA' %}red{% else %}orange{% endif %}">
                                             {{ parcela.get_status_display }}
                                         </span>
                                     </td>
-                                    <td class="d-flex gap-1 align-items-center">
+                                    <td class="pe-4 d-flex gap-1 align-items-center">
                                         {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}
                                         <a href="{% url 'financeiro:parcela_pagar' parcela.id %}" class="btn btn-sm btn-primary">
                                             Pagar
@@ -147,11 +161,11 @@
                                         {% endif %}
                                         {% if recebimento_ref %}
                                             {% if recebimento_ref.pedido %}
-                                            <a href="{% url 'compras:pedido_pdf' recebimento_ref.pedido.pk %}" target="_blank" class="btn btn-sm btn-outline-info" title="Ver Pedido de Compra (PDF)">
+                                            <a href="{% url 'compras:pedido_pdf' recebimento_ref.pedido.pk %}" target="_blank" class="action-icon" title="Ver Pedido de Compra (PDF)">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             {% else %}
-                                            <a href="{% url 'compras:recebimento_detail' recebimento_ref.pk %}" target="_blank" class="btn btn-sm btn-outline-info" title="Ver Recebimento">
+                                            <a href="{% url 'compras:recebimento_detail' recebimento_ref.pk %}" target="_blank" class="action-icon" title="Ver Recebimento">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             {% endif %}
@@ -160,7 +174,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted">Nenhuma parcela registrada</td>
+                                    <td colspan="8" class="text-center text-muted py-4"><i class="bi bi-inbox display-6 d-block mb-2"></i>Nenhuma parcela registrada</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -174,26 +188,26 @@
                 <!-- Pagamentos -->
                 <div class="tab-pane fade" id="pagamentos" role="tabpanel">
                     <div class="table-responsive">
-                        <table class="table">
-                            <thead class="table-light">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
                                 <tr>
-                                    <th>Data</th>
+                                    <th class="ps-4">Data</th>
                                     <th>Forma</th>
                                     <th>Valor</th>
                                     <th>Status</th>
                                     <th>DANFE</th>
                                     <th>Comprovante</th>
-                                    <th>Ação</th>
+                                    <th class="pe-4">Ação</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for pagamento in pagamentos %}
                                 <tr>
-                                    <td>{{ pagamento.data_pagamento|date:'d/m/Y' }}</td>
+                                    <td class="ps-4 text-mono">{{ pagamento.data_pagamento|date:'d/m/Y' }}</td>
                                     <td>{{ pagamento.get_forma_pagamento_display }}</td>
-                                    <td>R$ {{ pagamento.valor_pago|floatformat:2 }}</td>
+                                    <td class="text-mono">R$ {{ pagamento.valor_pago|floatformat:2 }}</td>
                                     <td>
-                                        <span class="badge bg-{% if pagamento.status == 'COMPENSADO' %}success{% elif pagamento.status == 'PENDENTE' %}warning{% else %}danger{% endif %}">
+                                        <span class="status-pill {% if pagamento.status == 'COMPENSADO' %}green{% elif pagamento.status == 'PENDENTE' %}orange{% else %}red{% endif %}">
                                             {{ pagamento.get_status_display }}
                                         </span>
                                     </td>
@@ -210,16 +224,16 @@
                                     </td>
                                     <td>
                                         {% if pagamento.comprovante %}
-                                        <a href="{{ pagamento.comprovante.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <a href="{{ pagamento.comprovante.url }}" target="_blank" class="action-icon">
                                             <i class="bi bi-file-pdf"></i>
                                         </a>
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
-                                    <td>
+                                    <td class="pe-4">
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-warning"
+                                                class="action-icon edit"
                                                 title="Editar / Retornar ao Pendente"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modalEditarPagamento"
@@ -231,7 +245,7 @@
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted">Nenhum pagamento registrado</td>
+                                    <td colspan="7" class="text-center text-muted py-4"><i class="bi bi-inbox display-6 d-block mb-2"></i>Nenhum pagamento registrado</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -242,22 +256,22 @@
                 <!-- Ajustes -->
                 <div class="tab-pane fade" id="ajustes" role="tabpanel">
                     <div class="table-responsive">
-                        <table class="table">
-                            <thead class="table-light">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
                                 <tr>
-                                    <th>Tipo</th>
+                                    <th class="ps-4">Tipo</th>
                                     <th>Motivo</th>
                                     <th>Valor</th>
                                     <th>Efeito no saldo</th>
                                     <th>Data</th>
-                                    <th>Aprovado por</th>
+                                    <th class="pe-4">Aprovado por</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for ajuste in ajustes %}
                                 <tr>
-                                    <td>
-                                        <span class="badge bg-{% if ajuste.valor_ajuste < 0 %}success{% else %}danger{% endif %} bg-opacity-75">
+                                    <td class="ps-4">
+                                        <span class="status-pill {% if ajuste.valor_ajuste < 0 %}green{% else %}red{% endif %}">
                                             {{ ajuste.get_tipo_display }}
                                         </span>
                                     </td>
@@ -267,32 +281,32 @@
                                         <div class="small text-muted">{{ ajuste.observacao }}</div>
                                         {% endif %}
                                     </td>
-                                    <td class="fw-bold {% if ajuste.valor_ajuste > 0 %}text-danger{% else %}text-success{% endif %}">
+                                    <td class="text-mono fw-semibold" style="color:{% if ajuste.valor_ajuste > 0 %}var(--pastel-red-text){% else %}var(--pastel-green-text){% endif %}">
                                         {% if ajuste.valor_ajuste > 0 %}+{% endif %}R$ {{ ajuste.valor_ajuste|floatformat:2 }}
                                     </td>
                                     <td class="small">
                                         {% if ajuste.valor_ajuste < 0 %}
-                                        <span class="text-success"><i class="bi bi-arrow-down-circle"></i> Reduz o que é devido</span>
+                                        <span style="color:var(--pastel-green-text)"><i class="bi bi-arrow-down-circle"></i> Reduz o que é devido</span>
                                         {% else %}
-                                        <span class="text-danger"><i class="bi bi-arrow-up-circle"></i> Aumenta o que é devido</span>
+                                        <span style="color:var(--pastel-red-text)"><i class="bi bi-arrow-up-circle"></i> Aumenta o que é devido</span>
                                         {% endif %}
                                     </td>
-                                    <td class="small text-muted">{{ ajuste.data_criacao|date:'d/m/Y H:i' }}</td>
-                                    <td class="small">
+                                    <td class="small text-muted text-mono">{{ ajuste.data_criacao|date:'d/m/Y H:i' }}</td>
+                                    <td class="small pe-4">
                                         {% if ajuste.aprovado %}
-                                        <span class="badge bg-success">Aprovado</span>
+                                        <span class="status-pill green">Aprovado</span>
                                         {% if ajuste.aprovado_por %}
                                         <div class="text-muted">{{ ajuste.aprovado_por.get_full_name|default:ajuste.aprovado_por.username }}</div>
                                         {% endif %}
                                         {% else %}
-                                        <span class="badge bg-warning">Pendente aprovação</span>
+                                        <span class="status-pill orange">Pendente aprovação</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-3">
-                                        <i class="bi bi-inbox"></i> Nenhum ajuste registrado
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox display-6 d-block mb-2"></i> Nenhum ajuste registrado
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -311,34 +325,34 @@
                 {% if logs_auditoria %}
                 <div class="tab-pane fade" id="historico" role="tabpanel">
                     <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead class="table-light">
+                        <table class="table table-hover align-middle table-sm mb-0">
+                            <thead class="bg-light">
                                 <tr>
-                                    <th>Data/Hora</th>
+                                    <th class="ps-4">Data/Hora</th>
                                     <th>Usuário</th>
                                     <th>Ação</th>
                                     <th>Status Anterior</th>
                                     <th>Status Novo</th>
                                     <th>Pagamento</th>
                                     <th>Observação</th>
-                                    <th>IP</th>
+                                    <th class="pe-4">IP</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for log in logs_auditoria %}
                                 <tr>
-                                    <td class="small text-muted">{{ log.data_hora|date:'d/m/Y H:i' }}</td>
+                                    <td class="ps-4 small text-muted text-mono">{{ log.data_hora|date:'d/m/Y H:i' }}</td>
                                     <td><strong>{{ log.usuario.get_full_name|default:log.usuario.username }}</strong></td>
-                                    <td><span class="badge bg-warning text-dark">{{ log.get_acao_display }}</span></td>
-                                    <td><span class="badge bg-secondary">{{ log.status_anterior }}</span></td>
-                                    <td><span class="badge bg-info text-dark">{{ log.status_novo }}</span></td>
+                                    <td><span class="chip">{{ log.get_acao_display }}</span></td>
+                                    <td><span class="status-pill gray">{{ log.status_anterior }}</span></td>
+                                    <td><span class="status-pill blue">{{ log.status_novo }}</span></td>
                                     <td class="small">
                                         {{ log.dados_anteriores.data_pagamento|default:"-" }}
                                         — R$ {{ log.dados_anteriores.valor_pago|default:"-" }}
                                         ({{ log.dados_anteriores.forma_pagamento|default:"-" }})
                                     </td>
                                     <td class="small">{{ log.observacao|default:"—" }}</td>
-                                    <td class="small text-muted">{{ log.ip|default:"—" }}</td>
+                                    <td class="small text-muted pe-4">{{ log.ip|default:"—" }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -353,9 +367,10 @@
 
     <!-- Informações Adicionais -->
     {% if conta.observacoes %}
-    <div class="card">
-        <div class="card-header">
-            <i class="bi bi-sticky"></i> Observações
+    <div class="card mt-3">
+        <div class="card-header d-flex align-items-center gap-2">
+            <span class="icon-badge sm gray"><i class="bi bi-sticky"></i></span>
+            <h3 class="mb-0" style="font-size:.95rem;font-weight:700">Observações</h3>
         </div>
         <div class="card-body">
             {{ conta.observacoes }}
@@ -363,24 +378,6 @@
     </div>
     {% endif %}
 
-    <!-- Ações -->
-    <div class="mt-4">
-        {% if conta.status == 'ABERTA' and conta.requer_aprovacao %}
-        <a href="{% url 'financeiro:conta_pagar_aprovar' conta.id %}" class="btn btn-success">
-            <i class="bi bi-check-circle"></i> Aprovar Conta
-        </a>
-        {% endif %}
-        
-        {% if conta.status == 'ABERTA' %}
-        <a href="{% url 'financeiro:conta_pagar_edit' conta.id %}" class="btn btn-secondary">
-            <i class="bi bi-pencil"></i> Editar
-        </a>
-        {% endif %}
-
-        <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
-        </a>
-    </div>
 </div>
 
 <!-- Modal: Novo Ajuste -->

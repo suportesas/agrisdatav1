@@ -6,67 +6,65 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-  <div class="d-flex justify-content-between align-items-start mb-4">
-    <div class="d-flex align-items-center">
-      <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary me-3">
+  <div class="page-header">
+    <div class="d-flex align-items-center gap-3">
+      <a href="{% url 'faturamento:nota_fiscal_list' %}" class="btn btn-outline-secondary" style="width:36px;height:36px;padding:0;justify-content:center">
         <i class="bi bi-arrow-left"></i>
       </a>
+      <span class="page-header-icon blue"><i class="bi bi-file-earmark-text"></i></span>
       <div>
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <span class="badge bg-primary px-2 py-1" style="font-size:.7rem;letter-spacing:.05em">NF-e</span>
-          <h3 class="mb-0 fw-bold">
-            Nº <span class="font-monospace">{% if nf.numero %}{{ nf.numero|stringformat:"09d" }}{% else %}S/N{% endif %}</span>
-            <span class="text-muted fw-normal fs-5 ms-1">· Série {{ nf.serie|stringformat:"03d" }}</span>
-          </h3>
-        </div>
-        <div class="text-muted small mt-1 d-flex gap-3 flex-wrap">
+        <h2>
+          NF-e <span class="text-mono">{% if nf.numero %}{{ nf.numero|stringformat:"09d" }}{% else %}S/N{% endif %}</span>
+          <span class="chip">Série {{ nf.serie|stringformat:"03d" }}</span>
+        </h2>
+        <p class="text-muted mb-0 d-flex align-items-center gap-3 flex-wrap">
           <span><i class="bi bi-person me-1"></i>
             {% if nf.cliente %}{{ nf.cliente.razao_social }}
-            {% elif nf.fornecedor %}{{ nf.fornecedor.nome }} <span class="badge bg-warning text-dark ms-1">Devolução</span>
+            {% elif nf.fornecedor %}{{ nf.fornecedor.nome }} <span class="chip">Devolução</span>
             {% else %}—{% endif %}
           </span>
           <span><i class="bi bi-calendar3 me-1"></i>{{ nf.data_emissao|date:"d/m/Y" }}</span>
-          <span><i class="bi bi-upc me-1"></i>CFOP {{ nf.cfop }}</span>
-        </div>
+          <span>CFOP {{ nf.cfop }}</span>
+        </p>
       </div>
     </div>
-    <div class="d-flex gap-2">
-      <a href="{% url 'faturamento:nota_fiscal_danfe_preview' nf.pk %}" class="btn btn-outline-primary" target="_blank" title="Pré-visualização do DANFE (funciona para Rascunho)">
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'faturamento:nota_fiscal_danfe_preview' nf.pk %}" class="btn btn-outline-primary btn-sm" target="_blank" title="Pré-visualização do DANFE (funciona para Rascunho)">
         <i class="bi bi-eye me-1"></i>Pré-visualizar DANFE
       </a>
-      <a href="{% url 'faturamento:nota_fiscal_clone' nf.pk %}" class="btn btn-outline-secondary" title="Clonar esta NF-e como novo rascunho">
+      <a href="{% url 'faturamento:nota_fiscal_clone' nf.pk %}" class="btn btn-outline-secondary btn-sm" title="Clonar esta NF-e como novo rascunho">
         <i class="bi bi-copy me-1"></i>Clonar
       </a>
       {% if nf.status == 'EMITIDA' and nf.finalidade_nfe != '4' and nf.chave_acesso %}
       <a href="{% url 'faturamento:nota_fiscal_devolucao' nf.pk %}"
-         class="btn btn-outline-warning"
+         class="btn btn-outline-warning btn-sm"
          title="Criar rascunho de NF-e de devolução desta nota"
          onclick="return confirm('Criar rascunho de NF-e de devolução para esta nota?\n\nOs itens e CFOP serão ajustados automaticamente (5xxx→1xxx).')">
         <i class="bi bi-arrow-return-left me-1"></i>Criar Devolução
       </a>
       {% endif %}
       {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
-      <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-outline-success" title="Baixar XML autorizado pela SEFAZ">
+      <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-outline-success btn-sm" title="Baixar XML autorizado pela SEFAZ">
         <i class="bi bi-file-earmark-code me-1"></i>XML
       </a>
       {% endif %}
       {% if nf.pdf_danfe or nf.pdf_danfe_url %}
-      <a href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" class="btn btn-outline-danger" target="_blank">
+      <a href="{% url 'faturamento:nota_fiscal_danfe' nf.pk %}" class="btn btn-outline-danger btn-sm" target="_blank">
         <i class="bi bi-file-pdf me-1"></i>DANFE
       </a>
       {% endif %}
       {# ── RASCUNHO sem chave → pode editar e emitir ── #}
       {% if nf.status == 'RASCUNHO' and not nf.chave_acesso %}
-      <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-outline-secondary">
+      <a href="{% url 'faturamento:nota_fiscal_update' nf.pk %}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-pencil me-1"></i>Editar
       </a>
       {% if nf.numero %}
-      <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalRecuperarNFe"
+      <button type="button" class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalRecuperarNFe"
               title="Use quando esta NF-e já foi enviada à SEFAZ mas a resposta se perdeu">
         <i class="bi bi-arrow-repeat me-1"></i>Recuperar NF
       </button>
       {% endif %}
-      <button type="button" class="btn btn-success" id="btn-emitir-nfe"
+      <button type="button" class="btn btn-success btn-sm" id="btn-emitir-nfe"
               data-ajax-url="{% url 'faturamento:nota_fiscal_emitir_ajax' nf.pk %}"
               data-csrf="{{ csrf_token }}">
         <i class="bi bi-send me-1"></i>Emitir NF-e
@@ -82,58 +80,72 @@
       {% if nf.chave_acesso and not nf.protocolo_autorizacao %}
       <form method="post" action="{% url 'faturamento:nota_fiscal_consultar' nf.pk %}" class="d-inline">
         {% csrf_token %}
-        <button type="submit" class="btn btn-warning" title="Consulta o resultado da SEFAZ e atualiza o status">
+        <button type="submit" class="btn btn-warning btn-sm" title="Consulta o resultado da SEFAZ e atualiza o status">
           <i class="bi bi-arrow-clockwise me-1"></i>Verificar na SEFAZ
         </button>
       </form>
       {% endif %}
       {# ── CC-e: só quando autorizada com protocolo ── #}
       {% if nf.status == 'EMITIDA' and nf.protocolo_autorizacao %}
-      <a href="{% url 'faturamento:nota_fiscal_carta_correcao' nf.pk %}" class="btn btn-outline-info" title="Carta de Correção (CC-e)">
+      <a href="{% url 'faturamento:nota_fiscal_carta_correcao' nf.pk %}" class="btn btn-outline-info btn-sm" title="Carta de Correção (CC-e)">
         <i class="bi bi-pencil-square me-1"></i>CC-e
       </a>
       {% endif %}
       {# ── Cancelar: apenas NFs autorizadas ou em fila podem ser canceladas ── #}
       {% if nf.status == 'EMITIDA' or nf.status == 'RASCUNHO' and nf.chave_acesso %}
-      <a href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}" class="btn btn-outline-danger">
+      <a href="{% url 'faturamento:nota_fiscal_cancelar' nf.pk %}" class="btn btn-outline-danger btn-sm">
         <i class="bi bi-x-circle me-1"></i>Cancelar
       </a>
       {% endif %}
     </div>
   </div>
 
-  <!-- Status Badge -->
+  <!-- Status Badge + Stepper -->
   <div class="mb-3">
     {% if nf.status == 'RASCUNHO' and nf.chave_acesso %}
-      <span class="badge fs-6" style="background:#f59e0b;color:#000">
-        <i class="bi bi-hourglass-split me-1"></i>Aguardando SEFAZ
-      </span>
+      <span class="status-pill orange"><i class="bi bi-hourglass-split"></i>Aguardando SEFAZ</span>
     {% elif nf.status == 'RASCUNHO' %}
-      <span class="badge bg-secondary fs-6">Rascunho</span>
+      <span class="status-pill gray"><span class="dot"></span>Rascunho</span>
     {% elif nf.status == 'EMITIDA' and not nf.protocolo_autorizacao %}
-      <span class="badge fs-6" style="background:#f59e0b;color:#000">
-        <i class="bi bi-hourglass-split me-1"></i>Aguardando Protocolo
-      </span>
+      <span class="status-pill orange"><i class="bi bi-hourglass-split"></i>Aguardando Protocolo</span>
     {% elif nf.status == 'EMITIDA' %}
-      <span class="badge bg-success fs-6"><i class="bi bi-patch-check me-1"></i>Autorizada</span>
+      <span class="status-pill green"><i class="bi bi-patch-check"></i>Autorizada</span>
     {% else %}
-      <span class="badge bg-danger fs-6">Cancelada</span>
+      <span class="status-pill red"><span class="dot"></span>Cancelada</span>
     {% endif %}
   </div>
 
+  {% if nf.status != 'CANCELADA' %}
+  <div class="stepper">
+    <div class="step done"><span class="step-num"><i class="bi bi-check"></i></span><span class="step-txt">Rascunho</span></div>
+    <div class="step-line"></div>
+    <div class="step {% if nf.chave_acesso %}done{% else %}current{% endif %}">
+      <span class="step-num">{% if nf.chave_acesso %}<i class="bi bi-check"></i>{% else %}2{% endif %}</span>
+      <span class="step-txt">Transmitida</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step {% if nf.protocolo_autorizacao %}done{% elif nf.chave_acesso %}current{% endif %}">
+      <span class="step-num">{% if nf.protocolo_autorizacao %}<i class="bi bi-check"></i>{% else %}3{% endif %}</span>
+      <span class="step-txt">Aguardando SEFAZ</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step {% if nf.protocolo_autorizacao %}done{% endif %}">
+      <span class="step-num">{% if nf.protocolo_autorizacao %}<i class="bi bi-check"></i>{% else %}4{% endif %}</span>
+      <span class="step-txt">Autorizada</span>
+    </div>
+  </div>
+  {% endif %}
+
   {% if nf.chave_acesso %}
-  <div class="border rounded bg-light py-2 px-3 mb-3">
-    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
-      <small class="text-muted fw-semibold">Chave de Acesso</small>
-      <button type="button"
-              class="btn btn-sm btn-outline-secondary py-0 px-2"
-              style="font-size:.7rem"
-              title="Copiar chave"
-              onclick="navigator.clipboard.writeText('{{ nf.chave_acesso }}').then(()=>{this.textContent='✓ Copiado';setTimeout(()=>{this.innerHTML='<i class=\'bi bi-clipboard\'></i> Copiar'},1500)})">
-        <i class="bi bi-clipboard"></i> Copiar
+  <div class="key-block">
+    <div class="key-label">
+      <span>Chave de Acesso</span>
+      <button type="button" class="copy-btn"
+              onclick="navigator.clipboard.writeText('{{ nf.chave_acesso }}').then(()=>{const s=this.querySelector('span');s.textContent='Copiado ✓';setTimeout(()=>{s.textContent='Copiar'},1500)})">
+        <i class="bi bi-clipboard"></i><span>Copiar</span>
       </button>
     </div>
-    <code class="d-block" style="font-size:.85rem; letter-spacing:.06em; word-break:break-all;">{{ nf.chave_acesso }}</code>
+    <code>{{ nf.chave_acesso }}</code>
     {% if nf.protocolo_autorizacao or nf.data_hora_emissao %}
     <div class="d-flex gap-4 flex-wrap mt-2">
       {% if nf.protocolo_autorizacao %}
@@ -148,8 +160,8 @@
   {% endif %}
 
   {% if nf.chave_acesso and not nf.protocolo_autorizacao %}
-  <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mb-3">
-    <i class="bi bi-hourglass-split fs-5"></i>
+  <div class="alert-soft blue">
+    <i class="bi bi-hourglass-split icon"></i>
     <div>
       <strong>Aguardando autorização da SEFAZ.</strong>
       A NF-e foi transmitida mas ainda não há protocolo de autorização.
@@ -162,51 +174,21 @@
   {% endif %}
 
   {% if nf.status == 'CANCELADA' and nf.motivo_cancelamento %}
-  <div class="alert alert-danger py-2 px-3 mb-3">
-    <strong>Cancelada em {{ nf.data_cancelamento|date:"d/m/Y H:i" }}:</strong> {{ nf.motivo_cancelamento }}
-  </div>
-  {% endif %}
-
-  {% if nf.cartas_correcao.exists %}
-  <div class="border rounded bg-light py-2 px-3 mb-3">
-    <div class="d-flex align-items-center gap-2 mb-2">
-      <i class="bi bi-pencil-square text-info"></i>
-      <small class="text-muted fw-semibold">Cartas de Correção (CC-e)</small>
-      <span class="badge bg-info text-dark">{{ nf.cartas_correcao.count }}</span>
-    </div>
-    {% for cc in nf.cartas_correcao.all %}
-    <div class="mb-2 {% if not forloop.last %}border-bottom pb-2{% endif %}">
-      <div class="d-flex gap-3 flex-wrap">
-        <div><span class="text-muted">Seq.:</span> <code>{{ cc.sequencia }}</code></div>
-        <div><span class="text-muted">Data:</span> {{ cc.criado_em|date:"d/m/Y H:i" }}</div>
-        {% if cc.protocolo %}<div><span class="text-muted">Protocolo:</span> <code>{{ cc.protocolo }}</code></div>{% endif %}
-      </div>
-      <div class="text-muted mt-1 small">{{ cc.correcao|truncatechars:150 }}</div>
-      <div class="mt-1 d-flex gap-2">
-        <a href="{% url 'faturamento:nfe_cce_print' nf.pk cc.pk %}" target="_blank"
-           class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:11px;">
-          <i class="bi bi-printer me-1"></i>Imprimir CC-e
-        </a>
-        {% if cc.protocolo %}
-        <a href="{% url 'faturamento:nfe_cce_xml' nf.pk cc.pk %}"
-           class="btn btn-sm btn-outline-success py-0 px-2" style="font-size:11px;">
-          <i class="bi bi-file-earmark-code me-1"></i>XML CC-e
-        </a>
-        {% endif %}
-      </div>
-    </div>
-    {% endfor %}
+  <div class="alert-soft red">
+    <i class="bi bi-x-circle icon"></i>
+    <div><strong>Cancelada em {{ nf.data_cancelamento|date:"d/m/Y H:i" }}:</strong> {{ nf.motivo_cancelamento }}</div>
   </div>
   {% endif %}
 
   {# ── Documentos Referenciados (devolução simples ou Nota Mãe de agrupamento) ── #}
   {% if nf.chave_nfe_referenciada or nf.nfes_referenciadas.exists %}
-  <div class="border rounded py-2 px-3 mb-3" style="border-color:#6ee7b7 !important;background:#eaf5ec;">
+  <div class="alert-soft" style="border-color:var(--pastel-green-border);background:var(--pastel-green-bg);color:var(--pastel-green-text)">
+    <i class="bi bi-link-45deg icon"></i>
+    <div class="flex-grow-1">
     <div class="d-flex align-items-center gap-2 mb-2">
-      <i class="bi bi-link-45deg" style="color:#1a7a3c;font-size:1.1rem;"></i>
-      <small class="fw-semibold" style="color:#1a7a3c;">Documentos Referenciados</small>
+      <strong>Documentos Referenciados</strong>
       {% if nf.nfes_referenciadas.exists %}
-        <span class="badge bg-light text-dark border" style="font-size:.7rem;">{{ nf.nfes_referenciadas.count }} NF(s)</span>
+        <span class="chip">{{ nf.nfes_referenciadas.count }} NF(s)</span>
       {% endif %}
     </div>
     {% if nf.nfes_referenciadas.exists %}
@@ -238,188 +220,222 @@
         <code class="small" style="word-break:break-all;">{{ nf.chave_nfe_referenciada }}</code>
       </div>
     {% endif %}
+    </div>
   </div>
   {% endif %}
 
   {# ── Vínculo Nota Mãe / Filha (faturamento agrupado) ── #}
   {% if nf.nota_mae %}
-  <div class="alert alert-success py-2 px-3 mb-3 d-flex align-items-center gap-2">
-    <i class="bi bi-diagram-2 text-success"></i>
-    <span>Faturada pela
+  <div class="alert-soft" style="border-color:var(--pastel-green-border);background:var(--pastel-green-bg);color:var(--pastel-green-text)">
+    <i class="bi bi-diagram-2 icon"></i>
+    <div>Faturada pela
       <a href="{% url 'faturamento:nota_fiscal_detail' nf.nota_mae.pk %}" class="fw-semibold">
         NF-e Mãe Nº {{ nf.nota_mae.numero|stringformat:"09d" }}
       </a>
-    </span>
-    <span class="badge bg-success ms-1">{{ nf.get_status_faturamento_display }}</span>
+      <span class="status-pill green ms-1">{{ nf.get_status_faturamento_display }}</span>
+    </div>
   </div>
   {% endif %}
   {% if nf.notas_filhas.exists %}
-  <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center gap-2 flex-wrap">
-    <i class="bi bi-diagram-3 text-info"></i>
-    <span class="fw-semibold">Nota Mãe — consolida {{ nf.notas_filhas.count }} remessa(s):</span>
-    {% for filha in nf.notas_filhas.all %}
-      <a href="{% url 'faturamento:nota_fiscal_detail' filha.pk %}" class="badge bg-light text-dark border">
-        Nº {{ filha.numero|stringformat:"06d" }}
-      </a>
-    {% endfor %}
+  <div class="alert-soft blue">
+    <i class="bi bi-diagram-3 icon"></i>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <strong>Nota Mãe — consolida {{ nf.notas_filhas.count }} remessa(s):</strong>
+      {% for filha in nf.notas_filhas.all %}
+        <a href="{% url 'faturamento:nota_fiscal_detail' filha.pk %}" class="chip">
+          Nº {{ filha.numero|stringformat:"06d" }}
+        </a>
+      {% endfor %}
+    </div>
   </div>
   {% endif %}
 
-  <div class="row g-3">
+  <div class="two-col">
     <!-- Dados Principais -->
-    <div class="col-md-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-header fw-semibold">Dados da NF-e</div>
+    <div class="d-flex flex-column gap-3">
+      <div class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="icon-badge sm blue"><i class="bi bi-info-circle"></i></span>
+          <h3 class="mb-0" style="font-size:.95rem;font-weight:700">Dados da NF-e</h3>
+        </div>
         <div class="card-body">
-          <dl class="row mb-0">
-            <dt class="col-sm-5">{% if nf.fornecedor and not nf.cliente %}Fornecedor (Devolução){% else %}Cliente{% endif %}</dt>
-            <dd class="col-sm-7">
-              {% if nf.cliente %}{{ nf.cliente.razao_social }}
-              {% elif nf.fornecedor %}<a href="{% url 'cadastros:fornecedor_detail' nf.fornecedor.pk %}">{{ nf.fornecedor.nome }}</a>
-              {% else %}—{% endif %}
-            </dd>
+          <dl class="kv">
+            <div class="kv-row">
+              <dt>{% if nf.fornecedor and not nf.cliente %}Fornecedor (Devolução){% else %}Cliente{% endif %}</dt>
+              <dd>
+                {% if nf.cliente %}{{ nf.cliente.razao_social }}
+                {% elif nf.fornecedor %}<a href="{% url 'cadastros:fornecedor_detail' nf.fornecedor.pk %}">{{ nf.fornecedor.nome }}</a>
+                {% else %}—{% endif %}
+              </dd>
+            </div>
             {% if nf.recebimento_origem %}
-            <dt class="col-sm-5">Recebimento Origem</dt>
-            <dd class="col-sm-7"><a href="{% url 'compras:recebimento_detail' nf.recebimento_origem.pk %}">{{ nf.recebimento_origem.numero }}</a></dd>
+            <div class="kv-row"><dt>Recebimento Origem</dt><dd><a href="{% url 'compras:recebimento_detail' nf.recebimento_origem.pk %}">{{ nf.recebimento_origem.numero }}</a></dd></div>
             {% endif %}
             {% if nf.romaneio_origem %}
-            <dt class="col-sm-5">Romaneio</dt>
-            <dd class="col-sm-7"><a href="{% url 'embalagem:romaneio_detail' nf.romaneio_origem.pk %}">{{ nf.romaneio_origem.numero }}</a></dd>
+            <div class="kv-row"><dt>Romaneio</dt><dd><a href="{% url 'embalagem:romaneio_detail' nf.romaneio_origem.pk %}">{{ nf.romaneio_origem.numero }}</a></dd></div>
             {% endif %}
-            <dt class="col-sm-5">CNPJ / CPF</dt>
-            <dd class="col-sm-7">
-              {% if nf.cliente %}{{ nf.cliente.cnpj_cpf|default:"—" }}
-              {% elif nf.fornecedor %}{{ nf.fornecedor.cnpj_cpf|default:"—" }}
-              {% else %}—{% endif %}
-            </dd>
-            <dt class="col-sm-5">Natureza da Operação</dt>
-            <dd class="col-sm-7">{{ nf.natureza_operacao }}</dd>
-            <dt class="col-sm-5">CFOP</dt>
-            <dd class="col-sm-7">{{ nf.cfop }}</dd>
-            <dt class="col-sm-5">Data Emissão</dt>
-            <dd class="col-sm-7">{{ nf.data_emissao|date:"d/m/Y" }}</dd>
-            <dt class="col-sm-5">Data Saída</dt>
-            <dd class="col-sm-7">{{ nf.data_saida|date:"d/m/Y"|default:"—" }}</dd>
-            <dt class="col-sm-5">Frete</dt>
-            <dd class="col-sm-7">{{ nf.get_modalidade_frete_display }}</dd>
+            <div class="kv-row">
+              <dt>CNPJ / CPF</dt>
+              <dd>
+                {% if nf.cliente %}{{ nf.cliente.cnpj_cpf|default:"—" }}
+                {% elif nf.fornecedor %}{{ nf.fornecedor.cnpj_cpf|default:"—" }}
+                {% else %}—{% endif %}
+              </dd>
+            </div>
+            <div class="kv-row"><dt>Natureza da Operação</dt><dd>{{ nf.natureza_operacao }}</dd></div>
+            <div class="kv-row"><dt>CFOP</dt><dd>{{ nf.cfop }}</dd></div>
+            <div class="kv-row"><dt>Data Emissão</dt><dd>{{ nf.data_emissao|date:"d/m/Y" }}</dd></div>
+            <div class="kv-row"><dt>Data Saída</dt><dd>{{ nf.data_saida|date:"d/m/Y"|default:"—" }}</dd></div>
+            <div class="kv-row"><dt>Frete</dt><dd>{{ nf.get_modalidade_frete_display }}</dd></div>
             {% if nf.transportadora %}
-            <dt class="col-sm-5">Transportadora</dt>
-            <dd class="col-sm-7">{{ nf.transportadora.razao_social }}</dd>
+            <div class="kv-row"><dt>Transportadora</dt><dd>{{ nf.transportadora.razao_social }}</dd></div>
             {% endif %}
             {% if nf.quantidade_volumes or nf.especie_volumes or nf.marca_volumes or nf.numeracao_volumes or nf.peso_bruto_kg or nf.peso_liquido_kg %}
-            <dt class="col-sm-5">Volumes Transportados</dt>
-            <dd class="col-sm-7">
-              {% if nf.quantidade_volumes %}<strong>Qtd:</strong> {{ nf.quantidade_volumes }}{% endif %}
-              {% if nf.especie_volumes %}<br><strong>Espécie:</strong> {{ nf.especie_volumes }}{% endif %}
-              {% if nf.marca_volumes %}<br><strong>Marca:</strong> {{ nf.marca_volumes }}{% endif %}
-              {% if nf.numeracao_volumes %}<br><strong>Numeração:</strong> {{ nf.numeracao_volumes }}{% endif %}
-              {% if nf.peso_bruto_kg %}<br><strong>Bruto:</strong> {{ nf.peso_bruto_kg|num_br:3 }} kg{% endif %}
-              {% if nf.peso_liquido_kg %}<br><strong>Líquido:</strong> {{ nf.peso_liquido_kg|num_br:3 }} kg{% endif %}
-            </dd>
+            <div class="kv-row">
+              <dt>Volumes Transportados</dt>
+              <dd>
+                {% if nf.quantidade_volumes %}Qtd: {{ nf.quantidade_volumes }}{% endif %}
+                {% if nf.especie_volumes %}<br>Espécie: {{ nf.especie_volumes }}{% endif %}
+                {% if nf.marca_volumes %}<br>Marca: {{ nf.marca_volumes }}{% endif %}
+                {% if nf.numeracao_volumes %}<br>Numeração: {{ nf.numeracao_volumes }}{% endif %}
+                {% if nf.peso_bruto_kg %}<br>Bruto: {{ nf.peso_bruto_kg|num_br:3 }} kg{% endif %}
+                {% if nf.peso_liquido_kg %}<br>Líquido: {{ nf.peso_liquido_kg|num_br:3 }} kg{% endif %}
+              </dd>
+            </div>
             {% endif %}
           </dl>
         </div>
       </div>
-    </div>
 
-    <!-- Totais -->
-    <div class="col-md-6">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-header fw-semibold">Totais</div>
+      {% if nf.cartas_correcao.exists %}
+      <div class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="icon-badge sm blue"><i class="bi bi-pencil-square"></i></span>
+          <h3 class="mb-0" style="font-size:.95rem;font-weight:700">Histórico CC-e</h3>
+          <span class="chip">{{ nf.cartas_correcao.count }}</span>
+        </div>
         <div class="card-body">
-          <dl class="row mb-0">
-            <dt class="col-sm-6">Valor dos Produtos</dt>
-            <dd class="col-sm-6 text-end">{{ nf.valor_produtos|moeda }}</dd>
-            <dt class="col-sm-6">Frete</dt>
-            <dd class="col-sm-6 text-end">{{ nf.valor_frete|moeda }}</dd>
-            <dt class="col-sm-6">Seguro</dt>
-            <dd class="col-sm-6 text-end">{{ nf.valor_seguro|moeda }}</dd>
-            <dt class="col-sm-6">Desconto</dt>
-            <dd class="col-sm-6 text-end text-danger">- {{ nf.valor_desconto|moeda }}</dd>
-            <dt class="col-sm-6">ICMS</dt>
-            <dd class="col-sm-6 text-end">{{ nf.valor_icms|moeda }}</dd>
-            <dt class="col-sm-6">IPI</dt>
-            <dd class="col-sm-6 text-end">{{ nf.valor_ipi|moeda }}</dd>
-            <dt class="col-sm-6">PIS</dt>
-            <dd class="col-sm-6 text-end">{{ nf.valor_pis|moeda }}</dd>
-            <dt class="col-sm-6">COFINS</dt>
-            <dd class="col-sm-6 text-end">{{ nf.valor_cofins|moeda }}</dd>
-            <dt class="col-sm-6 fw-bold border-top pt-2">VALOR TOTAL</dt>
-            <dd class="col-sm-6 text-end fw-bold border-top pt-2 text-primary">{{ nf.valor_total|moeda }}</dd>
-          </dl>
+          <div class="timeline">
+            {% for cc in nf.cartas_correcao.all %}
+            <div class="tl-item">
+              <div class="tl-date">Seq. {{ cc.sequencia }} &middot; {{ cc.criado_em|date:"d/m/Y H:i" }}{% if cc.protocolo %} &middot; Protocolo {{ cc.protocolo }}{% endif %}</div>
+              <div class="tl-body">
+                {{ cc.correcao|truncatechars:150 }}
+                <div class="mt-1 d-flex gap-2">
+                  <a href="{% url 'faturamento:nfe_cce_print' nf.pk cc.pk %}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-printer"></i>Imprimir CC-e
+                  </a>
+                  {% if cc.protocolo %}
+                  <a href="{% url 'faturamento:nfe_cce_xml' nf.pk cc.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-file-earmark-code"></i>XML CC-e
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
         </div>
       </div>
+      {% endif %}
     </div>
 
-    <!-- Itens -->
-    <div class="col-12">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header fw-semibold">Itens da NF-e</div>
+    <div class="d-flex flex-column gap-3">
+      <!-- Totais -->
+      <div class="stat-grid compact" style="margin-bottom:0">
+        <div class="stat-card">
+          <div class="stat-label text-uppercase">Produtos</div>
+          <div class="stat-value">{{ nf.valor_produtos|moeda }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label text-uppercase">Frete</div>
+          <div class="stat-value">{{ nf.valor_frete|moeda }}</div>
+          {% if nf.valor_seguro %}<div class="stat-sub">+ Seguro {{ nf.valor_seguro|moeda }}</div>{% endif %}
+        </div>
+        {% if nf.valor_desconto %}
+        <div class="stat-card">
+          <div class="stat-label text-uppercase">Desconto</div>
+          <div class="stat-value" style="color:var(--pastel-red-text)">- {{ nf.valor_desconto|moeda }}</div>
+        </div>
+        {% endif %}
+        <div class="stat-card">
+          <div class="stat-label text-uppercase">Impostos</div>
+          <div class="stat-value">{{ nf.valor_icms|add:nf.valor_ipi|add:nf.valor_pis|add:nf.valor_cofins|moeda }}</div>
+          <div class="stat-sub">ICMS {{ nf.valor_icms|moeda }} &middot; IPI {{ nf.valor_ipi|moeda }} &middot; PIS {{ nf.valor_pis|moeda }} &middot; COFINS {{ nf.valor_cofins|moeda }}</div>
+        </div>
+        <div class="stat-card" style="border-color:var(--pastel-green-border)">
+          <div class="stat-label text-uppercase">Total Geral</div>
+          <div class="stat-value" style="color:var(--color-primary)">{{ nf.valor_total|moeda }}</div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="icon-badge sm"><i class="bi bi-box-seam"></i></span>
+          <h3 class="mb-0" style="font-size:.95rem;font-weight:700">Itens da NF-e</h3>
+          <span class="chip">{{ nf.itens.count }} {{ nf.itens.count|pluralize:"item,itens" }}</span>
+        </div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-bordered table-sm mb-0">
-              <thead class="table-light">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="bg-light">
                 <tr>
-                  <th>Nº</th>
+                  <th class="ps-4">Nº</th>
                   <th>Descrição</th>
-                  <th>NCM</th>
-                  <th>CFOP</th>
                   <th>UN</th>
                   <th class="text-end">Qtd</th>
                   <th class="text-end">Vl. Unit.</th>
-                  <th class="text-end">Desconto</th>
-                  <th class="text-end">Vl. Total</th>
-                  <th class="text-end">ICMS</th>
-                  <th>Drawback</th>
+                  <th class="text-end pe-4">Vl. Total</th>
                 </tr>
               </thead>
               <tbody>
                 {% for item in nf.itens.all %}
                 <tr>
-                  <td>{{ item.numero_item }}</td>
-                  <td>{{ item.descricao }}</td>
-                  <td>{{ item.ncm|default:"—" }}</td>
-                  <td>{{ item.cfop|default:"—" }}</td>
-                  <td>{{ item.unidade }}</td>
-                  <td class="text-end">{{ item.quantidade|num_br:4 }}</td>
-                  <td class="text-end">{{ item.valor_unitario|num_br:4 }}</td>
-                  <td class="text-end">{{ item.valor_desconto|moeda }}</td>
-                  <td class="text-end fw-semibold">{{ item.valor_total|moeda }}</td>
-                  <td class="text-end">{{ item.valor_icms|moeda }}</td>
+                  <td class="ps-4 text-mono">{{ item.numero_item }}</td>
                   <td>
-                    {% with sugestao=sugestoes_drawback|dict_get:item.pk %}
-                    {% if item.drawback_saida %}
-                    <span class="badge bg-success">
-                      <i class="bi bi-check-circle me-1"></i>Vinculado — AC {{ item.drawback_saida.ato_concessorio.numero_ac }}
-                    </span>
-                    {% elif sugestao.pk %}
-                    <a href="{% url 'drawback:vincular_saida_erp' item.pk %}" class="btn btn-sm btn-outline-primary">
-                      <i class="bi bi-magic me-1"></i>Vincular ao Drawback (AC {{ sugestao.ato_concessorio.numero_ac }})
-                    </a>
-                    {% else %}
-                    <span class="text-muted">—</span>
-                    {% endif %}
-                    {% endwith %}
+                    {{ item.descricao }}
+                    <div class="small text-muted">
+                      NCM {{ item.ncm|default:"—" }} &middot; CFOP {{ item.cfop|default:"—" }}
+                      {% with sugestao=sugestoes_drawback|dict_get:item.pk %}
+                      {% if item.drawback_saida %}
+                      &middot; <span class="status-pill green" style="padding:1px 8px"><i class="bi bi-check-circle"></i>Drawback AC {{ item.drawback_saida.ato_concessorio.numero_ac }}</span>
+                      {% elif sugestao.pk %}
+                      &middot; <a href="{% url 'drawback:vincular_saida_erp' item.pk %}"><i class="bi bi-magic"></i> Vincular ao Drawback (AC {{ sugestao.ato_concessorio.numero_ac }})</a>
+                      {% endif %}
+                      {% endwith %}
+                    </div>
+                  </td>
+                  <td>{{ item.unidade }}</td>
+                  <td class="text-end text-mono">{{ item.quantidade|num_br:4 }}</td>
+                  <td class="text-end text-mono">{{ item.valor_unitario|num_br:4 }}</td>
+                  <td class="text-end pe-4">
+                    <div class="text-mono fw-semibold">{{ item.valor_total|moeda }}</div>
+                    <div class="small text-muted">
+                      ICMS {{ item.valor_icms|moeda }}
+                      {% if item.valor_desconto %}&middot; Desconto {{ item.valor_desconto|moeda }}{% endif %}
+                    </div>
                   </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="11" class="text-center text-muted py-3">Nenhum item.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-inbox display-6 d-block mb-2"></i>Nenhum item.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-    </div>
 
-    {% if nf.informacoes_complementares %}
-    <div class="col-12">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header fw-semibold">Informações Complementares</div>
+      {% if nf.informacoes_complementares %}
+      <div class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+          <span class="icon-badge sm gray"><i class="bi bi-file-text"></i></span>
+          <h3 class="mb-0" style="font-size:.95rem;font-weight:700">Informações Complementares</h3>
+        </div>
         <div class="card-body">{{ nf.informacoes_complementares }}</div>
       </div>
+      {% endif %}
     </div>
-    {% endif %}
   </div>
 
 </div>

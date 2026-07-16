@@ -206,6 +206,7 @@
     body.appendChild(clone);
     TOTAL.value = idx + 1;
     attachRemove(clone);
+    if (window.MoneyMask) MoneyMask.init(clone);
   });
 
   function attachRemove(row) {
@@ -236,7 +237,8 @@
           if (data.erro) { alert('BCB: ' + data.erro); return; }
           const c = data.cotacoes[moeda];
           if (!c) { alert('Cotação não disponível para ' + moeda); return; }
-          document.getElementById('id_taxa_cambio').value = c.venda.toFixed(4);
+          if (window.MoneyMask) MoneyMask.setValue('id_taxa_cambio', c.venda);
+          else document.getElementById('id_taxa_cambio').value = c.venda.toFixed(4);
           infoCotacao.style.display = 'block';
           infoCotacao.innerHTML =
             `<i class="bi bi-check-circle-fill me-1"></i>PTAX BCB ${moeda} — ${data.data} &nbsp;|&nbsp; ` +

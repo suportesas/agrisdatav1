@@ -95,6 +95,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Serve /static/ direto do gunicorn (sem nginx)
     'corsheaders.middleware.CorsMiddleware',  # CORS para API
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -244,6 +245,11 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+# WhiteNoise serve os arquivos de STATIC_ROOT direto do processo gunicorn,
+# sem depender de nginx. CompressedStaticFilesStorage (sem manifest) evita que
+# o collectstatic falhe por referências a arquivos ausentes no CSS/JS.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # ============================================
 # MEDIA FILES (UPLOADS) - CONFIGURAÇÃO CORRETA

@@ -84,7 +84,7 @@
               Código: <code>{{ data.produto.codigo }}</code> | 
               Unidade: {{ data.produto.unidade_medida.sigla }}
               {% if data.ultimo_preco %}
-                | Último preço: <strong class="text-success">R$ {{ data.ultimo_preco|floatformat:2 }}</strong> ({{ data.ultima_data|date:"d/m/Y" }})
+                | Último preço: <strong class="text-success">R$ {{ data.ultimo_preco|floatformat:"2g" }}</strong> ({{ data.ultima_data|date:"d/m/Y" }})
               {% endif %}
             </small>
           </div>
@@ -170,13 +170,13 @@
                   <td><code>{{ pf.codigo_fornecedor }}</code></td>
                   <td>
                     {% if pf.preco_compra > 0 %}
-                      <strong class="text-success">R$ {{ pf.preco_compra|floatformat:2 }}</strong>
+                      <strong class="text-success">R$ {{ pf.preco_compra|floatformat:"2g" }}</strong>
                     {% else %}
                       <span class="text-muted">-</span>
                     {% endif %}
                   </td>
                   <td>{{ pf.prazo_entrega|default:"-" }} dias</td>
-                  <td>{{ pf.quantidade_minima }} {{ data.produto.unidade_medida.sigla }}</td>
+                  <td>{{ pf.quantidade_minima|floatformat:"3g" }} {{ data.produto.unidade_medida.sigla }}</td>
                   <td>
                     <span class="badge bg-success">Ativo</span>
                   </td>

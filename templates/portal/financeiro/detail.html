@@ -19,12 +19,12 @@
           <dt class="col-sm-5">Emissão</dt><dd class="col-sm-7">{{ cr.data_emissao|date:"d/m/Y" }}</dd>
           <dt class="col-sm-5">Vencimento</dt><dd class="col-sm-7">{{ cr.data_vencimento|date:"d/m/Y" }}</dd>
           <dt class="col-sm-5">Moeda</dt><dd class="col-sm-7"><strong>{{ cr.moeda }}</strong></dd>
-          <dt class="col-sm-5">Valor {{ cr.moeda }}</dt><dd class="col-sm-7 fw-bold">{{ cr.valor_moeda|floatformat:2 }}</dd>
-          {% if cr.taxa_cambio %}<dt class="col-sm-5">Câmbio Emissão</dt><dd class="col-sm-7">{{ cr.taxa_cambio|floatformat:4 }}</dd>{% endif %}
-          <dt class="col-sm-5">Valor BRL</dt><dd class="col-sm-7 fw-bold">R$ {{ cr.valor_brl|floatformat:2 }}</dd>
-          <dt class="col-sm-5">Recebido BRL</dt><dd class="col-sm-7 text-success fw-bold">R$ {{ cr.total_recebido_brl|floatformat:2 }}</dd>
+          <dt class="col-sm-5">Valor {{ cr.moeda }}</dt><dd class="col-sm-7 fw-bold">{{ cr.valor_moeda|floatformat:"2g" }}</dd>
+          {% if cr.taxa_cambio %}<dt class="col-sm-5">Câmbio Emissão</dt><dd class="col-sm-7">{{ cr.taxa_cambio|floatformat:"4g" }}</dd>{% endif %}
+          <dt class="col-sm-5">Valor BRL</dt><dd class="col-sm-7 fw-bold">R$ {{ cr.valor_brl|floatformat:"2g" }}</dd>
+          <dt class="col-sm-5">Recebido BRL</dt><dd class="col-sm-7 text-success fw-bold">R$ {{ cr.total_recebido_brl|floatformat:"2g" }}</dd>
           <dt class="col-sm-5 fw-bold">Saldo BRL</dt>
-          <dd class="col-sm-7 fw-bold {% if cr.saldo_brl > 0 %}text-danger{% else %}text-success{% endif %}">R$ {{ cr.saldo_brl|floatformat:2 }}</dd>
+          <dd class="col-sm-7 fw-bold {% if cr.saldo_brl > 0 %}text-danger{% else %}text-success{% endif %}">R$ {{ cr.saldo_brl|floatformat:"2g" }}</dd>
           <dt class="col-sm-5">Status</dt>
           <dd class="col-sm-7">
             {% if cr.status == 'PAGA' %}<span class="badge bg-success">Paga</span>
@@ -57,8 +57,8 @@
         <tr>
           <td>{{ p.numero_parcela }}</td>
           <td>{{ p.data_vencimento|date:"d/m/Y" }}</td>
-          <td class="text-end">{{ p.valor_parcela_moeda|floatformat:2 }}</td>
-          <td class="text-end">R$ {{ p.valor_parcela_brl|floatformat:2 }}</td>
+          <td class="text-end">{{ p.valor_parcela_moeda|floatformat:"2g" }}</td>
+          <td class="text-end">R$ {{ p.valor_parcela_brl|floatformat:"2g" }}</td>
           <td>
             {% if p.status == 'PAGA' %}<span class="badge bg-success">Paga</span>
             {% elif p.status == 'VENCIDA' %}<span class="badge bg-danger">Vencida</span>
@@ -96,11 +96,11 @@
         <tr>
           <td>{{ r.data_pagamento|date:"d/m/Y" }}</td>
           <td>Parcela {{ r.parcela.numero_parcela }}</td>
-          <td class="text-end">{{ r.valor_recebido_moeda|floatformat:2 }}</td>
-          <td class="text-end">R$ {{ r.valor_recebido_brl|floatformat:2 }}</td>
-          <td>{{ r.taxa_cambio_realizada|floatformat:4|default:"—" }}</td>
+          <td class="text-end">{{ r.valor_recebido_moeda|floatformat:"2g" }}</td>
+          <td class="text-end">R$ {{ r.valor_recebido_brl|floatformat:"2g" }}</td>
+          <td>{{ r.taxa_cambio_realizada|floatformat:"4g"|default:"—" }}</td>
           <td class="text-end {% if r.variacao_cambial_brl >= 0 %}text-success{% else %}text-danger{% endif %}">
-            R$ {{ r.variacao_cambial_brl|floatformat:2 }}
+            R$ {{ r.variacao_cambial_brl|floatformat:"2g" }}
           </td>
           <td>{{ r.get_forma_pagamento_display }}</td>
         </tr>

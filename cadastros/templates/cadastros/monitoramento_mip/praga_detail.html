@@ -69,7 +69,7 @@
           <div class="card shadow-sm border-0 rounded-4 h-100">
             <div class="card-body">
               <p class="text-muted mb-1"><small>INCIDÊNCIA</small></p>
-              <h4 class="mb-0">{{ praga_mon.incidencia_percentual|floatformat:1 }}%</h4>
+              <h4 class="mb-0">{{ praga_mon.incidencia_percentual|floatformat:"1g" }}%</h4>
               <p class="text-muted mb-0"><small>{{ praga_mon.quantidade_pontos_com_praga }}/{{ praga_mon.monitoramento.quantidade_pontos }} pontos</small></p>
             </div>
           </div>
@@ -101,7 +101,7 @@
           <div class="card shadow-sm border-0 rounded-4 h-100">
             <div class="card-body">
               <p class="text-muted mb-1"><small>NED</small></p>
-              <h4 class="mb-0">{{ praga_mon.ned_valor|floatformat:1 }}%</h4>
+              <h4 class="mb-0">{{ praga_mon.ned_valor|floatformat:"1g" }}%</h4>
               <p class="text-muted mb-0">
                 <small>
                   {% if praga_mon.incidencia_percentual >= praga_mon.ned_valor %}

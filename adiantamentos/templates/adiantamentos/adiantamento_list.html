@@ -146,19 +146,19 @@
               <td>{{ a.cliente.razao_social }}</td>
               <td><span class="badge bg-secondary">{{ a.safra_referencia }}</span></td>
               <td>{{ a.moeda }}</td>
-              <td class="text-end text-mono">{{ a.valor_estrangeiro|floatformat:2 }}</td>
+              <td class="text-end text-mono">{{ a.valor_estrangeiro|floatformat:"2g" }}</td>
               <td class="text-end text-mono {% if a.saldo_estrangeiro > 0 %}text-warning fw-bold{% else %}text-success{% endif %}">
-                {{ a.saldo_estrangeiro|floatformat:2 }}
+                {{ a.saldo_estrangeiro|floatformat:"2g" }}
               </td>
               <td>
                 <div class="progress" style="height:6px;min-width:60px">
-                  <div class="progress-bar bg-success" style="width:{{ a.percentual_quitado|floatformat:0 }}%"></div>
+                  <div class="progress-bar bg-success" style="width:{{ a.percentual_quitado|floatformat:"0g" }}%"></div>
                 </div>
-                <small class="text-muted">{{ a.percentual_quitado|floatformat:0 }}%</small>
+                <small class="text-muted">{{ a.percentual_quitado|floatformat:"0g" }}%</small>
               </td>
               <td>
                 {% if a.tipo_regra_desconto == 'VALOR_FIXO' %}
-                <small>Fixo: {{ a.moeda }} {{ a.valor_desconto_padrao|floatformat:2 }}/embarque</small>
+                <small>Fixo: {{ a.moeda }} {{ a.valor_desconto_padrao|floatformat:"2g" }}/embarque</small>
                 {% else %}
                 <small>{{ a.percentual_desconto|floatformat:"2g" }}% da invoice</small>
                 {% endif %}

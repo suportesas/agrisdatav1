@@ -22,7 +22,7 @@
           <span style="font-size: 2rem;">{{ plano.icone }}</span>
           <h5 class="mb-0 mt-2">{{ plano.nome }}</h5>
           <p class="text-muted mb-0">
-            <small>R$ {{ plano.valor_mensal|floatformat:2 }}/mês</small>
+            <small>R$ {{ plano.valor_mensal|floatformat:"2g" }}/mês</small>
           </p>
         </div>
       </div>

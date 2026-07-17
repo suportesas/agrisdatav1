@@ -123,7 +123,7 @@
                 <a href="{% url 'energia:ocorrencia_detail' o.pk %}" class="text-decoration-none">{{ o.titulo }}</a>
               </td>
               <td class="text-end text-mono">
-                {% if o.impacto_kwh_estimado %}{{ o.impacto_kwh_estimado|floatformat:0 }}{% else %}—{% endif %}
+                {% if o.impacto_kwh_estimado %}{{ o.impacto_kwh_estimado|floatformat:"0g" }}{% else %}—{% endif %}
               </td>
               <td class="text-center">
                 {% if o.resolvido %}

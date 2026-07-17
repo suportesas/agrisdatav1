@@ -568,7 +568,7 @@
                   <br><small class="text-muted">{{ pf.fornecedor.cnpj_cpf }}</small>
                 </td>
                 <td><code>{{ pf.codigo_fornecedor }}</code></td>
-                <td><strong class="text-success">R$ {{ pf.preco_compra|floatformat:2 }}</strong></td>
+                <td><strong class="text-success">R$ {{ pf.preco_compra|floatformat:"2g" }}</strong></td>
                 <td>{{ pf.prazo_entrega|default:'-' }} dias</td>
                 <td>{{ pf.quantidade_minima }} {{ object.unidade_medida.sigla }}</td>
                 <td>

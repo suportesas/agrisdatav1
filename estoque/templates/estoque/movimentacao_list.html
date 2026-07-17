@@ -131,7 +131,7 @@
                     <small class="text-muted">Lote: {{ mov.lote.numero_lote }}</small>
                   </td>
                   <td class="text-mono">
-                    <strong>{{ mov.quantidade }}</strong>
+                    <strong>{{ mov.quantidade|floatformat:"3g" }}</strong>
                     <small class="text-muted">{{ mov.lote.unidade_medida.sigla }}</small>
                   </td>
                   <td>

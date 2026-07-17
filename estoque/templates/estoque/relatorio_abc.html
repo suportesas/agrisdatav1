@@ -58,7 +58,7 @@
             <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-cash-stack"></i></div>
             <div>
               <div class="stat-label text-uppercase">Total</div>
-              <div class="stat-value">R$ {{ valor_total_geral|floatformat:2 }}</div>
+              <div class="stat-value">R$ {{ valor_total_geral|floatformat:"2g" }}</div>
               <small class="text-muted">Valor total em estoque</small>
             </div>
           </div>
@@ -99,10 +99,10 @@
                                 {{ item.estoque_atual }} {{ item.produto.unidade_medida.sigla }}
                             </td>
                             <td class="text-mono">
-                                R$ {{ item.preco_custo|floatformat:2 }}
+                                R$ {{ item.preco_custo|floatformat:"2g" }}
                             </td>
                             <td class="text-mono">
-                                <strong>R$ {{ item.valor_estoque|floatformat:2 }}</strong>
+                                <strong>R$ {{ item.valor_estoque|floatformat:"2g" }}</strong>
                             </td>
                             <td class="text-mono">
                                 {{ item.percentual_valor }}%

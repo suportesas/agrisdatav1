@@ -34,7 +34,7 @@
           <p class="text-muted mb-1">Preço Médio</p>
           <h4 class="mb-0">
             {% if preco_medio %}
-              R$ {{ preco_medio|floatformat:2 }}
+              R$ {{ preco_medio|floatformat:"2g" }}
             {% else %}
               -
             {% endif %}
@@ -48,7 +48,7 @@
           <p class="text-muted mb-1">Preço Mínimo</p>
           <h4 class="mb-0 text-success">
             {% if preco_minimo %}
-              R$ {{ preco_minimo|floatformat:2 }}
+              R$ {{ preco_minimo|floatformat:"2g" }}
             {% else %}
               -
             {% endif %}
@@ -62,7 +62,7 @@
           <p class="text-muted mb-1">Preço Máximo</p>
           <h4 class="mb-0 text-danger">
             {% if preco_maximo %}
-              R$ {{ preco_maximo|floatformat:2 }}
+              R$ {{ preco_maximo|floatformat:"2g" }}
             {% else %}
               -
             {% endif %}
@@ -157,10 +157,10 @@
                 <strong>{{ h.fornecedor.nome }}</strong>
               </td>
               <td class="text-end">
-                <strong class="text-success">R$ {{ h.preco_unitario|floatformat:2 }}</strong>
+                <strong class="text-success">R$ {{ h.preco_unitario|floatformat:"2g" }}</strong>
               </td>
               <td>
-                <small>{{ h.quantidade|floatformat:3 }} {{ h.produto.unidade_medida.sigla }}</small>
+                <small>{{ h.quantidade|floatformat:"3g" }} {{ h.produto.unidade_medida.sigla }}</small>
               </td>
               <td>
                 {% if h.prazo_entrega %}

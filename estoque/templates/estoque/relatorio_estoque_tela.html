@@ -29,7 +29,7 @@
                             <td>{{ lote.produto.nome }}</td>
                             <td>{{ lote.produto.categoria.nome }}</td>
                             <td>{{ lote.armazem.nome }}</td>
-                            <td>{{ lote.quantidade_atual }}</td>
+                            <td>{{ lote.quantidade_atual|floatformat:"3g" }}</td>
                             <td>{{ lote.unidade_medida.sigla }}</td>
                             <td>{{ lote.get_status_display }}</td>
                             <td>{{ lote.data_validade|date:'d/m/Y' }}</td>

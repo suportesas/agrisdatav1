@@ -40,7 +40,7 @@
                                         <strong>Pedido:</strong> {{ pedido.numero }}
                                     </p>
                                     <p class="mb-2">
-                                        <strong>Valor:</strong> R$ {{ pedido.valor_total|floatformat:2 }}
+                                        <strong>Valor:</strong> R$ {{ pedido.valor_total|floatformat:"2g" }}
                                     </p>
                                 </div>
                             </div>
@@ -81,11 +81,11 @@
 📅 <strong>Data:</strong> {{ pedido.data_pedido|date:"d/m/Y" }}
 🚚 <strong>Previsão de Entrega:</strong> {% if pedido.data_entrega_prevista %}{{ pedido.data_entrega_prevista|date:"d/m/Y" }}{% else %}A combinar{% endif %}
 💳 <strong>Condição de Pagamento:</strong> {{ pedido.condicao_pagamento }}
-💰 <strong>Valor Total:</strong> R$ {{ pedido.valor_total|floatformat:2 }}
+💰 <strong>Valor Total:</strong> R$ {{ pedido.valor_total|floatformat:"2g" }}
 
 <strong>Itens do Pedido:</strong>
 {% for item in pedido.itens.all|slice:":5" %}
-{{ forloop.counter }}. {{ item.produto.nome }} - {{ item.quantidade_pedida }} {{ item.unidade_medida.sigla }}
+{{ forloop.counter }}. {{ item.produto.nome }} - {{ item.quantidade_pedida|floatformat:"3g" }} {{ item.unidade_medida.sigla }}
 {% endfor %}{% if pedido.itens.count > 5 %}
 <em>... e mais {{ pedido.itens.count|add:"-5" }} itens</em>
 {% endif %}

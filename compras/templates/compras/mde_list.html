@@ -157,7 +157,7 @@
               </td>
               <td class="text-mono text-nowrap">{{ rec.data_emissao_nf|date:"d/m/Y" }}</td>
               <td class="text-mono text-nowrap">{{ rec.data_recebimento|date:"d/m/Y" }}</td>
-              <td class="text-end text-mono text-nowrap">R$ {{ rec.valor_total_nf|floatformat:2 }}</td>
+              <td class="text-end text-mono text-nowrap">R$ {{ rec.valor_total_nf|floatformat:"2g" }}</td>
               <td class="text-center">
                 {% if rec.manifestacao_tipo == 'confirmacao_operacao' %}
                   <span class="badge bg-success">Confirmada</span>

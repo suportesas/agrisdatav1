@@ -116,7 +116,7 @@
                 <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 24px;"></i>
                 <div>
                     <strong>{{ alertas.parcelas_vencidas_count }}</strong> parcela(s) vencida(s) totalizando 
-                    <strong>R$ {{ alertas.valor_vencido|floatformat:2 }}</strong>
+                    <strong>R$ {{ alertas.valor_vencido|floatformat:"2g" }}</strong>
                     <a href="{% url 'financeiro:relatorio_contas_vencidas' %}" class="alert-link ms-2">
                         Ver detalhes →
                     </a>
@@ -135,7 +135,7 @@
                 <div>
                     <strong>{{ alertas.parcelas_proximas_count }}</strong> parcela(s) vencendo em 
                     <strong>até 7 dias</strong> totalizando 
-                    <strong>R$ {{ alertas.valor_proximo|floatformat:2 }}</strong>
+                    <strong>R$ {{ alertas.valor_proximo|floatformat:"2g" }}</strong>
                     <a href="{% url 'financeiro:relatorio_contas_vencer' %}" class="alert-link ms-2">
                         Ver cronograma →
                     </a>
@@ -165,8 +165,8 @@
             <div class="kpi-icon blue"><i class="bi bi-cash-coin"></i></div>
             <div class="kpi-body">
                 <div class="kpi-label">Valor Total a Pagar</div>
-                <div class="kpi-value">R$ {{ valores.ajustado|floatformat:2 }}</div>
-                <div class="kpi-sub">Original: R$ {{ valores.total|floatformat:2 }}</div>
+                <div class="kpi-value">R$ {{ valores.ajustado|floatformat:"2g" }}</div>
+                <div class="kpi-sub">Original: R$ {{ valores.total|floatformat:"2g" }}</div>
             </div>
         </div>
 
@@ -175,8 +175,8 @@
             <div class="kpi-icon red"><i class="bi bi-exclamation-circle"></i></div>
             <div class="kpi-body">
                 <div class="kpi-label">Juros + Multas Acumuladas</div>
-                <div class="kpi-value">R$ {{ juros_e_multas|floatformat:2 }}</div>
-                <div class="kpi-sub">Juros: R$ {{ valores.juros|floatformat:2 }} | Multas: R$ {{ valores.multa|floatformat:2 }}</div>
+                <div class="kpi-value">R$ {{ juros_e_multas|floatformat:"2g" }}</div>
+                <div class="kpi-sub">Juros: R$ {{ valores.juros|floatformat:"2g" }} | Multas: R$ {{ valores.multa|floatformat:"2g" }}</div>
             </div>
         </div>
 
@@ -185,8 +185,8 @@
             <div class="kpi-icon green"><i class="bi bi-graph-up"></i></div>
             <div class="kpi-body">
                 <div class="kpi-label">Pago Neste Mês</div>
-                <div class="kpi-value">R$ {{ fluxo.total_pago_mes|floatformat:2 }}</div>
-                <div class="kpi-sub">Próx. 30 dias: R$ {{ fluxo.valor_vencer_30d|floatformat:2 }}</div>
+                <div class="kpi-value">R$ {{ fluxo.total_pago_mes|floatformat:"2g" }}</div>
+                <div class="kpi-sub">Próx. 30 dias: R$ {{ fluxo.valor_vencer_30d|floatformat:"2g" }}</div>
             </div>
         </div>
     </div>
@@ -198,14 +198,14 @@
             <div class="kpi-body">
                 <div class="kpi-label">A Receber (em aberto)</div>
                 <div class="kpi-value">{{ cr_abertas_count }}</div>
-                <div class="kpi-sub">R$ {{ valor_a_receber|floatformat:2 }}</div>
+                <div class="kpi-sub">R$ {{ valor_a_receber|floatformat:"2g" }}</div>
             </div>
         </div>
         <div class="kpi-card">
             <div class="kpi-icon green"><i class="bi bi-check2-circle"></i></div>
             <div class="kpi-body">
                 <div class="kpi-label">Recebido este mês</div>
-                <div class="kpi-value">R$ {{ cr_recebimentos_mes|floatformat:2 }}</div>
+                <div class="kpi-value">R$ {{ cr_recebimentos_mes|floatformat:"2g" }}</div>
                 <div class="kpi-sub"><a href="{% url 'financeiro:conta_receber_list' %}">Ver contas a receber →</a></div>
             </div>
         </div>
@@ -214,9 +214,9 @@
             <div class="kpi-body">
                 <div class="kpi-label">Posição Líquida</div>
                 <div class="kpi-value" style="color:{% if posicao_liquida >= 0 %}var(--pastel-green-text){% else %}var(--pastel-red-text){% endif %};">
-                    R$ {{ posicao_liquida|floatformat:2 }}
+                    R$ {{ posicao_liquida|floatformat:"2g" }}
                 </div>
-                <div class="kpi-sub">A Receber R$ {{ valor_a_receber|floatformat:2 }} &minus; Vencido R$ {{ alertas.valor_vencido|floatformat:2 }}</div>
+                <div class="kpi-sub">A Receber R$ {{ valor_a_receber|floatformat:"2g" }} &minus; Vencido R$ {{ alertas.valor_vencido|floatformat:"2g" }}</div>
             </div>
         </div>
     </div>
@@ -235,7 +235,7 @@
                             <tr>
                                 <th>Fornecedor</th>
                                 <th>Vencimento</th>
-                                <th class="text-right">Valor</th>
+                                <th class="text-end">Valor</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -249,8 +249,8 @@
                                 <td>
                                     <strong>{{ parcela.data_vencimento|date:'d/m/Y' }}</strong>
                                 </td>
-                                <td class="text-right text-success">
-                                    R$ {{ parcela.valor_total_parcela|floatformat:2 }}
+                                <td class="text-end text-success">
+                                    R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -280,7 +280,7 @@
                             <tr>
                                 <th>Fornecedor</th>
                                 <th>Vencido há</th>
-                                <th class="text-right">Valor</th>
+                                <th class="text-end">Valor</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -294,8 +294,8 @@
                                 <td>
                                     <strong class="text-danger">{{ parcela.dias_atraso }} dias</strong>
                                 </td>
-                                <td class="text-right text-danger">
-                                    R$ {{ parcela.valor_total_parcela|floatformat:2 }}
+                                <td class="text-end text-danger">
+                                    R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -328,8 +328,8 @@
                             <tr>
                                 <th>Fornecedor</th>
                                 <th>Qnt. Contas</th>
-                                <th class="text-right">Valor Total</th>
-                                <th class="text-right">% do Total</th>
+                                <th class="text-end">Valor Total</th>
+                                <th class="text-end">% do Total</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -337,8 +337,8 @@
                             <tr>
                                 <td>{{ fornec.fornecedor__nome }}</td>
                                 <td>{{ fornec.contas_count }}</td>
-                                <td class="text-right">R$ {{ fornec.total|floatformat:2 }}</td>
-                                <td class="text-right">
+                                <td class="text-end">R$ {{ fornec.total|floatformat:"2g" }}</td>
+                                <td class="text-end">
                                     <div class="progress" style="height: 20px;">
                                         <div class="progress-bar" role="progressbar" 
                                              style="width: {% widthratio fornec.total valores.total 100 %}%"
@@ -374,7 +374,7 @@
                             <tr>
                                 <th>Numero</th>
                                 <th>Fornecedor</th>
-                                <th>Valor</th>
+                                <th class="text-end">Valor</th>
                                 <th>Status</th>
                                 <th>Data</th>
                                 <th class="text-center">Ação</th>
@@ -385,7 +385,7 @@
                             <tr>
                                 <td><strong>{{ conta.numero }}</strong></td>
                                 <td>{{ conta.fornecedor.nome|truncatewords:3 }}</td>
-                                <td>R$ {{ conta.valor_total|floatformat:2 }}</td>
+                                <td class="text-end">R$ {{ conta.valor_total|floatformat:"2g" }}</td>
                                 <td>
                                     <span class="badge bg-{% if conta.status == 'PAGA' %}success{% elif conta.status == 'ABERTA' %}warning{% elif conta.status == 'APROVADA' %}info{% else %}secondary{% endif %}">
                                         {{ conta.get_status_display }}

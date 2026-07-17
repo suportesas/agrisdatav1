@@ -266,9 +266,9 @@
               </td>
             </tr>
             <tr><th>Modalidade</th><td>{{ ct.get_modalidade_frete_display }}</td></tr>
-            <tr><th>Valor Frete</th><td><strong>R$ {{ ct.valor_servico|floatformat:2 }}</strong></td></tr>
-            <tr><th>Valor Carga</th><td>R$ {{ ct.valor_carga|floatformat:2 }}</td></tr>
-            <tr><th>Peso Bruto</th><td>{{ ct.peso_bruto_kg|floatformat:3 }} kg</td></tr>
+            <tr><th>Valor Frete</th><td><strong>R$ {{ ct.valor_servico|floatformat:"2g" }}</strong></td></tr>
+            <tr><th>Valor Carga</th><td>R$ {{ ct.valor_carga|floatformat:"2g" }}</td></tr>
+            <tr><th>Peso Bruto</th><td>{{ ct.peso_bruto_kg|floatformat:"3g" }} kg</td></tr>
             {% if ct.romaneio_venda %}
             <tr><th>Romaneio de Venda</th><td><a href="{% url 'embalagem:romaneio_detail' ct.romaneio_venda.pk %}">{{ ct.romaneio_venda.numero }}</a></td></tr>
             {% endif %}

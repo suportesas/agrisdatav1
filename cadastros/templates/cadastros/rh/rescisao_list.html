@@ -121,8 +121,8 @@
               <td><strong>{{ rescisao.funcionario.nome_completo }}</strong></td>
               <td><span class="badge bg-danger">{{ rescisao.get_tipo_rescisao_display }}</span></td>
               <td class="small">{{ rescisao.data_desligamento|date:"d/m/Y" }}</td>
-              <td class="text-end">{% if rescisao.valor_total %}R$ {{ rescisao.valor_total|floatformat:2 }}{% else %}—{% endif %}</td>
-              <td class="text-end">{% if rescisao.valor_liquido %}R$ {{ rescisao.valor_liquido|floatformat:2 }}{% else %}—{% endif %}</td>
+              <td class="text-end">{% if rescisao.valor_total %}R$ {{ rescisao.valor_total|floatformat:"2g" }}{% else %}—{% endif %}</td>
+              <td class="text-end">{% if rescisao.valor_liquido %}R$ {{ rescisao.valor_liquido|floatformat:"2g" }}{% else %}—{% endif %}</td>
               <td>
                 {% if rescisao.status == 'EM_PROCESSO' %}
                 <span class="badge bg-warning text-dark">Em Processo</span>

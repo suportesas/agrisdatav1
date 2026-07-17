@@ -132,7 +132,7 @@
               <div class="text-muted" style="font-size:.78rem;">
                 {{ m.data_execucao|date:"d/m" }}
                 {% if m.horimetro_inicial is not None %} · H {{ m.horimetro_inicial }}→{{ m.horimetro_final|default:"?" }}{% endif %}
-                {% if m.horas_trabalhadas %} · {{ m.horas_trabalhadas|floatformat:1 }}h{% endif %}
+                {% if m.horas_trabalhadas %} · {{ m.horas_trabalhadas|floatformat:"1g" }}h{% endif %}
               </div>
             </div>
             <div class="d-flex gap-1">

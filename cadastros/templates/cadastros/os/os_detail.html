@@ -199,35 +199,35 @@
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Mão de Obra</div>
-        <div class="fw-bold text-primary">R$ {{ custo_mo|floatformat:2 }}</div>
+        <div class="fw-bold text-primary">R$ {{ custo_mo|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Maquinário</div>
-        <div class="fw-bold text-info">R$ {{ custo_maq|floatformat:2 }}</div>
+        <div class="fw-bold text-info">R$ {{ custo_maq|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Insumos</div>
-        <div class="fw-bold text-warning">R$ {{ custo_ins|floatformat:2 }}</div>
+        <div class="fw-bold text-warning">R$ {{ custo_ins|floatformat:"2g" }}</div>
       </div>
     </div>
     {% if custo_estufa > 0 %}
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Estufa/Transplantio</div>
-        <div class="fw-bold" style="color:#0dcaf0;">R$ {{ custo_estufa|floatformat:2 }}</div>
+        <div class="fw-bold" style="color:#0dcaf0;">R$ {{ custo_estufa|floatformat:"2g" }}</div>
       </div>
     </div>
     {% endif %}
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Total</div>
-        <div class="fw-bold text-success">R$ {{ custo_total|floatformat:2 }}</div>
+        <div class="fw-bold text-success">R$ {{ custo_total|floatformat:"2g" }}</div>
         {% if os.area_executada_ha %}
-        <div class="text-muted" style="font-size:.7rem;">R$ {{ custo_ha|floatformat:2 }}/ha</div>
+        <div class="text-muted" style="font-size:.7rem;">R$ {{ custo_ha|floatformat:"2g" }}/ha</div>
         {% endif %}
       </div>
     </div>
@@ -309,7 +309,7 @@
                       <td>{{ iv.inicio|time:"H:i" }}</td>
                       <td>{{ iv.fim|time:"H:i"|default:"—" }}</td>
                       <td class="text-end">{% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:"2g" }}h{% else %}—{% endif %}</td>
-                      <td class="text-end fw-semibold text-primary">R$ {{ iv.custo_calculado|floatformat:2 }}</td>
+                      <td class="text-end fw-semibold text-primary">R$ {{ iv.custo_calculado|floatformat:"2g" }}</td>
                     </tr>
                     {% endfor %}
                     {% for f in funcionarios %}
@@ -335,13 +335,13 @@
                       </td>
                       <td>{{ f.hora_fim|time:"H:i"|default:"—" }}</td>
                       <td class="text-end">{{ f.horas_trabalhadas|floatformat:"2g" }}h</td>
-                      <td class="text-end fw-semibold text-primary">R$ {{ f.custo_calculado|floatformat:2 }}</td>
+                      <td class="text-end fw-semibold text-primary">R$ {{ f.custo_calculado|floatformat:"2g" }}</td>
                     </tr>
                     {% endif %}
                     {% endfor %}
                     <tr class="table-light">
                       <td colspan="6" class="text-end fw-bold text-muted small">Total M.O.:</td>
-                      <td class="text-end fw-bold text-primary">R$ {{ custo_mo|floatformat:2 }}</td>
+                      <td class="text-end fw-bold text-primary">R$ {{ custo_mo|floatformat:"2g" }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -390,13 +390,13 @@
                         {% else %}—{% endif %}
                       </td>
                       <td class="text-end">{{ m.horas_trabalhadas|floatformat:"2g" }}h</td>
-                      <td class="text-end">{{ m.litros_consumidos|floatformat:1 }}L</td>
-                      <td class="text-end fw-semibold text-info">R$ {{ m.custo_calculado|floatformat:2 }}</td>
+                      <td class="text-end">{{ m.litros_consumidos|floatformat:"1g" }}L</td>
+                      <td class="text-end fw-semibold text-info">R$ {{ m.custo_calculado|floatformat:"2g" }}</td>
                     </tr>
                     {% endfor %}
                     <tr class="table-light">
                       <td colspan="6" class="text-end fw-bold text-muted small">Total Maq.:</td>
-                      <td class="text-end fw-bold text-info">R$ {{ custo_maq|floatformat:2 }}</td>
+                      <td class="text-end fw-bold text-info">R$ {{ custo_maq|floatformat:"2g" }}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -441,9 +441,9 @@
                         <small class="text-muted">{{ item.unidade_medida.sigla|default:item.unidade_medida.nome|default:'—' }}</small>
                       </td>
                       <td class="text-end">{{ item.quantidade_planejada|default:'—' }}</td>
-                      <td class="text-end">{{ item.quantidade_aplicada|floatformat:3 }}</td>
-                      <td class="text-end">R$ {{ item.custo_unitario|default:0|floatformat:4 }}</td>
-                      <td class="text-end fw-semibold text-warning">R$ {{ item.custo_total|floatformat:2 }}</td>
+                      <td class="text-end">{{ item.quantidade_aplicada|floatformat:"3g" }}</td>
+                      <td class="text-end">R$ {{ item.custo_unitario|default:0|floatformat:"4g" }}</td>
+                      <td class="text-end fw-semibold text-warning">R$ {{ item.custo_total|floatformat:"2g" }}</td>
                       <td>
                         {% if os.status not in 'CONCLUIDA,CANCELADA' %}
                         <a href="{% url 'operacoes_campo:os_insumo_edit' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
@@ -454,7 +454,7 @@
                     {% endfor %}
                     <tr class="table-light">
                       <td colspan="4" class="text-end fw-bold text-muted small">Total Insumos:</td>
-                      <td class="text-end fw-bold text-warning">R$ {{ custo_ins|floatformat:2 }}</td>
+                      <td class="text-end fw-bold text-warning">R$ {{ custo_ins|floatformat:"2g" }}</td>
                       <td></td>
                     </tr>
                   </tbody>
@@ -489,7 +489,7 @@
                 <dt class="col-4 text-muted">Fornecedor</dt>
                 <dd class="col-8">{{ os.fornecedor_servico.nome }}</dd>
                 <dt class="col-4 text-muted">Valor</dt>
-                <dd class="col-8 fw-semibold text-success">R$ {{ os.valor_servico_externo|floatformat:2 }}</dd>
+                <dd class="col-8 fw-semibold text-success">R$ {{ os.valor_servico_externo|floatformat:"2g" }}</dd>
                 <dt class="col-4 text-muted">Modalidade</dt>
                 <dd class="col-8">{{ os.get_unidade_cobranca_display|default:"—" }}</dd>
               </dl>
@@ -514,7 +514,7 @@
                   {% for mov in movimentacoes_os %}
                   <tr>
                     <td>{{ mov.produto.nome|default:"—" }}</td>
-                    <td class="text-end">{{ mov.quantidade|floatformat:3 }} {{ mov.unidade_medida.sigla|default:"" }}</td>
+                    <td class="text-end">{{ mov.quantidade|floatformat:"3g" }} {{ mov.unidade_medida.sigla|default:"" }}</td>
                     <td>{{ mov.executado_por|default:"—" }}</td>
                     <td>{{ mov.data_execucao|date:"d/m H:i"|default:"—" }}</td>
                   </tr>
@@ -594,29 +594,29 @@
                 <tbody>
                   <tr>
                     <td><span class="badge bg-primary me-1" style="width:10px;">&nbsp;</span>Mão de Obra</td>
-                    <td class="text-end fw-semibold">R$ {{ custo_mo|floatformat:2 }}</td>
+                    <td class="text-end fw-semibold">R$ {{ custo_mo|floatformat:"2g" }}</td>
                   </tr>
                   <tr>
                     <td><span class="badge bg-info me-1" style="width:10px;">&nbsp;</span>Maquinário</td>
-                    <td class="text-end fw-semibold">R$ {{ custo_maq|floatformat:2 }}</td>
+                    <td class="text-end fw-semibold">R$ {{ custo_maq|floatformat:"2g" }}</td>
                   </tr>
                   <tr>
                     <td><span class="badge bg-warning me-1" style="width:10px;">&nbsp;</span>Insumos</td>
-                    <td class="text-end fw-semibold">R$ {{ custo_ins|floatformat:2 }}</td>
+                    <td class="text-end fw-semibold">R$ {{ custo_ins|floatformat:"2g" }}</td>
                   </tr>
                   <tr>
                     <td><span class="badge bg-secondary me-1" style="width:10px;">&nbsp;</span>Serviço Externo</td>
-                    <td class="text-end fw-semibold">R$ {{ custo_serv|floatformat:2 }}</td>
+                    <td class="text-end fw-semibold">R$ {{ custo_serv|floatformat:"2g" }}</td>
                   </tr>
                   {% if custo_estufa > 0 %}
                   <tr>
                     <td><span class="badge me-1" style="width:10px;background-color:#0dcaf0;">&nbsp;</span>Estufa/Transplantio</td>
-                    <td class="text-end fw-semibold">R$ {{ custo_estufa|floatformat:2 }}</td>
+                    <td class="text-end fw-semibold">R$ {{ custo_estufa|floatformat:"2g" }}</td>
                   </tr>
                   {% endif %}
                   <tr class="border-top">
                     <td class="fw-bold">Total</td>
-                    <td class="text-end fw-bold text-success fs-6">R$ {{ custo_total|floatformat:2 }}</td>
+                    <td class="text-end fw-bold text-success fs-6">R$ {{ custo_total|floatformat:"2g" }}</td>
                   </tr>
                   {% if os.area_executada_ha %}
                   <tr class="bg-light">
@@ -625,7 +625,7 @@
                   </tr>
                   <tr class="bg-light">
                     <td class="text-muted small">Custo / Hectare</td>
-                    <td class="text-end fw-semibold text-success small">R$ {{ custo_ha|floatformat:2 }}/ha</td>
+                    <td class="text-end fw-semibold text-success small">R$ {{ custo_ha|floatformat:"2g" }}/ha</td>
                   </tr>
                   {% endif %}
                 </tbody>
@@ -679,11 +679,11 @@
               {% with est_mo=os.custo_estimado_mao_obra|default:0 est_maq=os.custo_estimado_maquinario|default:0 est_ins=os.custo_estimado_insumos|default:0 %}
               <tr>
                 <td><span class="badge bg-primary me-1">&nbsp;</span>Mão de Obra</td>
-                <td class="text-end text-muted">R$ {{ est_mo|floatformat:2 }}</td>
-                <td class="text-end fw-semibold">R$ {{ custo_mo|floatformat:2 }}</td>
+                <td class="text-end text-muted">R$ {{ est_mo|floatformat:"2g" }}</td>
+                <td class="text-end fw-semibold">R$ {{ custo_mo|floatformat:"2g" }}</td>
                 <td class="text-end small {% if custo_mo > est_mo %}text-danger{% else %}text-success{% endif %}">
                   {% if est_mo %}
-                    {% with diff=custo_mo|floatformat:2 %}
+                    {% with diff=custo_mo|floatformat:"2g" %}
                       {% widthratio custo_mo est_mo 100 as pct %}
                       {% if custo_mo > est_mo %}<i class="bi bi-arrow-up-short"></i>{% else %}<i class="bi bi-arrow-down-short"></i>{% endif %}
                       {{ pct }}%
@@ -693,8 +693,8 @@
               </tr>
               <tr>
                 <td><span class="badge bg-info me-1">&nbsp;</span>Maquinário</td>
-                <td class="text-end text-muted">R$ {{ est_maq|floatformat:2 }}</td>
-                <td class="text-end fw-semibold">R$ {{ custo_maq|floatformat:2 }}</td>
+                <td class="text-end text-muted">R$ {{ est_maq|floatformat:"2g" }}</td>
+                <td class="text-end fw-semibold">R$ {{ custo_maq|floatformat:"2g" }}</td>
                 <td class="text-end small {% if custo_maq > est_maq %}text-danger{% else %}text-success{% endif %}">
                   {% if est_maq %}
                     {% widthratio custo_maq est_maq 100 as pct %}
@@ -705,8 +705,8 @@
               </tr>
               <tr>
                 <td><span class="badge bg-warning me-1">&nbsp;</span>Insumos</td>
-                <td class="text-end text-muted">R$ {{ est_ins|floatformat:2 }}</td>
-                <td class="text-end fw-semibold">R$ {{ custo_ins|floatformat:2 }}</td>
+                <td class="text-end text-muted">R$ {{ est_ins|floatformat:"2g" }}</td>
+                <td class="text-end fw-semibold">R$ {{ custo_ins|floatformat:"2g" }}</td>
                 <td class="text-end small {% if custo_ins > est_ins %}text-danger{% else %}text-success{% endif %}">
                   {% if est_ins %}
                     {% widthratio custo_ins est_ins 100 as pct %}
@@ -717,8 +717,8 @@
               </tr>
               <tr class="border-top fw-bold">
                 <td>Total</td>
-                <td class="text-end text-muted">R$ {{ os.custo_estimado_total|floatformat:2 }}</td>
-                <td class="text-end text-success">R$ {{ custo_total|floatformat:2 }}</td>
+                <td class="text-end text-muted">R$ {{ os.custo_estimado_total|floatformat:"2g" }}</td>
+                <td class="text-end text-success">R$ {{ custo_total|floatformat:"2g" }}</td>
                 <td class="text-end small {% if custo_total > os.custo_estimado_total %}text-danger{% else %}text-success{% endif %}">
                   {% if os.custo_estimado_total %}
                     {% widthratio custo_total os.custo_estimado_total 100 as pct %}
@@ -868,7 +868,7 @@
                   {% else %}<span class="badge bg-success">Concluída</span>{% endif %}
                 </td>
                 <td>{{ etapa.data_inicio|date:"d/m H:i"|default:"—" }}</td>
-                <td class="text-end fw-bold">{{ etapa.total_liquido_kg|floatformat:0 }} kg</td>
+                <td class="text-end fw-bold">{{ etapa.total_liquido_kg|floatformat:"0g" }} kg</td>
                 <td>
                   <a href="{% url 'operacoes_campo:colheita_detalhe' os_pk=os.pk etapa_pk=etapa.pk %}" class="btn btn-xs btn-outline-warning py-0 px-2">
                     <i class="bi bi-arrow-right"></i>
@@ -880,7 +880,7 @@
             <tfoot class="table-light">
               <tr>
                 <td colspan="3" class="text-end fw-bold text-muted small">Total Colhido:</td>
-                <td class="text-end fw-bold text-success">{{ total_colheita_kg|floatformat:0 }} kg</td>
+                <td class="text-end fw-bold text-success">{{ total_colheita_kg|floatformat:"0g" }} kg</td>
                 <td></td>
               </tr>
             </tfoot>
@@ -918,7 +918,7 @@
             <dt class="col-sm-4">Quantidade Transplantada</dt>
             <dd class="col-sm-8">{{ transplantio_obj.quantidade_transplantada }}</dd>
             <dt class="col-sm-4">Custo Transferido</dt>
-            <dd class="col-sm-8">R$ {{ transplantio_obj.custo_transferido|floatformat:2 }}</dd>
+            <dd class="col-sm-8">R$ {{ transplantio_obj.custo_transferido|floatformat:"2g" }}</dd>
           </dl>
           {% endif %}
           {% if replantio_obj %}
@@ -934,7 +934,7 @@
             <dt class="col-sm-4">Motivo da Perda</dt>
             <dd class="col-sm-8">{{ replantio_obj.get_motivo_perda_display }}</dd>
             <dt class="col-sm-4">Custo Adicional</dt>
-            <dd class="col-sm-8">R$ {{ replantio_obj.custo_adicional|floatformat:2 }}</dd>
+            <dd class="col-sm-8">R$ {{ replantio_obj.custo_adicional|floatformat:"2g" }}</dd>
           </dl>
           {% endif %}
         </div>

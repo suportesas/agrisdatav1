@@ -35,7 +35,7 @@
                     <h5 class="card-title">Acurácia Média</h5>
                     <p class="card-text display-4">
                         {% if acuracia_media %}
-                        {{ acuracia_media|floatformat:1 }}%
+                        {{ acuracia_media|floatformat:"1g" }}%
                         {% else %}
                         0%
                         {% endif %}
@@ -95,7 +95,7 @@
                                 {% endif %}
                             </td>
                             <td class="text-center">
-                                <strong>{{ inv.acuracia_percentual|floatformat:1 }}%</strong>
+                                <strong>{{ inv.acuracia_percentual|floatformat:"1g" }}%</strong>
                                 <div class="progress mt-2" style="height: 20px;">
                                     <div class="progress-bar {% if inv.acuracia_percentual >= 95 %}bg-success{% elif inv.acuracia_percentual >= 90 %}bg-info{% else %}bg-warning{% endif %}"
                                          role="progressbar"
@@ -116,7 +116,7 @@
                             </td>
                             <td class="text-end">
                                 <span class="{% if inv.valor_divergencia != 0 %}text-danger{% else %}text-success{% endif %}">
-                                    R$ {{ inv.valor_divergencia|floatformat:2 }}
+                                    R$ {{ inv.valor_divergencia|floatformat:"2g" }}
                                 </span>
                             </td>
                         </tr>

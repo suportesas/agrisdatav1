@@ -91,13 +91,13 @@
     <div class="col-md-3 col-sm-6">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Débitos Conciliados</div>
-        <div class="fw-bold text-danger">R$ {{ stats.debito_conciliado|floatformat:2 }}</div>
+        <div class="fw-bold text-danger">R$ {{ stats.debito_conciliado|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-md-3 col-sm-6">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Créditos Conciliados</div>
-        <div class="fw-bold text-success">R$ {{ stats.credito_conciliado|floatformat:2 }}</div>
+        <div class="fw-bold text-success">R$ {{ stats.credito_conciliado|floatformat:"2g" }}</div>
       </div>
     </div>
   </div>
@@ -129,7 +129,7 @@
             <td class="text-center"><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
             <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
             <td class="text-end text-mono text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
-              R$ {{ lanc.valor|floatformat:2 }}
+              R$ {{ lanc.valor|floatformat:"2g" }}
             </td>
             <td class="small">
               {% if lanc.conciliacao %}
@@ -195,7 +195,7 @@
             <td class="text-center"><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
             <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
             <td class="text-end text-mono text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
-              R$ {{ lanc.valor|floatformat:2 }}
+              R$ {{ lanc.valor|floatformat:"2g" }}
             </td>
             <td class="text-center">
               <a class="action-icon" href="{% url 'bancario:conciliacao_workspace' lanc.importacao_id %}" title="Conciliar">
@@ -250,7 +250,7 @@
             <td class="text-center"><span class="badge bg-{{ lanc.badge_tipo }}">{{ lanc.get_tipo_display }}</span></td>
             <td class="small">{{ lanc.descricao|truncatechars:50 }}</td>
             <td class="text-end text-mono text-nowrap {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
-              R$ {{ lanc.valor|floatformat:2 }}
+              R$ {{ lanc.valor|floatformat:"2g" }}
             </td>
           </tr>
           {% endfor %}

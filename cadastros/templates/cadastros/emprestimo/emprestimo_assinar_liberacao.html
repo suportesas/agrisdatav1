@@ -50,7 +50,7 @@
                 {% for emp in emprestimos_lote %}
                 <tr>
                   <td>{{ emp.produto.nome }}</td>
-                  <td>{{ emp.saldo_pendente|floatformat:3 }}</td>
+                  <td>{{ emp.saldo_pendente|floatformat:"3g" }}</td>
                   <td>{{ emp.unidade_medida.sigla }}</td>
                   <td>
                     {% if emp.possui_assinatura_liberador %}

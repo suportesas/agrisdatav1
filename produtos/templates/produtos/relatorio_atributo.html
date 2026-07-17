@@ -106,25 +106,25 @@
   <div class="col-6 col-md-3">
     <div class="kpi-box fat">
       <div class="kpi-label">Qtd Faturada</div>
-      <div class="kpi-value">{{ resultados.fat_total.qtd|default:0|floatformat:3 }}</div>
+      <div class="kpi-value">{{ resultados.fat_total.qtd|default:0|floatformat:"3g" }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
     <div class="kpi-box fat">
       <div class="kpi-label">Valor Faturado</div>
-      <div class="kpi-value">R$ {{ resultados.fat_total.valor|default:0|floatformat:2 }}</div>
+      <div class="kpi-value">R$ {{ resultados.fat_total.valor|default:0|floatformat:"2g" }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
     <div class="kpi-box compra">
       <div class="kpi-label">Qtd Comprada</div>
-      <div class="kpi-value">{{ resultados.compra_total.qtd|default:0|floatformat:3 }}</div>
+      <div class="kpi-value">{{ resultados.compra_total.qtd|default:0|floatformat:"3g" }}</div>
     </div>
   </div>
   <div class="col-6 col-md-3">
     <div class="kpi-box compra">
       <div class="kpi-label">Valor Comprado</div>
-      <div class="kpi-value">R$ {{ resultados.compra_total.valor|default:0|floatformat:2 }}</div>
+      <div class="kpi-value">R$ {{ resultados.compra_total.valor|default:0|floatformat:"2g" }}</div>
     </div>
   </div>
 </div>
@@ -147,8 +147,8 @@
             <td>{{ item.nota.data_emissao|date:"d/m/Y" }}</td>
             <td>{{ item.produto.nome }}</td>
             <td>{{ item.nota.numero_nfe }}</td>
-            <td class="text-end">{{ item.quantidade|floatformat:3 }}</td>
-            <td class="text-end">R$ {{ item.valor_total|floatformat:2 }}</td>
+            <td class="text-end">{{ item.quantidade|floatformat:"3g" }}</td>
+            <td class="text-end">R$ {{ item.valor_total|floatformat:"2g" }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -178,8 +178,8 @@
             <td>{{ item.recebimento.data_recebimento|date:"d/m/Y" }}</td>
             <td>{{ item.produto.nome }}</td>
             <td>{{ item.recebimento.numero_nf|default:"—" }}</td>
-            <td class="text-end">{{ item.quantidade|floatformat:3 }}</td>
-            <td class="text-end">R$ {{ item.valor_total|default:0|floatformat:2 }}</td>
+            <td class="text-end">{{ item.quantidade|floatformat:"3g" }}</td>
+            <td class="text-end">R$ {{ item.valor_total|default:0|floatformat:"2g" }}</td>
           </tr>
           {% endfor %}
         </tbody>

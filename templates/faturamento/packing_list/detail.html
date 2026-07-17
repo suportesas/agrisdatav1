@@ -52,11 +52,11 @@
             <dt class="col-sm-6">Cliente</dt>
             <dd class="col-sm-6">{{ pl.invoice.cliente.razao_social }}</dd>
             <dt class="col-sm-6">Total Caixas</dt>
-            <dd class="col-sm-6 fw-bold">{{ pl.total_caixas|floatformat:0 }}</dd>
+            <dd class="col-sm-6 fw-bold">{{ pl.total_caixas|floatformat:"0g" }}</dd>
             <dt class="col-sm-6">Peso Bruto Total</dt>
-            <dd class="col-sm-6 fw-bold">{{ pl.peso_bruto_total|floatformat:3 }} kg</dd>
+            <dd class="col-sm-6 fw-bold">{{ pl.peso_bruto_total|floatformat:"3g" }} kg</dd>
             <dt class="col-sm-6">Peso Líq. Total</dt>
-            <dd class="col-sm-6 fw-bold">{{ pl.peso_liquido_total|floatformat:3 }} kg</dd>
+            <dd class="col-sm-6 fw-bold">{{ pl.peso_liquido_total|floatformat:"3g" }} kg</dd>
           </dl>
         </div>
       </div>
@@ -92,11 +92,11 @@
               <td>{{ item.lacre_armador|default:"—" }}</td>
               <td>{{ item.lacre_fiscal|default:"—" }}</td>
               <td>{{ item.descricao_produto }}</td>
-              <td class="text-end">{{ item.quantidade_caixas|floatformat:0 }}</td>
-              <td class="text-end">{{ item.quantidade_pallets|floatformat:0|default:"—" }}</td>
-              <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }}</td>
-              <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }}</td>
-              <td class="text-end">{{ item.volume_m3|floatformat:3|default:"—" }}</td>
+              <td class="text-end">{{ item.quantidade_caixas|floatformat:"0g" }}</td>
+              <td class="text-end">{{ item.quantidade_pallets|floatformat:"0g"|default:"—" }}</td>
+              <td class="text-end">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
+              <td class="text-end">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+              <td class="text-end">{{ item.volume_m3|floatformat:"3g"|default:"—" }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="11" class="text-center text-muted py-3">Nenhum item.</td></tr>
@@ -105,10 +105,10 @@
           <tfoot class="table-light fw-bold">
             <tr>
               <td colspan="6">TOTAL</td>
-              <td class="text-end">{{ pl.total_caixas|floatformat:0 }}</td>
+              <td class="text-end">{{ pl.total_caixas|floatformat:"0g" }}</td>
               <td></td>
-              <td class="text-end">{{ pl.peso_bruto_total|floatformat:3 }}</td>
-              <td class="text-end">{{ pl.peso_liquido_total|floatformat:3 }}</td>
+              <td class="text-end">{{ pl.peso_bruto_total|floatformat:"3g" }}</td>
+              <td class="text-end">{{ pl.peso_liquido_total|floatformat:"3g" }}</td>
               <td></td>
             </tr>
           </tfoot>

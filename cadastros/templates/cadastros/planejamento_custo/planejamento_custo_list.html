@@ -56,16 +56,16 @@
             <td class="small text-muted">{{ p.safra.nome|default:"—" }}</td>
             <td class="small text-muted">{{ p.talhao.nome|default:"—" }}</td>
             <td class="text-end small">{{ p.area_ha|floatformat:"2g" }}</td>
-            <td class="text-end fw-bold text-warning">R$ {{ total|floatformat:2 }}</td>
-            <td class="text-end small text-muted">R$ {{ p.custo_planejado_por_ha|floatformat:2 }}</td>
+            <td class="text-end fw-bold text-warning">R$ {{ total|floatformat:"2g" }}</td>
+            <td class="text-end small text-muted">R$ {{ p.custo_planejado_por_ha|floatformat:"2g" }}</td>
             <td class="text-end small {% if receita %}text-success{% else %}text-muted{% endif %}">
-              {% if receita %}R$ {{ receita|floatformat:2 }}{% else %}—{% endif %}
+              {% if receita %}R$ {{ receita|floatformat:"2g" }}{% else %}—{% endif %}
             </td>
             <td class="text-end small {% if margem and margem > 0 %}text-success{% elif margem %}text-danger{% else %}text-muted{% endif %}">
               {% if margem %}
-                {% if margem > 0 %}+{% endif %}R$ {{ margem|floatformat:2 }}
+                {% if margem > 0 %}+{% endif %}R$ {{ margem|floatformat:"2g" }}
                 {% if p.margem_pct %}
-                  <span class="d-block" style="font-size:.7rem;">({{ p.margem_pct|floatformat:1 }}%)</span>
+                  <span class="d-block" style="font-size:.7rem;">({{ p.margem_pct|floatformat:"1g" }}%)</span>
                 {% endif %}
               {% else %}—{% endif %}
             </td>

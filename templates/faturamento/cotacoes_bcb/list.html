@@ -113,8 +113,8 @@
 
               {% with u=linha.cotacoes.USD %}
               {% if u %}
-              <td class="text-end border-start font-monospace">R$ {{ u.compra|floatformat:4 }}</td>
-              <td class="text-end font-monospace text-muted">{{ u.venda|floatformat:4 }}</td>
+              <td class="text-end border-start font-monospace">R$ {{ u.compra|floatformat:"4g" }}</td>
+              <td class="text-end font-monospace text-muted">{{ u.venda|floatformat:"4g" }}</td>
               {% else %}
               <td class="text-end border-start text-muted small">—</td>
               <td class="text-end text-muted small">—</td>
@@ -123,8 +123,8 @@
 
               {% with e=linha.cotacoes.EUR %}
               {% if e %}
-              <td class="text-end border-start font-monospace">R$ {{ e.compra|floatformat:4 }}</td>
-              <td class="text-end font-monospace text-muted">{{ e.venda|floatformat:4 }}</td>
+              <td class="text-end border-start font-monospace">R$ {{ e.compra|floatformat:"4g" }}</td>
+              <td class="text-end font-monospace text-muted">{{ e.venda|floatformat:"4g" }}</td>
               {% else %}
               <td class="text-end border-start text-muted small">—</td>
               <td class="text-end text-muted small">—</td>
@@ -133,8 +133,8 @@
 
               {% with g=linha.cotacoes.GBP %}
               {% if g %}
-              <td class="text-end border-start font-monospace">R$ {{ g.compra|floatformat:4 }}</td>
-              <td class="text-end pe-3 font-monospace text-muted">{{ g.venda|floatformat:4 }}</td>
+              <td class="text-end border-start font-monospace">R$ {{ g.compra|floatformat:"4g" }}</td>
+              <td class="text-end pe-3 font-monospace text-muted">{{ g.venda|floatformat:"4g" }}</td>
               {% else %}
               <td class="text-end border-start text-muted small">—</td>
               <td class="text-end pe-3 text-muted small">—</td>

@@ -110,10 +110,10 @@
           <dt class="col-4">Combustível</dt><dd class="col-8">{{ vehicle.get_tipo_combustivel_display }}</dd>
           <dt class="col-4">Código Patrimônio</dt><dd class="col-8">{{ vehicle.codigo_patrimonio }}</dd>
           <dt class="col-4">Código Patrimônio</dt><dd class="col-8">{{ vehicle.codigo_patrimonio }}</dd>
-          <dt class="col-4">Valor Atual</dt><dd class="col-8">{% if vehicle.valor_atual %}R$ {{ vehicle.valor_atual|floatformat:2 }}{% else %}—{% endif %}</dd>
+          <dt class="col-4">Valor Atual</dt><dd class="col-8">{% if vehicle.valor_atual %}R$ {{ vehicle.valor_atual|floatformat:"2g" }}{% else %}—{% endif %}</dd>
           <dt class="col-4">Consumo médio</dt><dd class="col-8">{% if vehicle.consumo_medio %}{{ vehicle.consumo_medio }} {% if vehicle.consumo_unidade == 'L_KM' %}L/km{% else %}L/h{% endif %}{% else %}—{% endif %}</dd>
           <dt class="col-4">Capacidade do Tanque (L)</dt><dd class="col-8">{% if vehicle.tank_capacity %}{{ vehicle.tank_capacity|floatformat:"2g" }} L{% else %}—{% endif %}</dd>
-          <dt class="col-4">Estimativa de Autonomia</dt><dd class="col-8">{% if vehicle.estimated_range_km %}{{ vehicle.estimated_range_km|floatformat:0 }} km (aprox.){% elif vehicle.estimated_hours_per_tank %}{{ vehicle.estimated_hours_per_tank|floatformat:"2g" }} h (aprox.){% else %}—{% endif %}</dd>
+          <dt class="col-4">Estimativa de Autonomia</dt><dd class="col-8">{% if vehicle.estimated_range_km %}{{ vehicle.estimated_range_km|floatformat:"0g" }} km (aprox.){% elif vehicle.estimated_hours_per_tank %}{{ vehicle.estimated_hours_per_tank|floatformat:"2g" }} h (aprox.){% else %}—{% endif %}</dd>
         </dl>
       </div>
     </div>
@@ -168,11 +168,11 @@
             <td class="small">{{ ab.data|date:"d/m/Y" }}</td>
             <td><span class="badge bg-light text-dark border small">{{ ab.get_tipo_combustivel_display }}</span></td>
             <td class="text-end small">{{ ab.litros|floatformat:"2g" }}</td>
-            <td class="text-end small">R$ {{ ab.preco_por_litro|floatformat:3 }}</td>
-            <td class="text-end fw-bold small">R$ {{ ab.valor_total|floatformat:2 }}</td>
+            <td class="text-end small">R$ {{ ab.preco_por_litro|floatformat:"3g" }}</td>
+            <td class="text-end fw-bold small">R$ {{ ab.valor_total|floatformat:"2g" }}</td>
             <td class="text-end small text-muted">
-              {% if ab.km_odometro %}{{ ab.km_odometro|floatformat:0 }} km
-              {% elif ab.horimetro %}{{ ab.horimetro|floatformat:1 }} h{% else %}—{% endif %}
+              {% if ab.km_odometro %}{{ ab.km_odometro|floatformat:"0g" }} km
+              {% elif ab.horimetro %}{{ ab.horimetro|floatformat:"1g" }} h{% else %}—{% endif %}
             </td>
             <td class="small text-muted">{{ ab.local_abastecimento|truncatechars:18|default:"—" }}</td>
             <td>
@@ -203,7 +203,7 @@
         <li class="list-group-item d-flex justify-content-between align-items-center">
           <div>
             <div><strong>{% if h.tipo == 'VAL' %}Valorização{% else %}Desvalorização{% endif %} {{ h.percentual }}%</strong></div>
-            <div class="small text-muted">De R$ {{ h.previous_value|floatformat:2 }} para R$ {{ h.new_value|floatformat:2 }} — {{ h.data_aplicacao|date:'d/m/Y H:i' }}</div>
+            <div class="small text-muted">De R$ {{ h.previous_value|floatformat:"2g" }} para R$ {{ h.new_value|floatformat:"2g" }} — {{ h.data_aplicacao|date:'d/m/Y H:i' }}</div>
           </div>
           <div class="small text-muted">Por: {{ h.aplicado_por }}</div>
         </li>

@@ -157,7 +157,7 @@
                       </td>
                       <td class="text-center">
                         <span class="badge bg-info fs-6">
-                          {{ praga_mon.incidencia_percentual|floatformat:1 }}%
+                          {{ praga_mon.incidencia_percentual|floatformat:"1g" }}%
                         </span>
                         <br>
                         <small class="text-muted">{{ praga_mon.quantidade_pontos_com_praga }}/{{ monitoramento.quantidade_pontos }} pontos</small>
@@ -176,7 +176,7 @@
                         {% endif %}
                       </td>
                       <td class="text-center">
-                        <span class="fw-bold">{{ praga_mon.ned_valor|floatformat:1 }}%</span><br>
+                        <span class="fw-bold">{{ praga_mon.ned_valor|floatformat:"1g" }}%</span><br>
                         {% if praga_mon.ned_atingido %}
                           <span class="badge bg-danger fs-7">ATINGIDO</span>
                         {% else %}

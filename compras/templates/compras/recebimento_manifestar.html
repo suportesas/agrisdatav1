@@ -40,7 +40,7 @@
         <dt class="col-sm-4">Data Emissão</dt>
         <dd class="col-sm-8">{{ recebimento.data_emissao_nf|date:"d/m/Y" }}</dd>
         <dt class="col-sm-4">Valor Total</dt>
-        <dd class="col-sm-8">R$ {{ recebimento.valor_total_nf|floatformat:2 }}</dd>
+        <dd class="col-sm-8">R$ {{ recebimento.valor_total_nf|floatformat:"2g" }}</dd>
       </dl>
     </div>
   </div>

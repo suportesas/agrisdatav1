@@ -49,21 +49,21 @@
             <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-wallet2"></i></div>
             <div>
                 <div class="stat-label text-uppercase">Valor Total</div>
-                <div class="stat-value">R$ {{ conta.valor_total|floatformat:2 }}</div>
+                <div class="stat-value">R$ {{ conta.valor_total|floatformat:"2g" }}</div>
             </div>
         </div>
         <div class="stat-card d-flex align-items-center gap-3">
             <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-percent"></i></div>
             <div>
                 <div class="stat-label text-uppercase">Desconto</div>
-                <div class="stat-value" style="color:var(--pastel-green-text)">-R$ {{ conta.desconto_negociado|floatformat:2 }}</div>
+                <div class="stat-value" style="color:var(--pastel-green-text)">-R$ {{ conta.desconto_negociado|floatformat:"2g" }}</div>
             </div>
         </div>
         <div class="stat-card d-flex align-items-center gap-3">
             <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-credit-card"></i></div>
             <div>
                 <div class="stat-label text-uppercase">Valor Ajustado</div>
-                <div class="stat-value">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
+                <div class="stat-value">R$ {{ conta.valor_ajustado|floatformat:"2g" }}</div>
             </div>
         </div>
         <div class="stat-card{% if saldo_devedor > 0 %} stat-icon-orange{% endif %}" style="{% if saldo_devedor > 0 %}border-color:var(--pastel-orange-border){% endif %}">
@@ -71,19 +71,19 @@
                 <div class="stat-icon {% if saldo_devedor > 0 %}stat-icon-orange{% else %}stat-icon-green{% endif %} mb-0"><i class="bi bi-{% if saldo_devedor > 0 %}exclamation-triangle{% else %}check-circle{% endif %}"></i></div>
                 <div>
                     <div class="stat-label text-uppercase">Saldo Devedor</div>
-                    <div class="stat-value" style="{% if saldo_devedor > 0 %}color:var(--pastel-orange-text){% endif %}">R$ {{ saldo_devedor|floatformat:2 }}</div>
+                    <div class="stat-value" style="{% if saldo_devedor > 0 %}color:var(--pastel-orange-text){% endif %}">R$ {{ saldo_devedor|floatformat:"2g" }}</div>
                 </div>
             </div>
             {% if total_parcelas > 0 %}
             <div class="progress-track"><div class="progress-fill" style="width:{% widthratio parcelas_pagas total_parcelas 100 %}%"></div></div>
-            <div class="stat-sub">{{ parcelas_pagas }} de {{ total_parcelas }} parcelas pagas &middot; Pago: R$ {{ total_pago|floatformat:2 }}</div>
+            <div class="stat-sub">{{ parcelas_pagas }} de {{ total_parcelas }} parcelas pagas &middot; Pago: R$ {{ total_pago|floatformat:"2g" }}</div>
             {% endif %}
             {% if saldo_devedor > 0 and saldo_devedor <= 50 %}
             <form method="post" action="{% url 'financeiro:conta_quitar_saldo' conta.pk %}" class="mt-2"
-                  onsubmit="return confirm('Quitar saldo residual de R$ {{ saldo_devedor|floatformat:2 }}?\n\nUm ajuste de desconto será registrado automaticamente.')">
+                  onsubmit="return confirm('Quitar saldo residual de R$ {{ saldo_devedor|floatformat:"2g" }}?\n\nUm ajuste de desconto será registrado automaticamente.')">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-sm btn-warning w-100">
-                    <i class="bi bi-check2-circle"></i> Quitar R$ {{ saldo_devedor|floatformat:2 }}
+                    <i class="bi bi-check2-circle"></i> Quitar R$ {{ saldo_devedor|floatformat:"2g" }}
                 </button>
             </form>
             {% elif saldo_devedor > 50 %}
@@ -144,10 +144,10 @@
                                 <tr>
                                     <td class="ps-4 text-mono">{{ parcela.numero_parcela }}</td>
                                     <td class="text-mono">{{ parcela.data_vencimento|date:'d/m/Y' }}</td>
-                                    <td class="text-mono">R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
-                                    <td class="text-mono">R$ {{ parcela.juros_parcela|floatformat:2 }}</td>
-                                    <td class="text-mono">R$ {{ parcela.multa_parcela|floatformat:2 }}</td>
-                                    <td class="text-mono fw-semibold">R$ {{ parcela.valor_total_parcela|floatformat:2 }}</td>
+                                    <td class="text-mono">R$ {{ parcela.valor_parcela|floatformat:"2g" }}</td>
+                                    <td class="text-mono">R$ {{ parcela.juros_parcela|floatformat:"2g" }}</td>
+                                    <td class="text-mono">R$ {{ parcela.multa_parcela|floatformat:"2g" }}</td>
+                                    <td class="text-mono fw-semibold">R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</td>
                                     <td>
                                         <span class="status-pill {% if parcela.status == 'PAGA' %}green{% elif parcela.status == 'VENCIDA' %}red{% else %}orange{% endif %}">
                                             {{ parcela.get_status_display }}
@@ -205,7 +205,7 @@
                                 <tr>
                                     <td class="ps-4 text-mono">{{ pagamento.data_pagamento|date:'d/m/Y' }}</td>
                                     <td>{{ pagamento.get_forma_pagamento_display }}</td>
-                                    <td class="text-mono">R$ {{ pagamento.valor_pago|floatformat:2 }}</td>
+                                    <td class="text-mono">R$ {{ pagamento.valor_pago|floatformat:"2g" }}</td>
                                     <td>
                                         <span class="status-pill {% if pagamento.status == 'COMPENSADO' %}green{% elif pagamento.status == 'PENDENTE' %}orange{% else %}red{% endif %}">
                                             {{ pagamento.get_status_display }}
@@ -238,7 +238,7 @@
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modalEditarPagamento"
                                                 data-pagamento-id="{{ pagamento.pk }}"
-                                                data-pagamento-info="{{ pagamento.data_pagamento|date:'d/m/Y' }} — R$ {{ pagamento.valor_pago|floatformat:2 }} ({{ pagamento.get_forma_pagamento_display }})">
+                                                data-pagamento-info="{{ pagamento.data_pagamento|date:'d/m/Y' }} — R$ {{ pagamento.valor_pago|floatformat:"2g" }} ({{ pagamento.get_forma_pagamento_display }})">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                     </td>
@@ -282,7 +282,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-mono fw-semibold" style="color:{% if ajuste.valor_ajuste > 0 %}var(--pastel-red-text){% else %}var(--pastel-green-text){% endif %}">
-                                        {% if ajuste.valor_ajuste > 0 %}+{% endif %}R$ {{ ajuste.valor_ajuste|floatformat:2 }}
+                                        {% if ajuste.valor_ajuste > 0 %}+{% endif %}R$ {{ ajuste.valor_ajuste|floatformat:"2g" }}
                                     </td>
                                     <td class="small">
                                         {% if ajuste.valor_ajuste < 0 %}
@@ -398,16 +398,16 @@
                     <div class="row g-2 mb-3 p-3 bg-light rounded">
                         <div class="col-4 text-center">
                             <div class="small text-muted">Valor Ajustado Atual</div>
-                            <div class="fw-bold">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
+                            <div class="fw-bold">R$ {{ conta.valor_ajustado|floatformat:"2g" }}</div>
                         </div>
                         <div class="col-4 text-center">
                             <div class="small text-muted">Total Pago</div>
-                            <div class="fw-bold text-primary">R$ {{ total_pago|floatformat:2 }}</div>
+                            <div class="fw-bold text-primary">R$ {{ total_pago|floatformat:"2g" }}</div>
                         </div>
                         <div class="col-4 text-center">
                             <div class="small text-muted">Saldo Devedor</div>
                             <div class="fw-bold {% if saldo_devedor > 0 %}text-warning{% elif saldo_devedor < 0 %}text-danger{% else %}text-success{% endif %}">
-                                R$ {{ saldo_devedor|floatformat:2 }}
+                                R$ {{ saldo_devedor|floatformat:"2g" }}
                             </div>
                         </div>
                     </div>

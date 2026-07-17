@@ -124,8 +124,8 @@
         {% endif %}
       </td>
       <td class="r">{{ item.quantidade_caixas }}</td>
-      <td class="r">{{ item.peso_liquido_kg|floatformat:3 }}</td>
-      <td class="r">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+      <td class="r">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+      <td class="r">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
       <td>
         {% if item.status_conferencia == 'CONFERIDO' %}
           <span class="status-conferido">✔ Conferido</span>
@@ -143,8 +143,8 @@
     <tr>
       <td colspan="3">TOTAL</td>
       <td class="r">{{ romaneio.total_caixas }}</td>
-      <td class="r">{{ romaneio.peso_liquido_total|floatformat:3 }}</td>
-      <td class="r">{{ romaneio.peso_bruto_total|floatformat:3 }}</td>
+      <td class="r">{{ romaneio.peso_liquido_total|floatformat:"3g" }}</td>
+      <td class="r">{{ romaneio.peso_bruto_total|floatformat:"3g" }}</td>
       <td>{{ romaneio.pallets_conferidos }}/{{ romaneio.total_pallets }} conf.</td>
     </tr>
   </tfoot>

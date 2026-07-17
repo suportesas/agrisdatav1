@@ -40,7 +40,7 @@
           {% if empresa.plano %}
           <div class="mb-2">
             <strong class="fs-5">{{ empresa.plano.icone }} {{ empresa.plano.nome }}</strong>
-            <div class="text-muted">Valor mensal: <strong>R$ {{ empresa.plano.valor_mensal|floatformat:2 }}</strong></div>
+            <div class="text-muted">Valor mensal: <strong>R$ {{ empresa.plano.valor_mensal|floatformat:"2g" }}</strong></div>
             {% if empresa.data_expiracao %}
               <div class="text-muted">Vence em: {{ empresa.data_expiracao|date:"d/m/Y" }} ({% if dias_vencimento is not None %}{{ dias_vencimento }} dias{% else %}—{% endif %})</div>
             {% endif %}

@@ -31,7 +31,7 @@
     <div class="col-md-2">
       <div class="card text-center">
         <div class="card-body">
-          <h3 class="text-success mb-0">{{ stats.total_entradas|floatformat:0 }}</h3>
+          <h3 class="text-success mb-0">{{ stats.total_entradas|floatformat:"0g" }}</h3>
           <small class="text-muted">Total Entradas</small>
         </div>
       </div>
@@ -39,7 +39,7 @@
     <div class="col-md-2">
       <div class="card text-center">
         <div class="card-body">
-          <h3 class="text-warning mb-0">{{ stats.total_saidas|floatformat:0 }}</h3>
+          <h3 class="text-warning mb-0">{{ stats.total_saidas|floatformat:"0g" }}</h3>
           <small class="text-muted">Total Saídas</small>
         </div>
       </div>
@@ -293,8 +293,8 @@
                     </td>
                     <td>{{ item.pedido.fornecedor.nome_fantasia }}</td>
                     <td><strong>{{ item.quantidade_pedida|floatformat:"2g" }}</strong></td>
-                    <td>R$ {{ item.preco_unitario|floatformat:2 }}</td>
-                    <td><strong>R$ {{ item.preco_total|floatformat:2 }}</strong></td>
+                    <td>R$ {{ item.preco_unitario|floatformat:"2g" }}</td>
+                    <td><strong>R$ {{ item.preco_total|floatformat:"2g" }}</strong></td>
                     <td>
                       <span class="badge bg-{{ item.pedido.status|lower }}">{{ item.pedido.get_status_display }}</span>
                     </td>

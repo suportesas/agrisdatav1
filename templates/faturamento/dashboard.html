@@ -42,7 +42,7 @@
             <div class="text-muted" style="font-size:.75rem">Canceladas</div>
           </div>
           <div class="col">
-            <div class="text-primary small fw-semibold">R$ {{ nf_stats.valor_mes|floatformat:2|default:"0,00" }}</div>
+            <div class="text-primary small fw-semibold">R$ {{ nf_stats.valor_mes|floatformat:"2g"|default:"0,00" }}</div>
             <div class="text-muted" style="font-size:.75rem">Este mês</div>
           </div>
         </div>
@@ -65,7 +65,7 @@
             <div class="text-muted" style="font-size:.75rem">Emitidas</div>
           </div>
           <div class="col">
-            <div class="text-info small fw-semibold">{{ invoice_stats.valor_fob|floatformat:2|default:"0,00" }}</div>
+            <div class="text-info small fw-semibold">{{ invoice_stats.valor_fob|floatformat:"2g"|default:"0,00" }}</div>
             <div class="text-muted" style="font-size:.75rem">Valor FOB Total</div>
           </div>
         </div>
@@ -115,7 +115,7 @@
               <tr>
                 <td class="ps-4"><a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}">{{ nf.numero|default:"—" }}/{{ nf.serie }}</a></td>
                 <td class="text-truncate" style="max-width:150px">{{ nf.cliente.razao_social }}</td>
-                <td class="text-mono">R$ {{ nf.valor_total|floatformat:2 }}</td>
+                <td class="text-mono">R$ {{ nf.valor_total|floatformat:"2g" }}</td>
                 <td class="text-center">
                   {% if nf.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
                   {% elif nf.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>
@@ -156,7 +156,7 @@
               <tr>
                 <td class="ps-4"><a href="{% url 'faturamento:invoice_detail' inv.pk %}">{{ inv.numero|default:"—" }}</a></td>
                 <td class="text-truncate" style="max-width:150px">{{ inv.cliente.razao_social }}</td>
-                <td class="text-mono">{{ inv.moeda }} {{ inv.valor_mercadoria|floatformat:2 }}</td>
+                <td class="text-mono">{{ inv.moeda }} {{ inv.valor_mercadoria|floatformat:"2g" }}</td>
                 <td class="text-center">
                   {% if inv.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
                   {% elif inv.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>

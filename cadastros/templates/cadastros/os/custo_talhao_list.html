@@ -83,7 +83,7 @@
         <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-currency-dollar"></i></div>
         <div>
           <div class="stat-label text-uppercase">Custo Total</div>
-          <div class="stat-value">R$ {{ resumo.total_geral|floatformat:2 }}</div>
+          <div class="stat-value">R$ {{ resumo.total_geral|floatformat:"2g" }}</div>
         </div>
       </div>
     </div>
@@ -92,22 +92,22 @@
         <div class="row g-0 text-center">
           <div class="col-6 border-end">
             <div class="stat-label text-uppercase">Mão de Obra</div>
-            <div class="fw-bold text-primary small">R$ {{ resumo.total_mao_obra|floatformat:2 }}</div>
+            <div class="fw-bold text-primary small">R$ {{ resumo.total_mao_obra|floatformat:"2g" }}</div>
           </div>
           <div class="col-6">
             <div class="stat-label text-uppercase">Maquinário</div>
-            <div class="fw-bold text-info small">R$ {{ resumo.total_maquinario|floatformat:2 }}</div>
+            <div class="fw-bold text-info small">R$ {{ resumo.total_maquinario|floatformat:"2g" }}</div>
           </div>
         </div>
         <hr class="my-2">
         <div class="row g-0 text-center">
           <div class="col-6 border-end">
             <div class="stat-label text-uppercase">Insumos</div>
-            <div class="fw-bold text-warning small">R$ {{ resumo.total_insumos|floatformat:2 }}</div>
+            <div class="fw-bold text-warning small">R$ {{ resumo.total_insumos|floatformat:"2g" }}</div>
           </div>
           <div class="col-6">
             <div class="stat-label text-uppercase">Serv. Externo</div>
-            <div class="fw-bold text-secondary small">R$ {{ resumo.total_servico|floatformat:2 }}</div>
+            <div class="fw-bold text-secondary small">R$ {{ resumo.total_servico|floatformat:"2g" }}</div>
           </div>
         </div>
         {% if resumo.total_estufa %}
@@ -115,7 +115,7 @@
         <div class="row g-0 text-center">
           <div class="col-12">
             <div class="stat-label text-uppercase">Estufa/Transplantio</div>
-            <div class="fw-bold small" style="color:#0dcaf0;">R$ {{ resumo.total_estufa|floatformat:2 }}</div>
+            <div class="fw-bold small" style="color:#0dcaf0;">R$ {{ resumo.total_estufa|floatformat:"2g" }}</div>
           </div>
         </div>
         {% endif %}
@@ -124,7 +124,7 @@
     <div class="col-md-2">
       <div class="stat-card text-center h-100">
         <div class="stat-label text-uppercase">Custo Médio/ha</div>
-        <div class="stat-value">R$ {{ resumo.custo_medio_ha|floatformat:2 }}</div>
+        <div class="stat-value">R$ {{ resumo.custo_medio_ha|floatformat:"2g" }}</div>
         <div class="small text-muted mt-1">{{ resumo.total_area|floatformat:"2g" }} ha</div>
       </div>
     </div>
@@ -133,7 +133,7 @@
       <div class="stat-card text-center h-100">
         <div class="stat-icon stat-icon-blue mb-2 mx-auto"><i class="bi bi-box-seam"></i></div>
         <div class="stat-label text-uppercase">Produção Total</div>
-        <div class="stat-value">{{ producao_total|floatformat:0 }} kg</div>
+        <div class="stat-value">{{ producao_total|floatformat:"0g" }} kg</div>
         {% if resumo.total_geral and producao_total %}
         <div class="small text-muted mt-1">R$ {% widthratio resumo.total_geral producao_total 1 %}/kg</div>
         {% endif %}
@@ -145,7 +145,7 @@
       <div class="stat-card border-start border-danger border-3 h-100">
         <div class="stat-label text-uppercase">Talhão maior custo/ha</div>
         <div class="fw-bold text-danger small">{{ talhao_mais_caro.talhao__nome }}</div>
-        <div class="small text-muted">R$ {{ talhao_mais_caro.custo_medio_ha|floatformat:2 }}/ha</div>
+        <div class="small text-muted">R$ {{ talhao_mais_caro.custo_medio_ha|floatformat:"2g" }}/ha</div>
       </div>
     </div>
     {% endif %}
@@ -154,7 +154,7 @@
       <div class="stat-card border-start border-success border-3 h-100">
         <div class="stat-label text-uppercase">Talhão menor custo/ha</div>
         <div class="fw-bold text-success small">{{ talhao_mais_barato.talhao__nome }}</div>
-        <div class="small text-muted">R$ {{ talhao_mais_barato.custo_medio_ha|floatformat:2 }}/ha</div>
+        <div class="small text-muted">R$ {{ talhao_mais_barato.custo_medio_ha|floatformat:"2g" }}/ha</div>
       </div>
     </div>
     {% endif %}
@@ -205,7 +205,7 @@
         <li class="nav-item">
           <a class="nav-link" data-bs-toggle="tab" href="#tab-os" role="tab">
             <i class="bi bi-list-ul text-secondary"></i> Por OS
-            <span class="badge bg-success ms-1">R$ {{ resumo.total_geral|floatformat:2 }}</span>
+            <span class="badge bg-success ms-1">R$ {{ resumo.total_geral|floatformat:"2g" }}</span>
           </a>
         </li>
       </ul>
@@ -261,24 +261,24 @@
                 <td class="fw-semibold">{{ item.talhao__nome }}</td>
                 <td class="text-end">{{ item.total_os }}</td>
                 <td class="text-end">{{ item.total_area|default:0|floatformat:"2g" }}</td>
-                <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_estufa|default:0|floatformat:2 }}</td>
-                <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_estufa|default:0|floatformat:"2g" }}</td>
+                <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:"2g" }}</td>
                 <td class="text-end"><span class="badge bg-secondary">{{ item.pct_total }}%</span></td>
                 <td class="text-end">
                   {% if talhao_mais_caro and item.talhao__nome == talhao_mais_caro.talhao__nome %}
-                    <span class="badge bg-danger">R$ {{ item.custo_medio_ha|floatformat:2 }}</span>
+                    <span class="badge bg-danger">R$ {{ item.custo_medio_ha|floatformat:"2g" }}</span>
                   {% elif talhao_mais_barato and item.talhao__nome == talhao_mais_barato.talhao__nome %}
-                    <span class="badge bg-success">R$ {{ item.custo_medio_ha|floatformat:2 }}</span>
+                    <span class="badge bg-success">R$ {{ item.custo_medio_ha|floatformat:"2g" }}</span>
                   {% else %}
-                    <span class="text-muted small">R$ {{ item.custo_medio_ha|floatformat:2 }}</span>
+                    <span class="text-muted small">R$ {{ item.custo_medio_ha|floatformat:"2g" }}</span>
                   {% endif %}
                 </td>
                 <td class="text-end small">
-                  {% if item.producao_kg %}{{ item.producao_kg|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                  {% if item.producao_kg %}{{ item.producao_kg|floatformat:"0g" }}{% else %}<span class="text-muted">—</span>{% endif %}
                 </td>
                 <td class="text-end small">
                   {% if item.custo_por_kg %}<span class="fw-semibold">R$ {{ item.custo_por_kg }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
@@ -342,13 +342,13 @@
                 <td class="fw-semibold">{{ item.safra_label }}</td>
                 <td class="text-end">{{ item.total_os }}</td>
                 <td class="text-end">{{ item.total_area|default:0|floatformat:"2g" }}</td>
-                <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.total_estufa|default:0|floatformat:2 }}</td>
-                <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:2 }}</td>
-                <td class="text-end">R$ {{ item.custo_medio_ha|default:0|floatformat:2 }}</td>
+                <td class="text-end small">R$ {{ item.total_mao_obra|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_maquinario|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_insumos|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_servico|default:0|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.total_estufa|default:0|floatformat:"2g" }}</td>
+                <td class="text-end fw-bold">R$ {{ item.total_geral|default:0|floatformat:"2g" }}</td>
+                <td class="text-end">R$ {{ item.custo_medio_ha|default:0|floatformat:"2g" }}</td>
                 <td>
                   {% if item.safra_id %}
                   <a href="{% url 'cadastros:safra_detail' item.safra_id %}" class="btn btn-outline-info btn-sm py-0 px-1" title="Ver safra">
@@ -392,14 +392,14 @@
                 <td class="small text-muted">{% if item.os.tipo_servico %}{{ item.os.tipo_servico.nome }}{% else %}—{% endif %}</td>
                 <td><a href="{% url 'cadastros:talhao_detail' item.talhao.pk %}" class="text-decoration-none text-dark">{{ item.talhao.nome }}</a></td>
                 <td>{% if item.safra %}<span class="badge bg-light text-dark border">{{ item.safra.nome }}</span>{% else %}<span class="text-muted">-</span>{% endif %}</td>
-                <td class="text-end small">{{ item.area_executada_ha|default:0|floatformat:4 }}</td>
-                <td class="text-end small">R$ {{ item.custo_mao_obra|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.custo_maquinario|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.custo_insumos|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.custo_servico_externo|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.custo_estufa|floatformat:2 }}</td>
-                <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:2 }}</td>
-                <td class="text-end small">R$ {{ item.custo_por_hectare|floatformat:2 }}</td>
+                <td class="text-end small">{{ item.area_executada_ha|default:0|floatformat:"4g" }}</td>
+                <td class="text-end small">R$ {{ item.custo_mao_obra|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.custo_maquinario|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.custo_insumos|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.custo_servico_externo|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.custo_estufa|floatformat:"2g" }}</td>
+                <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:"2g" }}</td>
+                <td class="text-end small">R$ {{ item.custo_por_hectare|floatformat:"2g" }}</td>
               </tr>
               {% empty %}
               <tr>

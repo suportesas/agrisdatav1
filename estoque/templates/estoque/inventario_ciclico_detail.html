@@ -45,7 +45,7 @@
                     <h6 class="text-muted">Progresso de Contagem</h6>
                     <div class="progress">
                         <div class="progress-bar bg-success" role="progressbar" style="width: {{ percentual_contagem }}%">
-                            {{ percentual_contagem|floatformat:0 }}%
+                            {{ percentual_contagem|floatformat:"0g" }}%
                         </div>
                     </div>
                     <small>{{ inventario.total_items_contados }} de {{ inventario.total_items_sistema }}</small>
@@ -61,7 +61,7 @@
                 <div class="col-md-3">
                     <h6 class="text-muted">Acurácia</h6>
                     <p class="display-6">
-                        <strong>{{ inventario.acuracia_percentual|floatformat:1 }}%</strong>
+                        <strong>{{ inventario.acuracia_percentual|floatformat:"1g" }}%</strong>
                     </p>
                 </div>
             </div>
@@ -132,11 +132,11 @@
                             <td>{{ item.lote.numero_lote }}</td>
                             {% endif %}
                             <td class="text-end">
-                                {{ item.quantidade_sistema }} {{ item.produto.unidade_medida.sigla }}
+                                {{ item.quantidade_sistema|floatformat:"3g" }} {{ item.produto.unidade_medida.sigla }}
                             </td>
                             <td class="text-end">
                                 {% if item.quantidade_contada %}
-                                <strong class="text-success">{{ item.quantidade_contada }}</strong>
+                                <strong class="text-success">{{ item.quantidade_contada|floatformat:"3g" }}</strong>
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
@@ -145,9 +145,9 @@
                                 {% if item.tem_divergencia %}
                                 <span class="badge bg-warning text-dark">
                                     {% if item.quantidade_diferenca > 0 %}
-                                    +{{ item.quantidade_diferenca }}
+                                    +{{ item.quantidade_diferenca|floatformat:"3g" }}
                                     {% else %}
-                                    {{ item.quantidade_diferenca }}
+                                    {{ item.quantidade_diferenca|floatformat:"3g" }}
                                     {% endif %}
                                 </span>
                                 {% else %}
@@ -187,7 +187,7 @@
             <h6>Resumo de Divergência</h6>
             <p>
                 <strong>Valor Total de Divergência:</strong> 
-                <span class="text-danger h5">R$ {{ inventario.valor_divergencia|floatformat:2 }}</span>
+                <span class="text-danger h5">R$ {{ inventario.valor_divergencia|floatformat:"2g" }}</span>
             </p>
         </div>
     </div>

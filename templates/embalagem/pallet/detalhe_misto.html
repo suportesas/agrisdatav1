@@ -56,9 +56,9 @@
             <dd class="col-6">{{ capacidade }} cx</dd>
             {% endif %}
             <dt class="col-6">Peso Líquido</dt>
-            <dd class="col-6" id="total-liquido">{{ pallet.peso_liquido_kg|floatformat:3 }} kg</dd>
+            <dd class="col-6" id="total-liquido">{{ pallet.peso_liquido_kg|floatformat:"3g" }} kg</dd>
             <dt class="col-6">Peso Bruto</dt>
-            <dd class="col-6" id="total-bruto">{{ pallet.peso_bruto_kg|floatformat:3 }} kg</dd>
+            <dd class="col-6" id="total-bruto">{{ pallet.peso_bruto_kg|floatformat:"3g" }} kg</dd>
           </dl>
         </div>
       </div>
@@ -123,8 +123,8 @@
                 <tr id="item-{{ item.pk }}">
                   <td>{{ item.tipo_embalagem.descricao_completa }}</td>
                   <td class="text-end">{{ item.quantidade_caixas }}</td>
-                  <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }}</td>
-                  <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+                  <td class="text-end">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+                  <td class="text-end">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
                   <td class="text-end">
                     <button class="btn btn-sm btn-outline-danger btn-remover" data-item="{{ item.pk }}" title="Remover">
                       <i class="bi bi-trash"></i>

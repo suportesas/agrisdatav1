@@ -39,7 +39,7 @@
         <div class="stat-icon stat-icon-blue mb-0"><i class="bi bi-arrow-up-circle"></i></div>
         <div>
           <div class="stat-label text-uppercase">Total Emprestado</div>
-          <div class="stat-value">R$ {{ totais.total_emprestado_valor|default:0|floatformat:2 }}</div>
+          <div class="stat-value">R$ {{ totais.total_emprestado_valor|default:0|floatformat:"2g" }}</div>
         </div>
       </div>
     </div>
@@ -48,7 +48,7 @@
         <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-arrow-down-circle"></i></div>
         <div>
           <div class="stat-label text-uppercase">Total Devolvido</div>
-          <div class="stat-value">R$ {{ totais.total_devolvido_valor|default:0|floatformat:2 }}</div>
+          <div class="stat-value">R$ {{ totais.total_devolvido_valor|default:0|floatformat:"2g" }}</div>
         </div>
       </div>
     </div>
@@ -57,7 +57,7 @@
         <div class="stat-icon {% if totais.total_saldo_valor|default:0 > 0 %}stat-icon-orange{% else %}stat-icon-green{% endif %} mb-0"><i class="bi bi-hourglass-split"></i></div>
         <div>
           <div class="stat-label text-uppercase">Saldo em Aberto</div>
-          <div class="stat-value">R$ {{ totais.total_saldo_valor|default:0|floatformat:2 }}</div>
+          <div class="stat-value">R$ {{ totais.total_saldo_valor|default:0|floatformat:"2g" }}</div>
         </div>
       </div>
     </div>
@@ -174,9 +174,9 @@
               {% endif %}
             </td>
             <td>{{ grupo.data_promessa_devolucao|date:'d/m/Y'|default:'-' }}</td>
-            <td class="text-end">R$ {{ grupo.total_emprestado_valor|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ grupo.total_devolvido_valor|floatformat:2 }}</td>
-            <td class="text-end"><strong>R$ {{ grupo.saldo_pendente_valor|floatformat:2 }}</strong></td>
+            <td class="text-end">R$ {{ grupo.total_emprestado_valor|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ grupo.total_devolvido_valor|floatformat:"2g" }}</td>
+            <td class="text-end"><strong>R$ {{ grupo.saldo_pendente_valor|floatformat:"2g" }}</strong></td>
             <td class="text-end">
               {% if grupo.unread_mensagens_interno %}
               <span class="badge bg-danger me-2">{{ grupo.unread_mensagens_interno }} nova{{ grupo.unread_mensagens_interno|pluralize }}</span>
@@ -194,18 +194,18 @@
                   <thead>
                     <tr>
                       <th>Produto</th>
-                      <th>Quantidade</th>
-                      <th>Valor Unitário</th>
-                      <th>Valor Total</th>
+                      <th class="text-end">Quantidade</th>
+                      <th class="text-end">Valor Unitário</th>
+                      <th class="text-end">Valor Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {% for emp in grupo.emprestimos %}
                     <tr>
                       <td>{{ emp.produto.nome }}</td>
-                      <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
-                      <td>R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
-                      <td>R$ {{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:2 }}</td>
+                      <td class="text-end">{{ emp.quantidade_emprestada|floatformat:"3g" }}</td>
+                      <td class="text-end">R$ {{ emp.produto.preco_venda|floatformat:"2g" }}</td>
+                      <td class="text-end">R$ {{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:"2g" }}</td>
                     </tr>
                     {% endfor %}
                   </tbody>

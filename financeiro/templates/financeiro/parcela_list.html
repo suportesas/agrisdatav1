@@ -153,10 +153,10 @@
                             </small>
                             {% endif %}
                         </td>
-                        <td class="text-mono">R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
-                        <td class="text-mono">{% if parcela.juros_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
-                        <td class="text-mono">{% if parcela.multa_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>{% else %}-{% endif %}</td>
-                        <td class="text-mono"><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                        <td class="text-mono">R$ {{ parcela.valor_parcela|floatformat:"2g" }}</td>
+                        <td class="text-mono">{% if parcela.juros_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:"2g" }}</strong>{% else %}-{% endif %}</td>
+                        <td class="text-mono">{% if parcela.multa_parcela > 0 %}<strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:"2g" }}</strong>{% else %}-{% endif %}</td>
+                        <td class="text-mono"><strong>R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</strong></td>
                         <td class="text-center">
                             {% if parcela.dias_atraso > 0 %}
                             <span class="badge bg-danger">{{ parcela.dias_atraso }}d</span>

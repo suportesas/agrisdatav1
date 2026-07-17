@@ -90,7 +90,7 @@
               <td>{{ ct.remetente.razao_social }}</td>
               <td>{{ ct.destinatario.razao_social }}</td>
               <td><span class="badge bg-secondary">{{ ct.uf_inicio }}</span> → <span class="badge bg-secondary">{{ ct.uf_fim }}</span></td>
-              <td class="text-end text-mono">R$ {{ ct.valor_servico|floatformat:2 }}</td>
+              <td class="text-end text-mono">R$ {{ ct.valor_servico|floatformat:"2g" }}</td>
               <td class="text-center">
                 {% if ct.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
                 {% elif ct.status == 'CANCELADO' %}<span class="badge bg-danger">Cancelado</span>

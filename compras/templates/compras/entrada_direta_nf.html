@@ -357,7 +357,7 @@
                     Fornecedor {{ xml_data.xml_resumo.fornecedor }} |
                     Documento {{ xml_data.xml_resumo.documento }} |
                     Itens {{ xml_data.xml_resumo.itens }} |
-                    Total R$ {{ xml_data.xml_resumo.valor_total_nf }}
+                    Total R$ {{ xml_data.xml_resumo.valor_total_nf|floatformat:"2g" }}
                 </div>
                 {% endif %}
             </div>

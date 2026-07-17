@@ -36,9 +36,9 @@
 
   <div class="summary">
     <span>Total de Bens: <strong>{{ totais.total_bens|default:0 }}</strong></span>
-    <span>Valor Total: <strong>R$ {% if totais.valor_inicial_total %}{{ totais.valor_inicial_total|floatformat:2 }}{% else %}0,00{% endif %}</strong></span>
-    <span>Valor Atual: <strong>R$ {% if totais.valor_atual_total %}{{ totais.valor_atual_total|floatformat:2 }}{% else %}0,00{% endif %}</strong></span>
-    <span>Depreciacao: <strong>R$ {% if totais.depreciacao_total %}{{ totais.depreciacao_total|floatformat:2 }}{% else %}0,00{% endif %}</strong></span>
+    <span>Valor Total: <strong>R$ {% if totais.valor_inicial_total %}{{ totais.valor_inicial_total|floatformat:"2g" }}{% else %}0,00{% endif %}</strong></span>
+    <span>Valor Atual: <strong>R$ {% if totais.valor_atual_total %}{{ totais.valor_atual_total|floatformat:"2g" }}{% else %}0,00{% endif %}</strong></span>
+    <span>Depreciacao: <strong>R$ {% if totais.depreciacao_total %}{{ totais.depreciacao_total|floatformat:"2g" }}{% else %}0,00{% endif %}</strong></span>
   </div>
 
   <h3>Patrimonios</h3>
@@ -64,8 +64,8 @@
         <td>{{ pat.get_categoria_display }}</td>
         <td>{{ pat.get_estado_display }}</td>
         <td>{{ pat.data_aquisicao|date:"d/m/Y" }}</td>
-        <td class="text-right">R$ {{ pat.valor_inicial|floatformat:2 }}</td>
-        <td class="text-right">R$ {{ pat.valor_atual|floatformat:2 }}</td>
+        <td class="text-right">R$ {{ pat.valor_inicial|floatformat:"2g" }}</td>
+        <td class="text-right">R$ {{ pat.valor_atual|floatformat:"2g" }}</td>
         <td>{% if pat.responsavel %}{{ pat.responsavel.nome_completo }}{% else %}-{% endif %}</td>
         <td>{% if pat.ativo %}Ativo{% else %}Inativo{% endif %}</td>
       </tr>

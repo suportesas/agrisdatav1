@@ -56,7 +56,7 @@
       <div class="card border-0 bg-primary-subtle h-100" style="border-radius:var(--radius-card);">
         <div class="card-body text-center py-3">
           <div class="text-muted small">Custo Estimado</div>
-          <div class="fw-bold fs-5">R$ {{ planejamento.custo_estimado_total|floatformat:2 }}</div>
+          <div class="fw-bold fs-5">R$ {{ planejamento.custo_estimado_total|floatformat:"2g" }}</div>
         </div>
       </div>
     </div>
@@ -64,7 +64,7 @@
       <div class="card border-0 bg-info-subtle h-100" style="border-radius:var(--radius-card);">
         <div class="card-body text-center py-3">
           <div class="text-muted small">Custo Atual</div>
-          <div class="fw-bold fs-5">R$ {{ planejamento.custo_atual_total|floatformat:2 }}</div>
+          <div class="fw-bold fs-5">R$ {{ planejamento.custo_atual_total|floatformat:"2g" }}</div>
         </div>
       </div>
     </div>
@@ -75,7 +75,7 @@
           {% with var=planejamento.variacao_custo_pct %}
             {% if var is not None %}
               <div class="fw-bold fs-5 {% if var > 0 %}text-danger{% elif var < 0 %}text-success{% endif %}">
-                {{ var|floatformat:1 }}%
+                {{ var|floatformat:"1g" }}%
               </div>
             {% else %}
               <div class="fw-bold fs-5">—</div>
@@ -155,16 +155,16 @@
             <td>{{ item.data_prevista|date:"d/m/Y" }}</td>
             <td class="text-end">{{ item.quantidade_planejada|floatformat:"2g" }}</td>
             <td>{{ item.unidade_medida }}</td>
-            <td class="text-end">R$ {{ item.preco_estimado_unitario|floatformat:4 }}</td>
+            <td class="text-end">R$ {{ item.preco_estimado_unitario|floatformat:"4g" }}</td>
             <td class="text-end">
-              R$ {{ item.preco_atual_unitario|floatformat:4 }}
+              R$ {{ item.preco_atual_unitario|floatformat:"4g" }}
               {% if item.variacao_custo_pct is not None and item.variacao_custo_pct != 0 %}
                 <small class="{% if item.variacao_custo_pct > 0 %}text-danger{% else %}text-success{% endif %}">
-                  ({% if item.variacao_custo_pct > 0 %}+{% endif %}{{ item.variacao_custo_pct|floatformat:1 }}%)
+                  ({% if item.variacao_custo_pct > 0 %}+{% endif %}{{ item.variacao_custo_pct|floatformat:"1g" }}%)
                 </small>
               {% endif %}
             </td>
-            <td class="text-end fw-semibold">R$ {{ item.custo_atual|floatformat:2 }}</td>
+            <td class="text-end fw-semibold">R$ {{ item.custo_atual|floatformat:"2g" }}</td>
             <td>{{ item.fornecedor_preferencial|default:"—" }}</td>
             <td>
               {% if item.status == 'PLANEJADO' %}

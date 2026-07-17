@@ -106,7 +106,7 @@
               </td>
               <td class="text-end">
                 {% if funcao.salario_base %}
-                  <span class="fw-semibold text-success">R$ {{ funcao.salario_base|floatformat:2 }}</span>
+                  <span class="fw-semibold text-success">R$ {{ funcao.salario_base|floatformat:"2g" }}</span>
                 {% else %}
                   <span class="text-muted">-</span>
                 {% endif %}

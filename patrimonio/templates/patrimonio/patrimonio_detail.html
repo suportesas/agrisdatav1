@@ -74,13 +74,13 @@
         <h5 class="mb-3">Valores Financeiros</h5>
         <dl class="row">
           <dt class="col-4">Valor Inicial</dt>
-          <dd class="col-8 fw-bold text-success">R$ {{ patrimonio.valor_inicial|floatformat:2 }}</dd>
+          <dd class="col-8 fw-bold text-success">R$ {{ patrimonio.valor_inicial|floatformat:"2g" }}</dd>
           
           <dt class="col-4">Valor Atual</dt>
-          <dd class="col-8 fw-bold text-info">R$ {{ patrimonio.valor_atual|floatformat:2 }}</dd>
+          <dd class="col-8 fw-bold text-info">R$ {{ patrimonio.valor_atual|floatformat:"2g" }}</dd>
           
           <dt class="col-4">Depreciação</dt>
-          <dd class="col-8 fw-bold text-warning">R$ {{ depreciacao_acumulada|floatformat:2 }}</dd>
+          <dd class="col-8 fw-bold text-warning">R$ {{ depreciacao_acumulada|floatformat:"2g" }}</dd>
           
           <dt class="col-4">% Deprec.</dt>
           <dd class="col-8 fw-bold">{{ percentual_depreciacao|floatformat:"2g" }}%</dd>
@@ -105,7 +105,7 @@
           <dt class="col-4">Vida Útil</dt><dd class="col-8">{{ patrimonio.vida_util_anos|default:"—" }} anos</dd>
           <dt class="col-4">Taxa Anual</dt><dd class="col-8">{{ patrimonio.percentual_depreciacao_anual|default:"—" }}%</dd>
           <dt class="col-4">Residual</dt>
-          <dd class="col-8">R$ {{ patrimonio.valor_residual|default:"—"|floatformat:2 }}</dd>
+          <dd class="col-8">R$ {{ patrimonio.valor_residual|default:"—"|floatformat:"2g" }}</dd>
         </dl>
 
         <!-- Botão Toggle para Fórmula de Depreciação -->
@@ -132,7 +132,7 @@
             <hr class="my-2">
             <strong><i class="bi bi-calculator"></i> Exemplo com seus dados:</strong>
             <p class="mb-0 mt-2">
-              Depreciação Anual = R$ {{ patrimonio.valor_inicial|floatformat:2 }} ÷ {{ patrimonio.vida_util_anos }} = 
+              Depreciação Anual = R$ {{ patrimonio.valor_inicial|floatformat:"2g" }} ÷ {{ patrimonio.vida_util_anos }} = 
               <strong>R$ {% widthratio patrimonio.valor_inicial patrimonio.vida_util_anos 1 %}</strong>
             </p>
           </div>

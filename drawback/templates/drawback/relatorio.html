@@ -77,27 +77,27 @@
           </div>
         </div>
         <div class="row g-1 mb-2" style="font-size:.82rem;">
-          <div class="col-6"><span class="text-muted">Autorizado:</span> <strong>{{ p.quantidade_autorizada|floatformat:3 }} {{ p.unidade_medida.sigla }}</strong></div>
+          <div class="col-6"><span class="text-muted">Autorizado:</span> <strong>{{ p.quantidade_autorizada|floatformat:"3g" }} {{ p.unidade_medida.sigla }}</strong></div>
           {% if p.tipo_produto != 'EXPORTACAO' %}
-          <div class="col-6"><span class="text-muted">Comprado:</span> <strong>{{ p.quantidade_comprada|floatformat:3 }}</strong></div>
+          <div class="col-6"><span class="text-muted">Comprado:</span> <strong>{{ p.quantidade_comprada|floatformat:"3g" }}</strong></div>
           <div class="col-6"><span class="text-muted">Saldo compra:</span>
-            <strong class="{% if p.saldo_compra < 0 %}text-danger{% endif %}">{{ p.saldo_compra|floatformat:3 }}</strong>
+            <strong class="{% if p.saldo_compra < 0 %}text-danger{% endif %}">{{ p.saldo_compra|floatformat:"3g" }}</strong>
           </div>
           {% else %}
-          <div class="col-6"><span class="text-muted">Exportado:</span> <strong>{{ p.quantidade_exportada|floatformat:3 }}</strong></div>
+          <div class="col-6"><span class="text-muted">Exportado:</span> <strong>{{ p.quantidade_exportada|floatformat:"3g" }}</strong></div>
           <div class="col-6"><span class="text-muted">Saldo exportação:</span>
-            <strong class="{% if p.saldo_exportacao < 0 %}text-danger{% endif %}">{{ p.saldo_exportacao|floatformat:3 }}</strong>
+            <strong class="{% if p.saldo_exportacao < 0 %}text-danger{% endif %}">{{ p.saldo_exportacao|floatformat:"3g" }}</strong>
           </div>
           {% endif %}
           <div class="col-6"><span class="text-muted">% Cumprido:</span>
             <strong class="{% if p.percentual_cumprido >= 100 %}text-success{% elif p.percentual_cumprido >= 50 %}text-warning{% else %}text-danger{% endif %}">
-              {{ p.percentual_cumprido|floatformat:1 }}%
+              {{ p.percentual_cumprido|floatformat:"1g" }}%
             </strong>
           </div>
         </div>
         <div class="progress">
           <div class="progress-bar {% if p.percentual_cumprido >= 100 %}bg-success{% elif p.percentual_cumprido >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
-               style="width: {% if p.percentual_cumprido > 100 %}100{% else %}{{ p.percentual_cumprido|floatformat:0 }}{% endif %}%"></div>
+               style="width: {% if p.percentual_cumprido > 100 %}100{% else %}{{ p.percentual_cumprido|floatformat:"0g" }}{% endif %}%"></div>
         </div>
       </div>
     </div>
@@ -125,8 +125,8 @@
           <td>{{ e.numero_nf }}{% if e.serie_nf %}/{{ e.serie_nf }}{% endif %}</td>
           <td>{{ e.data_nf|date:"d/m/Y" }}</td>
           <td>{{ e.data_recebimento|date:"d/m/Y" }}</td>
-          <td class="text-end">{{ e.quantidade|floatformat:3 }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
-          <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:2 }}{% else %}—{% endif %}</td>
+          <td class="text-end">{{ e.quantidade|floatformat:"3g" }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
+          <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:"2g" }}{% else %}—{% endif %}</td>
           <td>
             <span class="badge {% if e.origem == 'ERP' %}bg-primary{% else %}bg-secondary{% endif %}" style="font-size:.65rem;">{{ e.origem }}</span>
             {% if e.retroativo %}<span class="badge badge-retroativo ms-1">RETRO</span>{% endif %}
@@ -164,8 +164,8 @@
           <td>{{ e.numero_nf }}{% if e.serie_nf %}/{{ e.serie_nf }}{% endif %}</td>
           <td>{{ e.data_nf|date:"d/m/Y" }}</td>
           <td>{{ e.data_recebimento|date:"d/m/Y" }}</td>
-          <td class="text-end">{{ e.quantidade|floatformat:3 }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
-          <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:2 }}{% else %}—{% endif %}</td>
+          <td class="text-end">{{ e.quantidade|floatformat:"3g" }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
+          <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:"2g" }}{% else %}—{% endif %}</td>
           <td>
             <span class="badge {% if e.origem == 'ERP' %}bg-primary{% else %}bg-secondary{% endif %}" style="font-size:.65rem;">{{ e.origem }}</span>
             {% if e.retroativo %}<span class="badge badge-retroativo ms-1">RETRO</span>{% endif %}
@@ -206,8 +206,8 @@
           <td>{% if s.numero_re %}{{ s.numero_re }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
           <td>{% if s.numero_due %}{{ s.numero_due }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
           <td>{{ s.data_embarque|date:"d/m/Y" }}</td>
-          <td class="text-end">{{ s.quantidade|floatformat:3 }} {{ s.drawback_produto.unidade_medida.sigla }}</td>
-          <td class="text-end">{% if s.valor_fob_usd %}USD {{ s.valor_fob_usd|floatformat:2 }}{% else %}—{% endif %}</td>
+          <td class="text-end">{{ s.quantidade|floatformat:"3g" }} {{ s.drawback_produto.unidade_medida.sigla }}</td>
+          <td class="text-end">{% if s.valor_fob_usd %}USD {{ s.valor_fob_usd|floatformat:"2g" }}{% else %}—{% endif %}</td>
           <td>
             <span class="badge {% if s.origem == 'ERP' %}bg-primary{% else %}bg-secondary{% endif %}" style="font-size:.65rem;">{{ s.origem }}</span>
             {% if s.retroativo %}<span class="badge badge-retroativo ms-1">RETRO</span>{% endif %}

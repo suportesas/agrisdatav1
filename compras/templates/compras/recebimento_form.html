@@ -140,13 +140,13 @@
                   {% endif %}
                 </td>
                 <td class="text-end text-nowrap">
-                  {{ item.quantidade_pedida }} {{ item.unidade_medida.sigla }}
+                  {{ item.quantidade_pedida|floatformat:"3g" }} {{ item.unidade_medida.sigla }}
                 </td>
                 <td class="text-end text-nowrap text-muted">
-                  {{ item.quantidade_recebida }} {{ item.unidade_medida.sigla }}
+                  {{ item.quantidade_recebida|floatformat:"3g" }} {{ item.unidade_medida.sigla }}
                 </td>
                 <td class="text-end text-nowrap">
-                  <strong>{{ item.quantidade_pendente }} {{ item.unidade_medida.sigla }}</strong>
+                  <strong>{{ item.quantidade_pendente|floatformat:"3g" }} {{ item.unidade_medida.sigla }}</strong>
                 </td>
                 <td class="text-center">
                   <span id="badge-{{ forloop.counter0 }}" class="badge bg-secondary">Pendente</span>

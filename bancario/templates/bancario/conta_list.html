@@ -69,7 +69,7 @@
                 / {{ conta.conta }}{% if conta.conta_digito %}-{{ conta.conta_digito }}{% endif %}
               </td>
               <td class="text-mono">
-                {% if conta.saldo_inicial is not None %}R$ {{ conta.saldo_inicial|floatformat:2 }}{% else %}<span class="text-muted">-</span>{% endif %}
+                {% if conta.saldo_inicial is not None %}R$ {{ conta.saldo_inicial|floatformat:"2g" }}{% else %}<span class="text-muted">-</span>{% endif %}
               </td>
               <td>
                 {% if conta.ultima_importacao %}

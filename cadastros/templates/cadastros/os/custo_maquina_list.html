@@ -37,10 +37,10 @@
             <tr>
               <td class="ps-4 fw-semibold">{{ cfg.veiculo }}</td>
               <td class="text-mono">{{ cfg.data_referencia|date:"d/m/Y" }}</td>
-              <td class="text-end text-mono">R$ {{ cfg.preco_combustivel|floatformat:3 }}/L</td>
-              <td class="text-end text-mono">R$ {{ cfg.reserva_manutencao_hora|floatformat:2 }}/h</td>
-              <td class="text-end text-mono">{{ cfg.horas_anuais_trabalho|floatformat:0 }}h</td>
-              <td class="text-end text-mono fw-bold text-success">R$ {{ cfg.custo_hora_calculado|floatformat:2 }}/h</td>
+              <td class="text-end text-mono">R$ {{ cfg.preco_combustivel|floatformat:"3g" }}/L</td>
+              <td class="text-end text-mono">R$ {{ cfg.reserva_manutencao_hora|floatformat:"2g" }}/h</td>
+              <td class="text-end text-mono">{{ cfg.horas_anuais_trabalho|floatformat:"0g" }}h</td>
+              <td class="text-end text-mono fw-bold text-success">R$ {{ cfg.custo_hora_calculado|floatformat:"2g" }}/h</td>
               <td class="text-center">
                 {% if cfg.ativo %}
                   <span class="badge bg-success">Ativo</span>

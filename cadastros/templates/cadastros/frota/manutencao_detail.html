@@ -41,11 +41,11 @@
             </div>
             <div class="col-md-4"><div class="small text-muted">Data Abertura</div><div class="fw-semibold">{{ obj.data_abertura|date:"d/m/Y" }}</div></div>
             {% if obj.data_conclusao %}<div class="col-md-4"><div class="small text-muted">Data Conclusão</div><div class="fw-semibold">{{ obj.data_conclusao|date:"d/m/Y" }}</div></div>{% endif %}
-            {% if obj.km_odometro %}<div class="col-md-4"><div class="small text-muted">Hodômetro</div><div>{{ obj.km_odometro|floatformat:0 }} km</div></div>{% endif %}
+            {% if obj.km_odometro %}<div class="col-md-4"><div class="small text-muted">Hodômetro</div><div>{{ obj.km_odometro|floatformat:"0g" }} km</div></div>{% endif %}
             {% if obj.proxima_data %}<div class="col-md-4"><div class="small text-muted">Próxima (data)</div><div class="fw-semibold text-warning">{{ obj.proxima_data|date:"d/m/Y" }}</div></div>{% endif %}
-            {% if obj.proximo_km %}<div class="col-md-4"><div class="small text-muted">Próxima (km)</div><div class="fw-semibold text-warning">{{ obj.proximo_km|floatformat:0 }} km</div></div>{% endif %}
-            <div class="col-md-4"><div class="small text-muted">Valor Serviço</div><div class="fw-bold">R$ {{ obj.valor_servico|floatformat:2 }}</div></div>
-            <div class="col-md-4"><div class="small text-muted">Valor Total</div><div class="fw-bold text-warning fs-5">R$ {{ obj.valor_total|floatformat:2 }}</div></div>
+            {% if obj.proximo_km %}<div class="col-md-4"><div class="small text-muted">Próxima (km)</div><div class="fw-semibold text-warning">{{ obj.proximo_km|floatformat:"0g" }} km</div></div>{% endif %}
+            <div class="col-md-4"><div class="small text-muted">Valor Serviço</div><div class="fw-bold">R$ {{ obj.valor_servico|floatformat:"2g" }}</div></div>
+            <div class="col-md-4"><div class="small text-muted">Valor Total</div><div class="fw-bold text-warning fs-5">R$ {{ obj.valor_total|floatformat:"2g" }}</div></div>
           </div>
           {% if obj.observacoes %}<hr><div class="small text-muted">{{ obj.observacoes }}</div>{% endif %}
         </div>
@@ -66,10 +66,10 @@
               <tr>
                 <td>{{ item.descricao }}</td>
                 <td class="small text-muted">{{ item.lote.produto.nome|default:"—" }}</td>
-                <td class="text-end small">{{ item.quantidade|floatformat:3 }}</td>
-                <td class="text-end small">R$ {{ item.valor_custo|floatformat:4 }}</td>
-                <td class="text-end small">R$ {{ item.desconto|floatformat:2 }}</td>
-                <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:2 }}</td>
+                <td class="text-end small">{{ item.quantidade|floatformat:"3g" }}</td>
+                <td class="text-end small">R$ {{ item.valor_custo|floatformat:"4g" }}</td>
+                <td class="text-end small">R$ {{ item.desconto|floatformat:"2g" }}</td>
+                <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:"2g" }}</td>
                 <td>
                   <form method="post" action="{% url 'frota:manutencao_item_delete' obj.pk item.pk %}" class="d-inline">
                     {% csrf_token %}

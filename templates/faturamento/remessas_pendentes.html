@@ -121,7 +121,7 @@
                 </td>
                 <td class="text-mono">{{ nf.data_emissao|date:"d/m/Y" }}</td>
                 <td>{{ nf.cliente.razao_social }}</td>
-                <td class="text-end text-mono">R$ {{ nf.valor_total|floatformat:2 }}</td>
+                <td class="text-end text-mono">R$ {{ nf.valor_total|floatformat:"2g" }}</td>
                 <td><span class="badge bg-secondary">{{ nf.cfop }}</span></td>
                 <td class="text-center"><span class="badge bg-warning text-dark">Pendente</span></td>
                 <td>
@@ -149,7 +149,7 @@
             <tfoot class="bg-light">
               <tr>
                 <td colspan="4" class="text-end fw-semibold">Total geral:</td>
-                <td class="text-end fw-semibold text-mono">R$ {{ total_geral|floatformat:2 }}</td>
+                <td class="text-end fw-semibold text-mono">R$ {{ total_geral|floatformat:"2g" }}</td>
                 <td colspan="3"></td>
               </tr>
             </tfoot>

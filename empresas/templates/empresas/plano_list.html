@@ -58,11 +58,11 @@
                 <strong>{{ plano.nome }}</strong>
                 {% if plano.descricao %}<div class="text-muted small">{{ plano.descricao }}</div>{% endif %}
               </td>
-              <td class="text-end text-mono">R$ {{ plano.valor_mensal|floatformat:2 }}</td>
+              <td class="text-end text-mono">R$ {{ plano.valor_mensal|floatformat:"2g" }}</td>
               <td class="text-end text-mono">
                 {% if plano.valor_anual %}
-                  R$ {{ plano.valor_anual|floatformat:2 }}
-                  {% if plano.desconto_anual %}<div class="text-success small">-{{ plano.desconto_anual|floatformat:0 }}%</div>{% endif %}
+                  R$ {{ plano.valor_anual|floatformat:"2g" }}
+                  {% if plano.desconto_anual %}<div class="text-success small">-{{ plano.desconto_anual|floatformat:"0g" }}%</div>{% endif %}
                 {% else %}—{% endif %}
               </td>
               <td>

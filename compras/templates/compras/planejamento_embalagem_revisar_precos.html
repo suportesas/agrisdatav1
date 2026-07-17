@@ -46,7 +46,7 @@
               <td><span class="badge bg-secondary-subtle text-secondary">{{ item.get_fase_display }}</span></td>
               <td class="text-end">{{ item.quantidade_planejada|floatformat:"2g" }}</td>
               <td>{{ item.unidade_medida }}</td>
-              <td class="text-end text-muted">R$ {{ item.preco_estimado_unitario|floatformat:4 }}</td>
+              <td class="text-end text-muted">R$ {{ item.preco_estimado_unitario|floatformat:"4g" }}</td>
               <td>
                 <input type="number" name="preco_{{ item.pk }}"
                        value="{{ item.preco_atual_unitario }}"
@@ -55,8 +55,8 @@
                        data-qty="{{ item.quantidade_planejada }}"
                        data-estimado="{{ item.preco_estimado_unitario }}">
               </td>
-              <td class="text-end text-muted">R$ <span class="custo-estimado-cell">{{ item.custo_estimado|floatformat:2 }}</span></td>
-              <td class="text-end fw-semibold">R$ <span class="custo-atual-cell">{{ item.custo_atual|floatformat:2 }}</span></td>
+              <td class="text-end text-muted">R$ <span class="custo-estimado-cell">{{ item.custo_estimado|floatformat:"2g" }}</span></td>
+              <td class="text-end fw-semibold">R$ <span class="custo-atual-cell">{{ item.custo_atual|floatformat:"2g" }}</span></td>
               <td>
                 <input type="text" name="obs_{{ item.pk }}"
                        value="{{ item.observacoes }}"
@@ -71,8 +71,8 @@
           <tfoot class="table-light fw-semibold">
             <tr>
               <td colspan="6" class="text-end">Total</td>
-              <td class="text-end" id="footer-estimado">R$ {{ planejamento.custo_estimado_total|floatformat:2 }}</td>
-              <td class="text-end" id="footer-atual">R$ {{ planejamento.custo_atual_total|floatformat:2 }}</td>
+              <td class="text-end" id="footer-estimado">R$ {{ planejamento.custo_estimado_total|floatformat:"2g" }}</td>
+              <td class="text-end" id="footer-atual">R$ {{ planejamento.custo_atual_total|floatformat:"2g" }}</td>
               <td></td>
             </tr>
           </tfoot>

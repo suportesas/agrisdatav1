@@ -73,7 +73,7 @@
                         <div class="col-md-3">
                             <div class="metric-box">
                                 <div class="metric-title">Valor Mensal</div>
-                                <div class="metric-value" style="font-size: 1.1rem;">R$ {{ empresa.plano.valor_mensal|floatformat:2 }}</div>
+                                <div class="metric-value" style="font-size: 1.1rem;">R$ {{ empresa.plano.valor_mensal|floatformat:"2g" }}</div>
                             </div>
                         </div>
                         <div class="col-md-3">
@@ -112,7 +112,7 @@
                                  aria-valuenow="{{ consumo_atual.percentual_fazendas }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
-                                {{ consumo_atual.percentual_fazendas|floatformat:0 }}%
+                                {{ consumo_atual.percentual_fazendas|floatformat:"0g" }}%
                             </div>
                         </div>
                         {% if consumo_atual.alerta_fazendas %}<span class="badge bg-danger mt-2">⚠️ ALERTA</span>{% endif %}
@@ -128,7 +128,7 @@
                                  aria-valuenow="{{ consumo_atual.percentual_usuarios }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
-                                {{ consumo_atual.percentual_usuarios|floatformat:0 }}%
+                                {{ consumo_atual.percentual_usuarios|floatformat:"0g" }}%
                             </div>
                         </div>
                         {% if consumo_atual.alerta_usuarios %}<span class="badge bg-danger mt-2">⚠️ ALERTA</span>{% endif %}
@@ -144,7 +144,7 @@
                                  aria-valuenow="{{ consumo_atual.percentual_talhoes }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
-                                {{ consumo_atual.percentual_talhoes|floatformat:0 }}%
+                                {{ consumo_atual.percentual_talhoes|floatformat:"0g" }}%
                             </div>
                         </div>
                         {% if consumo_atual.alerta_talhoes %}<span class="badge bg-danger mt-2">⚠️ ALERTA</span>{% endif %}
@@ -160,7 +160,7 @@
                                  aria-valuenow="{{ consumo_atual.percentual_produtos }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
-                                {{ consumo_atual.percentual_produtos|floatformat:0 }}%
+                                {{ consumo_atual.percentual_produtos|floatformat:"0g" }}%
                             </div>
                         </div>
                         {% if consumo_atual.alerta_produtos %}<span class="badge bg-danger mt-2">⚠️ ALERTA</span>{% endif %}
@@ -263,22 +263,22 @@
                                 <td>
                                     {{ consumo.fazendas_usadas }}/{{ consumo.limite_fazendas }}
                                     <br>
-                                    <small class="text-muted">{{ consumo.percentual_fazendas|floatformat:0 }}%</small>
+                                    <small class="text-muted">{{ consumo.percentual_fazendas|floatformat:"0g" }}%</small>
                                 </td>
                                 <td>
                                     {{ consumo.usuarios_ativos }}/{{ consumo.limite_usuarios }}
                                     <br>
-                                    <small class="text-muted">{{ consumo.percentual_usuarios|floatformat:0 }}%</small>
+                                    <small class="text-muted">{{ consumo.percentual_usuarios|floatformat:"0g" }}%</small>
                                 </td>
                                 <td>
                                     {{ consumo.talhoes_cadastrados }}/{{ consumo.limite_talhoes }}
                                     <br>
-                                    <small class="text-muted">{{ consumo.percentual_talhoes|floatformat:0 }}%</small>
+                                    <small class="text-muted">{{ consumo.percentual_talhoes|floatformat:"0g" }}%</small>
                                 </td>
                                 <td>
                                     {{ consumo.produtos_cadastrados }}/{{ consumo.limite_produtos }}
                                     <br>
-                                    <small class="text-muted">{{ consumo.percentual_produtos|floatformat:0 }}%</small>
+                                    <small class="text-muted">{{ consumo.percentual_produtos|floatformat:"0g" }}%</small>
                                 </td>
                             </tr>
                             {% empty %}

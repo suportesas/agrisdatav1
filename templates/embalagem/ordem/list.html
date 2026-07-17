@@ -101,7 +101,7 @@
               <td class="text-mono">{{ o.data|date:"d/m/Y" }}</td>
               <td>{{ o.tipo_embalagem.nome }}</td>
               <td><small>{{ o.lote_origem.numero|default:o.lote_origem.pk }}</small></td>
-              <td class="text-end text-mono">{{ o.quantidade_entrada_kg|floatformat:0 }}</td>
+              <td class="text-end text-mono">{{ o.quantidade_entrada_kg|floatformat:"0g" }}</td>
               <td class="text-end text-mono">{{ o.n_pallets }}</td>
               <td>{{ o.armazem_destino.nome }}</td>
               <td>{{ o.responsavel.get_full_name|default:"—" }}</td>

@@ -25,10 +25,10 @@
                         </p>
                         <p class="mb-1">
                             <strong>Saldo no Sistema:</strong> 
-                            <span class="badge bg-info">{{ item.quantidade_sistema }} {{ item.lote.unidade_medida.sigla }}</span>
+                            <span class="badge bg-info">{{ item.quantidade_sistema|floatformat:"3g" }} {{ item.lote.unidade_medida.sigla }}</span>
                         </p>
                         <p class="mb-0">
-                            <strong>Valor Unitário:</strong> R$ {{ item.valor_unitario_sistema|floatformat:2 }}
+                            <strong>Valor Unitário:</strong> R$ {{ item.valor_unitario_sistema|floatformat:"2g" }}
                         </p>
                     </div>
 
@@ -80,7 +80,7 @@
                 </div>
                 <div class="card-body">
                     <p class="mb-1">
-                        <strong>Quantidade:</strong> {{ item.quantidade_contada }} {{ item.lote.unidade_medida.sigla }}
+                        <strong>Quantidade:</strong> {{ item.quantidade_contada|floatformat:"3g" }} {{ item.lote.unidade_medida.sigla }}
                     </p>
                     <p class="mb-1">
                         <strong>Data/Hora:</strong> {{ item.data_contagem|date:"d/m/Y H:i" }}
@@ -96,11 +96,11 @@
                     <p class="mb-0">
                         Diferença: <strong class="text-danger">
                         {% if item.quantidade_diferenca > 0 %}
-                            +{{ item.quantidade_diferenca }}
+                            +{{ item.quantidade_diferenca|floatformat:"3g" }}
                         {% else %}
-                            {{ item.quantidade_diferenca }}
+                            {{ item.quantidade_diferenca|floatformat:"3g" }}
                         {% endif %}
-                        </strong> (R$ {{ item.valor_diferenca|floatformat:2 }})
+                        </strong> (R$ {{ item.valor_diferenca|floatformat:"2g" }})
                     </p>
                     {% endif %}
                 </div>

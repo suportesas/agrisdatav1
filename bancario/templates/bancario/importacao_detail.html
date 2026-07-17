@@ -47,13 +47,13 @@
     <div class="col-sm-6 col-md-3">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Total Débitos</div>
-        <div class="fw-bold text-danger">R$ {{ importacao.total_debitos|floatformat:2 }}</div>
+        <div class="fw-bold text-danger">R$ {{ importacao.total_debitos|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-sm-6 col-md-3">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Total Créditos</div>
-        <div class="fw-bold text-success">R$ {{ importacao.total_creditos|floatformat:2 }}</div>
+        <div class="fw-bold text-success">R$ {{ importacao.total_creditos|floatformat:"2g" }}</div>
       </div>
     </div>
   </div>
@@ -100,7 +100,7 @@
               <td><small class="text-muted">{{ lanc.numero_documento|default:"—" }}</small></td>
               <td class="text-end text-mono text-nowrap">
                 <span class="{% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
-                  R$ {{ lanc.valor|floatformat:2 }}
+                  R$ {{ lanc.valor|floatformat:"2g" }}
                 </span>
               </td>
               <td>

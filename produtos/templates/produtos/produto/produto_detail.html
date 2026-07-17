@@ -79,16 +79,16 @@
         <div class="card-body">
           <div class="row g-3">
             <div class="col-12 col-sm-6 col-lg-3">
-              <p><strong>Preço Custo:</strong><br>R$ {{ produto.preco_custo|floatformat:2 }}</p>
+              <p><strong>Preço Custo:</strong><br>R$ {{ produto.preco_custo|floatformat:"2g" }}</p>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
-              <p><strong>Preço Venda:</strong><br>R$ {{ produto.preco_venda|floatformat:2 }}</p>
+              <p><strong>Preço Venda:</strong><br>R$ {{ produto.preco_venda|floatformat:"2g" }}</p>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
               <p><strong>Margem Lucro:</strong><br>{{ produto.margem_lucro }}%</p>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">
-              <p><strong>Preço Mínimo:</strong><br>R$ {{ produto.preco_minimo|floatformat:2 }}</p>
+              <p><strong>Preço Mínimo:</strong><br>R$ {{ produto.preco_minimo|floatformat:"2g" }}</p>
             </div>
           </div>
         </div>
@@ -307,7 +307,7 @@
                   </td>
                   <td>
                     {% if pf.preco_compra %}
-                      <strong>R$ {{ pf.preco_compra|floatformat:2 }}</strong>
+                      <strong>R$ {{ pf.preco_compra|floatformat:"2g" }}</strong>
                     {% else %}
                       <span class="text-muted">-</span>
                     {% endif %}

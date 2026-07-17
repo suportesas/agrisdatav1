@@ -88,7 +88,7 @@
               <td class="ps-4"><a href="{% url 'vendas:tabela_preco_detail' t.pk %}"><strong>{{ t.produto }}</strong></a></td>
               <td>{{ t.cliente.razao_social|default:"Padrão (qualquer cliente)" }}</td>
               <td>{{ t.porto_destino|default:"—" }}</td>
-              <td class="text-end fw-bold text-mono">{{ t.moeda }} {{ t.preco_unitario|floatformat:4 }}</td>
+              <td class="text-end fw-bold text-mono">{{ t.moeda }} {{ t.preco_unitario|floatformat:"4g" }}</td>
               <td class="text-mono"><small>{{ t.vigencia_inicio|date:"d/m/Y" }} — {{ t.vigencia_fim|date:"d/m/Y"|default:"em aberto" }}</small></td>
               <td class="text-center">
                 {% if t.ativo %}<span class="badge bg-success">Ativa</span>

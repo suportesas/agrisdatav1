@@ -28,7 +28,7 @@
             <td>{{ pedido.data_pedido|date:'d/m/Y' }}</td>
             <td><span class="badge bg-secondary">{{ pedido.get_status_display }}</span></td>
             <td>{{ pedido.data_entrega_prevista|date:'d/m/Y'|default:'-' }}</td>
-            <td class="text-end">R$ {{ pedido.valor_final|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ pedido.valor_final|floatformat:"2g" }}</td>
             <td class="text-end">
               <a href="{% url 'portal_fornecedor:pedido_detail' pedido.pk %}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-eye"></i> Detalhes

@@ -273,22 +273,22 @@
       <article class="kpi" style="--kpi-color:#ef4444;">
         <h6>Contas a Pagar Vencidas</h6>
         <p class="val">{{ parcelas_vencidas_count|default:0 }}</p>
-        <div class="meta">R$ {{ valor_vencido|floatformat:2 }}</div>
+        <div class="meta">R$ {{ valor_vencido|floatformat:"2g" }}</div>
       </article>
       <article class="kpi" style="--kpi-color:#2563eb;">
         <h6>A Receber (em aberto)</h6>
         <p class="val">{{ contas_receber_abertas|default:0 }}</p>
-        <div class="meta">R$ {{ valor_a_receber|floatformat:2 }}</div>
+        <div class="meta">R$ {{ valor_a_receber|floatformat:"2g" }}</div>
       </article>
       <article class="kpi" style="--kpi-color:#f59e0b;">
         <h6>Compras do Mês</h6>
         <p class="val">{{ compras_mes_count|default:0 }}</p>
-        <div class="meta">R$ {{ compras_mes|floatformat:2 }}</div>
+        <div class="meta">R$ {{ compras_mes|floatformat:"2g" }}</div>
       </article>
       <article class="kpi" style="--kpi-color:#16a34a;">
         <h6>Vendas do Mês</h6>
         <p class="val">{{ vendas_mes_count|default:0 }}</p>
-        <div class="meta">R$ {{ vendas_mes|floatformat:2 }}</div>
+        <div class="meta">R$ {{ vendas_mes|floatformat:"2g" }}</div>
       </article>
     </div>
 
@@ -300,7 +300,7 @@
             <span style="font-size:2rem;font-weight:800;color:#f59e0b;">{{ parcelas_a_vencer_7d_count }}</span>
             <div>
               <div style="color:#111827;font-weight:600;">parcela{{ parcelas_a_vencer_7d_count|pluralize }} a vencer</div>
-              <div class="meta">Total: R$ {{ valor_a_vencer_7d|floatformat:2 }}</div>
+              <div class="meta">Total: R$ {{ valor_a_vencer_7d|floatformat:"2g" }}</div>
             </div>
           </div>
         {% else %}

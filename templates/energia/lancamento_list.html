@@ -61,31 +61,31 @@
     <div class="col-6 col-md">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Consumo</div>
-        <div class="stat-value">{{ totais.consumo|floatformat:0 }} kWh</div>
+        <div class="stat-value">{{ totais.consumo|floatformat:"0g" }} kWh</div>
       </div>
     </div>
     <div class="col-6 col-md">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Compensado</div>
-        <div class="stat-value text-success">{{ totais.compensado|floatformat:0 }} kWh</div>
+        <div class="stat-value text-success">{{ totais.compensado|floatformat:"0g" }} kWh</div>
       </div>
     </div>
     <div class="col-6 col-md">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Injetado</div>
-        <div class="stat-value text-info">{{ totais.injetado|floatformat:0 }} kWh</div>
+        <div class="stat-value text-info">{{ totais.injetado|floatformat:"0g" }} kWh</div>
       </div>
     </div>
     <div class="col-6 col-md">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Faturado</div>
-        <div class="stat-value">R$ {{ totais.faturado|floatformat:2 }}</div>
+        <div class="stat-value">R$ {{ totais.faturado|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-6 col-md">
       <div class="stat-card">
         <div class="stat-label text-uppercase">Economizado</div>
-        <div class="stat-value text-success">R$ {{ totais.economizado|floatformat:2 }}</div>
+        <div class="stat-value text-success">R$ {{ totais.economizado|floatformat:"2g" }}</div>
       </div>
     </div>
   </div>
@@ -125,11 +125,11 @@
               <td class="ps-4 fw-semibold">{{ l.mes_referencia|date:"m/Y" }}</td>
               <td><a href="{% url 'energia:uc_detail' l.unidade_consumidora.pk %}" class="text-decoration-none">{{ l.unidade_consumidora.nome }}</a></td>
               <td class="text-muted small">{{ l.unidade_consumidora.usina.codigo|default:"—" }}</td>
-              <td class="text-end text-mono">{{ l.consumo_registrado_kwh|floatformat:0 }}</td>
-              <td class="text-end text-mono text-success">{{ l.energia_compensada_kwh|floatformat:0 }}</td>
-              <td class="text-end text-mono text-info">{{ l.energia_injetada_kwh|floatformat:0 }}</td>
-              <td class="text-end text-mono">{{ l.valor_faturado_rs|floatformat:2 }}</td>
-              <td class="text-end text-mono text-success fw-semibold">{{ l.valor_economizado_rs|floatformat:2 }}</td>
+              <td class="text-end text-mono">{{ l.consumo_registrado_kwh|floatformat:"0g" }}</td>
+              <td class="text-end text-mono text-success">{{ l.energia_compensada_kwh|floatformat:"0g" }}</td>
+              <td class="text-end text-mono text-info">{{ l.energia_injetada_kwh|floatformat:"0g" }}</td>
+              <td class="text-end text-mono">{{ l.valor_faturado_rs|floatformat:"2g" }}</td>
+              <td class="text-end text-mono text-success fw-semibold">{{ l.valor_economizado_rs|floatformat:"2g" }}</td>
               <td class="text-center">
                 <div class="d-flex gap-3 justify-content-center">
                     <a class="action-icon" href="{% url 'energia:lancamento_detail' l.pk %}" title="Ver detalhes">

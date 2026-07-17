@@ -98,17 +98,17 @@
       {% for emp in emprestimos_produtos %}
       <tr>
         <td>{{ emp.produto.nome }}</td>
-        <td class="text-end">{{ emp.quantidade_emprestada|floatformat:3 }}</td>
+        <td class="text-end">{{ emp.quantidade_emprestada|floatformat:"3g" }}</td>
         <td>{{ emp.unidade_medida.sigla }}</td>
-        <td class="text-end">{{ emp.produto.preco_venda|floatformat:2 }}</td>
-        <td class="text-end">{{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:2 }}</td>
-        <td class="text-end">{{ emp.saldo_pendente|floatformat:3 }}</td>
+        <td class="text-end">{{ emp.produto.preco_venda|floatformat:"2g" }}</td>
+        <td class="text-end">{{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:"2g" }}</td>
+        <td class="text-end">{{ emp.saldo_pendente|floatformat:"3g" }}</td>
         <td>{{ emp.get_status_display }}</td>
       </tr>
       {% endfor %}
       <tr class="table-light fw-bold">
         <td colspan="4" class="text-end">Total</td>
-        <td class="text-end">R$ {{ total_valor|floatformat:2 }}</td>
+        <td class="text-end">R$ {{ total_valor|floatformat:"2g" }}</td>
         <td colspan="2"></td>
       </tr>
     </tbody>

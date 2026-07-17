@@ -86,7 +86,7 @@
                     <div>
                         <h5 class="mb-1">{{ item_info.item.produto.nome }}</h5>
                         <p class="text-muted mb-1">
-                            Quantidade: <strong>{{ item_info.item.quantidade }} {{ item_info.item.unidade_medida.sigla }}</strong>
+                            Quantidade: <strong>{{ item_info.item.quantidade|floatformat:"3g" }} {{ item_info.item.unidade_medida.sigla }}</strong>
                         </p>
                         {% if item_info.item.especificacao %}
                         <p class="text-muted mb-0">
@@ -98,9 +98,9 @@
                     {% if item_info.preco_medio %}
                     <div class="text-end">
                         <small class="text-muted d-block">Estatísticas</small>
-                        <div class="badge bg-info">Menor: R$ {{ item_info.menor_preco }}</div>
-                        <div class="badge bg-secondary">Média: R$ {{ item_info.preco_medio|floatformat:2 }}</div>
-                        <div class="badge bg-warning text-dark">Maior: R$ {{ item_info.maior_preco }}</div>
+                        <div class="badge bg-info">Menor: R$ {{ item_info.menor_preco|floatformat:"2g" }}</div>
+                        <div class="badge bg-secondary">Média: R$ {{ item_info.preco_medio|floatformat:"2g" }}</div>
+                        <div class="badge bg-warning text-dark">Maior: R$ {{ item_info.maior_preco|floatformat:"2g" }}</div>
                     </div>
                     {% endif %}
                 </div>
@@ -136,7 +136,7 @@
                                     R$ {{ proposta.preco_unitario }}
                                 </td>
                                 <td class="text-end">
-                                    <strong>R$ {{ proposta.preco_total|floatformat:2 }}</strong>
+                                    <strong>R$ {{ proposta.preco_total|floatformat:"2g" }}</strong>
                                 </td>
                                 <td class="text-center">
                                     {{ proposta.prazo_entrega }} dias

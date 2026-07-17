@@ -56,7 +56,7 @@
             <dd class="col-7">{{ conta.get_tipo_conta_display }}</dd>
             {% if conta.saldo_inicial is not None %}
             <dt class="col-5">Saldo Inicial</dt>
-            <dd class="col-7">R$ {{ conta.saldo_inicial|floatformat:2 }}</dd>
+            <dd class="col-7">R$ {{ conta.saldo_inicial|floatformat:"2g" }}</dd>
             {% endif %}
             {% if conta.data_saldo_inicial %}
             <dt class="col-5">Data Saldo</dt>
@@ -143,8 +143,8 @@
               {% else %}<span class="text-muted">—</span>{% endif %}
             </td>
             <td class="text-end">{{ imp.total_lancamentos }}</td>
-            <td class="text-end text-danger">R$ {{ imp.total_debitos|floatformat:2 }}</td>
-            <td class="text-end text-success">R$ {{ imp.total_creditos|floatformat:2 }}</td>
+            <td class="text-end text-danger">R$ {{ imp.total_debitos|floatformat:"2g" }}</td>
+            <td class="text-end text-success">R$ {{ imp.total_creditos|floatformat:"2g" }}</td>
             <td>
               <span class="badge bg-{% if imp.status == 'CONCLUIDA' %}success{% elif imp.status == 'ERRO' %}danger{% elif imp.status == 'PROCESSANDO' %}info{% else %}secondary{% endif %}">
                 {{ imp.get_status_display }}

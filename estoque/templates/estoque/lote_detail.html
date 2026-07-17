@@ -71,11 +71,11 @@
           <div class="row mb-3">
             <div class="col-md-4">
               <strong>Quantidade Inicial:</strong><br>
-              {{ lote.quantidade_inicial }} {{ lote.unidade_medida.sigla }}
+              {{ lote.quantidade_inicial|floatformat:"3g" }} {{ lote.unidade_medida.sigla }}
             </div>
             <div class="col-md-4">
               <strong>Quantidade Atual:</strong><br>
-              <span class="h5 text-primary">{{ lote.quantidade_atual }} {{ lote.unidade_medida.sigla }}</span>
+              <span class="h5 text-primary">{{ lote.quantidade_atual|floatformat:"3g" }} {{ lote.unidade_medida.sigla }}</span>
             </div>
             <div class="col-md-4">
               <strong>Consumido:</strong><br>
@@ -99,11 +99,11 @@
           <div class="row mb-3">
             <div class="col-md-6">
               <strong>Valor Unitário:</strong><br>
-              R$ {{ lote.valor_unitario }}
+              R$ {{ lote.valor_unitario|floatformat:"2g" }}
             </div>
             <div class="col-md-6">
               <strong>Valor Total:</strong><br>
-              R$ {{ lote.valor_total }}
+              R$ {{ lote.valor_total|floatformat:"2g" }}
             </div>
           </div>
           {% endif %}

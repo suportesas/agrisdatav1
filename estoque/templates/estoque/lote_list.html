@@ -122,7 +122,7 @@
               <td>{{ lote.produto.nome }}</td>
               <td>{{ lote.armazem.nome }}</td>
               <td>{{ lote.local_estocagem.codigo|default:"-" }}</td>
-              <td class="text-mono">{{ lote.quantidade_atual }} {{ lote.unidade_medida.sigla }}</td>
+              <td class="text-mono">{{ lote.quantidade_atual|floatformat:"3g" }} {{ lote.unidade_medida.sigla }}</td>
               <td class="text-mono">
                 {{ lote.data_validade|date:"d/m/Y" }}
                 {% if lote.esta_vencido %}

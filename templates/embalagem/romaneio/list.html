@@ -116,7 +116,7 @@
               <td class="text-mono">{{ r.data|date:"d/m/Y" }}</td>
               <td class="text-end text-mono">{{ r.total_pallets }}</td>
               <td class="text-end text-mono">{{ r.total_caixas }}</td>
-              <td class="text-end text-mono">{{ r.peso_liquido_total|floatformat:0 }}</td>
+              <td class="text-end text-mono">{{ r.peso_liquido_total|floatformat:"0g" }}</td>
               <td>{{ r.booking.numero|default:"—" }}</td>
               <td>
                 {% if r.pedido_venda %}

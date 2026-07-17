@@ -219,9 +219,9 @@
                     <td>{{ item.produto.codigo }}</td>
                     <td>{{ item.produto.nome }}</td>
                     <td>{{ item.unidade_medida.sigla }}</td>
-                    <td class="text-end">{{ item.quantidade_pedida }}</td>
-                    <td class="text-end">R$ {{ item.preco_unitario|floatformat:2 }}</td>
-                    <td class="text-end">R$ {{ item.subtotal|floatformat:2 }}</td>
+                    <td class="text-end">{{ item.quantidade_pedida|floatformat:"3g" }}</td>
+                    <td class="text-end">R$ {{ item.preco_unitario|floatformat:"2g" }}</td>
+                    <td class="text-end">R$ {{ item.subtotal|floatformat:"2g" }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -232,23 +232,23 @@
         <div class="total-row">
             <div class="total-item">
                 <span>Subtotal:</span>
-                <span>R$ {{ pedido.valor_total|floatformat:2 }}</span>
+                <span>R$ {{ pedido.valor_total|floatformat:"2g" }}</span>
             </div>
             {% if pedido.valor_desconto %}
             <div class="total-item">
                 <span>Desconto:</span>
-                <span>R$ {{ pedido.valor_desconto|floatformat:2 }}</span>
+                <span>R$ {{ pedido.valor_desconto|floatformat:"2g" }}</span>
             </div>
             {% endif %}
             {% if pedido.valor_frete %}
             <div class="total-item">
                 <span>Frete:</span>
-                <span>R$ {{ pedido.valor_frete|floatformat:2 }}</span>
+                <span>R$ {{ pedido.valor_frete|floatformat:"2g" }}</span>
             </div>
             {% endif %}
             <div class="total-item grand-total">
                 <span>TOTAL:</span>
-                <span>R$ {{ pedido.valor_total|floatformat:2 }}</span>
+                <span>R$ {{ pedido.valor_total|floatformat:"2g" }}</span>
             </div>
         </div>
     </div>

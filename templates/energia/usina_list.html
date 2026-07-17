@@ -78,8 +78,8 @@
               <td class="ps-4 text-mono fw-semibold">{{ u.codigo }}</td>
               <td><a href="{% url 'energia:usina_detail' u.pk %}" class="text-decoration-none fw-semibold">{{ u.nome }}</a></td>
               <td class="text-end text-mono">{{ u.capacidade_kwp }} kWp</td>
-              <td class="text-end text-mono">{{ u.geracao_acordada_mensal_kwh|floatformat:0 }} kWh</td>
-              <td class="text-end text-mono">{{ u.prognostico_mensal_kwh|floatformat:0 }} kWh</td>
+              <td class="text-end text-mono">{{ u.geracao_acordada_mensal_kwh|floatformat:"0g" }} kWh</td>
+              <td class="text-end text-mono">{{ u.prognostico_mensal_kwh|floatformat:"0g" }} kWh</td>
               <td class="text-center">
                 {% if u.ativa %}<span class="badge bg-success">Ativa</span>
                 {% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}

@@ -41,7 +41,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="text-muted small">Valor Total a Pagar</div>
-                    <div class="fs-5 fw-bold">R$ {{ valor_total|floatformat:2 }}</div>
+                    <div class="fs-5 fw-bold">R$ {{ valor_total|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -49,7 +49,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="text-muted small">Já Pago</div>
-                    <div class="fs-5 fw-bold text-success">R$ {{ valor_pago|floatformat:2 }}</div>
+                    <div class="fs-5 fw-bold text-success">R$ {{ valor_pago|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -57,7 +57,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="text-muted small">A Pagar</div>
-                    <div class="fs-5 fw-bold text-warning">R$ {{ valor_a_pagar|floatformat:2 }}</div>
+                    <div class="fs-5 fw-bold text-warning">R$ {{ valor_a_pagar|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -65,7 +65,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="text-muted small">Saldo Pendente</div>
-                    <div class="fs-5 fw-bold text-danger">R$ {{ valor_vencido|floatformat:2 }}</div>
+                    <div class="fs-5 fw-bold text-danger">R$ {{ valor_vencido|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -78,12 +78,12 @@
                 <thead class="table-light">
                     <tr>
                         <th>Mês</th>
-                        <th>Parcelas</th>
-                        <th>Valor Previsto</th>
-                        <th>Já Pago</th>
-                        <th>A Pagar</th>
-                        <th>Vencido</th>
-                        <th>Percentual Pago</th>
+                        <th class="text-end">Parcelas</th>
+                        <th class="text-end">Valor Previsto</th>
+                        <th class="text-end">Já Pago</th>
+                        <th class="text-end">A Pagar</th>
+                        <th class="text-end">Vencido</th>
+                        <th class="text-end">Percentual Pago</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -92,30 +92,30 @@
                         <td>
                             <strong>{{ mes|date:'F \d\e Y' }}</strong>
                         </td>
-                        <td>
+                        <td class="text-end">
                             <span class="badge bg-info">{{ dados.parcelas }}</span>
                         </td>
-                        <td>
-                            R$ {{ dados.valor_total|floatformat:2 }}
+                        <td class="text-end">
+                            R$ {{ dados.valor_total|floatformat:"2g" }}
                         </td>
-                        <td>
-                            <strong class="text-success">R$ {{ dados.valor_pago|floatformat:2 }}</strong>
+                        <td class="text-end">
+                            <strong class="text-success">R$ {{ dados.valor_pago|floatformat:"2g" }}</strong>
                         </td>
-                        <td>
-                            <strong class="text-warning">R$ {{ dados.valor_a_pagar|floatformat:2 }}</strong>
+                        <td class="text-end">
+                            <strong class="text-warning">R$ {{ dados.valor_a_pagar|floatformat:"2g" }}</strong>
                         </td>
-                        <td>
+                        <td class="text-end">
                             {% if dados.valor_vencido > 0 %}
-                            <strong class="text-danger">R$ {{ dados.valor_vencido|floatformat:2 }}</strong>
+                            <strong class="text-danger">R$ {{ dados.valor_vencido|floatformat:"2g" }}</strong>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-end">
                             <div class="progress" style="min-width: 100px;">
                                 {% if dados.percentual_pago > 0 %}
                                 <div class="progress-bar bg-success" style="width: {{ dados.percentual_pago }}%">
-                                    {{ dados.percentual_pago|floatformat:0 }}%
+                                    {{ dados.percentual_pago|floatformat:"0g" }}%
                                 </div>
                                 {% else %}
                                 <div class="progress-bar bg-danger" style="width: 100%">
@@ -140,17 +140,17 @@
                 <tfoot>
                     <tr class="table-light fw-bold">
                         <td>TOTAL</td>
-                        <td>
+                        <td class="text-end">
                             <span class="badge bg-info">{{ total_parcelas }}</span>
                         </td>
-                        <td>R$ {{ total_valor|floatformat:2 }}</td>
-                        <td class="text-success">R$ {{ total_pago|floatformat:2 }}</td>
-                        <td class="text-warning">R$ {{ total_a_pagar|floatformat:2 }}</td>
-                        <td class="text-danger">R$ {{ total_vencido|floatformat:2 }}</td>
-                        <td>
+                        <td class="text-end">R$ {{ total_valor|floatformat:"2g" }}</td>
+                        <td class="text-end text-success">R$ {{ total_pago|floatformat:"2g" }}</td>
+                        <td class="text-end text-warning">R$ {{ total_a_pagar|floatformat:"2g" }}</td>
+                        <td class="text-end text-danger">R$ {{ total_vencido|floatformat:"2g" }}</td>
+                        <td class="text-end">
                             <strong>
                                 {% if total_valor > 0 %}
-                                    {{ percentual_total_pago|floatformat:0 }}%
+                                    {{ percentual_total_pago|floatformat:"0g" }}%
                                 {% else %}
                                     0%
                                 {% endif %}
@@ -188,7 +188,7 @@
                 <div class="col-md-6 mb-3">
                     <div class="d-flex justify-content-between mb-2">
                         <span>{{ fornecedor.nome }}</span>
-                        <strong>R$ {{ valor|floatformat:2 }}</strong>
+                        <strong>R$ {{ valor|floatformat:"2g" }}</strong>
                     </div>
                     <div class="progress">
                         {% widthratio valor total_valor 100 as percentual %}
@@ -210,28 +210,28 @@
                 <div class="col-md-6 mb-3">
                     <div class="alert alert-light">
                         <div class="fw-bold">Aberta</div>
-                        <div class="fs-5">R$ {{ valor_aberta|floatformat:2 }}</div>
+                        <div class="fs-5">R$ {{ valor_aberta|floatformat:"2g" }}</div>
                         <small class="text-muted">Aguardando aprovação</small>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="alert alert-info">
                         <div class="fw-bold">Aprovada</div>
-                        <div class="fs-5">R$ {{ valor_aprovada|floatformat:2 }}</div>
+                        <div class="fs-5">R$ {{ valor_aprovada|floatformat:"2g" }}</div>
                         <small>Pronta para pagamento</small>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="alert alert-success">
                         <div class="fw-bold">Paga</div>
-                        <div class="fs-5">R$ {{ valor_paga|floatformat:2 }}</div>
+                        <div class="fs-5">R$ {{ valor_paga|floatformat:"2g" }}</div>
                         <small>Já foi paga</small>
                     </div>
                 </div>
                 <div class="col-md-6 mb-3">
                     <div class="alert alert-danger">
                         <div class="fw-bold">Vencida</div>
-                        <div class="fs-5">R$ {{ valor_vencida|floatformat:2 }}</div>
+                        <div class="fs-5">R$ {{ valor_vencida|floatformat:"2g" }}</div>
                         <small>Passou da data de vencimento</small>
                     </div>
                 </div>

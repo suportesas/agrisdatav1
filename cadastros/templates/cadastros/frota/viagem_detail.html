@@ -18,31 +18,31 @@
     <div class="col-md-2">
       <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
         <small class="text-muted d-block">Frete</small>
-        <h5 class="mb-0 text-primary">R$ {{ margem.frete|floatformat:2 }}</h5>
+        <h5 class="mb-0 text-primary">R$ {{ margem.frete|floatformat:"2g" }}</h5>
       </div></div>
     </div>
     <div class="col-md-2">
       <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
         <small class="text-muted d-block">Combustível</small>
-        <h5 class="mb-0">R$ {{ margem.custo_combustivel|floatformat:2 }}</h5>
+        <h5 class="mb-0">R$ {{ margem.custo_combustivel|floatformat:"2g" }}</h5>
       </div></div>
     </div>
     <div class="col-md-2">
       <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
         <small class="text-muted d-block">Pedágios</small>
-        <h5 class="mb-0">R$ {{ margem.custo_pedagio|floatformat:2 }}</h5>
+        <h5 class="mb-0">R$ {{ margem.custo_pedagio|floatformat:"2g" }}</h5>
       </div></div>
     </div>
     <div class="col-md-2">
       <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
         <small class="text-muted d-block">Manutenção</small>
-        <h5 class="mb-0">R$ {{ margem.custo_manutencao|floatformat:2 }}</h5>
+        <h5 class="mb-0">R$ {{ margem.custo_manutencao|floatformat:"2g" }}</h5>
       </div></div>
     </div>
     <div class="col-md-2">
       <div class="card border-0 shadow-sm text-center"><div class="card-body py-3">
         <small class="text-muted d-block">Custo Total</small>
-        <h5 class="mb-0 text-danger">R$ {{ margem.custo_total|floatformat:2 }}</h5>
+        <h5 class="mb-0 text-danger">R$ {{ margem.custo_total|floatformat:"2g" }}</h5>
       </div></div>
     </div>
     <div class="col-md-2">
@@ -50,7 +50,7 @@
         <div class="card-body py-3">
           <small class="text-muted d-block">Margem Bruta</small>
           <h5 class="mb-0 {% if margem.margem_bruta >= 0 %}text-success{% else %}text-danger{% endif %}">
-            R$ {{ margem.margem_bruta|floatformat:2 }}
+            R$ {{ margem.margem_bruta|floatformat:"2g" }}
           </h5>
           {% if margem.margem_pct %}<small class="{% if margem.margem_bruta >= 0 %}text-success{% else %}text-danger{% endif %}">{{ margem.margem_pct }}%</small>{% endif %}
         </div>
@@ -68,8 +68,8 @@
             <div class="col-md-6"><div class="small text-muted">Veículo</div><div>{{ obj.vehicle|default:"—" }}</div></div>
             <div class="col-md-6"><div class="small text-muted">Motorista</div><div>{{ obj.motorista.nome|default:"—" }}</div></div>
             {% if obj.km_percorrido %}
-            <div class="col-md-4"><div class="small text-muted">KM Percorrido</div><div class="fw-bold">{{ obj.km_percorrido|floatformat:0 }} km</div></div>
-            {% if margem.custo_por_km %}<div class="col-md-4"><div class="small text-muted">Custo/km</div><div class="fw-bold text-warning">R$ {{ margem.custo_por_km|floatformat:2 }}</div></div>{% endif %}
+            <div class="col-md-4"><div class="small text-muted">KM Percorrido</div><div class="fw-bold">{{ obj.km_percorrido|floatformat:"0g" }} km</div></div>
+            {% if margem.custo_por_km %}<div class="col-md-4"><div class="small text-muted">Custo/km</div><div class="fw-bold text-warning">R$ {{ margem.custo_por_km|floatformat:"2g" }}</div></div>{% endif %}
             {% endif %}
             <div class="col-md-4"><div class="small text-muted">Status</div>
               {% if obj.status == 'CONCLUIDA' %}<span class="badge bg-success">{{ obj.get_status_display }}</span>
@@ -94,13 +94,13 @@
               <tr>
                 <td class="small">{{ p.data|date:"d/m/Y" }}</td>
                 <td class="small">{{ p.praca|default:"—" }}</td>
-                <td class="text-end fw-bold">R$ {{ p.valor|floatformat:2 }}</td>
+                <td class="text-end fw-bold">R$ {{ p.valor|floatformat:"2g" }}</td>
               </tr>
               {% empty %}
               <tr><td colspan="3" class="text-center text-muted py-2">Nenhum pedágio.</td></tr>
               {% endfor %}
             </tbody>
-            {% if pedagios %}<tfoot class="table-light fw-bold"><tr><td colspan="2">Total</td><td class="text-end">R$ {{ margem.custo_pedagio|floatformat:2 }}</td></tr></tfoot>{% endif %}
+            {% if pedagios %}<tfoot class="table-light fw-bold"><tr><td colspan="2">Total</td><td class="text-end">R$ {{ margem.custo_pedagio|floatformat:"2g" }}</td></tr></tfoot>{% endif %}
           </table>
         </div>
       </div>

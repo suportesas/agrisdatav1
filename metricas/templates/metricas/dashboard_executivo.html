@@ -81,8 +81,8 @@
                 <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-cash-stack"></i></div>
                 <div>
                     <div class="stat-label text-uppercase">Receita Mensal</div>
-                    <div class="stat-value">R$ {{ receita_mensal|floatformat:0 }}</div>
-                    <small class="text-muted">Anual: R$ {{ receita_anual|floatformat:0 }}</small>
+                    <div class="stat-value">R$ {{ receita_mensal|floatformat:"0g" }}</div>
+                    <small class="text-muted">Anual: R$ {{ receita_anual|floatformat:"0g" }}</small>
                 </div>
             </div>
         </div>
@@ -231,7 +231,7 @@
                                                  aria-valuenow="{{ consumo.percentual_fazendas }}" 
                                                  aria-valuemin="0" 
                                                  aria-valuemax="100">
-                                                {{ consumo.fazendas_usadas }}/{{ consumo.limite_fazendas }} ({{ consumo.percentual_fazendas|floatformat:0 }}%)
+                                                {{ consumo.fazendas_usadas }}/{{ consumo.limite_fazendas }} ({{ consumo.percentual_fazendas|floatformat:"0g" }}%)
                                             </div>
                                         </div>
                                     </td>
@@ -243,7 +243,7 @@
                                                  aria-valuenow="{{ consumo.percentual_usuarios }}" 
                                                  aria-valuemin="0" 
                                                  aria-valuemax="100">
-                                                {{ consumo.usuarios_ativos }}/{{ consumo.limite_usuarios }} ({{ consumo.percentual_usuarios|floatformat:0 }}%)
+                                                {{ consumo.usuarios_ativos }}/{{ consumo.limite_usuarios }} ({{ consumo.percentual_usuarios|floatformat:"0g" }}%)
                                             </div>
                                         </div>
                                     </td>
@@ -255,7 +255,7 @@
                                                  aria-valuenow="{{ consumo.percentual_talhoes }}" 
                                                  aria-valuemin="0" 
                                                  aria-valuemax="100">
-                                                {{ consumo.talhoes_cadastrados }}/{{ consumo.limite_talhoes }} ({{ consumo.percentual_talhoes|floatformat:0 }}%)
+                                                {{ consumo.talhoes_cadastrados }}/{{ consumo.limite_talhoes }} ({{ consumo.percentual_talhoes|floatformat:"0g" }}%)
                                             </div>
                                         </div>
                                     </td>
@@ -267,7 +267,7 @@
                                                  aria-valuenow="{{ consumo.percentual_produtos }}" 
                                                  aria-valuemin="0" 
                                                  aria-valuemax="100">
-                                                {{ consumo.produtos_cadastrados }}/{{ consumo.limite_produtos }} ({{ consumo.percentual_produtos|floatformat:0 }}%)
+                                                {{ consumo.produtos_cadastrados }}/{{ consumo.limite_produtos }} ({{ consumo.percentual_produtos|floatformat:"0g" }}%)
                                             </div>
                                         </div>
                                     </td>

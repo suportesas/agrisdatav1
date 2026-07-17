@@ -136,16 +136,16 @@
             <td class="text-end">{{ linha.usina.capacidade_kwp }} kWp</td>
             {% if linha.relatorio %}
               {% with r=linha.relatorio %}
-              <td class="text-end font-monospace fw-semibold">{{ r.geracao_kwh|floatformat:0 }}</td>
+              <td class="text-end font-monospace fw-semibold">{{ r.geracao_kwh|floatformat:"0g" }}</td>
               <td class="text-end">
                 <span class="badge {% if r.desempenho_pct >= 90 %}bg-success{% elif r.desempenho_pct >= 75 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
                   {{ r.desempenho_pct }}%
                 </span>
               </td>
-              <td class="text-end font-monospace">{{ r.consumo_total_kwh|floatformat:0 }}</td>
-              <td class="text-end font-monospace text-info">{{ r.energia_injetada_kwh|floatformat:0 }}</td>
-              <td class="text-end font-monospace text-success fw-semibold">R$ {{ r.economia_rs|floatformat:2 }}</td>
-              <td class="text-end font-monospace">R$ {{ r.faturado_rs|floatformat:2 }}</td>
+              <td class="text-end font-monospace">{{ r.consumo_total_kwh|floatformat:"0g" }}</td>
+              <td class="text-end font-monospace text-info">{{ r.energia_injetada_kwh|floatformat:"0g" }}</td>
+              <td class="text-end font-monospace text-success fw-semibold">R$ {{ r.economia_rs|floatformat:"2g" }}</td>
+              <td class="text-end font-monospace">R$ {{ r.faturado_rs|floatformat:"2g" }}</td>
               <td class="text-end text-muted">{{ r.co2_nao_produzido_t|floatformat:"2g" }}</td>
               <td class="text-end pe-3 text-muted">{{ r.arvores_salvas }}</td>
               {% endwith %}

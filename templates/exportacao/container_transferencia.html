@@ -70,7 +70,7 @@
             {% if container.peso_bruto_kg %}
             <div class="col-6">
               <span class="text-muted d-block">Peso Bruto</span>
-              <strong>{{ container.peso_bruto_kg|floatformat:0 }} kg</strong>
+              <strong>{{ container.peso_bruto_kg|floatformat:"0g" }} kg</strong>
             </div>
             {% endif %}
           </div>

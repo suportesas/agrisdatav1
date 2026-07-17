@@ -125,20 +125,20 @@
       <td>{{ item.descricao }}</td>
       <td>{{ item.container.numero_container|default:"—" }}</td>
       <td>{{ item.marks_numbers|default:"—" }}</td>
-      <td class="text-right">{{ item.quantidade|floatformat:4 }}</td>
+      <td class="text-right">{{ item.quantidade|floatformat:"4g" }}</td>
       <td>{{ item.unidade }}</td>
-      <td class="text-right">{{ item.peso_bruto_kg|floatformat:3 }}</td>
-      <td class="text-right">{{ item.peso_liquido_kg|floatformat:3 }}</td>
-      <td class="text-right">{{ item.valor_unitario_fob|floatformat:4 }}</td>
-      <td class="text-right"><strong>{{ item.valor_total_fob|floatformat:2 }}</strong></td>
+      <td class="text-right">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
+      <td class="text-right">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+      <td class="text-right">{{ item.valor_unitario_fob|floatformat:"4g" }}</td>
+      <td class="text-right"><strong>{{ item.valor_total_fob|floatformat:"2g" }}</strong></td>
     </tr>
     {% endfor %}
     <tr>
       <td colspan="5"><strong>TOTAL</strong></td>
-      <td class="text-right"><strong>{{ invoice.peso_bruto_total|floatformat:3 }}</strong></td>
-      <td class="text-right"><strong>{{ invoice.peso_liquido_total|floatformat:3 }}</strong></td>
+      <td class="text-right"><strong>{{ invoice.peso_bruto_total|floatformat:"3g" }}</strong></td>
+      <td class="text-right"><strong>{{ invoice.peso_liquido_total|floatformat:"3g" }}</strong></td>
       <td></td>
-      <td class="text-right"><strong>{{ invoice.valor_mercadoria|floatformat:2 }}</strong></td>
+      <td class="text-right"><strong>{{ invoice.valor_mercadoria|floatformat:"2g" }}</strong></td>
     </tr>
   </tbody>
 </table>
@@ -146,13 +146,13 @@
 <!-- Totais -->
 <table class="totals">
   <tbody>
-    <tr><td>Goods Value / Valor da Mercadoria</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_mercadoria|floatformat:2 }}</td></tr>
-    {% if invoice.valor_frete %}<tr><td>Freight / Frete</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_frete|floatformat:2 }}</td></tr>{% endif %}
-    {% if invoice.valor_seguro %}<tr><td>Insurance / Seguro</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_seguro|floatformat:2 }}</td></tr>{% endif %}
+    <tr><td>Goods Value / Valor da Mercadoria</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_mercadoria|floatformat:"2g" }}</td></tr>
+    {% if invoice.valor_frete %}<tr><td>Freight / Frete</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_frete|floatformat:"2g" }}</td></tr>{% endif %}
+    {% if invoice.valor_seguro %}<tr><td>Insurance / Seguro</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_seguro|floatformat:"2g" }}</td></tr>{% endif %}
     {% if invoice.valor_desconto_adiantamento %}
-    <tr><td>ADVANCE DISCOUNT{% if desconto_adiantamento %} (Contract {{ desconto_adiantamento.adiantamento.numero_referencia }}){% endif %}</td><td class="text-right" style="color:#c00">– {{ invoice.moeda }} {{ invoice.valor_desconto_adiantamento|floatformat:2 }}</td></tr>
+    <tr><td>ADVANCE DISCOUNT{% if desconto_adiantamento %} (Contract {{ desconto_adiantamento.adiantamento.numero_referencia }}){% endif %}</td><td class="text-right" style="color:#c00">– {{ invoice.moeda }} {{ invoice.valor_desconto_adiantamento|floatformat:"2g" }}</td></tr>
     {% endif %}
-    <tr class="total-row"><td>TOTAL {{ invoice.incoterm }}</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_total|floatformat:2 }}</td></tr>
+    <tr class="total-row"><td>TOTAL {{ invoice.incoterm }}</td><td class="text-right">{{ invoice.moeda }} {{ invoice.valor_total|floatformat:"2g" }}</td></tr>
   </tbody>
 </table>
 

@@ -88,11 +88,11 @@
               <p class="mb-2">
                 <strong>Quantidade:</strong><br>
                 {% if movimentacao.lote %}
-                  <span class="fs-4 text-primary">{{ movimentacao.quantidade }} {{ movimentacao.lote.unidade_medida.sigla }}</span>
+                  <span class="fs-4 text-primary">{{ movimentacao.quantidade|floatformat:"3g" }} {{ movimentacao.lote.unidade_medida.sigla }}</span>
                 {% elif movimentacao.unidade_medida %}
-                  <span class="fs-4 text-primary">{{ movimentacao.quantidade }} {{ movimentacao.unidade_medida.sigla }}</span>
+                  <span class="fs-4 text-primary">{{ movimentacao.quantidade|floatformat:"3g" }} {{ movimentacao.unidade_medida.sigla }}</span>
                 {% else %}
-                  <span class="fs-4 text-primary">{{ movimentacao.quantidade }}</span>
+                  <span class="fs-4 text-primary">{{ movimentacao.quantidade|floatformat:"3g" }}</span>
                 {% endif %}
               </p>
               <p class="mb-0">
@@ -296,7 +296,7 @@
         <div class="card-body">
           <p class="mb-2">
             <strong>Quantidade Atual:</strong><br>
-            <span class="fs-5">{{ movimentacao.lote.quantidade_atual }} {{ movimentacao.lote.unidade_medida.sigla }}</span>
+            <span class="fs-5">{{ movimentacao.lote.quantidade_atual|floatformat:"3g" }} {{ movimentacao.lote.unidade_medida.sigla }}</span>
           </p>
           <p class="mb-2">
             <strong>Status:</strong>

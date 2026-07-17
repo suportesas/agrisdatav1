@@ -89,7 +89,7 @@
       <tr>
         <td style="width:55%">{{ item.tipo_embalagem.descricao_completa }}</td>
         <td style="width:20%;text-align:right;font-weight:bold">{{ item.quantidade_caixas }} cx</td>
-        <td style="width:25%;text-align:right">{{ item.peso_liquido_kg|floatformat:1 }} kg</td>
+        <td style="width:25%;text-align:right">{{ item.peso_liquido_kg|floatformat:"1g" }} kg</td>
       </tr>
       {% endfor %}
     </table>
@@ -98,7 +98,7 @@
       <tr><td class="lbl">Product:</td><td class="val">{{ te.descricao_completa }}</td></tr>
       {% if te.marca %}<tr><td class="lbl">Brand:</td><td>{{ te.marca }}</td></tr>{% endif %}
       {% if te.tipo_calibre %}<tr><td class="lbl">Size / Calibre:</td><td>{{ te.tipo_calibre }}</td></tr>{% endif %}
-      <tr><td class="lbl">Cx Weight:</td><td>{{ te.peso_liquido_cx|floatformat:3 }} kg</td></tr>
+      <tr><td class="lbl">Cx Weight:</td><td>{{ te.peso_liquido_cx|floatformat:"3g" }} kg</td></tr>
       {% if te.trace_code %}<tr><td class="lbl">Trace Code:</td><td><strong>{{ te.trace_code }}</strong></td></tr>{% endif %}
       {% if te.cultura and te.cultura.exportacao_temperatura %}
       <tr><td class="lbl">Temperature:</td><td>{{ te.cultura.exportacao_temperatura }}°C</td></tr>
@@ -111,11 +111,11 @@
   <table class="pesos-row">
     <tr>
       <td>
-        <span class="peso-valor">{{ pallet.peso_liquido_kg|floatformat:3 }}</span>
+        <span class="peso-valor">{{ pallet.peso_liquido_kg|floatformat:"3g" }}</span>
         <span class="peso-leg">kg NET WEIGHT</span>
       </td>
       <td>
-        <span class="peso-valor">{{ pallet.peso_bruto_kg|floatformat:3 }}</span>
+        <span class="peso-valor">{{ pallet.peso_bruto_kg|floatformat:"3g" }}</span>
         <span class="peso-leg">kg GROSS WEIGHT</span>
       </td>
     </tr>

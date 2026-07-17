@@ -62,16 +62,16 @@
                 </td>
                 <td>{{ booking.porto_origem|default:"—" }}</td>
                 <td>{{ booking.porto_destino|default:"—" }}</td>
-                <td class="text-center text-mono">{{ booking.solicitacao.quantidade|floatformat:0|default:"—" }}</td>
+                <td class="text-center text-mono">{{ booking.solicitacao.quantidade|floatformat:"0g"|default:"—" }}</td>
                 <td class="text-center fw-semibold text-mono">{{ booking.n_containers }}</td>
                 <td class="text-center fw-semibold text-mono">
                   {% if booking.saldo is not None %}
                     {% if booking.saldo < 0 %}
-                      <span class="text-danger">{{ booking.saldo|floatformat:0 }}</span>
+                      <span class="text-danger">{{ booking.saldo|floatformat:"0g" }}</span>
                     {% elif booking.saldo == 0 %}
                       <span class="text-success">0</span>
                     {% else %}
-                      <span class="text-warning">{{ booking.saldo|floatformat:0 }}</span>
+                      <span class="text-warning">{{ booking.saldo|floatformat:"0g" }}</span>
                     {% endif %}
                   {% else %}—{% endif %}
                 </td>

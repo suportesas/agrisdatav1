@@ -227,7 +227,7 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ item.quantidade }} {{ item.unidade_medida.sigla }}</td>
+                                <td>{{ item.quantidade|floatformat:"3g" }} {{ item.unidade_medida.sigla }}</td>
                                 <td>
                                     {% if item.especificacao %}
                                     {{ item.especificacao|truncatewords:10 }}

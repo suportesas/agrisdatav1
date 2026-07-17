@@ -14,7 +14,7 @@
       <div class="card border-0 shadow-sm text-center">
         <div class="card-body py-3">
           <small class="text-muted d-block">Total de Litros</small>
-          <h4 class="mb-0">{{ total_litros|floatformat:1 }} L</h4>
+          <h4 class="mb-0">{{ total_litros|floatformat:"1g" }} L</h4>
         </div>
       </div>
     </div>
@@ -22,7 +22,7 @@
       <div class="card border-0 shadow-sm text-center bg-info bg-opacity-10">
         <div class="card-body py-3">
           <small class="text-muted d-block">Gasto Total</small>
-          <h4 class="mb-0 text-info">R$ {{ total_valor|floatformat:2 }}</h4>
+          <h4 class="mb-0 text-info">R$ {{ total_valor|floatformat:"2g" }}</h4>
         </div>
       </div>
     </div>
@@ -140,10 +140,10 @@
             <td><a href="{% url 'frota:abastecimento_detail' ab.pk %}">{{ ab.vehicle }}</a></td>
             <td class="small text-muted">{{ ab.motorista.nome|default:"—" }}</td>
             <td><span class="badge bg-secondary small">{{ ab.get_tipo_combustivel_display }}</span></td>
-            <td class="text-end small">{{ ab.litros|floatformat:1 }}</td>
-            <td class="text-end small">{{ ab.preco_por_litro|floatformat:3 }}</td>
-            <td class="text-end fw-bold">R$ {{ ab.valor_total|floatformat:2 }}</td>
-            <td class="small text-muted">{% if ab.km_odometro %}{{ ab.km_odometro|floatformat:0 }} km{% else %}—{% endif %}</td>
+            <td class="text-end small">{{ ab.litros|floatformat:"1g" }}</td>
+            <td class="text-end small">{{ ab.preco_por_litro|floatformat:"3g" }}</td>
+            <td class="text-end fw-bold">R$ {{ ab.valor_total|floatformat:"2g" }}</td>
+            <td class="small text-muted">{% if ab.km_odometro %}{{ ab.km_odometro|floatformat:"0g" }} km{% else %}—{% endif %}</td>
             <td class="small text-muted">{{ ab.local_abastecimento|truncatechars:20|default:"—" }}</td>
             <td class="text-center">
               <a class="action-icon edit" href="{% url 'frota:abastecimento_update' ab.pk %}" title="Editar">

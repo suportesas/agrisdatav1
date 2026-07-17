@@ -36,15 +36,15 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="text-muted">Valor Total</label>
-                        <div class="fs-5 fw-bold">R$ {{ conta.valor_total|floatformat:2 }}</div>
+                        <div class="fs-5 fw-bold">R$ {{ conta.valor_total|floatformat:"2g" }}</div>
                     </div>
                     <div class="mb-3">
                         <label class="text-muted">Desconto</label>
-                        <div class="fs-5">R$ {{ conta.desconto_negociado|floatformat:2 }}</div>
+                        <div class="fs-5">R$ {{ conta.desconto_negociado|floatformat:"2g" }}</div>
                     </div>
                     <div class="mb-3">
                         <label class="text-muted">Valor Ajustado</label>
-                        <div class="fs-5 fw-bold">R$ {{ conta.valor_ajustado|floatformat:2 }}</div>
+                        <div class="fs-5 fw-bold">R$ {{ conta.valor_ajustado|floatformat:"2g" }}</div>
                     </div>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                             <tr>
                                 <td>{{ parcela.numero_parcela }}</td>
                                 <td>{{ parcela.data_vencimento|date:'d/m/Y' }}</td>
-                                <td>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</td>
+                                <td>R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</td>
                                 <td>
                                     <span class="badge bg-warning">{{ parcela.get_status_display }}</span>
                                 </td>

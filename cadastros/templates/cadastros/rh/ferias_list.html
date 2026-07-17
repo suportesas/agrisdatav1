@@ -136,7 +136,7 @@
                 {% if ferias.dias_abono > 0 %}{{ ferias.dias_abono }} dias{% else %}—{% endif %}
               </td>
               <td class="text-end">
-                {% if ferias.valor_bruto %}R$ {{ ferias.valor_bruto|floatformat:2 }}{% else %}—{% endif %}
+                {% if ferias.valor_bruto %}R$ {{ ferias.valor_bruto|floatformat:"2g" }}{% else %}—{% endif %}
               </td>
               <td>
                 {% if ferias.status == 'AGENDADA' %}

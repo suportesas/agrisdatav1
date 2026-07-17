@@ -129,7 +129,7 @@
                                 {% for t in por_tipo %}
                                     <tr>
                                         <td>{{ t.tipo }}</td>
-                                        <td>{{ t.total }}</td>
+                                        <td>{{ t.total|floatformat:"3g" }}</td>
                                     </tr>
                                 {% empty %}
                                     <tr><td colspan="2" class="text-muted">Sem dados</td></tr>
@@ -156,7 +156,7 @@
                                 {% for s in por_status %}
                                     <tr>
                                         <td>{{ s.status }}</td>
-                                        <td>{{ s.total }}</td>
+                                        <td>{{ s.total|floatformat:"3g" }}</td>
                                     </tr>
                                 {% empty %}
                                     <tr><td colspan="2" class="text-muted">Sem dados</td></tr>
@@ -186,7 +186,7 @@
                                 {% for a in por_armazem_origem %}
                                     <tr>
                                         <td>{{ a.armazem_origem__nome }}</td>
-                                        <td>{{ a.total }}</td>
+                                        <td>{{ a.total|floatformat:"3g" }}</td>
                                     </tr>
                                 {% empty %}
                                     <tr><td colspan="2" class="text-muted">Sem dados</td></tr>
@@ -213,7 +213,7 @@
                                 {% for a in por_armazem_destino %}
                                     <tr>
                                         <td>{{ a.armazem_destino__nome }}</td>
-                                        <td>{{ a.total }}</td>
+                                        <td>{{ a.total|floatformat:"3g" }}</td>
                                     </tr>
                                 {% empty %}
                                     <tr><td colspan="2" class="text-muted">Sem dados</td></tr>
@@ -250,7 +250,7 @@
                                 <td>
                                     {% if m.produto %}{{ m.produto.nome }}{% else %}—{% endif %}
                                 </td>
-                                <td>{{ m.quantidade }}</td>
+                                <td>{{ m.quantidade|floatformat:"3g" }}</td>
                                 <td>
                                     {% if m.armazem_origem %}{{ m.armazem_origem.nome }}{% else %}—{% endif %}
                                 </td>

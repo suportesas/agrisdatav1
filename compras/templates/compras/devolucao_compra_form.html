@@ -69,7 +69,7 @@
               </div>
               <div class="col-sm-3">
                   <small class="text-muted d-block">Valor Total (NF original)</small>
-                  <strong>R$ {{ recebimento.valor_total_nf|floatformat:2 }}</strong>
+                  <strong>R$ {{ recebimento.valor_total_nf|floatformat:"2g" }}</strong>
               </div>
           </div>
       </div>
@@ -164,7 +164,7 @@
                                oninput="atualizarSubtotal('{{ item.pk }}')">
                     </td>
                     <td class="text-end">
-                        R$ {{ item.preco_unitario|floatformat:2|default:"0,00" }}
+                        R$ {{ item.preco_unitario|floatformat:"2g"|default:"0,00" }}
                     </td>
                     <td class="text-end fw-semibold" id="sub_{{ item.pk }}">
                         R$ 0,00

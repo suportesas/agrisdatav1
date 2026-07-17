@@ -9,7 +9,7 @@
     <div class="card border-0 shadow-sm h-100">
       <div class="card-body">
         <div class="text-muted small mb-1"><i class="bi bi-cash-coin me-1"></i>Saldo Aberto (BRL)</div>
-        <div class="fs-4 fw-bold text-danger">R$ {{ total_aberto_brl|floatformat:2 }}</div>
+        <div class="fs-4 fw-bold text-danger">R$ {{ total_aberto_brl|floatformat:"2g" }}</div>
       </div>
     </div>
   </div>
@@ -27,7 +27,7 @@
         <div class="text-muted small mb-1"><i class="bi bi-calendar-check me-1"></i>Próximo Vencimento</div>
         {% if proxima_parcela %}
         <div class="fs-5 fw-bold">{{ proxima_parcela.data_vencimento|date:"d/m/Y" }}</div>
-        <div class="text-muted small">{{ proxima_parcela.numero }} — R$ {{ proxima_parcela.valor_brl|floatformat:2 }}</div>
+        <div class="text-muted small">{{ proxima_parcela.numero }} — R$ {{ proxima_parcela.valor_brl|floatformat:"2g" }}</div>
         {% else %}
         <div class="text-success fw-bold">Sem vencimentos</div>
         {% endif %}
@@ -44,7 +44,7 @@
       <thead class="table-light"><tr><th>Moeda</th><th class="text-end">Valor em Aberto</th></tr></thead>
       <tbody>
         {% for m in por_moeda %}
-        <tr><td><strong>{{ m.moeda }}</strong></td><td class="text-end fw-bold">{{ m.total|floatformat:2 }}</td></tr>
+        <tr><td><strong>{{ m.moeda }}</strong></td><td class="text-end fw-bold">{{ m.total|floatformat:"2g" }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -68,7 +68,7 @@
           <td><a href="{% url 'portal_cliente:financeiro_detail' cr.pk %}">{{ cr.numero }}</a></td>
           <td>{{ cr.data_vencimento|date:"d/m/Y" }}</td>
           <td>{{ cr.moeda }}</td>
-          <td class="text-end">{{ cr.valor_moeda|floatformat:2 }}</td>
+          <td class="text-end">{{ cr.valor_moeda|floatformat:"2g" }}</td>
           <td>
             {% if cr.status == 'PAGA' %}<span class="badge bg-success">Paga</span>
             {% elif cr.status == 'VENCIDA' %}<span class="badge bg-danger">Vencida</span>

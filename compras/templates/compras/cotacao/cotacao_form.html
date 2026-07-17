@@ -63,7 +63,7 @@
             {% for item in itens_selecionados %}
             <tr>
               <td>{{ item.produto.nome }}</td>
-              <td>{{ item.quantidade }} {{ item.unidade_medida.sigla }}</td>
+              <td>{{ item.quantidade|floatformat:"3g" }} {{ item.unidade_medida.sigla }}</td>
               <td>{{ item.especificacao|default:"-" }}</td>
             </tr>
             {% endfor %}

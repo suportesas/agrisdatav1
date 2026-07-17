@@ -16,7 +16,7 @@
     <div class="alert alert-danger" role="alert">
         <i class="bi bi-exclamation-octagon"></i> 
         <strong>{{ parcelas|length }} parcela{{ parcelas|length|pluralize }}(es) vencida{{ parcelas|length|pluralize }}</strong>
-        com valor total de R$ {{ valor_total|floatformat:2 }}
+        com valor total de R$ {{ valor_total|floatformat:"2g" }}
     </div>
     {% endif %}
 
@@ -34,7 +34,7 @@
             <div class="card border-danger">
                 <div class="card-body">
                     <div class="text-muted small">Valor Total</div>
-                    <div class="fs-5 fw-bold text-danger">R$ {{ valor_total|floatformat:2 }}</div>
+                    <div class="fs-5 fw-bold text-danger">R$ {{ valor_total|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -50,7 +50,7 @@
             <div class="card border-danger">
                 <div class="card-body">
                     <div class="text-muted small">Juros + Multa</div>
-                    <div class="fs-5 fw-bold text-danger">R$ {{ total_juros_multa|floatformat:2 }}</div>
+                    <div class="fs-5 fw-bold text-danger">R$ {{ total_juros_multa|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -70,10 +70,10 @@
                         <th>Parcela</th>
                         <th>Vencimento</th>
                         <th>Dias Atraso</th>
-                        <th>Valor Original</th>
-                        <th>Juros</th>
-                        <th>Multa</th>
-                        <th>Total</th>
+                        <th class="text-end">Valor Original</th>
+                        <th class="text-end">Juros</th>
+                        <th class="text-end">Multa</th>
+                        <th class="text-end">Total</th>
                         <th>Ação</th>
                     </tr>
                 </thead>
@@ -94,22 +94,22 @@
                         <td>
                             <span class="badge bg-danger fs-6">{{ parcela.dias_atraso }} dias</span>
                         </td>
-                        <td>R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
-                        <td>
+                        <td class="text-end">R$ {{ parcela.valor_parcela|floatformat:"2g" }}</td>
+                        <td class="text-end">
                             {% if parcela.juros_parcela > 0 %}
-                            <strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>
+                            <strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:"2g" }}</strong>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-end">
                             {% if parcela.multa_parcela > 0 %}
-                            <strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>
+                            <strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:"2g" }}</strong>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                        <td class="text-end"><strong>R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</strong></td>
                         <td>
                             <a href="{% url 'financeiro:parcela_pagar' parcela.id %}" class="btn btn-sm btn-danger">
                                 Pagar
@@ -143,20 +143,20 @@
                     <thead class="table-light">
                         <tr>
                             <th>Fornecedor</th>
-                            <th>Parcelas</th>
-                            <th>Atraso (dias)</th>
-                            <th>Valor Total</th>
-                            <th>Juros + Multa</th>
+                            <th class="text-end">Parcelas</th>
+                            <th class="text-end">Atraso (dias)</th>
+                            <th class="text-end">Valor Total</th>
+                            <th class="text-end">Juros + Multa</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for fornecedor, dados in fornecedores_pendentes %}
                         <tr>
                             <td>{{ fornecedor.nome }}</td>
-                            <td><span class="badge bg-danger">{{ dados.count }}</span></td>
-                            <td>{{ dados.atraso_medio }}d</td>
-                            <td><strong>R$ {{ dados.valor|floatformat:2 }}</strong></td>
-                            <td><strong class="text-danger">R$ {{ dados.juros_multa|floatformat:2 }}</strong></td>
+                            <td class="text-end"><span class="badge bg-danger">{{ dados.count }}</span></td>
+                            <td class="text-end">{{ dados.atraso_medio }}d</td>
+                            <td class="text-end"><strong>R$ {{ dados.valor|floatformat:"2g" }}</strong></td>
+                            <td class="text-end"><strong class="text-danger">R$ {{ dados.juros_multa|floatformat:"2g" }}</strong></td>
                         </tr>
                         {% endfor %}
                     </tbody>

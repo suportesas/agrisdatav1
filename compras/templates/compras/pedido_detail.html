@@ -86,9 +86,9 @@
                     <i class="bi bi-exclamation-triangle-fill fs-5 mt-1"></i>
                     <div>
                         <strong>Alerta de Limite de Crédito</strong><br>
-                        O valor deste pedido (R$ {{ valor_pedido_atual|floatformat:2 }}) excede o limite aprovado do fornecedor
-                        (R$ {{ limite_credito_fornecedor|floatformat:2 }}) em
-                        <strong>R$ {{ valor_excedente_credito|floatformat:2 }}</strong>.
+                        O valor deste pedido (R$ {{ valor_pedido_atual|floatformat:"2g" }}) excede o limite aprovado do fornecedor
+                        (R$ {{ limite_credito_fornecedor|floatformat:"2g" }}) em
+                        <strong>R$ {{ valor_excedente_credito|floatformat:"2g" }}</strong>.
                     </div>
                 </div>
             </div>
@@ -283,45 +283,45 @@
                                 {% endif %}
                             </td>
                             <td>{{ item.marca|default:"-" }}</td>
-                            <td class="text-end">{{ item.quantidade_pedida }} {{ item.unidade_medida.sigla }}</td>
+                            <td class="text-end">{{ item.quantidade_pedida|floatformat:"3g" }} {{ item.unidade_medida.sigla }}</td>
                             <td class="text-end">
-                                {{ item.quantidade_recebida }} {{ item.unidade_medida.sigla }}
+                                {{ item.quantidade_recebida|floatformat:"3g" }} {{ item.unidade_medida.sigla }}
                                 {% if item.quantidade_recebida > 0 %}
-                                <br><small class="text-success">({{ item.percentual_recebido|floatformat:0 }}%)</small>
+                                <br><small class="text-success">({{ item.percentual_recebido|floatformat:"0g" }}%)</small>
                                 {% endif %}
                             </td>
-                            <td class="text-end">R$ {{ item.preco_unitario|floatformat:2 }}</td>
+                            <td class="text-end">R$ {{ item.preco_unitario|floatformat:"2g" }}</td>
                             <td class="text-end">
                                 {% if item.valor_desconto > 0 %}
-                                <span class="text-success">- R$ {{ item.valor_desconto|floatformat:2 }}</span>
+                                <span class="text-success">- R$ {{ item.valor_desconto|floatformat:"2g" }}</span>
                                 {% else %}
                                 <span class="text-muted">—</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end"><strong>R$ {{ item.preco_total|floatformat:2 }}</strong></td>
+                            <td class="text-end"><strong>R$ {{ item.preco_total|floatformat:"2g" }}</strong></td>
                         </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot class="table-light">
                         <tr>
                             <th colspan="7" class="text-end">Subtotal:</th>
-                            <th class="text-end">R$ {{ pedido.valor_total|floatformat:2 }}</th>
+                            <th class="text-end">R$ {{ pedido.valor_total|floatformat:"2g" }}</th>
                         </tr>
                         {% if pedido.valor_desconto > 0 %}
                         <tr>
                             <th colspan="7" class="text-end">Desconto:</th>
-                            <th class="text-end text-success">- R$ {{ pedido.valor_desconto|floatformat:2 }}</th>
+                            <th class="text-end text-success">- R$ {{ pedido.valor_desconto|floatformat:"2g" }}</th>
                         </tr>
                         {% endif %}
                         {% if pedido.valor_frete > 0 %}
                         <tr>
                             <th colspan="7" class="text-end">Frete:</th>
-                            <th class="text-end">+ R$ {{ pedido.valor_frete|floatformat:2 }}</th>
+                            <th class="text-end">+ R$ {{ pedido.valor_frete|floatformat:"2g" }}</th>
                         </tr>
                         {% endif %}
                         <tr class="table-primary">
                             <th colspan="7" class="text-end">TOTAL:</th>
-                            <th class="text-end">R$ {{ pedido.valor_final|floatformat:2 }}</th>
+                            <th class="text-end">R$ {{ pedido.valor_final|floatformat:"2g" }}</th>
                         </tr>
                     </tfoot>
                 </table>

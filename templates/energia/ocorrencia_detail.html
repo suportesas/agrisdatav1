@@ -64,7 +64,7 @@
             <dd class="col-7">{{ obj.responsavel|default:"—" }}</dd>
             <dt class="col-5 text-muted">Impacto Est.</dt>
             <dd class="col-7 fw-semibold text-danger">
-              {% if obj.impacto_kwh_estimado %}{{ obj.impacto_kwh_estimado|floatformat:0 }} kWh{% else %}—{% endif %}
+              {% if obj.impacto_kwh_estimado %}{{ obj.impacto_kwh_estimado|floatformat:"0g" }} kWh{% else %}—{% endif %}
             </dd>
           </dl>
         </div>
@@ -78,7 +78,7 @@
         <div class="card-body small">
           <div class="fw-semibold">{{ obj.relatorio }}</div>
           <div class="text-muted mt-1">Desempenho: <strong>{{ obj.relatorio.desempenho_pct }}%</strong></div>
-          <div class="text-muted">Geração: <strong>{{ obj.relatorio.geracao_kwh|floatformat:0 }} kWh</strong></div>
+          <div class="text-muted">Geração: <strong>{{ obj.relatorio.geracao_kwh|floatformat:"0g" }} kWh</strong></div>
           <a href="{% url 'energia:relatorio_usina_detail' obj.relatorio.pk %}" class="btn btn-sm btn-outline-primary mt-2 w-100">
             Ver Relatório
           </a>

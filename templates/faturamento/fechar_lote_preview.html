@@ -102,7 +102,7 @@
               <tr>
                 <td>{{ nf.numero|stringformat:"06d" }}</td>
                 <td>{{ nf.data_emissao|date:"d/m/Y" }}</td>
-                <td class="text-end">R$ {{ nf.valor_total|floatformat:2 }}</td>
+                <td class="text-end">R$ {{ nf.valor_total|floatformat:"2g" }}</td>
                 <td class="font-monospace small text-muted">{{ nf.chave_acesso }}</td>
               </tr>
               {% endfor %}
@@ -143,10 +143,10 @@
                     <span class="text-muted">—</span>
                   {% endif %}
                 </td>
-                <td class="text-end">{{ item.quantidade|floatformat:4 }}</td>
+                <td class="text-end">{{ item.quantidade|floatformat:"4g" }}</td>
                 <td>{{ item.unidade }}</td>
-                <td class="text-end">R$ {{ item.valor_unitario|floatformat:4 }}</td>
-                <td class="text-end fw-semibold">R$ {{ item.valor_total|floatformat:2 }}</td>
+                <td class="text-end">R$ {{ item.valor_unitario|floatformat:"4g" }}</td>
+                <td class="text-end fw-semibold">R$ {{ item.valor_total|floatformat:"2g" }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -167,7 +167,7 @@
             <table class="table table-sm mb-0">
               <tr>
                 <td class="text-muted">Valor Produtos</td>
-                <td class="text-end fw-semibold">R$ {{ valor_total|floatformat:2 }}</td>
+                <td class="text-end fw-semibold">R$ {{ valor_total|floatformat:"2g" }}</td>
               </tr>
               <tr>
                 <td class="text-muted">Valor Desconto</td>
@@ -175,7 +175,7 @@
               </tr>
               <tr class="table-primary">
                 <td class="fw-bold">Valor Total</td>
-                <td class="text-end fw-bold fs-5">R$ {{ valor_total|floatformat:2 }}</td>
+                <td class="text-end fw-bold fs-5">R$ {{ valor_total|floatformat:"2g" }}</td>
               </tr>
             </table>
           </div>

@@ -320,7 +320,7 @@
       <div class="kpi-icon green"><i class="bi bi-currency-dollar"></i></div>
       <div class="kpi-body">
         <div class="kpi-label">Valor em Estoque</div>
-        <div class="kpi-value">R$ {{ valor_total_estoque|floatformat:2 }}</div>
+        <div class="kpi-value">R$ {{ valor_total_estoque|floatformat:"2g" }}</div>
         <div class="kpi-sub">Lotes disponíveis</div>
       </div>
     </div>
@@ -432,12 +432,12 @@
               <div style="font-size:.75rem;color:#6b7280;">{{ lote.produto.nome }}</div>
             </td>
             <td style="font-size:.78rem;">{{ lote.armazem.nome }}</td>
-            <td style="font-size:.78rem;">{{ lote.quantidade_atual|floatformat:0 }} {{ lote.unidade_medida.sigla }}</td>
+            <td style="font-size:.78rem;">{{ lote.quantidade_atual|floatformat:"0g" }} {{ lote.unidade_medida.sigla }}</td>
             <td style="font-size:.78rem;">{{ lote.data_validade|date:"d/m/Y" }}</td>
             <td>
               <div class="days-bar">
                 <div class="track">
-                  <div class="fill" style="width:{{ dias|default:0|floatformat:0 }}%;{% if dias <= 7 %}background:#ef4444;{% elif dias <= 15 %}background:#f59e0b;{% else %}background:#10b981;{% endif %}"></div>
+                  <div class="fill" style="width:{{ dias|default:0|floatformat:"0g" }}%;{% if dias <= 7 %}background:#ef4444;{% elif dias <= 15 %}background:#f59e0b;{% else %}background:#10b981;{% endif %}"></div>
                 </div>
                 <span class="bdg {% if dias <= 7 %}bdg-red{% elif dias <= 15 %}bdg-yellow{% else %}bdg-green{% endif %}">
                   {{ dias }}d

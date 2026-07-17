@@ -18,7 +18,7 @@
     <div class="col-6 col-md-3">
       <div class="card text-center p-3">
         <div class="text-muted small">Geração</div>
-        <div class="fs-3 fw-bold text-success">{{ obj.geracao_kwh|floatformat:0 }}</div>
+        <div class="fs-3 fw-bold text-success">{{ obj.geracao_kwh|floatformat:"0g" }}</div>
         <div class="text-muted small">kWh</div>
       </div>
     </div>
@@ -33,13 +33,13 @@
     <div class="col-6 col-md-3">
       <div class="card text-center p-3">
         <div class="text-muted small">Economia</div>
-        <div class="fs-3 fw-bold text-success">R$ {{ obj.economia_rs|floatformat:2 }}</div>
+        <div class="fs-3 fw-bold text-success">R$ {{ obj.economia_rs|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card text-center p-3">
         <div class="text-muted small">Faturado</div>
-        <div class="fs-3 fw-bold">R$ {{ obj.faturado_rs|floatformat:2 }}</div>
+        <div class="fs-3 fw-bold">R$ {{ obj.faturado_rs|floatformat:"2g" }}</div>
       </div>
     </div>
   </div>
@@ -72,7 +72,7 @@
             <dt class="col-7 text-muted">Retorno Financeiro (mês)</dt>
             <dd class="col-5 font-monospace">{{ obj.retorno_financeiro_pct }}%</dd>
             <dt class="col-7 text-muted">Economia Total</dt>
-            <dd class="col-5 font-monospace text-success fw-bold">R$ {{ obj.economia_total_rs|floatformat:2 }}</dd>
+            <dd class="col-5 font-monospace text-success fw-bold">R$ {{ obj.economia_total_rs|floatformat:"2g" }}</dd>
             <dt class="col-7 text-muted">Retorno Financeiro Total</dt>
             <dd class="col-5 font-monospace text-success fw-bold">{{ obj.retorno_financeiro_total_pct }}%</dd>
           </dl>

@@ -82,7 +82,7 @@
                 </div>
                 <div class="text-end">
                   <div class="fw-bold {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
-                    R$ {{ lanc.valor|floatformat:2 }}
+                    R$ {{ lanc.valor|floatformat:"2g" }}
                   </div>
                 </div>
               </div>
@@ -110,7 +110,7 @@
                 </div>
                 <div class="text-end">
                   <div class="fw-bold {% if lanc.tipo == 'DEBITO' %}text-danger{% else %}text-success{% endif %}">
-                    R$ {{ lanc.valor|floatformat:2 }}
+                    R$ {{ lanc.valor|floatformat:"2g" }}
                   </div>
                   <form method="post" action="{% url 'bancario:conciliacao_desfazer' %}" class="d-inline">
                     {% csrf_token %}
@@ -139,7 +139,7 @@
                   <small class="text-muted">{{ lanc.data_lancamento|date:"d/m/Y" }}</small>
                 </div>
                 <div class="text-end">
-                  <div class="fw-bold">R$ {{ lanc.valor|floatformat:2 }}</div>
+                  <div class="fw-bold">R$ {{ lanc.valor|floatformat:"2g" }}</div>
                   <form method="post" action="{% url 'bancario:conciliacao_desfazer' %}" class="d-inline">
                     {% csrf_token %}
                     <input type="hidden" name="lancamento_id" value="{{ lanc.pk }}">
@@ -195,18 +195,18 @@
           <p class="text-muted mb-1">Importação</p>
           <dl class="row mb-3">
             <dt class="col-7">Total Débitos</dt>
-            <dd class="col-5 text-end text-danger">R$ {{ importacao.total_debitos|floatformat:2 }}</dd>
+            <dd class="col-5 text-end text-danger">R$ {{ importacao.total_debitos|floatformat:"2g" }}</dd>
             <dt class="col-7">Total Créditos</dt>
-            <dd class="col-5 text-end text-success">R$ {{ importacao.total_creditos|floatformat:2 }}</dd>
+            <dd class="col-5 text-end text-success">R$ {{ importacao.total_creditos|floatformat:"2g" }}</dd>
             <dt class="col-7">Saldo</dt>
-            <dd class="col-5 text-end fw-bold">R$ {{ importacao.saldo_extrato|floatformat:2 }}</dd>
+            <dd class="col-5 text-end fw-bold">R$ {{ importacao.saldo_extrato|floatformat:"2g" }}</dd>
           </dl>
           <p class="text-muted mb-1">Pendentes</p>
           <dl class="row mb-0">
             <dt class="col-7">Débitos</dt>
-            <dd class="col-5 text-end text-danger">R$ {{ stats.total_debito_pendente|floatformat:2 }}</dd>
+            <dd class="col-5 text-end text-danger">R$ {{ stats.total_debito_pendente|floatformat:"2g" }}</dd>
             <dt class="col-7">Créditos</dt>
-            <dd class="col-5 text-end text-success">R$ {{ stats.total_credito_pendente|floatformat:2 }}</dd>
+            <dd class="col-5 text-end text-success">R$ {{ stats.total_credito_pendente|floatformat:"2g" }}</dd>
           </dl>
         </div>
       </div>

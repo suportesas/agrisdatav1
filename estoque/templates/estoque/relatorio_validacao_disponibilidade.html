@@ -104,8 +104,8 @@
                         {% for d in divergencias %}
                             <tr>
                                 <td class="ps-4">{{ d.produto.nome }}</td>
-                                <td class="text-mono">{{ d.estoque_atual }}</td>
-                                <td class="text-mono">{{ d.saldo_calculado }}</td>
+                                <td class="text-mono">{{ d.estoque_atual|floatformat:"3g" }}</td>
+                                <td class="text-mono">{{ d.saldo_calculado|floatformat:"3g" }}</td>
                                 <td class="text-mono">
                                     {% if d.diferenca == 0 %}
                                         <span class="text-success">0</span>

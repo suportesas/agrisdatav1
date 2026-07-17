@@ -102,7 +102,7 @@
             <td>{{ item.descricao }}</td>
             <td>{{ item.localizacao|default:"—" }}</td>
             <td>{{ item.responsavel_nome|default:"—" }}</td>
-            <td class="text-end">{% if item.valor_atual %}R$ {{ item.valor_atual|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="text-end">{% if item.valor_atual %}R$ {{ item.valor_atual|floatformat:"2g" }}{% else %}—{% endif %}</td>
             <td>
               <span class="badge bg-{% if item.status == 'OK' %}success{% elif item.status == 'PENDENTE' %}warning{% elif item.status == 'DANIFICADO' %}danger{% elif item.status == 'NAO_LOCALIZADO' %}secondary{% else %}dark{% endif %}">
                 {{ item.get_status_display }}

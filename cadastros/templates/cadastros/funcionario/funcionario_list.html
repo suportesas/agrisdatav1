@@ -214,7 +214,7 @@
               </td>
               <td>{{ funcionario.funcao.nome }}</td>
               <td>{{ funcionario.fazenda.nome|default:'—' }}</td>
-              <td class="text-end">R$ {{ funcionario.salario|floatformat:2 }}</td>
+              <td class="text-end">R$ {{ funcionario.salario|floatformat:"2g" }}</td>
               <td>
                 {% if funcionario.ativo %}
                   <span class="badge bg-success">Ativo</span>

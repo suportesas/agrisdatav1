@@ -258,7 +258,7 @@
           <div class="kpi-label">Produção Planejada (ton)</div>
           <div class="kpi-value">
             {% if safra.planned_production %}
-              {{ safra.planned_production|floatformat:0 }}
+              {{ safra.planned_production|floatformat:"0g" }}
             {% else %}
               -
             {% endif %}
@@ -272,7 +272,7 @@
         <div class="kpi-icon green"><i class="bi bi-check-circle"></i></div>
         <div class="kpi-body">
           <div class="kpi-label">Produção Real (ton)</div>
-          <div class="kpi-value">{{ safra.real_production|floatformat:0 }}</div>
+          <div class="kpi-value">{{ safra.real_production|floatformat:"0g" }}</div>
         </div>
       </div>
     </div>
@@ -315,7 +315,7 @@
                     {% with var=safra.production_variation_percent %}
                       {% if var != None %}
                         <div class="comparison-value {% if var > 0 %}variation-positive{% elif var < 0 %}variation-negative{% else %}variation-neutral{% endif %}">
-                          {% if var > 0 %}+{% endif %}{{ var|floatformat:1 }}%
+                          {% if var > 0 %}+{% endif %}{{ var|floatformat:"1g" }}%
                         </div>
                         <div class="comparison-label">
                           {% if var > 0 %}
@@ -336,7 +336,7 @@
                 <tr>
                   <td class="text-start"><strong>Produtividade (sc/ha)</strong></td>
                   <td>
-                    <div class="comparison-value">{{ plano.produtividade_esperada|floatformat:1 }}</div>
+                    <div class="comparison-value">{{ plano.produtividade_esperada|floatformat:"1g" }}</div>
                     <div class="comparison-label">esperada</div>
                   </td>
                   <td><span class="text-muted">-</span></td>
@@ -347,7 +347,7 @@
                 <tr>
                   <td class="text-start"><strong>Preço Meta (R$/sc)</strong></td>
                   <td>
-                    <div class="comparison-value">R$ {{ plano.preco_meta_saca|floatformat:2 }}</div>
+                    <div class="comparison-value">R$ {{ plano.preco_meta_saca|floatformat:"2g" }}</div>
                     <div class="comparison-label">meta</div>
                   </td>
                   <td><span class="text-muted">-</span></td>
@@ -358,7 +358,7 @@
                 <tr>
                   <td class="text-start"><strong>Custo Meta (R$/ha)</strong></td>
                   <td>
-                    <div class="comparison-value">R$ {{ plano.custo_meta_ha|floatformat:2 }}</div>
+                    <div class="comparison-value">R$ {{ plano.custo_meta_ha|floatformat:"2g" }}</div>
                     <div class="comparison-label">meta</div>
                   </td>
                   <td><span class="text-muted">-</span></td>
@@ -374,7 +374,7 @@
               {% if plano.receita_esperada %}
               <div class="col-md-4">
                 <div class="p-3 bg-light rounded text-center">
-                  <div class="fw-bold text-success fs-6">R$ {{ plano.receita_esperada|floatformat:0 }}</div>
+                  <div class="fw-bold text-success fs-6">R$ {{ plano.receita_esperada|floatformat:"0g" }}</div>
                   <div class="small text-muted">Receita Esperada</div>
                 </div>
               </div>
@@ -382,7 +382,7 @@
               {% if plano.custo_total_esperado %}
               <div class="col-md-4">
                 <div class="p-3 bg-light rounded text-center">
-                  <div class="fw-bold text-danger fs-6">R$ {{ plano.custo_total_esperado|floatformat:0 }}</div>
+                  <div class="fw-bold text-danger fs-6">R$ {{ plano.custo_total_esperado|floatformat:"0g" }}</div>
                   <div class="small text-muted">Custo Total Esperado</div>
                 </div>
               </div>
@@ -391,7 +391,7 @@
               <div class="col-md-4">
                 <div class="p-3 rounded text-center {% if plano.margem_esperada > 0 %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
                   <div class="fw-bold fs-6 {% if plano.margem_esperada > 0 %}text-success{% else %}text-danger{% endif %}">
-                    R$ {{ plano.margem_esperada|floatformat:0 }}
+                    R$ {{ plano.margem_esperada|floatformat:"0g" }}
                   </div>
                   <div class="small text-muted">Margem Esperada</div>
                 </div>
@@ -406,7 +406,7 @@
                 <div class="progress-section mt-3">
                   <div class="d-flex justify-content-between mb-2">
                     <span class="small text-muted">Progresso de Produção</span>
-                    <span class="small fw-bold">{{ real|floatformat:0 }} / {{ planned|floatformat:0 }} ton</span>
+                    <span class="small fw-bold">{{ real|floatformat:"0g" }} / {{ planned|floatformat:"0g" }} ton</span>
                   </div>
                   <div class="progress">
                     {% widthratio real planned 100 as percentage %}
@@ -516,7 +516,7 @@
                   <td class="fw-semibold">{{ item.talhao.nome }}</td>
                   <td class="text-end small">{{ item.area_ha|floatformat:"2g" }}</td>
                   <td class="text-end fw-bold">
-                    {% if item.total_custo %}R$ {{ item.total_custo|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                    {% if item.total_custo %}R$ {{ item.total_custo|floatformat:"2g" }}{% else %}<span class="text-muted">—</span>{% endif %}
                   </td>
                   <td class="text-end small">
                     {% if item.custo_ha %}
@@ -524,7 +524,7 @@
                     {% else %}<span class="text-muted">—</span>{% endif %}
                   </td>
                   <td class="text-end small">
-                    {% if item.producao_kg %}{{ item.producao_kg|floatformat:0 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                    {% if item.producao_kg %}{{ item.producao_kg|floatformat:"0g" }}{% else %}<span class="text-muted">—</span>{% endif %}
                   </td>
                   <td class="text-end small">
                     {% if item.produtividade_ha %}{{ item.produtividade_ha }}{% else %}<span class="text-muted">—</span>{% endif %}
@@ -583,16 +583,16 @@
                   <td class="text-end small">{{ item.plan.area_ha|floatformat:"2g"|default:"—" }}</td>
                   <td class="text-end fw-bold text-warning">
                     {% if item.plan.custo_total_planejado %}
-                      R$ {{ item.plan.custo_total_planejado|floatformat:2 }}
+                      R$ {{ item.plan.custo_total_planejado|floatformat:"2g" }}
                     {% else %}<span class="text-muted">—</span>{% endif %}
                   </td>
                   <td class="text-end small">
-                    {% if item.custo_real %}R$ {{ item.custo_real|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}
+                    {% if item.custo_real %}R$ {{ item.custo_real|floatformat:"2g" }}{% else %}<span class="text-muted">—</span>{% endif %}
                   </td>
                   <td class="text-end small">
                     {% if item.variacao != None %}
                       <span class="{% if item.variacao > 0 %}text-danger{% elif item.variacao < 0 %}text-success{% else %}text-muted{% endif %}">
-                        {% if item.variacao > 0 %}+{% endif %}R$ {{ item.variacao|floatformat:2 }}
+                        {% if item.variacao > 0 %}+{% endif %}R$ {{ item.variacao|floatformat:"2g" }}
                       </span>
                     {% else %}<span class="text-muted">—</span>{% endif %}
                   </td>

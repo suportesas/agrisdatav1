@@ -79,8 +79,8 @@
             <dt class="col-sm-6">Cliente</dt><dd class="col-sm-6">{{ cr.cliente.razao_social }}</dd>
             <dt class="col-sm-6">Parcela</dt><dd class="col-sm-6">{{ parcela.numero_parcela }}</dd>
             <dt class="col-sm-6">Vencimento</dt><dd class="col-sm-6">{{ parcela.data_vencimento|date:"d/m/Y" }}</dd>
-            <dt class="col-sm-6">Valor {{ cr.moeda }}</dt><dd class="col-sm-6 fw-bold">{{ parcela.valor_parcela_moeda|floatformat:2 }}</dd>
-            <dt class="col-sm-6">Valor BRL</dt><dd class="col-sm-6 fw-bold">R$ {{ parcela.valor_parcela_brl|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Valor {{ cr.moeda }}</dt><dd class="col-sm-6 fw-bold">{{ parcela.valor_parcela_moeda|floatformat:"2g" }}</dd>
+            <dt class="col-sm-6">Valor BRL</dt><dd class="col-sm-6 fw-bold">R$ {{ parcela.valor_parcela_brl|floatformat:"2g" }}</dd>
           </dl>
         </div>
       </div>

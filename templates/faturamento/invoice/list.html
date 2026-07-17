@@ -113,8 +113,8 @@
               <td class="text-mono">{{ inv.data_emissao|date:"d/m/Y" }}</td>
               <td><span class="badge bg-info text-dark">{{ inv.incoterm }}</span></td>
               <td>{{ inv.moeda }}</td>
-              <td class="text-end text-mono">{{ inv.valor_mercadoria|floatformat:2 }}</td>
-              <td class="text-end text-mono fw-semibold">{{ inv.valor_total|floatformat:2 }}</td>
+              <td class="text-end text-mono">{{ inv.valor_mercadoria|floatformat:"2g" }}</td>
+              <td class="text-end text-mono fw-semibold">{{ inv.valor_total|floatformat:"2g" }}</td>
               <td class="text-center">
                 {% if inv.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
                 {% elif inv.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>

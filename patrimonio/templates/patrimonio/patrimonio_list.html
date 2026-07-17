@@ -20,19 +20,19 @@
     <div class="col-md-3">
       <div class="card border-0 shadow-sm text-center p-3">
         <h6 class="text-muted mb-0">Valor Total</h6>
-        <h3 class="fw-bold text-success mb-0">R$ {{ total_valor|floatformat:2 }}</h3>
+        <h3 class="fw-bold text-success mb-0">R$ {{ total_valor|floatformat:"2g" }}</h3>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card border-0 shadow-sm text-center p-3">
         <h6 class="text-muted mb-0">Valor Atual</h6>
-        <h3 class="fw-bold text-info mb-0">R$ {{ total_ativo|floatformat:2 }}</h3>
+        <h3 class="fw-bold text-info mb-0">R$ {{ total_ativo|floatformat:"2g" }}</h3>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card border-0 shadow-sm text-center p-3">
         <h6 class="text-muted mb-0">Depreciação</h6>
-        <h3 class="fw-bold text-warning mb-0">R$ {{ total_depreciacao|floatformat:2 }}</h3>
+        <h3 class="fw-bold text-warning mb-0">R$ {{ total_depreciacao|floatformat:"2g" }}</h3>
       </div>
     </div>
   </div>
@@ -149,8 +149,8 @@
                 {{ patrimonio.get_estado_display }}
               </span>
             </td>
-            <td class="text-end text-mono">R$ {{ patrimonio.valor_inicial|floatformat:2 }}</td>
-            <td class="text-end text-mono">R$ {{ patrimonio.valor_atual|floatformat:2 }}</td>
+            <td class="text-end text-mono">R$ {{ patrimonio.valor_inicial|floatformat:"2g" }}</td>
+            <td class="text-end text-mono">R$ {{ patrimonio.valor_atual|floatformat:"2g" }}</td>
             <td class="text-center">
               <div class="d-flex gap-3 justify-content-center">
                 <a class="action-icon" href="{% url 'patrimonio:patrimonio_detail' patrimonio.pk %}" title="Ver detalhes">

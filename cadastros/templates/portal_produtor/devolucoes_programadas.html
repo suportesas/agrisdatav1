@@ -30,7 +30,7 @@
         <tr {% if emp in devolucoes_alerta %}class="table-warning"{% endif %}>
           <td>{{ emp.data_promessa_devolucao|date:'d/m/Y' }}</td>
           <td>{{ emp.produto.nome }}</td>
-          <td class="text-end">{{ emp.saldo_pendente|floatformat:3 }} {{ emp.unidade_medida.sigla }}</td>
+          <td class="text-end">{{ emp.saldo_pendente|floatformat:"3g" }} {{ emp.unidade_medida.sigla }}</td>
           <td>{{ emp.get_status_display }}</td>
           <td>
             {% if emp in devolucoes_alerta %}

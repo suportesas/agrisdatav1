@@ -35,7 +35,7 @@
   <div class="row g-3 mb-4">
     <div class="col-md-3">
       <div class="card border-0 shadow-sm rounded-4 text-center p-3">
-        <div class="display-6 fw-bold text-success">{{ lote.peso_total_colhido_kg|floatformat:0 }} kg</div>
+        <div class="display-6 fw-bold text-success">{{ lote.peso_total_colhido_kg|floatformat:"0g" }} kg</div>
         <div class="text-muted small">Peso Total Colhido</div>
       </div>
     </div>
@@ -84,9 +84,9 @@
             <dt class="col-sm-5 text-muted">Cultura</dt>
             <dd class="col-sm-7">{{ lote.cultura.nome }}</dd>
             <dt class="col-sm-5 text-muted">Umidade Média</dt>
-            <dd class="col-sm-7">{% if lote.umidade_media_pct %}{{ lote.umidade_media_pct|floatformat:1 }}%{% else %}—{% endif %}</dd>
+            <dd class="col-sm-7">{% if lote.umidade_media_pct %}{{ lote.umidade_media_pct|floatformat:"1g" }}%{% else %}—{% endif %}</dd>
             <dt class="col-sm-5 text-muted">Impureza Média</dt>
-            <dd class="col-sm-7">{% if lote.impureza_media_pct %}{{ lote.impureza_media_pct|floatformat:1 }}%{% else %}—{% endif %}</dd>
+            <dd class="col-sm-7">{% if lote.impureza_media_pct %}{{ lote.impureza_media_pct|floatformat:"1g" }}%{% else %}—{% endif %}</dd>
             <dt class="col-sm-5 text-muted">Criado em</dt>
             <dd class="col-sm-7">{{ lote.criado_em|date:"d/m/Y H:i" }}</dd>
             {% if lote.data_recepcao_packing %}
@@ -123,7 +123,7 @@
                     {% if lote.data_colheita_fim %} → {{ lote.data_colheita_fim|date:"d/m/Y" }}{% endif %}
                   </div>
                 {% endif %}
-                <div class="text-muted small">{{ lote.peso_total_colhido_kg|floatformat:0 }} kg · {{ viagens|length }} viagen{{ viagens|length|pluralize:"s" }}</div>
+                <div class="text-muted small">{{ lote.peso_total_colhido_kg|floatformat:"0g" }} kg · {{ viagens|length }} viagen{{ viagens|length|pluralize:"s" }}</div>
               </div>
             </div>
 
@@ -191,11 +191,11 @@
                 <tr>
                   <td>{{ viagem.numero_viagem }}</td>
                   <td>{{ viagem.carrocao.numero_identificacao }}</td>
-                  <td>{{ viagem.peso_bruto_kg|floatformat:1 }}</td>
-                  <td>{{ viagem.tara_usada_kg|floatformat:1 }}</td>
-                  <td>{{ viagem.peso_liquido_kg|floatformat:1 }}</td>
-                  <td>{{ viagem.desconto_kg|floatformat:1 }}</td>
-                  <td><strong>{{ viagem.peso_final_kg|floatformat:1 }}</strong></td>
+                  <td>{{ viagem.peso_bruto_kg|floatformat:"1g" }}</td>
+                  <td>{{ viagem.tara_usada_kg|floatformat:"1g" }}</td>
+                  <td>{{ viagem.peso_liquido_kg|floatformat:"1g" }}</td>
+                  <td>{{ viagem.desconto_kg|floatformat:"1g" }}</td>
+                  <td><strong>{{ viagem.peso_final_kg|floatformat:"1g" }}</strong></td>
                   <td>{{ viagem.umidade_pct|default:"—" }}</td>
                 </tr>
                 {% endfor %}
@@ -203,7 +203,7 @@
               <tfoot class="table-light">
                 <tr>
                   <td colspan="6" class="text-end fw-bold">Total colhido:</td>
-                  <td><strong>{{ lote.peso_total_colhido_kg|floatformat:1 }} kg</strong></td>
+                  <td><strong>{{ lote.peso_total_colhido_kg|floatformat:"1g" }} kg</strong></td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -238,7 +238,7 @@
                 <tr>
                   <td><strong>{{ ordem.numero }}</strong></td>
                   <td>{{ ordem.tipo_embalagem|default:"—" }}</td>
-                  <td>{{ ordem.quantidade_entrada_kg|floatformat:1 }}</td>
+                  <td>{{ ordem.quantidade_entrada_kg|floatformat:"1g" }}</td>
                   <td><span class="badge bg-light text-dark">{{ ordem.get_status_display }}</span></td>
                   <td>{{ ordem.pallets.count }}</td>
                 </tr>

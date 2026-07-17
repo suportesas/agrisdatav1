@@ -302,7 +302,7 @@
             </td>
             <td class="text-end pe-3">
               {% if iv.duracao_horas %}
-                <span class="badge bg-primary rounded-pill" style="font-size:.65rem;">{{ iv.duracao_horas|floatformat:1 }}h</span>
+                <span class="badge bg-primary rounded-pill" style="font-size:.65rem;">{{ iv.duracao_horas|floatformat:"1g" }}h</span>
               {% else %}<span class="text-muted">–</span>{% endif %}
             </td>
           </tr>
@@ -338,7 +338,7 @@
             <td class="ps-3 fw-semibold">{{ al.funcionario.nome_completo|truncatechars:22 }}</td>
             <td class="text-muted">{{ al.data_execucao|date:"d/m" }}</td>
             <td class="text-end pe-3">
-              <span class="badge bg-success rounded-pill" style="font-size:.65rem;">{{ al.horas_trabalhadas|floatformat:1 }}h</span>
+              <span class="badge bg-success rounded-pill" style="font-size:.65rem;">{{ al.horas_trabalhadas|floatformat:"1g" }}h</span>
             </td>
           </tr>
           {% endfor %}
@@ -376,7 +376,7 @@
             <td class="text-muted">{{ m.horimetro_final|default:"–" }}</td>
             <td class="text-end pe-3">
               {% if m.horas_trabalhadas %}
-                <span class="badge bg-info text-dark rounded-pill" style="font-size:.65rem;">{{ m.horas_trabalhadas|floatformat:1 }}h</span>
+                <span class="badge bg-info text-dark rounded-pill" style="font-size:.65rem;">{{ m.horas_trabalhadas|floatformat:"1g" }}h</span>
               {% else %}<span class="text-muted">–</span>{% endif %}
             </td>
           </tr>

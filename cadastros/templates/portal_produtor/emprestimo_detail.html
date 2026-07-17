@@ -54,11 +54,11 @@
           {% for emp in emprestimos_produtos %}
           <tr {% if emp.pk == emprestimo.pk %}class="table-info"{% endif %}>
             <td>{{ emp.produto.nome }}</td>
-            <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
+            <td>{{ emp.quantidade_emprestada|floatformat:"3g" }}</td>
             <td>{{ emp.unidade_medida.sigla }}</td>
-            <td>R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
-            <td>R$ {{ emp.quantidade_emprestada|floatformat:3|floatformat:2|add:0|floatformat:2|add:emp.produto.preco_venda|floatformat:2 }}</td>
-            <td>R$ {{ emp.saldo_pendente|floatformat:2 }}</td>
+            <td>R$ {{ emp.produto.preco_venda|floatformat:"2g" }}</td>
+            <td>R$ {{ emp.quantidade_emprestada|floatformat:"3g"|floatformat:"2g"|add:0|floatformat:"2g"|add:emp.produto.preco_venda|floatformat:"2g" }}</td>
+            <td>R$ {{ emp.saldo_pendente|floatformat:"2g" }}</td>
             <td>
               {% if emp.requisicao.assinatura_liberacao_interna_datahora %}
                 <span class="badge bg-success">Assinada</span><br>

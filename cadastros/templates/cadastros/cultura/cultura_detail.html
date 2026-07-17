@@ -244,7 +244,7 @@
             {% if cultura.get_receita_estimada_ha %}
             <div class="info-box mt-3">
               <h6 class="fw-bold mb-2">💰 Receita Estimada por Hectare</h6>
-              <h4 class="text-success mb-0">R$ {{ cultura.get_receita_estimada_ha|floatformat:2 }}</h4>
+              <h4 class="text-success mb-0">R$ {{ cultura.get_receita_estimada_ha|floatformat:"2g" }}</h4>
               <small class="text-muted">
                 Baseado em {{ cultura.produtividade_esperada }} {{ cultura.get_unidade_medida_display }} × R$ {{ cultura.preco_medio }}
               </small>

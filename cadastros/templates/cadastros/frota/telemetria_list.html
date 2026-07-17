@@ -92,7 +92,7 @@
             <td class="small text-muted">
               {% if r.latitude %}{{ r.latitude }}, {{ r.longitude }}{% else %}—{% endif %}
             </td>
-            <td class="small">{% if r.velocidade_kmh %}{{ r.velocidade_kmh|floatformat:0 }} km/h{% else %}—{% endif %}</td>
+            <td class="small">{% if r.velocidade_kmh %}{{ r.velocidade_kmh|floatformat:"0g" }} km/h{% else %}—{% endif %}</td>
             <td><span class="badge bg-secondary small">{{ r.get_fonte_display }}</span></td>
             <td class="text-center">
               <a class="action-icon danger"

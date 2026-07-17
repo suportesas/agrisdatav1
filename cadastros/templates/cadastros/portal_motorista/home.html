@@ -93,7 +93,7 @@
             <td class="text-muted">{{ a.data|date:"d/m" }}</td>
             <td class="text-muted">{{ a.litros }}L</td>
             <td class="text-end pe-3">
-              <span class="fw-semibold text-info">R$ {{ a.valor_total|floatformat:2 }}</span>
+              <span class="fw-semibold text-info">R$ {{ a.valor_total|floatformat:"2g" }}</span>
             </td>
           </tr>
           {% endfor %}

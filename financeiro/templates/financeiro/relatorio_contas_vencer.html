@@ -25,7 +25,7 @@
             <div class="card">
                 <div class="card-body">
                     <div class="text-muted small">Valor Total</div>
-                    <div class="fs-5 fw-bold">R$ {{ valor_total|floatformat:2 }}</div>
+                    <div class="fs-5 fw-bold">R$ {{ valor_total|floatformat:"2g" }}</div>
                 </div>
             </div>
         </div>
@@ -61,10 +61,10 @@
                         <th>Parcela</th>
                         <th>Vencimento</th>
                         <th>Dias</th>
-                        <th>Valor Original</th>
-                        <th>Juros</th>
-                        <th>Multa</th>
-                        <th>Total</th>
+                        <th class="text-end">Valor Original</th>
+                        <th class="text-end">Juros</th>
+                        <th class="text-end">Multa</th>
+                        <th class="text-end">Total</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -91,22 +91,22 @@
                             <span class="badge bg-info">{{ dias_ate_vencimento }}d</span>
                             {% endif %}
                         </td>
-                        <td>R$ {{ parcela.valor_parcela|floatformat:2 }}</td>
-                        <td>
+                        <td class="text-end">R$ {{ parcela.valor_parcela|floatformat:"2g" }}</td>
+                        <td class="text-end">
                             {% if parcela.juros_parcela > 0 %}
-                            <strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:2 }}</strong>
+                            <strong class="text-danger">R$ {{ parcela.juros_parcela|floatformat:"2g" }}</strong>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td class="text-end">
                             {% if parcela.multa_parcela > 0 %}
-                            <strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:2 }}</strong>
+                            <strong class="text-danger">R$ {{ parcela.multa_parcela|floatformat:"2g" }}</strong>
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                        <td class="text-end"><strong>R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</strong></td>
                         <td>
                             <span class="badge bg-{% if parcela.status == 'PAGA' %}success{% else %}warning{% endif %}">
                                 {{ parcela.get_status_display }}
@@ -139,7 +139,7 @@
                 <div class="bg-light p-3 rounded mb-2">
                     <strong>{{ data|date:'l, d \d\e F \d\e Y' }}</strong>
                     <span class="badge bg-primary">{{ parcelas_data|length }} parcela{% if parcelas_data|length != 1 %}s{% endif %}</span>
-                    <span class="badge bg-success">R$ {{ parcelas_data_valor|first|floatformat:2 }}</span>
+                    <span class="badge bg-success">R$ {{ parcelas_data_valor|first|floatformat:"2g" }}</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
@@ -148,7 +148,7 @@
                                 <th>Fornecedor</th>
                                 <th>Conta</th>
                                 <th>Parcela</th>
-                                <th>Valor</th>
+                                <th class="text-end">Valor</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -161,7 +161,7 @@
                                     </a>
                                 </td>
                                 <td>{{ parcela.numero_parcela }}</td>
-                                <td><strong>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</strong></td>
+                                <td class="text-end"><strong>R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</strong></td>
                             </tr>
                             {% endfor %}
                         </tbody>

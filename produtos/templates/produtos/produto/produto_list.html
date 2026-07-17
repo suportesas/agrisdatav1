@@ -392,7 +392,7 @@ tbody tr.row-clickable:hover td { background: #d1fae5; }
           <div class="product-footer">
             <div>
               <div class="price-label">Preço venda</div>
-              <div class="price-tag">R$ {{ produto.preco_venda|floatformat:2 }}</div>
+              <div class="price-tag">R$ {{ produto.preco_venda|floatformat:"2g" }}</div>
             </div>
             <div class="text-end">
               {% if produto.num_variantes %}
@@ -503,7 +503,7 @@ tbody tr.row-clickable:hover td { background: #d1fae5; }
                 {% else %}<span class="text-muted">—</span>{% endif %}
               </td>
               <td class="d-none d-md-table-cell text-muted small">{{ produto.unidade_medida.sigla }}</td>
-              <td class="text-end fw-semibold text-success">R$ {{ produto.preco_venda|floatformat:2 }}</td>
+              <td class="text-end fw-semibold text-success">R$ {{ produto.preco_venda|floatformat:"2g" }}</td>
               <td class="text-end">
                 {% if produto.num_variantes %}
                   {% if produto.estoque_base_agregado is not None %}

@@ -82,11 +82,11 @@
         <div class="card-body">
           <dl class="row mb-0">
             <dt class="col-sm-6">Moeda</dt><dd class="col-sm-6"><strong>{{ pedido.moeda }}</strong></dd>
-            {% if pedido.taxa_cambio %}<dt class="col-sm-6">Câmbio</dt><dd class="col-sm-6">{{ pedido.taxa_cambio|floatformat:4 }}</dd>{% endif %}
-            <dt class="col-sm-6">Produtos</dt><dd class="col-sm-6">{{ pedido.valor_produtos|floatformat:2 }}</dd>
-            <dt class="col-sm-6">Desconto</dt><dd class="col-sm-6">- {{ pedido.valor_desconto|floatformat:2 }}</dd>
-            <dt class="col-sm-6">Frete</dt><dd class="col-sm-6">{{ pedido.valor_frete|floatformat:2 }}</dd>
-            <dt class="col-sm-6 fw-bold">Total {{ pedido.moeda }}</dt><dd class="col-sm-6 fw-bold fs-5">{{ pedido.valor_total|floatformat:2 }}</dd>
+            {% if pedido.taxa_cambio %}<dt class="col-sm-6">Câmbio</dt><dd class="col-sm-6">{{ pedido.taxa_cambio|floatformat:"4g" }}</dd>{% endif %}
+            <dt class="col-sm-6">Produtos</dt><dd class="col-sm-6">{{ pedido.valor_produtos|floatformat:"2g" }}</dd>
+            <dt class="col-sm-6">Desconto</dt><dd class="col-sm-6">- {{ pedido.valor_desconto|floatformat:"2g" }}</dd>
+            <dt class="col-sm-6">Frete</dt><dd class="col-sm-6">{{ pedido.valor_frete|floatformat:"2g" }}</dd>
+            <dt class="col-sm-6 fw-bold">Total {{ pedido.moeda }}</dt><dd class="col-sm-6 fw-bold fs-5">{{ pedido.valor_total|floatformat:"2g" }}</dd>
           </dl>
         </div>
       </div>
@@ -149,10 +149,10 @@
             <td>{{ item.ncm|default:"—" }}</td>
             <td>{{ item.cfop|default:"—" }}</td>
             <td>{{ item.unidade }}</td>
-            <td class="text-end">{{ item.quantidade|floatformat:3 }}</td>
-            <td class="text-end">{{ item.preco_unitario|floatformat:4 }}</td>
-            <td class="text-end">{{ item.desconto_item|floatformat:2 }}</td>
-            <td class="text-end fw-semibold">{{ item.preco_total|floatformat:2 }}</td>
+            <td class="text-end">{{ item.quantidade|floatformat:"3g" }}</td>
+            <td class="text-end">{{ item.preco_unitario|floatformat:"4g" }}</td>
+            <td class="text-end">{{ item.desconto_item|floatformat:"2g" }}</td>
+            <td class="text-end fw-semibold">{{ item.preco_total|floatformat:"2g" }}</td>
           </tr>
           {% empty %}
           <tr><td colspan="9" class="text-center text-muted py-3">Sem itens.</td></tr>
@@ -161,7 +161,7 @@
         <tfoot class="table-light fw-bold">
           <tr>
             <td colspan="8" class="text-end">TOTAL {{ pedido.moeda }}</td>
-            <td class="text-end">{{ pedido.valor_total|floatformat:2 }}</td>
+            <td class="text-end">{{ pedido.valor_total|floatformat:"2g" }}</td>
           </tr>
         </tfoot>
       </table>

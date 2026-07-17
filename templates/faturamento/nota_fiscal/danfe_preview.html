@@ -196,7 +196,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
   <div class="canhoto">
     <div class="canhoto-top">
       RECEBEMOS DE <strong>{{ empresa.razao_social|upper }}</strong> OS PRODUTOS E/OU SERVIÇOS CONSTANTES DA NOTA FISCAL ELETRÔNICA INDICADA ABAIXO.<br>
-      <span style="font-size:5pt">EMISSÃO: {{ nf.data_emissao|date:"d/m/Y" }} &nbsp;&nbsp; VALOR TOTAL: R$ {{ nf.valor_total|floatformat:2 }} &nbsp;&nbsp; DESTINATÁRIO: {{ nf.cliente.razao_social }}</span>
+      <span style="font-size:5pt">EMISSÃO: {{ nf.data_emissao|date:"d/m/Y" }} &nbsp;&nbsp; VALOR TOTAL: R$ {{ nf.valor_total|floatformat:"2g" }} &nbsp;&nbsp; DESTINATÁRIO: {{ nf.cliente.razao_social }}</span>
     </div>
     <div class="canhoto-bot">
       <div class="canhoto-bot-col" style="flex:2">
@@ -414,7 +414,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
           <tr>
             <td>{{ dup.numero|default:forloop.counter|stringformat:"03d" }}</td>
             <td>{{ dup.vencimento|date:"d/m/Y" }}</td>
-            <td class="right">{{ dup.valor|floatformat:2 }}</td>
+            <td class="right">{{ dup.valor|floatformat:"2g" }}</td>
           </tr>
           {% endfor %}
         </table>
@@ -432,11 +432,11 @@ td, th { padding: 1px 2px; vertical-align: top; }
     <tr>
       <td class="br" style="width:12%">
         <span class="lbl">Base de Cálc. do ICMS</span>
-        <span class="val right">{{ nf.base_calculo_icms|floatformat:2|default:"0,00" }}</span>
+        <span class="val right">{{ nf.base_calculo_icms|floatformat:"2g"|default:"0,00" }}</span>
       </td>
       <td class="br" style="width:11%">
         <span class="lbl">Valor do ICMS</span>
-        <span class="val right">{{ nf.valor_icms|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_icms|floatformat:"2g" }}</span>
       </td>
       <td class="br" style="width:12%">
         <span class="lbl">Base de Cálc. ICMS S.T.</span>
@@ -444,7 +444,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
       </td>
       <td class="br" style="width:12%">
         <span class="lbl">Valor do ICMS Subst.</span>
-        <span class="val right">{{ nf.valor_icms_st|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_icms_st|floatformat:"2g" }}</span>
       </td>
       <td class="br" style="width:10%">
         <span class="lbl">V. Imp. Importação</span>
@@ -460,21 +460,21 @@ td, th { padding: 1px 2px; vertical-align: top; }
       </td>
       <td style="width:23%">
         <span class="lbl">V. Total Produtos</span>
-        <span class="val right">{{ nf.valor_produtos|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_produtos|floatformat:"2g" }}</span>
       </td>
     </tr>
     <tr class="dr">
       <td class="br">
         <span class="lbl">Valor do Frete</span>
-        <span class="val right">{{ nf.valor_frete|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_frete|floatformat:"2g" }}</span>
       </td>
       <td class="br">
         <span class="lbl">Valor do Seguro</span>
-        <span class="val right">{{ nf.valor_seguro|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_seguro|floatformat:"2g" }}</span>
       </td>
       <td class="br">
         <span class="lbl">Desconto</span>
-        <span class="val right">{{ nf.valor_desconto|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_desconto|floatformat:"2g" }}</span>
       </td>
       <td class="br">
         <span class="lbl">Outras Despesas</span>
@@ -482,7 +482,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
       </td>
       <td class="br">
         <span class="lbl">Valor Total IPI</span>
-        <span class="val right">{{ nf.valor_ipi|floatformat:2 }}</span>
+        <span class="val right">{{ nf.valor_ipi|floatformat:"2g" }}</span>
       </td>
       <td class="br">
         <span class="lbl">V. ICMS UF Dest.</span>
@@ -494,7 +494,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
       </td>
       <td>
         <span class="lbl">V. Total da Nota</span>
-        <span class="val3 right">{{ nf.valor_total|floatformat:2 }}</span>
+        <span class="val3 right">{{ nf.valor_total|floatformat:"2g" }}</span>
       </td>
     </tr>
   </table>
@@ -574,11 +574,11 @@ td, th { padding: 1px 2px; vertical-align: top; }
       </td>
       <td class="br" style="width:19%">
         <span class="lbl">Peso Bruto</span>
-        <span class="val2 right">{{ nf.peso_bruto_kg|floatformat:3|default:"—" }}</span>
+        <span class="val2 right">{{ nf.peso_bruto_kg|floatformat:"3g"|default:"—" }}</span>
       </td>
       <td style="width:19%">
         <span class="lbl">Peso Líquido</span>
-        <span class="val2 right">{{ nf.peso_liquido_kg|floatformat:3|default:"—" }}</span>
+        <span class="val2 right">{{ nf.peso_liquido_kg|floatformat:"3g"|default:"—" }}</span>
       </td>
     </tr>
   </table>
@@ -627,24 +627,24 @@ td, th { padding: 1px 2px; vertical-align: top; }
           {% endif %}
         </td>
         <td class="num">
-          {{ item.quantidade|floatformat:4 }}
+          {{ item.quantidade|floatformat:"4g" }}
           {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
-          <span class="it-trib right">{{ item.quantidade_tributavel|floatformat:4 }}</span>
+          <span class="it-trib right">{{ item.quantidade_tributavel|floatformat:"4g" }}</span>
           {% endif %}
         </td>
         <td class="num">
-          {{ item.valor_unitario|floatformat:4 }}
+          {{ item.valor_unitario|floatformat:"4g" }}
           {% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}
           <span class="it-trib right">{{ item.valor_unitario_tributavel|floatformat:10 }}</span>
           {% endif %}
         </td>
-        <td class="num">{{ item.valor_total|floatformat:2 }}</td>
-        <td class="num">{{ item.valor_desconto|floatformat:2 }}</td>
-        <td class="num">{{ item.icms_base_calculo|floatformat:2 }}</td>
-        <td class="num">{{ item.valor_icms|floatformat:2 }}</td>
-        <td class="num">{{ item.valor_ipi|floatformat:2 }}</td>
-        <td class="center">{{ item.aliquota_icms|floatformat:0 }}%</td>
-        <td class="center">{{ item.aliquota_ipi|floatformat:0 }}%</td>
+        <td class="num">{{ item.valor_total|floatformat:"2g" }}</td>
+        <td class="num">{{ item.valor_desconto|floatformat:"2g" }}</td>
+        <td class="num">{{ item.icms_base_calculo|floatformat:"2g" }}</td>
+        <td class="num">{{ item.valor_icms|floatformat:"2g" }}</td>
+        <td class="num">{{ item.valor_ipi|floatformat:"2g" }}</td>
+        <td class="center">{{ item.aliquota_icms|floatformat:"0g" }}%</td>
+        <td class="center">{{ item.aliquota_ipi|floatformat:"0g" }}%</td>
       </tr>
       {% endfor %}
     </tbody>

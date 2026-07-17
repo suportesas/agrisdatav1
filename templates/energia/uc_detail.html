@@ -73,11 +73,11 @@
                 <td class="ps-3 fw-semibold">
                   <a href="{% url 'energia:lancamento_detail' l.pk %}" class="text-decoration-none">{{ l.mes_referencia|date:"m/Y" }}</a>
                 </td>
-                <td class="text-end font-monospace">{{ l.consumo_registrado_kwh|floatformat:0 }}</td>
-                <td class="text-end font-monospace text-success">{{ l.energia_compensada_kwh|floatformat:0 }}</td>
-                <td class="text-end font-monospace text-info">{{ l.energia_injetada_kwh|floatformat:0 }}</td>
-                <td class="text-end font-monospace">{{ l.valor_faturado_rs|floatformat:2 }}</td>
-                <td class="text-end pe-3 font-monospace text-success fw-semibold">{{ l.valor_economizado_rs|floatformat:2 }}</td>
+                <td class="text-end font-monospace">{{ l.consumo_registrado_kwh|floatformat:"0g" }}</td>
+                <td class="text-end font-monospace text-success">{{ l.energia_compensada_kwh|floatformat:"0g" }}</td>
+                <td class="text-end font-monospace text-info">{{ l.energia_injetada_kwh|floatformat:"0g" }}</td>
+                <td class="text-end font-monospace">{{ l.valor_faturado_rs|floatformat:"2g" }}</td>
+                <td class="text-end pe-3 font-monospace text-success fw-semibold">{{ l.valor_economizado_rs|floatformat:"2g" }}</td>
               </tr>
               {% empty %}
               <tr><td colspan="6" class="text-center py-4 text-muted">Nenhum lançamento registrado.</td></tr>

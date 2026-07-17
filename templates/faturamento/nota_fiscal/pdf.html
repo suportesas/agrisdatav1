@@ -110,12 +110,12 @@
         <td>{{ item.ncm|default:"" }}</td>
         <td>{{ item.cfop|default:"" }}</td>
         <td>{{ item.unidade }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.unidade_tributavel }}</small>{% endif %}</td>
-        <td class="text-right">{{ item.quantidade|floatformat:4 }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.quantidade_tributavel|floatformat:4 }}</small>{% endif %}</td>
-        <td class="text-right">{{ item.valor_unitario|floatformat:4 }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.valor_unitario_tributavel|floatformat:4 }}</small>{% endif %}</td>
-        <td class="text-right">{{ item.valor_desconto|floatformat:2 }}</td>
-        <td class="text-right">{{ item.valor_total|floatformat:2 }}</td>
+        <td class="text-right">{{ item.quantidade|floatformat:"4g" }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.quantidade_tributavel|floatformat:"4g" }}</small>{% endif %}</td>
+        <td class="text-right">{{ item.valor_unitario|floatformat:"4g" }}{% if item.quantidade_tributavel and item.unidade_tributavel and item.unidade_tributavel != item.unidade %}<br><small>{{ item.valor_unitario_tributavel|floatformat:"4g" }}</small>{% endif %}</td>
+        <td class="text-right">{{ item.valor_desconto|floatformat:"2g" }}</td>
+        <td class="text-right">{{ item.valor_total|floatformat:"2g" }}</td>
         <td class="text-right">{{ item.aliquota_icms|floatformat:"2g" }}%</td>
-        <td class="text-right">{{ item.valor_icms|floatformat:2 }}</td>
+        <td class="text-right">{{ item.valor_icms|floatformat:"2g" }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -198,11 +198,11 @@
     <div class="row" style="margin-top:8px;">
       <div class="col">
         <div class="label">Peso Bruto (kg)</div>
-        <div class="value">{{ nf.peso_bruto_kg|floatformat:3|default:"—" }}</div>
+        <div class="value">{{ nf.peso_bruto_kg|floatformat:"3g"|default:"—" }}</div>
       </div>
       <div class="col">
         <div class="label">Peso Líquido (kg)</div>
-        <div class="value">{{ nf.peso_liquido_kg|floatformat:3|default:"—" }}</div>
+        <div class="value">{{ nf.peso_liquido_kg|floatformat:"3g"|default:"—" }}</div>
       </div>
     </div>
   </div>
@@ -214,12 +214,12 @@
   <div class="section-title">TOTAIS DA NF-e</div>
   <div class="section-body">
     <table class="totals-table" style="width:50%;margin-left:auto">
-      <tr><td>Valor dos Produtos</td><td class="text-right">R$ {{ nf.valor_produtos|floatformat:2 }}</td></tr>
-      {% if nf.valor_frete %}<tr><td>Frete</td><td class="text-right">R$ {{ nf.valor_frete|floatformat:2 }}</td></tr>{% endif %}
-      {% if nf.valor_seguro %}<tr><td>Seguro</td><td class="text-right">R$ {{ nf.valor_seguro|floatformat:2 }}</td></tr>{% endif %}
-      {% if nf.valor_desconto %}<tr><td>Desconto</td><td class="text-right">- R$ {{ nf.valor_desconto|floatformat:2 }}</td></tr>{% endif %}
-      {% if nf.valor_ipi %}<tr><td>IPI</td><td class="text-right">R$ {{ nf.valor_ipi|floatformat:2 }}</td></tr>{% endif %}
-      <tr style="background:#eee"><td><strong>VALOR TOTAL</strong></td><td class="text-right"><strong>R$ {{ nf.valor_total|floatformat:2 }}</strong></td></tr>
+      <tr><td>Valor dos Produtos</td><td class="text-right">R$ {{ nf.valor_produtos|floatformat:"2g" }}</td></tr>
+      {% if nf.valor_frete %}<tr><td>Frete</td><td class="text-right">R$ {{ nf.valor_frete|floatformat:"2g" }}</td></tr>{% endif %}
+      {% if nf.valor_seguro %}<tr><td>Seguro</td><td class="text-right">R$ {{ nf.valor_seguro|floatformat:"2g" }}</td></tr>{% endif %}
+      {% if nf.valor_desconto %}<tr><td>Desconto</td><td class="text-right">- R$ {{ nf.valor_desconto|floatformat:"2g" }}</td></tr>{% endif %}
+      {% if nf.valor_ipi %}<tr><td>IPI</td><td class="text-right">R$ {{ nf.valor_ipi|floatformat:"2g" }}</td></tr>{% endif %}
+      <tr style="background:#eee"><td><strong>VALOR TOTAL</strong></td><td class="text-right"><strong>R$ {{ nf.valor_total|floatformat:"2g" }}</strong></td></tr>
     </table>
   </div>
 </div>

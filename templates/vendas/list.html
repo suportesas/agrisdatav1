@@ -111,7 +111,7 @@
               <td class="text-mono">{{ p.data_pedido|date:"d/m/Y" }}</td>
               <td><small>{{ p.get_tipo_venda_display }}</small></td>
               <td>{{ p.moeda }}</td>
-              <td class="text-end fw-bold text-mono">{{ p.valor_total|floatformat:2 }}</td>
+              <td class="text-end fw-bold text-mono">{{ p.valor_total|floatformat:"2g" }}</td>
               <td class="text-center">
                 {% if p.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
                 {% elif p.status == 'APROVADO' %}<span class="badge bg-info">Aprovado</span>

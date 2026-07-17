@@ -181,20 +181,20 @@
           <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:#F3F4F6">
               <div class="small text-muted">Autorizado</div>
-              <div class="fw-bold">{{ produto.quantidade_autorizada|floatformat:3|intcomma }}</div>
+              <div class="fw-bold">{{ produto.quantidade_autorizada|floatformat:"3g"|intcomma }}</div>
             </div>
           </div>
           <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:#ECFDF5">
               <div class="small text-muted">Exportado</div>
-              <div class="fw-bold text-success">{{ exportado|floatformat:3|intcomma }}</div>
+              <div class="fw-bold text-success">{{ exportado|floatformat:"3g"|intcomma }}</div>
             </div>
           </div>
           <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:{% if saldo_e < 0 %}#FEE2E2{% else %}#FFF9C4{% endif %}">
               <div class="small text-muted">Saldo p/ Exportar</div>
               <div class="fw-bold {% if saldo_e < 0 %}text-danger{% else %}text-warning{% endif %}">
-                {{ saldo_e|floatformat:3|intcomma }}
+                {{ saldo_e|floatformat:"3g"|intcomma }}
               </div>
             </div>
           </div>
@@ -204,20 +204,20 @@
           <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:#F3F4F6">
               <div class="small text-muted">Autorizado</div>
-              <div class="fw-bold">{{ produto.quantidade_autorizada|floatformat:3|intcomma }}</div>
+              <div class="fw-bold">{{ produto.quantidade_autorizada|floatformat:"3g"|intcomma }}</div>
             </div>
           </div>
           <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:#EDE9FE">
               <div class="small text-muted">Comprado</div>
-              <div class="fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
+              <div class="fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:"3g"|intcomma }}</div>
             </div>
           </div>
           <div class="col-6 col-md-4">
             <div class="rounded p-2 text-center" style="background:{% if saldo_c <= 0 %}#FEE2E2{% else %}#F0FDF4{% endif %}">
               <div class="small text-muted">Saldo p/ Comprar</div>
               <div class="fw-bold {% if saldo_c <= 0 %}text-danger{% else %}text-success{% endif %}">
-                {{ saldo_c|floatformat:3|intcomma }}
+                {{ saldo_c|floatformat:"3g"|intcomma }}
               </div>
             </div>
           </div>

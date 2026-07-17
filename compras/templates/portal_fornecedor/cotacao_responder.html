@@ -51,7 +51,7 @@
                 {% endif %}
               </td>
               <td class="text-end fw-semibold">
-                {{ item.quantidade|floatformat:3 }} {{ item.unidade_medida.sigla }}
+                {{ item.quantidade|floatformat:"3g" }} {{ item.unidade_medida.sigla }}
               </td>
               <td>
                 <input type="number" step="0.01" min="0.01"
@@ -93,7 +93,7 @@
                 <small class="text-success">
                   <i class="bi bi-check-circle me-1"></i>
                   Proposta enviada em {{ proposta.data_cadastro|date:'d/m/Y H:i' }}
-                  — Total: <strong>R$ {{ proposta.preco_total|floatformat:2 }}</strong>
+                  — Total: <strong>R$ {{ proposta.preco_total|floatformat:"2g" }}</strong>
                 </small>
               </td>
             </tr>

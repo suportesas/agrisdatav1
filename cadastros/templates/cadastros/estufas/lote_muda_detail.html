@@ -56,7 +56,7 @@
       <div class="card border-0 shadow-sm text-center">
         <div class="card-body py-3">
           <small class="text-muted d-block">Custo/muda</small>
-          <h3 class="mb-0 text-primary">R$ {{ lote.custo_por_muda|floatformat:4 }}</h3>
+          <h3 class="mb-0 text-primary">R$ {{ lote.custo_por_muda|floatformat:"4g" }}</h3>
         </div>
       </div>
     </div>
@@ -84,7 +84,7 @@
             <div class="col-sm-4"><small class="text-muted d-block">Lote Semente</small><span>{{ lote.lote_semente|default:"—" }}</span></div>
             <div class="col-sm-4"><small class="text-muted d-block">Data Semeadura</small><span>{{ lote.data_semeadura|date:"d/m/Y" }}</span></div>
             <div class="col-sm-4"><small class="text-muted d-block">Prev. Transplantio</small><span>{{ lote.data_prevista_pronto|date:"d/m/Y"|default:"—" }}</span></div>
-            <div class="col-sm-4"><small class="text-muted d-block">Custo Total Estufa</small><span>R$ {{ lote.custo_total_estufa|floatformat:2 }}</span></div>
+            <div class="col-sm-4"><small class="text-muted d-block">Custo Total Estufa</small><span>R$ {{ lote.custo_total_estufa|floatformat:"2g" }}</span></div>
             <div class="col-sm-4"><small class="text-muted d-block">% Perdas</small><span>{{ lote.percentual_perdas }}%</span></div>
           </div>
           {% if lote.observacoes %}
@@ -203,7 +203,7 @@
                 <td>{{ a.produto }}</td>
                 <td class="text-end">{{ a.quantidade }}</td>
                 <td>{{ a.unidade_medida }}</td>
-                <td class="text-end">R$ {{ a.custo_total|floatformat:2 }}</td>
+                <td class="text-end">R$ {{ a.custo_total|floatformat:"2g" }}</td>
                 <td>
                   <form method="post" action="{% url 'estufas:aplicacao_estufa_delete' lote.pk a.pk %}" class="d-inline">
                     {% csrf_token %}

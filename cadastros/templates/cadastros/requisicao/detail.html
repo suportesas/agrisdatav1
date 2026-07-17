@@ -173,7 +173,7 @@
                 <div class="col-md-3"><strong>Total Solicitado:</strong> {{ totais.total_solicitado|default:0 }}</div>
                 <div class="col-md-3"><strong>Total Atendido:</strong> {{ totais.total_atendido|default:0 }}</div>
                 <div class="col-md-3"><strong>Total Estimado:</strong> {% if totais.total_estimado %}R$ {{ totais.total_estimado }}{% else %}-{% endif %}</div>
-                <div class="col-md-3"><strong>Valor total do empréstimo:</strong> <span class="text-success">R$ {{ valor_total_emprestimo|floatformat:2 }}</span></div>
+                <div class="col-md-3"><strong>Valor total do empréstimo:</strong> <span class="text-success">R$ {{ valor_total_emprestimo|floatformat:"2g" }}</span></div>
             </div>
         </div>
     </div>

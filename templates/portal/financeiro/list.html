@@ -43,10 +43,10 @@
             <td>{{ cr.data_emissao|date:"d/m/Y" }}</td>
             <td>{{ cr.data_vencimento|date:"d/m/Y" }}</td>
             <td>{{ cr.moeda }}</td>
-            <td class="text-end">{{ cr.valor_moeda|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ cr.valor_brl|floatformat:2 }}</td>
+            <td class="text-end">{{ cr.valor_moeda|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ cr.valor_brl|floatformat:"2g" }}</td>
             <td class="text-end fw-bold {% if cr.saldo_brl > 0 %}text-danger{% else %}text-success{% endif %}">
-              R$ {{ cr.saldo_brl|floatformat:2 }}
+              R$ {{ cr.saldo_brl|floatformat:"2g" }}
             </td>
             <td>
               {% if cr.status == 'PAGA' %}<span class="badge bg-success">Paga</span>

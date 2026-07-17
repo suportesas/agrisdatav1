@@ -21,7 +21,7 @@
               <p class="mb-0">
                 <strong>Tipo:</strong> {{ rescisao.get_tipo_rescisao_display }}<br>
                 <strong>Data Desligamento:</strong> {{ rescisao.data_desligamento|date:"d/m/Y" }}<br>
-                <strong>Valor Líquido:</strong> R$ {{ rescisao.valor_liquido|floatformat:2 }}
+                <strong>Valor Líquido:</strong> R$ {{ rescisao.valor_liquido|floatformat:"2g" }}
               </p>
             </div>
           </div>

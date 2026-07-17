@@ -93,20 +93,20 @@
             <td class="small">{{ r.numero_nf }}</td>
             <td class="small">{% if r.data_recebimento %}{{ r.data_recebimento|date:"d/m/Y" }}{% else %}—{% endif %}</td>
             <td class="small">{{ r.produto_str|truncatechars:25 }}</td>
-            <td class="text-end small">{% if r.quantidade %}{{ r.quantidade|floatformat:3 }}{% else %}—{% endif %}</td>
-            <td class="text-end small">{% if r.saldo_antes is not None %}{{ r.saldo_antes|floatformat:3 }}{% else %}—{% endif %}</td>
+            <td class="text-end small">{% if r.quantidade %}{{ r.quantidade|floatformat:"3g" }}{% else %}—{% endif %}</td>
+            <td class="text-end small">{% if r.saldo_antes is not None %}{{ r.saldo_antes|floatformat:"3g" }}{% else %}—{% endif %}</td>
             <td class="text-end small {% if r.saldo_depois is not None and r.saldo_depois < 0 %}text-danger fw-bold{% endif %}">
-              {% if r.saldo_depois is not None %}{{ r.saldo_depois|floatformat:3 }}{% else %}—{% endif %}
+              {% if r.saldo_depois is not None %}{{ r.saldo_depois|floatformat:"3g" }}{% else %}—{% endif %}
             </td>
             {% else %}
             <td class="small">{{ r.numero_nfe|default:"—" }}</td>
             <td class="small">{{ r.numero_re|default:r.numero_due|default:"—" }}</td>
             <td class="small">{% if r.data_embarque %}{{ r.data_embarque|date:"d/m/Y" }}{% else %}—{% endif %}</td>
             <td class="small">{{ r.produto_str|truncatechars:25 }}</td>
-            <td class="text-end small">{% if r.quantidade %}{{ r.quantidade|floatformat:3 }}{% else %}—{% endif %}</td>
-            <td class="text-end small">{% if r.saldo_antes is not None %}{{ r.saldo_antes|floatformat:3 }}{% else %}—{% endif %}</td>
+            <td class="text-end small">{% if r.quantidade %}{{ r.quantidade|floatformat:"3g" }}{% else %}—{% endif %}</td>
+            <td class="text-end small">{% if r.saldo_antes is not None %}{{ r.saldo_antes|floatformat:"3g" }}{% else %}—{% endif %}</td>
             <td class="text-end small {% if r.saldo_depois is not None and r.saldo_depois < 0 %}text-danger fw-bold{% endif %}">
-              {% if r.saldo_depois is not None %}{{ r.saldo_depois|floatformat:3 }}{% else %}—{% endif %}
+              {% if r.saldo_depois is not None %}{{ r.saldo_depois|floatformat:"3g" }}{% else %}—{% endif %}
             </td>
             {% endif %}
             <td class="small">

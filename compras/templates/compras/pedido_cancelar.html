@@ -16,7 +16,7 @@
                         <br><br>
                         <strong>Número:</strong> {{ pedido.numero }}<br>
                         <strong>Fornecedor:</strong> {{ pedido.fornecedor.nome_fantasia }}<br>
-                        <strong>Valor:</strong> R$ {{ pedido.valor_final|floatformat:2 }}
+                        <strong>Valor:</strong> R$ {{ pedido.valor_final|floatformat:"2g" }}
                     </div>
                     
                     <form method="post">

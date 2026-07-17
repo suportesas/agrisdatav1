@@ -27,7 +27,7 @@
         <dt class="col-3">Produto</dt><dd class="col-9">{{ tabela.produto }}</dd>
         <dt class="col-3">Cliente</dt><dd class="col-9">{{ tabela.cliente.razao_social|default:"Padrão (qualquer cliente)" }}</dd>
         <dt class="col-3">Porto de Destino</dt><dd class="col-9">{{ tabela.porto_destino|default:"—" }}</dd>
-        <dt class="col-3">Preço</dt><dd class="col-9">{{ tabela.moeda }} {{ tabela.preco_unitario|floatformat:4 }}</dd>
+        <dt class="col-3">Preço</dt><dd class="col-9">{{ tabela.moeda }} {{ tabela.preco_unitario|floatformat:"4g" }}</dd>
         <dt class="col-3">Vigência</dt><dd class="col-9">{{ tabela.vigencia_inicio|date:"d/m/Y" }} — {{ tabela.vigencia_fim|date:"d/m/Y"|default:"em aberto" }}</dd>
         <dt class="col-3">Status</dt>
         <dd class="col-9">

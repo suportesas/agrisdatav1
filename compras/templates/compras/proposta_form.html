@@ -19,7 +19,7 @@
                             <i class="bi bi-clipboard-check text-primary fs-2"></i>
                         </span>
                         <h2 class="fw-bold mb-1">Cadastro de Propostas</h2>
-                        <div class="text-muted small">Produto: <strong>{{ item.produto.nome }}</strong> | Quantidade: <strong>{{ item.quantidade }} {{ item.unidade_medida.sigla }}</strong></div>
+                        <div class="text-muted small">Produto: <strong>{{ item.produto.nome }}</strong> | Quantidade: <strong>{{ item.quantidade|floatformat:"3g" }} {{ item.unidade_medida.sigla }}</strong></div>
                         
                         {% if not produto_tem_fornecedores %}
                         <div class="alert alert-info mt-3 mb-0">
@@ -76,14 +76,14 @@
                                                 <label class="form-label mb-1">Preço Unitário</label>
                                                 <div class="input-group">
                                                     <span class="input-group-text bg-light">R$</span>
-                                                    <input type="text" inputmode="decimal" name="preco_unitario_{{ proposta.pk }}" value="{{ proposta.preco_unitario|floatformat:2 }}" class="form-control form-control-sm text-end preco-unitario" required autocomplete="off">
+                                                    <input type="text" inputmode="decimal" name="preco_unitario_{{ proposta.pk }}" value="{{ proposta.preco_unitario|floatformat:"2g" }}" class="form-control form-control-sm text-end preco-unitario" required autocomplete="off">
                                                 </div>
                                             </div>
                                             <div class="col-6 col-lg-4">
                                                 <label class="form-label mb-1">Total</label>
                                                 <div class="input-group">
                                                     <span class="input-group-text bg-light">R$</span>
-                                                    <input type="text" name="preco_total_{{ proposta.pk }}" value="{{ proposta.preco_total|floatformat:2 }}" class="form-control form-control-sm text-end bg-light preco-total" required readonly id="preco_total_{{ proposta.pk }}" tabindex="-1">
+                                                    <input type="text" name="preco_total_{{ proposta.pk }}" value="{{ proposta.preco_total|floatformat:"2g" }}" class="form-control form-control-sm text-end bg-light preco-total" required readonly id="preco_total_{{ proposta.pk }}" tabindex="-1">
                                                 </div>
                                             </div>
                                             <div class="col-6 col-lg-4">

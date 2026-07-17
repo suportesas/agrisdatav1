@@ -41,11 +41,11 @@
         <div class="card-body">
           <dl class="row mb-0">
             <dt class="col-7 text-muted">Valor Faturado</dt>
-            <dd class="col-5 font-monospace fw-semibold">R$ {{ obj.valor_faturado_rs|floatformat:2 }}</dd>
+            <dd class="col-5 font-monospace fw-semibold">R$ {{ obj.valor_faturado_rs|floatformat:"2g" }}</dd>
             <dt class="col-7 text-muted">Valor Economizado</dt>
-            <dd class="col-5 font-monospace text-success fw-bold">R$ {{ obj.valor_economizado_rs|floatformat:2 }}</dd>
+            <dd class="col-5 font-monospace text-success fw-bold">R$ {{ obj.valor_economizado_rs|floatformat:"2g" }}</dd>
             <dt class="col-7 text-muted">Desconto Incondicional</dt>
-            <dd class="col-5 font-monospace">R$ {{ obj.desconto_incondicional_rs|floatformat:2 }}</dd>
+            <dd class="col-5 font-monospace">R$ {{ obj.desconto_incondicional_rs|floatformat:"2g" }}</dd>
           </dl>
         </div>
       </div>

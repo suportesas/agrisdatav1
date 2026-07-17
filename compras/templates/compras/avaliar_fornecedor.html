@@ -81,7 +81,7 @@
                 </div>
                 <div class="col-md-3">
                     <strong>Valor NF:</strong><br>
-                    R$ {{ recebimento.valor_total_nf|floatformat:2 }}
+                    R$ {{ recebimento.valor_total_nf|floatformat:"2g" }}
                 </div>
                 <div class="col-md-3">
                     <strong>Pedido:</strong><br>
@@ -214,7 +214,7 @@
                      data-doc="{{ avaliacao.documentacao|default:0 }}"
                      data-ate="{{ avaliacao.atendimento|default:0 }}"
                      data-pre="{{ avaliacao.preco|default:0 }}">
-                    {{ avaliacao.nota_media|floatformat:1 }}/5.0
+                    {{ avaliacao.nota_media|floatformat:"1g" }}/5.0
                 </div>
                 <p class="text-muted mt-2 mb-0">⭐⭐⭐⭐⭐ Excelente | ⭐⭐⭐⭐ Muito Bom | ⭐⭐⭐ Bom | ⭐⭐ Ruim | ⭐ Péssimo</p>
             </div>

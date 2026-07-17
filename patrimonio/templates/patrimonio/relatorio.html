@@ -123,19 +123,19 @@
     <div class="col-md-3">
       <div class="card text-center p-3">
         <h6 class="text-muted mb-0">Valor Total</h6>
-        <h3 class="fw-bold text-success">R$ {% if totais.valor_inicial_total %}{{ totais.valor_inicial_total|floatformat:2 }}{% else %}0,00{% endif %}</h3>
+        <h3 class="fw-bold text-success">R$ {% if totais.valor_inicial_total %}{{ totais.valor_inicial_total|floatformat:"2g" }}{% else %}0,00{% endif %}</h3>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card text-center p-3">
         <h6 class="text-muted mb-0">Valor Residual</h6>
-        <h3 class="fw-bold text-info">R$ {% if totais.valor_atual_total %}{{ totais.valor_atual_total|floatformat:2 }}{% else %}0,00{% endif %}</h3>
+        <h3 class="fw-bold text-info">R$ {% if totais.valor_atual_total %}{{ totais.valor_atual_total|floatformat:"2g" }}{% else %}0,00{% endif %}</h3>
       </div>
     </div>
     <div class="col-md-3">
       <div class="card text-center p-3">
         <h6 class="text-muted mb-0">Total Deprec.</h6>
-        <h3 class="fw-bold text-warning">R$ {% if totais.depreciacao_total %}{{ totais.depreciacao_total|floatformat:2 }}{% else %}0,00{% endif %}</h3>
+        <h3 class="fw-bold text-warning">R$ {% if totais.depreciacao_total %}{{ totais.depreciacao_total|floatformat:"2g" }}{% else %}0,00{% endif %}</h3>
       </div>
     </div>
   </div>
@@ -150,7 +150,7 @@
             <thead class="table-light">
               <tr>
                 <th>Categoria</th>
-                <th class="text-center">Quantidade</th>
+                <th class="text-end">Quantidade</th>
                 <th class="text-end">Valor Inicial</th>
                 <th class="text-end">Valor Atual</th>
               </tr>
@@ -159,9 +159,9 @@
               {% for cat in por_categoria %}
               <tr>
                 <td><strong>{{ cat.categoria }}</strong></td>
-                <td class="text-center">{{ cat.total_bens }}</td>
-                <td class="text-end">R$ {{ cat.valor_inicial_total|floatformat:2 }}</td>
-                <td class="text-end">R$ {{ cat.valor_atual_total|floatformat:2 }}</td>
+                <td class="text-end">{{ cat.total_bens }}</td>
+                <td class="text-end">R$ {{ cat.valor_inicial_total|floatformat:"2g" }}</td>
+                <td class="text-end">R$ {{ cat.valor_atual_total|floatformat:"2g" }}</td>
               </tr>
               {% empty %}
               <tr>
@@ -183,7 +183,7 @@
             <thead class="table-light">
               <tr>
                 <th>Estado</th>
-                <th class="text-center">Quantidade</th>
+                <th class="text-end">Quantidade</th>
                 <th class="text-end">Valor Inicial</th>
                 <th class="text-end">Valor Atual</th>
               </tr>
@@ -192,9 +192,9 @@
               {% for est in por_estado %}
               <tr>
                 <td><strong>{{ est.estado }}</strong></td>
-                <td class="text-center">{{ est.total_bens }}</td>
-                <td class="text-end">R$ {{ est.valor_inicial_total|floatformat:2 }}</td>
-                <td class="text-end">R$ {{ est.valor_atual_total|floatformat:2 }}</td>
+                <td class="text-end">{{ est.total_bens }}</td>
+                <td class="text-end">R$ {{ est.valor_inicial_total|floatformat:"2g" }}</td>
+                <td class="text-end">R$ {{ est.valor_atual_total|floatformat:"2g" }}</td>
               </tr>
               {% empty %}
               <tr>
@@ -234,8 +234,8 @@
             <td>{{ pat.get_categoria_display }}</td>
             <td>{{ pat.get_estado_display }}</td>
             <td>{{ pat.data_aquisicao|date:"d/m/Y" }}</td>
-            <td class="text-end">R$ {{ pat.valor_inicial|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ pat.valor_atual|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ pat.valor_inicial|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ pat.valor_atual|floatformat:"2g" }}</td>
             <td>{% if pat.responsavel %}{{ pat.responsavel.nome_completo }}{% else %}-{% endif %}</td>
             <td>
               {% if pat.ativo %}
@@ -280,8 +280,8 @@
             <td><strong>{{ pat.numero_patrimonio }}</strong></td>
             <td>{{ pat.descricao }}</td>
             <td><span class="badge bg-danger">{{ pat.get_estado_display }}</span></td>
-            <td class="text-end">R$ {{ pat.valor_inicial|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ pat.valor_atual|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ pat.valor_inicial|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ pat.valor_atual|floatformat:"2g" }}</td>
           </tr>
           {% endfor %}
         </tbody>

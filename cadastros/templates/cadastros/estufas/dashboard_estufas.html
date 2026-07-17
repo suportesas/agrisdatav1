@@ -73,7 +73,7 @@
                 </td>
                 <td><a href="{% url 'operacoes_campo:os_detail' t.os_id %}">{{ t.os.talhao.nome }}</a></td>
                 <td class="text-end">{{ t.quantidade_transplantada }}</td>
-                <td class="text-end">R$ {{ t.custo_transferido|floatformat:2 }}</td>
+                <td class="text-end">R$ {{ t.custo_transferido|floatformat:"2g" }}</td>
               </tr>
               {% empty %}
               <tr><td colspan="5" class="text-center text-muted py-3 small">Nenhum transplantio registrado.</td></tr>

@@ -41,7 +41,7 @@
         <dt class="col-4 text-muted">Chave</dt><dd class="col-8"><code class="small">{{ ct.chave_acesso }}</code></dd>
         <dt class="col-4 text-muted">Remetente</dt><dd class="col-8">{{ ct.remetente.razao_social }}</dd>
         <dt class="col-4 text-muted">Destinatário</dt><dd class="col-8">{{ ct.destinatario.razao_social }}</dd>
-        <dt class="col-4 text-muted">Valor Frete</dt><dd class="col-8"><strong>R$ {{ ct.valor_servico|floatformat:2 }}</strong></dd>
+        <dt class="col-4 text-muted">Valor Frete</dt><dd class="col-8"><strong>R$ {{ ct.valor_servico|floatformat:"2g" }}</strong></dd>
       </dl>
     </div>
   </div>

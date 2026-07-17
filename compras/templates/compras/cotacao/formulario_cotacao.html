@@ -28,7 +28,7 @@
                             <td>{{ forloop.counter }}</td>
                             <td>{{ item.produto.nome }}</td>
                             <td>{{ item.unidade_medida.sigla }}</td>
-                            <td>{{ item.quantidade }}</td>
+                            <td>{{ item.quantidade|floatformat:"3g" }}</td>
                             <td>{{ item.especificacao }}</td>
                         </tr>
                         {% endfor %}

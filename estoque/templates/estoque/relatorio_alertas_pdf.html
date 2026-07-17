@@ -203,7 +203,7 @@
                     <td><strong>{{ alerta.produto.codigo|default:"-" }}</strong></td>
                     <td>{{ alerta.produto.nome }}</td>
                     <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
-                    <td class="numero">{{ alerta.saldo }}</td>
+                    <td class="numero">{{ alerta.saldo|floatformat:"3g" }}</td>
                     <td class="numero">{{ alerta.minimo }}</td>
                     <td class="numero">{{ alerta.maximo }}</td>
                     <td>{{ alerta.produto.unidade_medida.sigla|default:"-" }}</td>
@@ -239,7 +239,7 @@
                     <td><strong>{{ alerta.produto.codigo|default:"-" }}</strong></td>
                     <td>{{ alerta.produto.nome }}</td>
                     <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
-                    <td class="numero">{{ alerta.saldo }}</td>
+                    <td class="numero">{{ alerta.saldo|floatformat:"3g" }}</td>
                     <td class="numero">{{ alerta.minimo }}</td>
                     <td class="numero">{{ alerta.maximo }}</td>
                     <td>{{ alerta.produto.unidade_medida.sigla|default:"-" }}</td>

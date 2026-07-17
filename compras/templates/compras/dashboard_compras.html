@@ -300,7 +300,7 @@
                                 <div class="kpi-icon blue"><i class="bi bi-calendar3"></i></div>
                                 <div class="kpi-body">
                                     <div class="kpi-label">Total Compras Ano</div>
-                                    <div class="kpi-value">R$ {{ compras_ano|floatformat:2|intcomma }}</div>
+                                    <div class="kpi-value">R$ {{ compras_ano|floatformat:"2g" }}</div>
                                     <div class="kpi-sub">Total de compras no ano</div>
                                 </div>
                             </div>
@@ -308,7 +308,7 @@
                                 <div class="kpi-icon green"><i class="bi bi-calendar2-month"></i></div>
                                 <div class="kpi-body">
                                     <div class="kpi-label">Total Compras Mês</div>
-                                    <div class="kpi-value">R$ {{ compras_mes|floatformat:2|intcomma }}</div>
+                                    <div class="kpi-value">R$ {{ compras_mes|floatformat:"2g" }}</div>
                                     <div class="kpi-sub">Total de compras no mês</div>
                                 </div>
                             </div>
@@ -316,7 +316,7 @@
                                 <div class="kpi-icon orange"><i class="bi bi-calendar-week"></i></div>
                                 <div class="kpi-body">
                                     <div class="kpi-label">Total Compras Semana</div>
-                                    <div class="kpi-value">R$ {{ compras_semana|floatformat:2|intcomma }}</div>
+                                    <div class="kpi-value">R$ {{ compras_semana|floatformat:"2g" }}</div>
                                     <div class="kpi-sub">Total de compras na semana</div>
                                 </div>
                             </div>
@@ -397,7 +397,7 @@
                                                         <td><strong class="text-primary">{{ pedido.numero }}</strong></td>
                                                         <td><span class="badge bg-light text-dark">{{ pedido.fornecedor.nome_fantasia }}</span></td>
                                                         <td><small>{{ pedido.data_pedido|date:"d/m/Y" }}</small></td>
-                                                        <td><strong>R$ {{ pedido.valor_total|floatformat:2|intcomma }}</strong></td>
+                                                        <td><strong>R$ {{ pedido.valor_total|floatformat:"2g" }}</strong></td>
                                                         <td class="text-center">
                                                             {% if pedido.recebimento_pendente %}
                                                                 <a href="{% url 'compras:recebimento_detail' pedido.recebimento_pendente.pk %}" class="btn btn-sm btn-warning" title="Ir para Recebimento">
@@ -437,8 +437,8 @@
                                         <div class="chart-placeholder">
                                             <div class="bar-chart">
                                                 {% for item in compras_mensais %}
-                                                <div class="bar" style="height: {{ item.height_pct }}%; --bar-color: {{ item.bar_color }}; --bar-color-light: {{ item.bar_color_light }};" title="R$ {{ item.total|floatformat:2|intcomma }} - {{ item.label }}">
-                                                    <span class="bar-value">{{ item.total|floatformat:0|intcomma }}</span>
+                                                <div class="bar" style="height: {{ item.height_pct }}%; --bar-color: {{ item.bar_color }}; --bar-color-light: {{ item.bar_color_light }};" title="R$ {{ item.total|floatformat:"2g" }} - {{ item.label }}">
+                                                    <span class="bar-value">{{ item.total|floatformat:"0g"|intcomma }}</span>
                                                     <span class="bar-label">{{ item.label }}</span>
                                                 </div>
                                                 {% endfor %}
@@ -464,8 +464,8 @@
                                             <div class="bar-chart">
                                                 {% if status_barras %}
                                                     {% for item in status_barras %}
-                                                    <div class="bar" style="height: {{ item.height_pct }}%; --bar-color: {{ item.bar_color }}; --bar-color-light: {{ item.bar_color_light }};" title="{{ item.label }}: {{ item.qtd }}">
-                                                        <span class="bar-value">{{ item.qtd }}</span>
+                                                    <div class="bar" style="height: {{ item.height_pct }}%; --bar-color: {{ item.bar_color }}; --bar-color-light: {{ item.bar_color_light }};" title="{{ item.label }}: {{ item.qtd|floatformat:"0g" }}">
+                                                        <span class="bar-value">{{ item.qtd|floatformat:"0g" }}</span>
                                                         <span class="bar-label">{{ item.label }}</span>
                                                     </div>
                                                     {% endfor %}
@@ -495,17 +495,17 @@
                                                 {% else %}
                                                     <i class="bi bi-arrow-down"></i>
                                                 {% endif %}
-                                                {{ comparacao_mes.variacao_pct|floatformat:1 }}%
+                                                {{ comparacao_mes.variacao_pct|floatformat:"1g" }}%
                                             </span>
                                         </div>
                                         <div class="comparison-list">
                                             <div class="comparison-item">
                                                 <div class="label">{{ comparacao_mes.mes_atual_label }}</div>
-                                                <div class="value">R$ {{ comparacao_mes.total_atual|floatformat:2|intcomma }}</div>
+                                                <div class="value">R$ {{ comparacao_mes.total_atual|floatformat:"2g" }}</div>
                                             </div>
                                             <div class="comparison-item">
                                                 <div class="label">{{ comparacao_mes.mes_anterior_label }}</div>
-                                                <div class="value">R$ {{ comparacao_mes.total_anterior|floatformat:2|intcomma }}</div>
+                                                <div class="value">R$ {{ comparacao_mes.total_anterior|floatformat:"2g" }}</div>
                                             </div>
                                         </div>
                                     </div>

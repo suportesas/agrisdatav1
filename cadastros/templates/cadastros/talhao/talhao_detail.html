@@ -69,7 +69,7 @@
     <div class="col-6 col-md-2">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="small text-muted">Custo Total</div>
-        <div class="fw-bold text-success">R$ {{ custo_total_talhao|floatformat:0 }}</div>
+        <div class="fw-bold text-success">R$ {{ custo_total_talhao|floatformat:"0g" }}</div>
       </div>
     </div>
     <div class="col-6 col-md-2">
@@ -424,11 +424,11 @@
                   <td class="fw-semibold">{{ c.safra_label }}</td>
                   <td class="text-end">{{ c.qtd_os }}</td>
                   <td class="text-end small">{{ c.total_area|default:0|floatformat:"2g" }}</td>
-                  <td class="text-end small">R$ {{ c.total_mao_obra|default:0|floatformat:2 }}</td>
-                  <td class="text-end small">R$ {{ c.total_maquinario|default:0|floatformat:2 }}</td>
-                  <td class="text-end small">R$ {{ c.total_insumos|default:0|floatformat:2 }}</td>
-                  <td class="text-end small">R$ {{ c.total_servico|default:0|floatformat:2 }}</td>
-                  <td class="text-end fw-bold text-success">R$ {{ c.total_geral|floatformat:2 }}</td>
+                  <td class="text-end small">R$ {{ c.total_mao_obra|default:0|floatformat:"2g" }}</td>
+                  <td class="text-end small">R$ {{ c.total_maquinario|default:0|floatformat:"2g" }}</td>
+                  <td class="text-end small">R$ {{ c.total_insumos|default:0|floatformat:"2g" }}</td>
+                  <td class="text-end small">R$ {{ c.total_servico|default:0|floatformat:"2g" }}</td>
+                  <td class="text-end fw-bold text-success">R$ {{ c.total_geral|floatformat:"2g" }}</td>
                   <td class="text-end small">{% if c.custo_ha %}R$ {{ c.custo_ha }}{% else %}—{% endif %}</td>
                   <td>{% if c.safra_id %}<a href="{% url 'cadastros:safra_detail' c.safra_id %}" class="btn btn-xs btn-outline-info py-0 px-1"><i class="bi bi-arrow-right-circle"></i></a>{% endif %}</td>
                 </tr>
@@ -437,7 +437,7 @@
               <tfoot class="table-light">
                 <tr>
                   <td colspan="7" class="text-end fw-bold text-muted small">Total Geral:</td>
-                  <td class="text-end fw-bold text-success">R$ {{ custo_total_talhao|floatformat:2 }}</td>
+                  <td class="text-end fw-bold text-success">R$ {{ custo_total_talhao|floatformat:"2g" }}</td>
                   <td colspan="2"></td>
                 </tr>
               </tfoot>
@@ -573,7 +573,7 @@
                     <td class="small text-muted">{{ t.os.safra.nome|default:"—" }}</td>
                     <td><span class="badge bg-secondary small">{{ t.get_tipo_display }}</span></td>
                     <td class="text-end">{{ t.quantidade_transplantada }}</td>
-                    <td class="text-end small">R$ {{ t.custo_transferido|floatformat:2 }}</td>
+                    <td class="text-end small">R$ {{ t.custo_transferido|floatformat:"2g" }}</td>
                     <td class="small">{{ t.os.responsavel.nome_completo|default:"—" }}</td>
                   </tr>
                   {% endfor %}
@@ -604,7 +604,7 @@
                     <td><span class="badge bg-warning text-dark small">{{ r.get_motivo_perda_display }}</span></td>
                     <td class="small">{{ r.get_origem_muda_display }}</td>
                     <td class="text-end">{{ r.quantidade }}</td>
-                    <td class="text-end small">R$ {{ r.custo_adicional|floatformat:2 }}</td>
+                    <td class="text-end small">R$ {{ r.custo_adicional|floatformat:"2g" }}</td>
                     <td class="small">{{ r.os.responsavel.nome_completo|default:"—" }}</td>
                   </tr>
                   {% endfor %}

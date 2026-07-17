@@ -77,7 +77,7 @@
         <div class="col-md-3">
           <div class="stat-card">
             <div class="stat-label text-uppercase">Média de Uso</div>
-            <div class="stat-value text-info">{{ media_uso|floatformat:0 }}%</div>
+            <div class="stat-value text-info">{{ media_uso|floatformat:"0g" }}%</div>
           </div>
         </div>
         <div class="col-md-3">
@@ -136,7 +136,7 @@
                                         {{ consumo.fazendas_usadas }}/{{ consumo.limite_fazendas }}
                                     </div>
                                 </div>
-                                <small class="text-muted d-block">{{ consumo.percentual_fazendas|floatformat:0 }}%</small>
+                                <small class="text-muted d-block">{{ consumo.percentual_fazendas|floatformat:"0g" }}%</small>
                             </td>
                             <td>
                                 <div class="progress" style="height: 20px; width: 120px;">
@@ -146,7 +146,7 @@
                                         {{ consumo.usuarios_ativos }}/{{ consumo.limite_usuarios }}
                                     </div>
                                 </div>
-                                <small class="text-muted d-block">{{ consumo.percentual_usuarios|floatformat:0 }}%</small>
+                                <small class="text-muted d-block">{{ consumo.percentual_usuarios|floatformat:"0g" }}%</small>
                             </td>
                             <td>
                                 <div class="progress" style="height: 20px; width: 120px;">
@@ -156,7 +156,7 @@
                                         {{ consumo.talhoes_cadastrados }}/{{ consumo.limite_talhoes }}
                                     </div>
                                 </div>
-                                <small class="text-muted d-block">{{ consumo.percentual_talhoes|floatformat:0 }}%</small>
+                                <small class="text-muted d-block">{{ consumo.percentual_talhoes|floatformat:"0g" }}%</small>
                             </td>
                             <td>
                                 <div class="progress" style="height: 20px; width: 120px;">
@@ -166,7 +166,7 @@
                                         {{ consumo.produtos_cadastrados }}/{{ consumo.limite_produtos }}
                                     </div>
                                 </div>
-                                <small class="text-muted d-block">{{ consumo.percentual_produtos|floatformat:0 }}%</small>
+                                <small class="text-muted d-block">{{ consumo.percentual_produtos|floatformat:"0g" }}%</small>
                             </td>
                             <td class="text-center">
                                 {% if consumo.alerta_fazendas or consumo.alerta_usuarios or consumo.alerta_talhoes or consumo.alerta_produtos %}

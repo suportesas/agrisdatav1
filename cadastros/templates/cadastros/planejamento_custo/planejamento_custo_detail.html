@@ -37,24 +37,24 @@
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="text-muted small">Custo de Campo</div>
-        <div class="fw-bold text-warning fs-5">R$ {{ planejado_total|floatformat:2 }}</div>
-        {% if plan.area_ha %}<div class="text-muted" style="font-size:.75rem">R$ {{ plan.custo_planejado_por_ha|floatformat:2 }}/ha</div>{% endif %}
+        <div class="fw-bold text-warning fs-5">R$ {{ planejado_total|floatformat:"2g" }}</div>
+        {% if plan.area_ha %}<div class="text-muted" style="font-size:.75rem">R$ {{ plan.custo_planejado_por_ha|floatformat:"2g" }}/ha</div>{% endif %}
       </div>
     </div>
     {% if plan.tem_receita %}
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="text-muted small">Receita Esperada</div>
-        <div class="fw-bold text-success fs-5">R$ {{ plan.receita_esperada|floatformat:2 }}</div>
+        <div class="fw-bold text-success fs-5">R$ {{ plan.receita_esperada|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-2">
         <div class="text-muted small">Margem Bruta</div>
         <div class="fw-bold fs-5 {% if plan.margem_bruta and plan.margem_bruta > 0 %}text-success{% else %}text-danger{% endif %}">
-          {% if plan.margem_bruta %}{% if plan.margem_bruta > 0 %}+{% endif %}R$ {{ plan.margem_bruta|floatformat:2 }}{% else %}—{% endif %}
+          {% if plan.margem_bruta %}{% if plan.margem_bruta > 0 %}+{% endif %}R$ {{ plan.margem_bruta|floatformat:"2g" }}{% else %}—{% endif %}
         </div>
-        {% if plan.margem_pct %}<div class="text-muted" style="font-size:.75rem">{{ plan.margem_pct|floatformat:1 }}%</div>{% endif %}
+        {% if plan.margem_pct %}<div class="text-muted" style="font-size:.75rem">{{ plan.margem_pct|floatformat:"1g" }}%</div>{% endif %}
       </div>
     </div>
     {% endif %}
@@ -189,11 +189,11 @@
                   {% if item.produto %}<div class="text-muted" style="font-size:.7rem">{{ item.produto.nome }}</div>{% endif %}
                 </td>
                 <td class="text-end small">
-                  {% if item.dose_por_ha %}{{ item.dose_por_ha|floatformat:4 }} {% if item.unidade_medida %}{{ item.unidade_medida.sigla }}{% endif %}{% else %}—{% endif %}
+                  {% if item.dose_por_ha %}{{ item.dose_por_ha|floatformat:"4g" }} {% if item.unidade_medida %}{{ item.unidade_medida.sigla }}{% endif %}{% else %}—{% endif %}
                 </td>
                 <td class="text-end small">{{ item.area_ha|floatformat:"2g" }}</td>
-                <td class="text-end small text-muted">R$ {{ item.custo_unitario|floatformat:4 }}</td>
-                <td class="text-end fw-bold text-warning">R$ {{ item.custo_total|floatformat:2 }}</td>
+                <td class="text-end small text-muted">R$ {{ item.custo_unitario|floatformat:"4g" }}</td>
+                <td class="text-end fw-bold text-warning">R$ {{ item.custo_total|floatformat:"2g" }}</td>
                 <td class="text-nowrap">
                   <button type="button" class="btn btn-outline-primary btn-sm py-0 px-1 me-1 btn-editar-item"
                     data-item-id="{{ item.pk }}"
@@ -227,7 +227,7 @@
             <tfoot class="table-light">
               <tr>
                 <td colspan="7" class="text-end fw-bold">Total Campo</td>
-                <td class="text-end fw-bold text-warning">R$ {{ planejado_total|floatformat:2 }}</td>
+                <td class="text-end fw-bold text-warning">R$ {{ planejado_total|floatformat:"2g" }}</td>
                 <td></td>
               </tr>
             </tfoot>
@@ -309,9 +309,9 @@
                 <td class="small">{{ item.descricao }}</td>
                 <td class="text-end small text-muted">
                   {% if item.percentual_receita %}{{ item.percentual_receita|floatformat:"2g" }}% da receita
-                  {% else %}R$ {{ item.valor_fixo|floatformat:2 }}{% endif %}
+                  {% else %}R$ {{ item.valor_fixo|floatformat:"2g" }}{% endif %}
                 </td>
-                <td class="text-end fw-semibold text-info">R$ {{ item.custo_calculado|floatformat:2 }}</td>
+                <td class="text-end fw-semibold text-info">R$ {{ item.custo_calculado|floatformat:"2g" }}</td>
                 <td class="text-center">
                   {% if item.inclui_no_total %}<span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
                   {% else %}<span class="text-muted"><i class="bi bi-dash-circle"></i></span>{% endif %}
@@ -333,13 +333,13 @@
             <tfoot class="table-light">
               <tr>
                 <td colspan="3" class="text-end fw-bold small">Total incluído</td>
-                <td class="text-end fw-bold text-info">R$ {{ custo_indireto_total|floatformat:2 }}</td>
+                <td class="text-end fw-bold text-info">R$ {{ custo_indireto_total|floatformat:"2g" }}</td>
                 <td colspan="2"></td>
               </tr>
               {% if custo_indireto_excluido > 0 %}
               <tr>
                 <td colspan="3" class="text-end small text-muted">Total excluído (referência)</td>
-                <td class="text-end small text-muted">R$ {{ custo_indireto_excluido|floatformat:2 }}</td>
+                <td class="text-end small text-muted">R$ {{ custo_indireto_excluido|floatformat:"2g" }}</td>
                 <td colspan="2"></td>
               </tr>
               {% endif %}
@@ -352,9 +352,9 @@
       <div class="alert alert-info d-flex gap-2 align-items-start">
         <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
         <div>
-          Custo de campo: <strong>R$ {{ planejado_total|floatformat:2 }}</strong>
-          &nbsp;+&nbsp;Pós-campo incluído: <strong>R$ {{ custo_indireto_total|floatformat:2 }}</strong>
-          &nbsp;= Custo total: <strong>R$ {{ planejado_total|add:custo_indireto_total|floatformat:2 }}</strong>
+          Custo de campo: <strong>R$ {{ planejado_total|floatformat:"2g" }}</strong>
+          &nbsp;+&nbsp;Pós-campo incluído: <strong>R$ {{ custo_indireto_total|floatformat:"2g" }}</strong>
+          &nbsp;= Custo total: <strong>R$ {{ planejado_total|add:custo_indireto_total|floatformat:"2g" }}</strong>
         </div>
       </div>
 
@@ -368,7 +368,7 @@
       <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
         {% if cotacoes.usd %}
         <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle px-3 py-2">
-          <i class="bi bi-currency-dollar me-1"></i>USD R$ {{ cotacoes.taxa_usd|floatformat:4 }}
+          <i class="bi bi-currency-dollar me-1"></i>USD R$ {{ cotacoes.taxa_usd|floatformat:"4g" }}
           <span class="text-muted ms-1" style="font-size:.75rem;">(BCB {{ cotacoes.usd.data|date:"d/m/Y" }})</span>
         </span>
         {% else %}
@@ -376,7 +376,7 @@
         {% endif %}
         {% if cotacoes.eur %}
         <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-2">
-          <i class="bi bi-currency-euro me-1"></i>EUR R$ {{ cotacoes.taxa_eur|floatformat:4 }}
+          <i class="bi bi-currency-euro me-1"></i>EUR R$ {{ cotacoes.taxa_eur|floatformat:"4g" }}
           <span class="text-muted ms-1" style="font-size:.75rem;">(BCB {{ cotacoes.eur.data|date:"d/m/Y" }})</span>
         </span>
         {% else %}
@@ -411,7 +411,7 @@
                 </div>
                 <div class="mb-3 form-check">
                   {{ formacao_form.inclui_custos_indiretos }}
-                  <label class="form-check-label">Incluir custos pós-campo <span class="text-muted">(R$ {{ custo_indireto_total|floatformat:2 }})</span></label>
+                  <label class="form-check-label">Incluir custos pós-campo <span class="text-muted">(R$ {{ custo_indireto_total|floatformat:"2g" }})</span></label>
                 </div>
                 <button type="submit" class="btn btn-warning w-100"><i class="bi bi-calculator me-1"></i>Calcular / Salvar</button>
               </form>
@@ -448,10 +448,10 @@
                 <tbody>
                   <tr>
                     <td class="small fw-semibold">Custo Total Base</td>
-                    <td class="text-end fw-bold text-warning">R$ {{ formacao.custo_total_base|floatformat:2 }}</td>
+                    <td class="text-end fw-bold text-warning">R$ {{ formacao.custo_total_base|floatformat:"2g" }}</td>
                     {% if cotacoes.taxa_usd %}
                     <td class="text-end text-muted small">
-                      {% if cotacoes.taxa_usd %}USD {{ formacao.custo_total_base|floatformat:2 }}{% else %}—{% endif %}
+                      {% if cotacoes.taxa_usd %}USD {{ formacao.custo_total_base|floatformat:"2g" }}{% else %}—{% endif %}
                     </td>
                     {% endif %}
                     {% if cotacoes.taxa_eur %}<td class="text-end text-muted small">—</td>{% endif %}
@@ -459,19 +459,19 @@
                   {% if formacao.custo_por_unidade %}
                   <tr>
                     <td class="small fw-semibold">Custo/{{ plan.unidade_producao|default:"un" }}</td>
-                    <td class="text-end fw-bold">R$ {{ formacao.custo_por_unidade|floatformat:2 }}</td>
+                    <td class="text-end fw-bold">R$ {{ formacao.custo_por_unidade|floatformat:"2g" }}</td>
                     {% if cotacoes.taxa_usd %}<td class="text-end text-muted small">—</td>{% endif %}
                     {% if cotacoes.taxa_eur %}<td class="text-end text-muted small">—</td>{% endif %}
                   </tr>
                   {% endif %}
                   <tr class="table-success">
                     <td class="fw-bold">Preço Mínimo</td>
-                    <td class="text-end fw-bold text-success fs-6">R$ {{ formacao.preco_minimo_brl|floatformat:2 }}</td>
+                    <td class="text-end fw-bold text-success fs-6">R$ {{ formacao.preco_minimo_brl|floatformat:"2g" }}</td>
                     {% if cotacoes.taxa_usd %}
-                    <td class="text-end fw-bold text-success">{% if preco_minimo_usd %}USD {{ preco_minimo_usd|floatformat:2 }}{% else %}—{% endif %}</td>
+                    <td class="text-end fw-bold text-success">{% if preco_minimo_usd %}USD {{ preco_minimo_usd|floatformat:"2g" }}{% else %}—{% endif %}</td>
                     {% endif %}
                     {% if cotacoes.taxa_eur %}
-                    <td class="text-end fw-bold text-success">{% if preco_minimo_eur %}EUR {{ preco_minimo_eur|floatformat:2 }}{% else %}—{% endif %}</td>
+                    <td class="text-end fw-bold text-success">{% if preco_minimo_eur %}EUR {{ preco_minimo_eur|floatformat:"2g" }}{% else %}—{% endif %}</td>
                     {% endif %}
                   </tr>
                 </tbody>
@@ -514,9 +514,9 @@
             <div class="card-body py-2">
               <div class="d-flex gap-4 flex-wrap justify-content-center small text-center">
                 <span class="text-muted">Custo Campo/ha:</span>
-                <span class="fw-bold text-warning">R$ {{ plan.custo_planejado_por_ha|floatformat:2 }}/ha</span>
-                {% if custo_ha_usd %}<span class="fw-bold text-success">USD {{ custo_ha_usd|floatformat:2 }}/ha</span>{% endif %}
-                {% if custo_ha_eur %}<span class="fw-bold text-primary">EUR {{ custo_ha_eur|floatformat:2 }}/ha</span>{% endif %}
+                <span class="fw-bold text-warning">R$ {{ plan.custo_planejado_por_ha|floatformat:"2g" }}/ha</span>
+                {% if custo_ha_usd %}<span class="fw-bold text-success">USD {{ custo_ha_usd|floatformat:"2g" }}/ha</span>{% endif %}
+                {% if custo_ha_eur %}<span class="fw-bold text-primary">EUR {{ custo_ha_eur|floatformat:"2g" }}/ha</span>{% endif %}
               </div>
             </div>
           </div>

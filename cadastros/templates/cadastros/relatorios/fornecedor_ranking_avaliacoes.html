@@ -46,7 +46,7 @@
                     </td>
                     <td class="text-center">
                       <span class="fw-bold {% if fornecedor.nota_media_geral >= 4 %}text-success{% elif fornecedor.nota_media_geral >= 3 %}text-warning{% else %}text-danger{% endif %}">
-                        {{ fornecedor.nota_media_geral|floatformat:1 }}
+                        {{ fornecedor.nota_media_geral|floatformat:"1g" }}
                       </span>
                       <i class="bi bi-star-fill text-warning ms-1"></i>
                     </td>

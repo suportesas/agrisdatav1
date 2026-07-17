@@ -124,20 +124,20 @@
               <div class="col-6 col-md-3">
                 <div class="text-center p-3 rounded" style="background:#F3F4F6">
                   <div class="small text-muted">Autorizado</div>
-                  <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:3|intcomma }}</div>
+                  <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:"3g"|intcomma }}</div>
                 </div>
               </div>
               <div class="col-6 col-md-3">
                 <div class="text-center p-3 rounded" style="background:#ECFDF5">
                   <div class="small text-muted">Exportado</div>
-                  <div class="fs-5 fw-bold text-success">{{ exportado|floatformat:3|intcomma }}</div>
+                  <div class="fs-5 fw-bold text-success">{{ exportado|floatformat:"3g"|intcomma }}</div>
                 </div>
               </div>
               <div class="col-6 col-md-3">
                 <div class="text-center p-3 rounded" style="background:{% if saldo_e < 0 %}#FEE2E2{% else %}#FFF9C4{% endif %}">
                   <div class="small text-muted">Saldo p/ Exportar</div>
                   <div class="fs-5 fw-bold {% if saldo_e < 0 %}text-danger{% else %}text-warning{% endif %}">
-                    {{ saldo_e|floatformat:3|intcomma }}
+                    {{ saldo_e|floatformat:"3g"|intcomma }}
                   </div>
                 </div>
               </div>
@@ -155,7 +155,7 @@
                        style="width:{% if pct > 100 %}100{% else %}{{ pct }}{% endif %}%"></div>
                 </div>
               </div>
-              <small class="fw-semibold">{{ pct }}% de {{ p.quantidade_minima_export|floatformat:3|intcomma }} {{ p.unidade_medida.sigla }}</small>
+              <small class="fw-semibold">{{ pct }}% de {{ p.quantidade_minima_export|floatformat:"3g"|intcomma }} {{ p.unidade_medida.sigla }}</small>
             </div>
 
             {% else %}
@@ -164,20 +164,20 @@
               <div class="col-6 col-md-3">
                 <div class="text-center p-3 rounded" style="background:#F3F4F6">
                   <div class="small text-muted">Autorizado</div>
-                  <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:3|intcomma }}</div>
+                  <div class="fs-5 fw-bold">{{ p.quantidade_autorizada|floatformat:"3g"|intcomma }}</div>
                 </div>
               </div>
               <div class="col-6 col-md-3">
                 <div class="text-center p-3 rounded" style="background:#EDE9FE">
                   <div class="small text-muted">Comprado</div>
-                  <div class="fs-5 fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:3|intcomma }}</div>
+                  <div class="fs-5 fw-bold" style="color:var(--color-primary)">{{ comprado|floatformat:"3g"|intcomma }}</div>
                 </div>
               </div>
               <div class="col-6 col-md-3">
                 <div class="text-center p-3 rounded" style="background:{% if saldo_c <= 0 %}#FEE2E2{% else %}#F0FDF4{% endif %}">
                   <div class="small text-muted">Saldo p/ Comprar</div>
                   <div class="fs-5 fw-bold {% if saldo_c <= 0 %}text-danger{% else %}text-success{% endif %}">
-                    {{ saldo_c|floatformat:3|intcomma }}
+                    {{ saldo_c|floatformat:"3g"|intcomma }}
                   </div>
                 </div>
               </div>
@@ -231,8 +231,8 @@
                 {{ e.drawback_produto.produto.nome }}
                 {% if e.produto_variante %}<br><span class="badge bg-light text-dark border">{{ e.produto_variante.nome_completo }}</span>{% endif %}
               </td>
-              <td class="text-end fw-semibold">{{ e.quantidade|floatformat:3|intcomma }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
-              <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:4|intcomma }}{% else %}—{% endif %}</td>
+              <td class="text-end fw-semibold">{{ e.quantidade|floatformat:"3g"|intcomma }} {{ e.drawback_produto.unidade_medida.sigla }}</td>
+              <td class="text-end">{% if e.valor_unitario %}R$ {{ e.valor_unitario|floatformat:"4g"|intcomma }}{% else %}—{% endif %}</td>
               <td>
                 <span class="badge {% if e.retroativo %}bg-warning text-dark{% else %}bg-success{% endif %}">
                   {% if e.retroativo %}Retroativo{% else %}Normal{% endif %}
@@ -256,7 +256,7 @@
                   <form method="post" action="{% url 'drawback:entrada_anular' e.pk %}">
                     {% csrf_token %}
                     <div class="modal-body">
-                      <p class="small">NF {{ e.numero_nf }} — {{ e.quantidade|floatformat:3 }} {{ e.drawback_produto.unidade_medida.sigla }}</p>
+                      <p class="small">NF {{ e.numero_nf }} — {{ e.quantidade|floatformat:"3g" }} {{ e.drawback_produto.unidade_medida.sigla }}</p>
                       <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
                       <textarea name="motivo_anulacao" class="form-control" rows="3" required></textarea>
                     </div>
@@ -300,8 +300,8 @@
                 {{ s.drawback_produto.produto.nome }}
                 {% if s.produto_variante %}<br><span class="badge bg-light text-dark border">{{ s.produto_variante.nome_completo }}</span>{% endif %}
               </td>
-              <td class="text-end fw-semibold">{{ s.quantidade|floatformat:3|intcomma }} {{ s.drawback_produto.unidade_medida.sigla }}</td>
-              <td class="text-end">{% if s.valor_fob_usd %}USD {{ s.valor_fob_usd|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+              <td class="text-end fw-semibold">{{ s.quantidade|floatformat:"3g"|intcomma }} {{ s.drawback_produto.unidade_medida.sigla }}</td>
+              <td class="text-end">{% if s.valor_fob_usd %}USD {{ s.valor_fob_usd|floatformat:"2g" }}{% else %}—{% endif %}</td>
               <td>
                 <span class="badge {% if s.retroativo %}bg-warning text-dark{% else %}bg-success{% endif %}">
                   {% if s.retroativo %}Retroativo{% else %}Normal{% endif %}
@@ -323,7 +323,7 @@
                   <form method="post" action="{% url 'drawback:saida_anular' s.pk %}">
                     {% csrf_token %}
                     <div class="modal-body">
-                      <p class="small">{{ s.numero_nfe|default:s.numero_re|default:"—" }} — {{ s.quantidade|floatformat:3 }} {{ s.drawback_produto.unidade_medida.sigla }}</p>
+                      <p class="small">{{ s.numero_nfe|default:s.numero_re|default:"—" }} — {{ s.quantidade|floatformat:"3g" }} {{ s.drawback_produto.unidade_medida.sigla }}</p>
                       <label class="form-label fw-semibold">Motivo <span class="text-danger">*</span></label>
                       <textarea name="motivo_anulacao" class="form-control" rows="3" required></textarea>
                     </div>
@@ -354,7 +354,7 @@
             {% for e in entradas_anuladas %}
             <tr><td>{{ e.data_recebimento|date:"d/m/Y" }}</td><td>{{ e.numero_nf }}</td>
               <td>{{ e.drawback_produto.produto.nome }}</td>
-              <td>{{ e.quantidade|floatformat:3 }}</td>
+              <td>{{ e.quantidade|floatformat:"3g" }}</td>
               <td>{{ e.motivo_anulacao }}</td></tr>
             {% endfor %}
           </tbody>
@@ -370,7 +370,7 @@
             {% for s in saidas_anuladas %}
             <tr><td>{{ s.data_embarque|date:"d/m/Y" }}</td><td>{{ s.numero_nfe|default:"—" }}</td>
               <td>{{ s.drawback_produto.produto.nome }}</td>
-              <td>{{ s.quantidade|floatformat:3 }}</td>
+              <td>{{ s.quantidade|floatformat:"3g" }}</td>
               <td>{{ s.motivo_anulacao }}</td></tr>
             {% endfor %}
           </tbody>

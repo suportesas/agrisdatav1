@@ -9,7 +9,7 @@
     </div>
     <div class="card-body">
       {% if modo == 'cancelar_desconto' %}
-      <p>Tem certeza que deseja cancelar o desconto de <strong>{{ adiantamento.moeda }} {{ desconto.valor_desconto_estrangeiro|floatformat:2 }}</strong> da invoice <strong>{{ desconto.invoice.numero }}</strong>?</p>
+      <p>Tem certeza que deseja cancelar o desconto de <strong>{{ adiantamento.moeda }} {{ desconto.valor_desconto_estrangeiro|floatformat:"2g" }}</strong> da invoice <strong>{{ desconto.invoice.numero }}</strong>?</p>
       <p class="text-muted small">O valor do desconto será revertido na invoice e o saldo do adiantamento será restaurado.</p>
       {% else %}
       <p>Tem certeza que deseja <strong>cancelar</strong> o adiantamento <strong>{{ adiantamento.numero_referencia }}</strong>?</p>

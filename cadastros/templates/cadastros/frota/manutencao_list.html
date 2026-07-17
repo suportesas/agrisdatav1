@@ -119,7 +119,7 @@
               {% elif m.status == 'CONCLUIDA' %}<span class="badge bg-success">{{ m.get_status_display }}</span>
               {% else %}<span class="badge bg-secondary">{{ m.get_status_display }}</span>{% endif %}
             </td>
-            <td class="text-end fw-bold">R$ {{ m.valor_total|floatformat:2 }}</td>
+            <td class="text-end fw-bold">R$ {{ m.valor_total|floatformat:"2g" }}</td>
             <td class="text-center">
               <div class="d-flex gap-3 justify-content-center">
                 <a class="action-icon edit" href="{% url 'frota:manutencao_update' m.pk %}" title="Editar">

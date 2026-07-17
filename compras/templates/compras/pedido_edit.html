@@ -127,7 +127,7 @@
                             <td>
                                 <input type="text" class="form-control form-control-sm subtotal-input" readonly
                                        data-valor="{{ item.preco_total|unlocalize }}"
-                                       value="R$ {{ item.preco_total|floatformat:2 }}">
+                                       value="R$ {{ item.preco_total|floatformat:"2g" }}">
                             </td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="removerProduto(this)">
@@ -190,7 +190,7 @@
         <div class="total-section">
             <div class="total-row">
                 <span>Total do Pedido:</span>
-                <span id="totalCompra">R$ {{ pedido.valor_total|floatformat:2 }}</span>
+                <span id="totalCompra">R$ {{ pedido.valor_total|floatformat:"2g" }}</span>
             </div>
         </div>
 

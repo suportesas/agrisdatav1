@@ -109,7 +109,7 @@
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
-                            <td class="text-mono">R$ {{ pedido.valor_final|floatformat:2 }}</td>
+                            <td class="text-mono">R$ {{ pedido.valor_final|floatformat:"2g" }}</td>
                             <td class="text-center">
                                 {% if status_recebimento == 'RECEBIDO_TOTAL' %}
                                     <span class="badge bg-teal text-white" style="background-color:#20c997;">Recebido Total</span>

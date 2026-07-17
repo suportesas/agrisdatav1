@@ -91,7 +91,7 @@
               {% elif v.status == 'CANCELADA' %}<span class="badge bg-secondary small">{{ v.get_status_display }}</span>
               {% else %}<span class="badge bg-warning text-dark small">{{ v.get_status_display }}</span>{% endif %}
             </td>
-            <td class="text-end">{% if v.valor_frete %}R$ {{ v.valor_frete|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="text-end">{% if v.valor_frete %}R$ {{ v.valor_frete|floatformat:"2g" }}{% else %}—{% endif %}</td>
             <td class="text-center">
               <a class="action-icon edit" href="{% url 'frota:viagem_frota_update' v.pk %}" title="Editar">
                 <i class="bi bi-pencil"></i>

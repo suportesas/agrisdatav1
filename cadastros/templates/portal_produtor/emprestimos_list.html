@@ -9,7 +9,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Total Emprestado</small>
-          <h4 class="mb-0 text-primary">R$ {{ totais.total_emprestado|default:0|floatformat:2 }}</h4>
+          <h4 class="mb-0 text-primary">R$ {{ totais.total_emprestado|default:0|floatformat:"2g" }}</h4>
         </div>
       </div>
     </div>
@@ -17,7 +17,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Total Devolvido</small>
-          <h4 class="mb-0 text-success">R$ {{ totais.total_devolvido|default:0|floatformat:2 }}</h4>
+          <h4 class="mb-0 text-success">R$ {{ totais.total_devolvido|default:0|floatformat:"2g" }}</h4>
         </div>
       </div>
     </div>
@@ -25,7 +25,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <small class="text-muted d-block">Saldo em Aberto</small>
-          <h4 class="mb-0 {% if totais.total_saldo|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">R$ {{ totais.total_saldo|default:0|floatformat:2 }}</h4>
+          <h4 class="mb-0 {% if totais.total_saldo|default:0 > 0 %}text-warning{% else %}text-success{% endif %}">R$ {{ totais.total_saldo|default:0|floatformat:"2g" }}</h4>
         </div>
       </div>
     </div>
@@ -113,9 +113,9 @@
                 </span>
               {% else %}-{% endif %}
             </td>
-            <td class="text-end">R$ {{ grupo.total_emprestado|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ grupo.total_devolvido|floatformat:2 }}</td>
-            <td class="text-end"><strong>R$ {{ grupo.saldo_pendente|floatformat:2 }}</strong></td>
+            <td class="text-end">R$ {{ grupo.total_emprestado|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ grupo.total_devolvido|floatformat:"2g" }}</td>
+            <td class="text-end"><strong>R$ {{ grupo.saldo_pendente|floatformat:"2g" }}</strong></td>
             <td class="text-end">
               {% if grupo.unread_mensagens_produtor %}
               <span class="badge bg-danger me-2">{{ grupo.unread_mensagens_produtor }} nova{{ grupo.unread_mensagens_produtor|pluralize }}</span>
@@ -135,18 +135,18 @@
                   <thead>
                     <tr>
                       <th>Produto</th>
-                      <th>Quantidade</th>
-                      <th>Valor Unitário</th>
-                      <th>Valor Total</th>
+                      <th class="text-end">Quantidade</th>
+                      <th class="text-end">Valor Unitário</th>
+                      <th class="text-end">Valor Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {% for emp_dict in grupo.emprestimos %}
                     <tr>
                       <td>{{ emp_dict.obj.produto.nome }}</td>
-                      <td>{{ emp_dict.obj.quantidade_emprestada|floatformat:3 }}</td>
-                      <td>R$ {{ emp_dict.preco_venda|floatformat:2 }}</td>
-                      <td>R$ {{ emp_dict.valor_total_produto|floatformat:2 }}</td>
+                      <td class="text-end">{{ emp_dict.obj.quantidade_emprestada|floatformat:"3g" }}</td>
+                      <td class="text-end">R$ {{ emp_dict.preco_venda|floatformat:"2g" }}</td>
+                      <td class="text-end">R$ {{ emp_dict.valor_total_produto|floatformat:"2g" }}</td>
                       <td>
                         <input type="checkbox" name="confirmar_produto_{{ emp_dict.obj.pk }}" id="confirmar_produto_{{ emp_dict.obj.pk }}"
                           data-produto-id="{{ emp_dict.obj.pk }}"

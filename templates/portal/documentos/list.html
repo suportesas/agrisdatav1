@@ -15,7 +15,7 @@
         <tr>
           <td>NF {{ nf.numero }}</td>
           <td>{{ nf.data_emissao|date:"d/m/Y" }}</td>
-          <td class="text-end">R$ {{ nf.valor_total|floatformat:2 }}</td>
+          <td class="text-end">R$ {{ nf.valor_total|floatformat:"2g" }}</td>
           <td>
             <a href="{% url 'faturamento:nota_fiscal_pdf' nf.pk %}" target="_blank" class="btn btn-sm btn-outline-danger">
               <i class="bi bi-file-pdf me-1"></i>PDF
@@ -41,7 +41,7 @@
           <td>{{ inv.numero }}</td>
           <td>{{ inv.data_emissao|date:"d/m/Y" }}</td>
           <td>{{ inv.moeda }}</td>
-          <td class="text-end">{{ inv.valor_total|floatformat:2 }}</td>
+          <td class="text-end">{{ inv.valor_total|floatformat:"2g" }}</td>
           <td>
             <a href="{% url 'faturamento:invoice_pdf' inv.pk %}" target="_blank" class="btn btn-sm btn-outline-danger">
               <i class="bi bi-file-pdf me-1"></i>PDF

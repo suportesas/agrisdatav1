@@ -97,8 +97,8 @@
         <div class="card-body">
           <dl class="row mb-0 small">
             <dt class="col-sm-6">Lote Origem</dt><dd class="col-sm-6">{{ ordem.lote_origem }}</dd>
-            <dt class="col-sm-6">Qtd. Entrada</dt><dd class="col-sm-6 fw-bold">{{ ordem.quantidade_entrada_kg|floatformat:3 }} kg</dd>
-            <dt class="col-sm-6">Kg/Pallet (líq.)</dt><dd class="col-sm-6">{{ ordem.tipo_embalagem.peso_liquido_pallet|floatformat:3 }} kg</dd>
+            <dt class="col-sm-6">Qtd. Entrada</dt><dd class="col-sm-6 fw-bold">{{ ordem.quantidade_entrada_kg|floatformat:"3g" }} kg</dd>
+            <dt class="col-sm-6">Kg/Pallet (líq.)</dt><dd class="col-sm-6">{{ ordem.tipo_embalagem.peso_liquido_pallet|floatformat:"3g" }} kg</dd>
             <dt class="col-sm-6">Pallets Estimados</dt><dd class="col-sm-6">{{ ordem.n_pallets_esperados }}</dd>
           </dl>
         </div>
@@ -148,8 +148,8 @@
                 {% if p.is_misto %}<span class="badge bg-warning text-dark ms-1">MISTO</span>{% endif %}
               </td>
               <td class="text-end">{{ p.quantidade_caixas }}</td>
-              <td class="text-end">{{ p.peso_liquido_kg|floatformat:3 }}</td>
-              <td class="text-end">{{ p.peso_bruto_kg|floatformat:3 }}</td>
+              <td class="text-end">{{ p.peso_liquido_kg|floatformat:"3g" }}</td>
+              <td class="text-end">{{ p.peso_bruto_kg|floatformat:"3g" }}</td>
               <td>{{ p.armazem.nome }}</td>
               <td>{{ p.local_estocagem|default:"—" }}</td>
               <td>

@@ -147,7 +147,7 @@
                 <br>
                 <span class="text-muted small">
                   {% if v.codigo_patrimonio %}Patrimônio: {{ v.codigo_patrimonio }} · {% endif %}
-                  R$ {{ v.valor_atual|floatformat:2|default:'—' }}
+                  R$ {{ v.valor_atual|floatformat:"2g"|default:'—' }}
                   {% if v.consumo_medio %} · {{ v.consumo_medio }} {% if v.consumo_unidade == 'L_KM' %}L/km{% else %}L/h{% endif %}{% endif %}
                 </span>
               </td>

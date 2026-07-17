@@ -50,7 +50,7 @@
       <div><strong>Status:</strong> {{ pedido.get_status_display }}</div>
       <div><strong>Data:</strong> {{ pedido.data_pedido|date:'d/m/Y H:i' }}</div>
       <div><strong>Entrega prevista:</strong> {{ pedido.data_entrega_prevista|date:'d/m/Y'|default:'-' }}</div>
-      <div><strong>Valor final:</strong> R$ {{ pedido.valor_final|floatformat:2 }}</div>
+      <div><strong>Valor final:</strong> R$ {{ pedido.valor_final|floatformat:"2g" }}</div>
     </div>
   </div>
   <div class="col-md-6">
@@ -59,7 +59,7 @@
       <div><strong>Divergencias:</strong> {{ divergencias|length }}</div>
       <div><strong>Avaliacoes:</strong> {{ avaliacoes|length }}</div>
       {% if avaliacoes %}
-      <div class="mt-2"><strong>Nota media:</strong> {{ avaliacoes.0.nota_media|floatformat:1 }}/5</div>
+      <div class="mt-2"><strong>Nota media:</strong> {{ avaliacoes.0.nota_media|floatformat:"1g" }}/5</div>
       {% endif %}
     </div>
   </div>
@@ -81,9 +81,9 @@
         {% for item in pedido.itens.all %}
         <tr>
           <td>{{ item.produto.nome }}</td>
-          <td class="text-end">{{ item.quantidade_pedida|floatformat:3 }}</td>
-          <td class="text-end">R$ {{ item.preco_unitario|floatformat:2 }}</td>
-          <td class="text-end">R$ {{ item.preco_total|floatformat:2 }}</td>
+          <td class="text-end">{{ item.quantidade_pedida|floatformat:"3g" }}</td>
+          <td class="text-end">R$ {{ item.preco_unitario|floatformat:"2g" }}</td>
+          <td class="text-end">R$ {{ item.preco_total|floatformat:"2g" }}</td>
         </tr>
         {% endfor %}
       </tbody>

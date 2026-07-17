@@ -216,7 +216,7 @@
                     <tr>
                         <td class="ps-4"><strong>{{ conta.numero }}</strong></td>
                         <td>{{ conta.fornecedor.nome }}</td>
-                        <td class="text-mono">R$ {{ conta.valor_total|floatformat:2 }}</td>
+                        <td class="text-mono">R$ {{ conta.valor_total|floatformat:"2g" }}</td>
                         <td class="text-mono">{{ conta.data_emissao|date:'d/m/Y' }}</td>
                         <td>
                             {% if conta.total_parcelas %}

@@ -83,7 +83,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end">
-                                    {{ item.quantidade_recebida }}
+                                    {{ item.quantidade_recebida|floatformat:"3g" }}
                                     {% if item.item_pedido %}
                                         {{ item.item_pedido.unidade_medida.sigla }}
                                     {% else %}

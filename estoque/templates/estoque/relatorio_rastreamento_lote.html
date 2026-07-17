@@ -31,10 +31,10 @@
                         <strong>Produto:</strong> {{ lote.produto }}
                     </p>
                     <p>
-                        <strong>Quantidade Inicial:</strong> {{ lote.quantidade_inicial }} un
+                        <strong>Quantidade Inicial:</strong> {{ lote.quantidade_inicial|floatformat:"3g" }} un
                     </p>
                     <p>
-                        <strong>Quantidade Atual:</strong> {{ lote.quantidade_atual }} un
+                        <strong>Quantidade Atual:</strong> {{ lote.quantidade_atual|floatformat:"3g" }} un
                     </p>
                 </div>
                 <div class="col-md-6">
@@ -108,10 +108,10 @@
                                 </span>
                             </td>
                             <td>
-                                {{ mov.quantidade }} un
+                                {{ mov.quantidade|floatformat:"3g" }} un
                             </td>
                             <td>
-                                <strong>{{ mov.lote.quantidade_atual }} un</strong>
+                                <strong>{{ mov.lote.quantidade_atual|floatformat:"3g" }} un</strong>
                             </td>
                             <td class="text-center">
                                 <span class="badge bg-
@@ -175,7 +175,7 @@
                         <tr>
                             <td class="ps-4"><strong>{{ lote.numero_lote }}</strong></td>
                             <td>{{ lote.produto.nome }}</td>
-                            <td class="text-mono">{{ lote.quantidade_atual }}/{{ lote.quantidade_inicial }} un</td>
+                            <td class="text-mono">{{ lote.quantidade_atual|floatformat:"3g" }}/{{ lote.quantidade_inicial|floatformat:"3g" }} un</td>
                             <td>{{ lote.armazem.nome }}</td>
                             <td class="text-center">
                                 <span class="badge bg-

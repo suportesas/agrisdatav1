@@ -90,15 +90,15 @@
               <td><a href="{% url 'energia:usina_detail' r.usina.pk %}" class="text-decoration-none">{{ r.usina.codigo }}</a>
                 <div class="text-muted" style="font-size:.75rem">{{ r.usina.nome }}</div>
               </td>
-              <td class="text-end text-mono">{{ r.geracao_kwh|floatformat:0 }}</td>
+              <td class="text-end text-mono">{{ r.geracao_kwh|floatformat:"0g" }}</td>
               <td class="text-end">
                 <span class="badge {% if r.desempenho_pct >= 90 %}bg-success{% elif r.desempenho_pct >= 75 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
                   {{ r.desempenho_pct }}%
                 </span>
               </td>
-              <td class="text-end text-mono">{{ r.consumo_total_kwh|floatformat:0 }}</td>
-              <td class="text-end text-mono text-success fw-semibold">{{ r.economia_rs|floatformat:2 }}</td>
-              <td class="text-end text-mono">{{ r.faturado_rs|floatformat:2 }}</td>
+              <td class="text-end text-mono">{{ r.consumo_total_kwh|floatformat:"0g" }}</td>
+              <td class="text-end text-mono text-success fw-semibold">{{ r.economia_rs|floatformat:"2g" }}</td>
+              <td class="text-end text-mono">{{ r.faturado_rs|floatformat:"2g" }}</td>
               <td class="text-end text-muted small">{{ r.co2_nao_produzido_t|floatformat:"2g" }}</td>
               <td class="text-center">
                 <div class="d-flex gap-3 justify-content-center">

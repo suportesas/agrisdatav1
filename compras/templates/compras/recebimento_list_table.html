@@ -50,7 +50,7 @@
                 </td>
                 <td>{{ recebimento.nota_fiscal }}</td>
                 <td class="text-mono">{{ recebimento.data_recebimento|date:"d/m/Y" }}</td>
-                <td class="text-mono">R$ {{ recebimento.valor_total_nf|floatformat:2 }}</td>
+                <td class="text-mono">R$ {{ recebimento.valor_total_nf|floatformat:"2g" }}</td>
                 <td class="text-center">
                     {% if recebimento.status == 'PENDENTE' %}
                         <span class="badge bg-warning text-dark">{{ recebimento.get_status_display }}</span>

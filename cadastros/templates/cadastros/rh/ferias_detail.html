@@ -77,21 +77,21 @@
           <table class="table table-sm">
             <tr>
               <td>Valor Bruto:</td>
-              <td class="text-end"><strong>R$ {{ ferias.valor_bruto|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ ferias.valor_bruto|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             <tr>
               <td>1/3 Constitucional:</td>
-              <td class="text-end"><strong>R$ {{ ferias.valor_terco_constitucional|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ ferias.valor_terco_constitucional|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             {% if ferias.dias_abono > 0 %}
             <tr>
               <td>Abono Pecuniário ({{ ferias.dias_abono }} dias):</td>
-              <td class="text-end"><strong>R$ {{ ferias.valor_abono|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ ferias.valor_abono|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             {% endif %}
             <tr>
               <td>Descontos:</td>
-              <td class="text-end text-danger"><strong>R$ {{ ferias.valor_descontos|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end text-danger"><strong>R$ {{ ferias.valor_descontos|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
           </table>
         </div>

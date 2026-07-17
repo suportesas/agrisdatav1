@@ -18,7 +18,7 @@
   </div>
 
   <div class="alert alert-info">
-    <strong>Saldo a migrar:</strong> {{ adiantamento.moeda }} {{ adiantamento.saldo_estrangeiro|floatformat:2 }}<br>
+    <strong>Saldo a migrar:</strong> {{ adiantamento.moeda }} {{ adiantamento.saldo_estrangeiro|floatformat:"2g" }}<br>
     <strong>Adiantamento atual:</strong> {{ adiantamento.numero_referencia }} — Safra {{ adiantamento.safra_referencia }}<br>
     <small class="text-muted">Um novo adiantamento será criado na safra de destino com o saldo atual. O adiantamento original ficará marcado como <em>Migrado</em>.</small>
   </div>

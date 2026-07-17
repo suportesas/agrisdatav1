@@ -254,7 +254,7 @@
               </tr>
               <tr>
                 <td class="text-muted"><strong>Salário:</strong></td>
-                <td><strong class="text-success">R$ {{ funcionario.salario|floatformat:2 }}</strong></td>
+                <td><strong class="text-success">R$ {{ funcionario.salario|floatformat:"2g" }}</strong></td>
               </tr>
               {% if funcionario.escolaridade %}
                 <tr>
@@ -317,7 +317,7 @@
                     <tr>
                       <td>{{ hist.data_evento|date:"d/m/Y" }}</td>
                       <td>{% if hist.funcao %}{{ hist.funcao.nome }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
-                      <td><strong class="text-success">R$ {{ hist.salario|default:0|floatformat:2 }}</strong></td>
+                      <td><strong class="text-success">R$ {{ hist.salario|default:0|floatformat:"2g" }}</strong></td>
                       <td>{% if hist.usuario %}{{ hist.usuario.username }}{% else %}<span class="text-muted">Sistema</span>{% endif %}</td>
                       <td>{{ hist.motivo|default:"-" }}</td>
                     </tr>

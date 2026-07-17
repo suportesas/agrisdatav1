@@ -65,9 +65,9 @@
             {% for emp in emprestimos_lote %}
             <tr {% if emp.pk == emprestimo.pk %}class="table-primary"{% endif %}>
               <td>{{ emp.produto.nome }}</td>
-              <td>{{ emp.quantidade_emprestada|floatformat:3 }}</td>
-              <td>{{ emp.quantidade_devolvida|floatformat:3 }}</td>
-              <td>{{ emp.saldo_pendente|floatformat:3 }}</td>
+              <td>{{ emp.quantidade_emprestada|floatformat:"3g" }}</td>
+              <td>{{ emp.quantidade_devolvida|floatformat:"3g" }}</td>
+              <td>{{ emp.saldo_pendente|floatformat:"3g" }}</td>
               <td>{{ emp.unidade_medida.sigla }}</td>
               <td>
                 <span class="badge {% if emp.status == 'DEVOLVIDO' %}bg-success{% elif emp.status == 'PROMESSA' %}bg-info text-dark{% elif emp.status == 'NORMAL' %}bg-warning text-dark{% elif emp.status == 'PARCIAL' %}bg-primary{% else %}bg-secondary{% endif %}">
@@ -127,8 +127,8 @@
                   {{ mov.get_tipo_movimento_display }}
                 </span>
               </td>
-              <td class="text-end">{{ mov.quantidade|floatformat:3 }}</td>
-              <td class="text-end"><strong>{{ mov.saldo_resultante|floatformat:3 }}</strong></td>
+              <td class="text-end">{{ mov.quantidade|floatformat:"3g" }}</td>
+              <td class="text-end"><strong>{{ mov.saldo_resultante|floatformat:"3g" }}</strong></td>
               <td>{{ mov.documento_referencia|default:'-' }}</td>
               <td>
                 {% if mov.comprovante %}

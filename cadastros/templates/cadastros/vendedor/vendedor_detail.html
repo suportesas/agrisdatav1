@@ -217,11 +217,11 @@
         <h6 class="mb-3">💰 Comissões</h6>
         <div class="mb-3">
           <small class="opacity-75">Pendentes</small>
-          <h3 class="mb-0">R$ {{ comissoes_pendentes|floatformat:2 }}</h3>
+          <h3 class="mb-0">R$ {{ comissoes_pendentes|floatformat:"2g" }}</h3>
         </div>
         <div>
           <small class="opacity-75">Pagas</small>
-          <h3 class="mb-0">R$ {{ comissoes_pagas|floatformat:2 }}</h3>
+          <h3 class="mb-0">R$ {{ comissoes_pagas|floatformat:"2g" }}</h3>
         </div>
       </div>
 
@@ -271,7 +271,7 @@
                 {{ comissao.get_status_display }}
               </span>
             </div>
-            <strong>R$ {{ comissao.valor_comissao|floatformat:2 }}</strong>
+            <strong>R$ {{ comissao.valor_comissao|floatformat:"2g" }}</strong>
           </div>
           {% endfor %}
         </div>

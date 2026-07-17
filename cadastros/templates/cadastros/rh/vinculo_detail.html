@@ -30,7 +30,7 @@
         <div class="col-md-4"><strong>Fim Previsto:</strong><br>{{ vinculo.data_fim_prevista|date:'d/m/Y'|default:'-' }}</div>
         <div class="col-md-4"><strong>Fim Real:</strong><br>{{ vinculo.data_fim_real|date:'d/m/Y'|default:'-' }}</div>
 
-        <div class="col-md-4"><strong>Salário:</strong><br>R$ {{ vinculo.salario|floatformat:2|default:'0,00' }}</div>
+        <div class="col-md-4"><strong>Salário:</strong><br>R$ {{ vinculo.salario|floatformat:"2g"|default:'0,00' }}</div>
         <div class="col-md-4"><strong>Insalubridade:</strong><br>{% if vinculo.possui_insalubridade %}Sim ({{ vinculo.grau_insalubridade }}%){% else %}Não{% endif %}</div>
         <div class="col-md-4"><strong>Periculosidade:</strong><br>{% if vinculo.possui_periculosidade %}Sim ({{ vinculo.percentual_periculosidade }}%){% else %}Não{% endif %}</div>
 

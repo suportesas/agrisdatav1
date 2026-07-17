@@ -53,7 +53,7 @@
                   {{ form.valor_pago.label }}{% if form.valor_pago.field.required %}<span class="req">*</span>{% endif %}
                 </label>
                 {{ form.valor_pago }}
-                <div class="helper-note">Sugerido: R$ {{ parcela.valor_total_parcela|floatformat:2 }}</div>
+                <div class="helper-note">Sugerido: R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</div>
                 {% if form.valor_pago.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.valor_pago.errors.0 }}</div>{% endif %}
               </div>
 
@@ -123,15 +123,15 @@
       <div class="complex-summary">
         <div class="summary-card mb-3">
           <h4>Resumo da Parcela</h4>
-          <div class="summary-row"><span>Valor Original</span><span>R$ {{ parcela.valor_parcela|floatformat:2 }}</span></div>
-          <div class="summary-total"><span>Total com Juros/Multa</span><span>R$ {{ parcela.valor_total_parcela|floatformat:2 }}</span></div>
+          <div class="summary-row"><span>Valor Original</span><span>R$ {{ parcela.valor_parcela|floatformat:"2g" }}</span></div>
+          <div class="summary-total"><span>Total com Juros/Multa</span><span>R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</span></div>
 
           {% if parcela.status == 'VENCIDA' %}
           <hr class="my-2">
           <div class="text-danger small fw-semibold mb-1"><i class="bi bi-exclamation-triangle"></i> Parcela Vencida</div>
           <div class="summary-row negative"><span>Dias de Atraso</span><span>{{ parcela.dias_atraso }} dias</span></div>
-          <div class="summary-row"><span>Juros Acumulados</span><span>R$ {{ parcela.juros_parcela|floatformat:2 }}</span></div>
-          <div class="summary-row"><span>Multa</span><span>R$ {{ parcela.multa_parcela|floatformat:2 }}</span></div>
+          <div class="summary-row"><span>Juros Acumulados</span><span>R$ {{ parcela.juros_parcela|floatformat:"2g" }}</span></div>
+          <div class="summary-row"><span>Multa</span><span>R$ {{ parcela.multa_parcela|floatformat:"2g" }}</span></div>
           {% endif %}
         </div>
 
@@ -143,7 +143,7 @@
             <div class="list-group-item px-0">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
-                  <div class="fw-bold">R$ {{ pagamento.valor_pago|floatformat:2 }}</div>
+                  <div class="fw-bold">R$ {{ pagamento.valor_pago|floatformat:"2g" }}</div>
                   <small class="text-muted">{{ pagamento.data_pagamento|date:'d/m/Y' }}</small><br>
                   <small>{{ pagamento.get_forma_pagamento_display }}</small>
                 </div>

@@ -240,8 +240,8 @@
               <td>{{ p.tipo_embalagem.nome|default:"Misto" }}{% if p.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
               <td class="text-mono">{{ p.data_embalagem|date:"d/m/Y" }}</td>
               <td class="text-end text-mono">{{ p.quantidade_caixas }}</td>
-              <td class="text-end text-mono">{{ p.peso_liquido_kg|floatformat:3 }}</td>
-              <td class="text-end text-mono">{{ p.peso_bruto_kg|floatformat:3 }}</td>
+              <td class="text-end text-mono">{{ p.peso_liquido_kg|floatformat:"3g" }}</td>
+              <td class="text-end text-mono">{{ p.peso_bruto_kg|floatformat:"3g" }}</td>
               <td>{{ p.armazem.nome }}</td>
               <td>{{ p.local_estocagem|default:"—" }}</td>
               <td class="text-center">

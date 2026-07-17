@@ -169,8 +169,8 @@
           <dl class="row mb-0 small">
             <dt class="col-sm-6">Pallets</dt><dd class="col-sm-6 fw-bold">{{ romaneio.total_pallets }}</dd>
             <dt class="col-sm-6">Caixas</dt><dd class="col-sm-6 fw-bold">{{ romaneio.total_caixas }}</dd>
-            <dt class="col-sm-6">Peso Líq.</dt><dd class="col-sm-6 fw-bold">{{ romaneio.peso_liquido_total|floatformat:3 }} kg</dd>
-            <dt class="col-sm-6">Peso Bruto</dt><dd class="col-sm-6 fw-bold">{{ romaneio.peso_bruto_total|floatformat:3 }} kg</dd>
+            <dt class="col-sm-6">Peso Líq.</dt><dd class="col-sm-6 fw-bold">{{ romaneio.peso_liquido_total|floatformat:"3g" }} kg</dd>
+            <dt class="col-sm-6">Peso Bruto</dt><dd class="col-sm-6 fw-bold">{{ romaneio.peso_bruto_total|floatformat:"3g" }} kg</dd>
             <dt class="col-sm-6">Conferidos</dt>
             <dd class="col-sm-6">
               <span class="badge {% if romaneio.pallets_conferidos == romaneio.total_pallets and romaneio.total_pallets > 0 %}bg-success{% else %}bg-secondary{% endif %}">
@@ -257,8 +257,8 @@
               <td><strong>{{ item.pallet.codigo_pallet }}</strong></td>
               <td>{{ item.pallet.tipo_embalagem.nome|default:"Misto" }}{% if item.pallet.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
               <td class="text-end">{{ item.quantidade_caixas }}</td>
-              <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }}</td>
-              <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }}</td>
+              <td class="text-end">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+              <td class="text-end">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
               <td>{{ item.marks_numbers|default:"—" }}</td>
               <td>
                 {% if item.status_conferencia == 'PENDENTE' %}<span class="badge bg-secondary">Pendente</span>
@@ -286,8 +286,8 @@
             <tr>
               <td colspan="2">Total</td>
               <td class="text-end">{{ romaneio.total_caixas }}</td>
-              <td class="text-end">{{ romaneio.peso_liquido_total|floatformat:3 }}</td>
-              <td class="text-end">{{ romaneio.peso_bruto_total|floatformat:3 }}</td>
+              <td class="text-end">{{ romaneio.peso_liquido_total|floatformat:"3g" }}</td>
+              <td class="text-end">{{ romaneio.peso_bruto_total|floatformat:"3g" }}</td>
               <td colspan="{% if romaneio.status == 'RASCUNHO' %}3{% else %}2{% endif %}"></td>
             </tr>
           </tfoot>

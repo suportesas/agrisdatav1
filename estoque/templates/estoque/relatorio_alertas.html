@@ -109,7 +109,7 @@
                                 </td>
                                 <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
                                 <td class="text-end text-danger">
-                                    <strong>{{ alerta.saldo }}</strong>
+                                    <strong>{{ alerta.saldo|floatformat:"3g" }}</strong>
                                 </td>
                                 <td class="text-end">{{ alerta.minimo }}</td>
                                 <td class="text-end">{{ alerta.maximo }}</td>
@@ -174,7 +174,7 @@
                             </td>
                             <td>{{ alerta.produto.categoria.nome|default:"-" }}</td>
                             <td class="text-end text-info">
-                                <strong>{{ alerta.saldo }}</strong>
+                                <strong>{{ alerta.saldo|floatformat:"3g" }}</strong>
                             </td>
                             <td class="text-end">{{ alerta.minimo }}</td>
                             <td class="text-end">{{ alerta.maximo }}</td>

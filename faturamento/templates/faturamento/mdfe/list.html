@@ -90,7 +90,7 @@
               <td>{{ m.motorista.nome }}</td>
               <td>{{ m.veiculo.descricao|default:m.veiculo }}</td>
               <td><span class="badge bg-secondary">{{ m.uf_inicio }}</span> → <span class="badge bg-secondary">{{ m.uf_fim }}</span></td>
-              <td class="text-end text-mono">R$ {{ m.valor_carga|floatformat:2 }}</td>
+              <td class="text-end text-mono">R$ {{ m.valor_carga|floatformat:"2g" }}</td>
               <td class="text-center">
                 {% if m.status == 'EMITIDO' %}<span class="badge bg-success">Emitido</span>
                 {% elif m.status == 'ENCERRADO' %}<span class="badge bg-primary">Encerrado</span>

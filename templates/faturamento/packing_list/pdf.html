@@ -97,11 +97,11 @@
       <td>{{ item.tipo_container|default:"—" }}</td>
       <td>{{ item.lacre_armador|default:"" }}{% if item.lacre_fiscal %} / {{ item.lacre_fiscal }}{% endif %}</td>
       <td>{{ item.descricao_produto }}</td>
-      <td class="text-right">{{ item.quantidade_caixas|floatformat:0 }}</td>
-      <td class="text-right">{{ item.quantidade_pallets|floatformat:0|default:"—" }}</td>
-      <td class="text-right">{{ item.peso_bruto_kg|floatformat:3 }}</td>
-      <td class="text-right">{{ item.peso_liquido_kg|floatformat:3 }}</td>
-      <td class="text-right">{{ item.volume_m3|floatformat:3|default:"—" }}</td>
+      <td class="text-right">{{ item.quantidade_caixas|floatformat:"0g" }}</td>
+      <td class="text-right">{{ item.quantidade_pallets|floatformat:"0g"|default:"—" }}</td>
+      <td class="text-right">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
+      <td class="text-right">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+      <td class="text-right">{{ item.volume_m3|floatformat:"3g"|default:"—" }}</td>
       <td>{{ item.marks_numbers|default:"" }}</td>
     </tr>
     {% if item.farm_nome or item.variedade or item.ggn_numero or item.data_colheita_inicio %}
@@ -121,10 +121,10 @@
   <tfoot>
     <tr>
       <td colspan="5">TOTAL</td>
-      <td class="text-right">{{ pl.total_caixas|floatformat:0 }}</td>
+      <td class="text-right">{{ pl.total_caixas|floatformat:"0g" }}</td>
       <td></td>
-      <td class="text-right">{{ pl.peso_bruto_total|floatformat:3 }}</td>
-      <td class="text-right">{{ pl.peso_liquido_total|floatformat:3 }}</td>
+      <td class="text-right">{{ pl.peso_bruto_total|floatformat:"3g" }}</td>
+      <td class="text-right">{{ pl.peso_liquido_total|floatformat:"3g" }}</td>
       <td></td>
       <td></td>
     </tr>

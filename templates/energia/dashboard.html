@@ -31,7 +31,7 @@
         <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-sun-fill"></i></div>
         <div>
           <div class="stat-label text-uppercase">Geração (mês atual)</div>
-          <div class="stat-value">{{ totais_mes.geracao|default:0|floatformat:0 }}</div>
+          <div class="stat-value">{{ totais_mes.geracao|default:0|floatformat:"0g" }}</div>
           <small class="text-muted">kWh</small>
         </div>
       </div>
@@ -41,7 +41,7 @@
         <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-cash-coin"></i></div>
         <div>
           <div class="stat-label text-uppercase">Economia (mês atual)</div>
-          <div class="stat-value">R$ {{ totais_mes.economia|default:0|floatformat:2 }}</div>
+          <div class="stat-value">R$ {{ totais_mes.economia|default:0|floatformat:"2g" }}</div>
         </div>
       </div>
     </div>
@@ -50,7 +50,7 @@
         <div class="stat-icon {% if totais_mes.desempenho >= 90 %}stat-icon-green{% elif totais_mes.desempenho >= 75 %}stat-icon-orange{% else %}stat-icon-red{% endif %} mb-0"><i class="bi bi-speedometer2"></i></div>
         <div>
           <div class="stat-label text-uppercase">Desempenho Médio</div>
-          <div class="stat-value">{{ totais_mes.desempenho|default:0|floatformat:1 }}%</div>
+          <div class="stat-value">{{ totais_mes.desempenho|default:0|floatformat:"1g" }}%</div>
         </div>
       </div>
     </div>
@@ -125,11 +125,11 @@
               <div class="text-muted small">{{ l.unidade_consumidora.codigo_cliente }}</div>
             </td>
             <td class="text-muted small">{{ l.unidade_consumidora.usina.codigo|default:"—" }}</td>
-            <td class="text-end font-monospace">{{ l.consumo_registrado_kwh|floatformat:0 }}</td>
-            <td class="text-end font-monospace text-success">{{ l.energia_compensada_kwh|floatformat:0 }}</td>
-            <td class="text-end font-monospace text-info">{{ l.energia_injetada_kwh|floatformat:0 }}</td>
-            <td class="text-end font-monospace">R$ {{ l.valor_faturado_rs|floatformat:2 }}</td>
-            <td class="text-end pe-3 font-monospace text-success fw-semibold">R$ {{ l.valor_economizado_rs|floatformat:2 }}</td>
+            <td class="text-end font-monospace">{{ l.consumo_registrado_kwh|floatformat:"0g" }}</td>
+            <td class="text-end font-monospace text-success">{{ l.energia_compensada_kwh|floatformat:"0g" }}</td>
+            <td class="text-end font-monospace text-info">{{ l.energia_injetada_kwh|floatformat:"0g" }}</td>
+            <td class="text-end font-monospace">R$ {{ l.valor_faturado_rs|floatformat:"2g" }}</td>
+            <td class="text-end pe-3 font-monospace text-success fw-semibold">R$ {{ l.valor_economizado_rs|floatformat:"2g" }}</td>
           </tr>
           {% endfor %}
         </tbody>

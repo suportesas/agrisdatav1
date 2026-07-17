@@ -85,9 +85,9 @@
               <td>{{ t.variedade|default:"—" }}</td>
               <td>{{ t.marca|default:"—" }}</td>
               <td>{{ t.tipo_calibre|default:"—" }}</td>
-              <td class="text-end text-mono">{{ t.peso_liquido_cx|floatformat:3 }}</td>
+              <td class="text-end text-mono">{{ t.peso_liquido_cx|floatformat:"3g" }}</td>
               <td class="text-end text-mono">{{ t.caixas_por_pallet }}</td>
-              <td class="text-end text-mono">{{ t.peso_liquido_pallet|floatformat:3 }}</td>
+              <td class="text-end text-mono">{{ t.peso_liquido_pallet|floatformat:"3g" }}</td>
               <td class="text-center">
                 {% if t.ativo %}<span class="badge bg-success">Ativo</span>
                 {% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}

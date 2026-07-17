@@ -50,32 +50,32 @@
             </div>
             <div class="col-md-4">
               <div class="small text-muted">Litros</div>
-              <div class="fw-bold fs-5">{{ obj.litros|floatformat:3 }} L</div>
+              <div class="fw-bold fs-5">{{ obj.litros|floatformat:"3g" }} L</div>
             </div>
             <div class="col-md-4">
               <div class="small text-muted">Preço/Litro</div>
-              <div class="fw-semibold">R$ {{ obj.preco_por_litro|floatformat:3 }}</div>
+              <div class="fw-semibold">R$ {{ obj.preco_por_litro|floatformat:"3g" }}</div>
             </div>
             <div class="col-md-4">
               <div class="small text-muted">Valor Total</div>
-              <div class="fw-bold text-info fs-5">R$ {{ obj.valor_total|floatformat:2 }}</div>
+              <div class="fw-bold text-info fs-5">R$ {{ obj.valor_total|floatformat:"2g" }}</div>
             </div>
             {% if obj.km_odometro %}
             <div class="col-md-4">
               <div class="small text-muted">Hodômetro</div>
-              <div class="fw-semibold">{{ obj.km_odometro|floatformat:0 }} km</div>
+              <div class="fw-semibold">{{ obj.km_odometro|floatformat:"0g" }} km</div>
             </div>
             {% endif %}
             {% if obj.horimetro %}
             <div class="col-md-4">
               <div class="small text-muted">Horímetro</div>
-              <div class="fw-semibold">{{ obj.horimetro|floatformat:1 }} h</div>
+              <div class="fw-semibold">{{ obj.horimetro|floatformat:"1g" }} h</div>
             </div>
             {% endif %}
             {% if consumo %}
             <div class="col-md-4">
               <div class="small text-muted">Consumo Calculado</div>
-              <div class="fw-bold text-success">{{ consumo|floatformat:4 }} L/km</div>
+              <div class="fw-bold text-success">{{ consumo|floatformat:"4g" }} L/km</div>
             </div>
             {% endif %}
             {% if obj.local_abastecimento %}

@@ -40,9 +40,9 @@
                         <input type="text" class="form-control" value="{{ conta.fornecedor.nome }}" disabled>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Valor Total <strong>R$ {{ conta.valor_total|floatformat:2 }}</strong></label>
+                        <label class="form-label">Valor Total <strong>R$ {{ conta.valor_total|floatformat:"2g" }}</strong></label>
                         <div class="alert alert-success mb-0 py-2">
-                            <strong>R$ {{ conta.valor_total|floatformat:2 }}</strong>
+                            <strong>R$ {{ conta.valor_total|floatformat:"2g" }}</strong>
                         </div>
                     </div>
                 </div>

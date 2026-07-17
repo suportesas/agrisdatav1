@@ -65,7 +65,7 @@
             <div class="card text-bg-success">
                 <div class="card-body">
                     <h6 class="text-white">Valor Total</h6>
-                    <h3 class="mb-0 text-white">R$ {{ total_valor|floatformat:2 }}</h3>
+                    <h3 class="mb-0 text-white">R$ {{ total_valor|floatformat:"2g" }}</h3>
                 </div>
             </div>
         </div>
@@ -112,7 +112,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end">
-                                    <strong class="text-success">R$ {{ r.valor_total_nf|floatformat:2 }}</strong>
+                                    <strong class="text-success">R$ {{ r.valor_total_nf|floatformat:"2g" }}</strong>
                                 </td>
                             </tr>
                         {% empty %}
@@ -129,7 +129,7 @@
                             <tr>
                                 <td colspan="3" class="text-end"><strong>TOTAL GERAL:</strong></td>
                                 <td class="text-end">
-                                    <strong class="text-success fs-5">R$ {{ total_valor|floatformat:2 }}</strong>
+                                    <strong class="text-success fs-5">R$ {{ total_valor|floatformat:"2g" }}</strong>
                                 </td>
                             </tr>
                         </tfoot>
@@ -180,13 +180,13 @@ function exportarExcel() {
             html += '{{ r.fornecedor.nome_fantasia|default:r.fornecedor.nome }}';
         {% endif %}
         html += '</td>';
-        html += '<td>R$ {{ r.valor_total_nf|floatformat:2 }}</td>';
+        html += '<td>R$ {{ r.valor_total_nf|floatformat:"2g" }}</td>';
         html += '</tr>';
     {% endfor %}
     
     // Total
     html += '<tr><td colspan="3"><strong>TOTAL GERAL</strong></td>';
-    html += '<td><strong>R$ {{ total_valor|floatformat:2 }}</strong></td></tr>';
+    html += '<td><strong>R$ {{ total_valor|floatformat:"2g" }}</strong></td></tr>';
     html += '</tbody></table>';
     
     // Criar arquivo

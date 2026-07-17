@@ -109,7 +109,7 @@
               </td>
               <td class="text-mono">
                 {% if lote.peso_total_colhido_kg %}
-                  <strong>{{ lote.peso_total_colhido_kg|floatformat:0 }} kg</strong>
+                  <strong>{{ lote.peso_total_colhido_kg|floatformat:"0g" }} kg</strong>
                 {% else %}—{% endif %}
               </td>
               <td class="text-mono">

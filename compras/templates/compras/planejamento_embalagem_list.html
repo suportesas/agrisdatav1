@@ -104,8 +104,8 @@
                             <td>{{ p.nome }}</td>
                             <td>{% if p.safra %}{{ p.safra }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
                             <td class="text-mono">{{ p.data_inicio|date:"d/m/Y" }} — {{ p.data_fim|date:"d/m/Y" }}</td>
-                            <td class="text-mono">R$ {{ p.custo_estimado_total|floatformat:2 }}</td>
-                            <td class="text-mono">R$ {{ p.custo_atual_total|floatformat:2 }}</td>
+                            <td class="text-mono">R$ {{ p.custo_estimado_total|floatformat:"2g" }}</td>
+                            <td class="text-mono">R$ {{ p.custo_atual_total|floatformat:"2g" }}</td>
                             <td>{{ p.itens_convertidos }}/{{ p.total_itens }}</td>
                             <td class="text-center">
                                 {% if p.status == 'APROVADO' %}

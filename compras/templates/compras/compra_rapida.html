@@ -90,7 +90,7 @@
                             </td>
                             <td>{{ pedido.fornecedor.nome }}</td>
                             <td>{{ pedido.data_pedido|date:'d/m/Y' }}</td>
-                            <td>R$ {{ pedido.valor_total|floatformat:2 }}</td>
+                            <td>R$ {{ pedido.valor_total|floatformat:"2g" }}</td>
                             <td>
                                 {% if pedido.status == 'PENDENTE_RECEBIMENTO' %}
                                     <span class="badge bg-warning text-dark">Pendente</span>

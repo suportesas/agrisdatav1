@@ -62,7 +62,7 @@
     <i class="bi bi-check-circle-fill fs-4"></i>
     <div>
       <strong>Desconto de Adiantamento Aplicado:</strong>
-      {{ invoice.moeda }} {{ invoice.valor_desconto_adiantamento|floatformat:2 }}
+      {{ invoice.moeda }} {{ invoice.valor_desconto_adiantamento|floatformat:"2g" }}
       — Contrato <strong>{{ desconto_adiantamento.adiantamento.numero_referencia }}</strong>
       (Safra {{ desconto_adiantamento.adiantamento.safra_referencia }})
       <br><small>
@@ -76,7 +76,7 @@
     <div>
       <strong>Este cliente possui adiantamento(s) com saldo disponível:</strong>
       {% for a in adiantamentos_ativos %}
-      <span class="badge bg-warning text-dark ms-1">{{ a.numero_referencia }} · Saldo {{ a.moeda }} {{ a.saldo_estrangeiro|floatformat:2 }}</span>
+      <span class="badge bg-warning text-dark ms-1">{{ a.numero_referencia }} · Saldo {{ a.moeda }} {{ a.saldo_estrangeiro|floatformat:"2g" }}</span>
       {% endfor %}
     </div>
     <div class="ms-auto">
@@ -125,17 +125,17 @@
         <div class="card-body">
           <dl class="row mb-0">
             <dt class="col-sm-6">Valor da Mercadoria</dt>
-            <dd class="col-sm-6 text-end">{{ invoice.valor_mercadoria|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ invoice.valor_mercadoria|floatformat:"2g" }}</dd>
             <dt class="col-sm-6">Frete</dt>
-            <dd class="col-sm-6 text-end">{{ invoice.valor_frete|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ invoice.valor_frete|floatformat:"2g" }}</dd>
             <dt class="col-sm-6">Seguro</dt>
-            <dd class="col-sm-6 text-end">{{ invoice.valor_seguro|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end">{{ invoice.valor_seguro|floatformat:"2g" }}</dd>
             <dt class="col-sm-6 fw-bold border-top pt-2">TOTAL {{ invoice.incoterm }}</dt>
-            <dd class="col-sm-6 text-end fw-bold border-top pt-2 text-primary">{{ invoice.valor_total|floatformat:2 }}</dd>
+            <dd class="col-sm-6 text-end fw-bold border-top pt-2 text-primary">{{ invoice.valor_total|floatformat:"2g" }}</dd>
             <dt class="col-sm-6">Peso Bruto Total</dt>
-            <dd class="col-sm-6 text-end">{{ invoice.peso_bruto_total|floatformat:3 }} kg</dd>
+            <dd class="col-sm-6 text-end">{{ invoice.peso_bruto_total|floatformat:"3g" }} kg</dd>
             <dt class="col-sm-6">Peso Líquido Total</dt>
-            <dd class="col-sm-6 text-end">{{ invoice.peso_liquido_total|floatformat:3 }} kg</dd>
+            <dd class="col-sm-6 text-end">{{ invoice.peso_liquido_total|floatformat:"3g" }} kg</dd>
           </dl>
         </div>
       </div>
@@ -165,12 +165,12 @@
                 <tr>
                   <td>{{ item.container.numero_container|default:"—" }}</td>
                   <td>{{ item.descricao }}</td>
-                  <td>{{ item.quantidade|floatformat:4 }}</td>
+                  <td>{{ item.quantidade|floatformat:"4g" }}</td>
                   <td>{{ item.unidade }}</td>
-                  <td class="text-end">{{ item.peso_bruto_kg|floatformat:3 }} kg</td>
-                  <td class="text-end">{{ item.peso_liquido_kg|floatformat:3 }} kg</td>
-                  <td class="text-end">{{ invoice.moeda }} {{ item.valor_unitario_fob|floatformat:4 }}</td>
-                  <td class="text-end fw-semibold">{{ invoice.moeda }} {{ item.valor_total_fob|floatformat:2 }}</td>
+                  <td class="text-end">{{ item.peso_bruto_kg|floatformat:"3g" }} kg</td>
+                  <td class="text-end">{{ item.peso_liquido_kg|floatformat:"3g" }} kg</td>
+                  <td class="text-end">{{ invoice.moeda }} {{ item.valor_unitario_fob|floatformat:"4g" }}</td>
+                  <td class="text-end fw-semibold">{{ invoice.moeda }} {{ item.valor_total_fob|floatformat:"2g" }}</td>
                   <td>{{ item.marks_numbers|default:"—" }}</td>
                 </tr>
                 {% empty %}

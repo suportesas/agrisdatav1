@@ -150,11 +150,11 @@
                 <th class="ps-4">Código</th>
                 <th>Produto</th>
                 <th>Categoria</th>
-                <th class="text-center">Estoque Atual</th>
-                <th class="text-center">Reservado</th>
-                <th class="text-center">Disponível</th>
-                <th class="text-center">Est. Mínimo</th>
-                <th class="text-center">Est. Máximo</th>
+                <th class="text-end">Estoque Atual</th>
+                <th class="text-end">Reservado</th>
+                <th class="text-end">Disponível</th>
+                <th class="text-end">Est. Mínimo</th>
+                <th class="text-end">Est. Máximo</th>
                 <th class="text-center">Situação</th>
                 <th class="text-center">Ações</th>
               </tr>
@@ -182,7 +182,7 @@
                   <td>
                     <span class="text-muted">{{ produto.categoria.nome }}</span>
                   </td>
-                  <td class="text-center text-mono">
+                  <td class="text-end text-mono">
                     {% if produto.estoque_total %}
                       <strong class="text-primary">{{ produto.estoque_total|floatformat:"2g" }}</strong>
                     {% else %}
@@ -190,22 +190,22 @@
                     {% endif %}
                     <small class="text-muted">{{ produto.unidade_medida.sigla }}</small>
                   </td>
-                  <td class="text-center text-mono">
+                  <td class="text-end text-mono">
                     {% if produto.estoque_reservado %}
                       <span class="text-warning fw-bold">{{ produto.estoque_reservado|floatformat:"2g" }}</span>
                     {% else %}
                       <span class="text-muted">0,00</span>
                     {% endif %}
                   </td>
-                  <td class="text-center text-mono">
+                  <td class="text-end text-mono">
                     <strong class="{% if produto.estoque_disponivel <= 0 %}text-danger{% else %}text-success{% endif %}">
                       {{ produto.estoque_disponivel|floatformat:"2g" }}
                     </strong>
                   </td>
-                  <td class="text-center text-muted text-mono">
+                  <td class="text-end text-muted text-mono">
                     {{ produto.estoque_minimo|floatformat:"2g" }}
                   </td>
-                  <td class="text-center text-muted text-mono">
+                  <td class="text-end text-muted text-mono">
                     {{ produto.estoque_maximo|floatformat:"2g" }}
                   </td>
                   <td class="text-center">

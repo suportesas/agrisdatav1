@@ -35,7 +35,7 @@
                 </div>
               </div>
               <div class="text-info fw-bold small text-end">
-                R$ {{ a.valor_total|floatformat:2 }}
+                R$ {{ a.valor_total|floatformat:"2g" }}
                 {% if a.foto %}<br><i class="bi bi-camera-fill text-success" title="Com foto"></i>{% endif %}
               </div>
             </div>
@@ -83,7 +83,7 @@
               {% for item in itens %}
               <li class="d-flex justify-content-between" style="font-size:0.72rem;">
                 <span class="text-muted">{{ item.descricao }}</span>
-                <span class="ms-2 text-nowrap">{{ item.quantidade|floatformat:"2g" }} {{ item.unidade_medida }} &nbsp;·&nbsp; R$ {{ item.custo_total|floatformat:2 }}</span>
+                <span class="ms-2 text-nowrap">{{ item.quantidade|floatformat:"2g" }} {{ item.unidade_medida }} &nbsp;·&nbsp; R$ {{ item.custo_total|floatformat:"2g" }}</span>
               </li>
               {% endfor %}
             </ul>

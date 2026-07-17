@@ -100,18 +100,18 @@
       {% for emp in emprestimos_lote %}
       <tr>
         <td>{{ emp.produto.nome }}</td>
-        <td class="text-end">{{ emp.quantidade_emprestada|floatformat:3 }}</td>
-        <td class="text-end">{{ emp.quantidade_devolvida|floatformat:3 }}</td>
-        <td class="text-end"><strong>{{ emp.saldo_pendente|floatformat:3 }}</strong></td>
+        <td class="text-end">{{ emp.quantidade_emprestada|floatformat:"3g" }}</td>
+        <td class="text-end">{{ emp.quantidade_devolvida|floatformat:"3g" }}</td>
+        <td class="text-end"><strong>{{ emp.saldo_pendente|floatformat:"3g" }}</strong></td>
         <td>{{ emp.unidade_medida.sigla }}</td>
-        <td class="text-end">{{ emp.produto.preco_venda|floatformat:2 }}</td>
-        <td class="text-end">{{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:2 }}</td>
+        <td class="text-end">{{ emp.produto.preco_venda|floatformat:"2g" }}</td>
+        <td class="text-end">{{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:"2g" }}</td>
         <td>{{ emp.get_status_display }}</td>
       </tr>
       {% endfor %}
       <tr class="table-light fw-bold">
         <td colspan="6" class="text-end">Total</td>
-        <td class="text-end">R$ {{ total_valor|floatformat:2 }}</td>
+        <td class="text-end">R$ {{ total_valor|floatformat:"2g" }}</td>
         <td></td>
       </tr>
     </tbody>
@@ -177,8 +177,8 @@
           <td>{{ emp.produto.nome }}</td>
           <td>{{ mov.data_movimento|date:'d/m/Y H:i' }}</td>
           <td>{{ mov.get_tipo_movimento_display }}</td>
-          <td class="text-end">{{ mov.quantidade|floatformat:3 }}</td>
-          <td class="text-end"><strong>{{ mov.saldo_resultante|floatformat:3 }}</strong></td>
+          <td class="text-end">{{ mov.quantidade|floatformat:"3g" }}</td>
+          <td class="text-end"><strong>{{ mov.saldo_resultante|floatformat:"3g" }}</strong></td>
           <td>{{ mov.documento_referencia|default:'-' }}</td>
           <td>{{ mov.criado_por.get_full_name|default:mov.criado_por.username|default:'-' }}</td>
         </tr>

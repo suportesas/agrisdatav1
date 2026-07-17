@@ -32,7 +32,7 @@
     <div class="form-section-body">
       <div class="row g-3">
         <div class="col-md-3 text-center">
-          <div class="h3 fw-bold text-success">{{ lote.peso_total_colhido_kg|floatformat:0 }} kg</div>
+          <div class="h3 fw-bold text-success">{{ lote.peso_total_colhido_kg|floatformat:"0g" }} kg</div>
           <div class="text-muted small">Peso Total Colhido</div>
         </div>
         <div class="col-md-3 text-center">
@@ -75,7 +75,7 @@
             <label class="form-label">Quantidade Recebida (kg)</label>
             <input type="number" name="quantidade_kg" class="form-control"
               step="0.001" min="0"
-              value="{{ lote.peso_total_colhido_kg|floatformat:3 }}"
+              value="{{ lote.peso_total_colhido_kg|floatformat:"3g" }}"
               placeholder="Kg recebidos no packing">
             <div class="helper-note">Pode diferir do colhido por perdas no transporte.</div>
           </div>

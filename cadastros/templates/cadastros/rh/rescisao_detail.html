@@ -80,39 +80,39 @@
           <table class="table table-sm">
             <tr>
               <td>Saldo de Salário:</td>
-              <td class="text-end"><strong>R$ {{ rescisao.saldo_salario|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.saldo_salario|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             <tr>
               <td>Férias Vencidas:</td>
-              <td class="text-end"><strong>R$ {{ rescisao.ferias_vencidas|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.ferias_vencidas|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             <tr>
               <td>Férias Proporcionais:</td>
-              <td class="text-end"><strong>R$ {{ rescisao.ferias_proporcionais|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.ferias_proporcionais|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             <tr>
               <td>1/3 Férias:</td>
-              <td class="text-end"><strong>R$ {{ rescisao.terco_ferias|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.terco_ferias|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             <tr>
               <td>13º Proporcional:</td>
-              <td class="text-end"><strong>R$ {{ rescisao.decimo_terceiro_proporcional|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.decimo_terceiro_proporcional|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             {% if rescisao.aviso_previo_indenizado_valor %}
             <tr>
               <td>Aviso Prévio Indenizado:</td>
-              <td class="text-end"><strong>R$ {{ rescisao.aviso_previo_indenizado_valor|floatformat:2 }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.aviso_previo_indenizado_valor|floatformat:"2g" }}</strong></td>
             </tr>
             {% endif %}
             {% if rescisao.outras_verbas %}
             <tr>
               <td>Outras Verbas:</td>
-              <td class="text-end"><strong>R$ {{ rescisao.outras_verbas|floatformat:2 }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.outras_verbas|floatformat:"2g" }}</strong></td>
             </tr>
             {% endif %}
             <tr class="table-active">
               <td><strong>Subtotal:</strong></td>
-              <td class="text-end"><strong>R$ {{ rescisao.valor_total|floatformat:2 }}</strong></td>
+              <td class="text-end"><strong>R$ {{ rescisao.valor_total|floatformat:"2g" }}</strong></td>
             </tr>
           </table>
         </div>
@@ -124,8 +124,8 @@
           <h5 class="mb-0"><i class="fas fa-university me-2"></i>FGTS</h5>
         </div>
         <div class="card-body">
-          <p><strong>Saldo FGTS:</strong> R$ {{ rescisao.saldo_fgts|floatformat:2|default:"0,00" }}</p>
-          <p><strong>Multa {{ rescisao.multa_fgts_percentual }}%:</strong> R$ {{ rescisao.multa_fgts_valor|floatformat:2|default:"0,00" }}</p>
+          <p><strong>Saldo FGTS:</strong> R$ {{ rescisao.saldo_fgts|floatformat:"2g"|default:"0,00" }}</p>
+          <p><strong>Multa {{ rescisao.multa_fgts_percentual }}%:</strong> R$ {{ rescisao.multa_fgts_valor|floatformat:"2g"|default:"0,00" }}</p>
         </div>
       </div>
 
@@ -138,21 +138,21 @@
           <table class="table table-sm">
             <tr>
               <td>INSS:</td>
-              <td class="text-end text-danger"><strong>R$ {{ rescisao.desconto_inss|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end text-danger"><strong>R$ {{ rescisao.desconto_inss|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             <tr>
               <td>IRRF:</td>
-              <td class="text-end text-danger"><strong>R$ {{ rescisao.desconto_irrf|floatformat:2|default:"0,00" }}</strong></td>
+              <td class="text-end text-danger"><strong>R$ {{ rescisao.desconto_irrf|floatformat:"2g"|default:"0,00" }}</strong></td>
             </tr>
             {% if rescisao.outros_descontos %}
             <tr>
               <td>Outros Descontos:</td>
-              <td class="text-end text-danger"><strong>R$ {{ rescisao.outros_descontos|floatformat:2 }}</strong></td>
+              <td class="text-end text-danger"><strong>R$ {{ rescisao.outros_descontos|floatformat:"2g" }}</strong></td>
             </tr>
             {% endif %}
             <tr class="table-success">
               <td><strong>VALOR LÍQUIDO:</strong></td>
-              <td class="text-end"><strong class="text-success fs-5">R$ {{ rescisao.valor_liquido|floatformat:2 }}</strong></td>
+              <td class="text-end"><strong class="text-success fs-5">R$ {{ rescisao.valor_liquido|floatformat:"2g" }}</strong></td>
             </tr>
           </table>
         </div>

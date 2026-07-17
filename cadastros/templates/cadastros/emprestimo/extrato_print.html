@@ -78,19 +78,19 @@
     <div class="col-4">
       <div class="border rounded p-3 text-center">
         <div class="text-muted" style="font-size:10px; text-transform:uppercase; letter-spacing:.5px;">Total Emprestado</div>
-        <div style="font-size:1.2rem; font-weight:700; color:#1f4788;">R$ {{ total_emprestado|floatformat:2 }}</div>
+        <div style="font-size:1.2rem; font-weight:700; color:#1f4788;">R$ {{ total_emprestado|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-4">
       <div class="border rounded p-3 text-center">
         <div class="text-muted" style="font-size:10px; text-transform:uppercase; letter-spacing:.5px;">Total Devolvido</div>
-        <div style="font-size:1.2rem; font-weight:700; color:#065f46;">R$ {{ total_devolvido|floatformat:2 }}</div>
+        <div style="font-size:1.2rem; font-weight:700; color:#065f46;">R$ {{ total_devolvido|floatformat:"2g" }}</div>
       </div>
     </div>
     <div class="col-4">
       <div class="border rounded p-3 text-center">
         <div class="text-muted" style="font-size:10px; text-transform:uppercase; letter-spacing:.5px;">Saldo em Aberto</div>
-        <div style="font-size:1.2rem; font-weight:700; {% if total_saldo > 0 %}color:#92400e;{% else %}color:#065f46;{% endif %}">R$ {{ total_saldo|floatformat:2 }}</div>
+        <div style="font-size:1.2rem; font-weight:700; {% if total_saldo > 0 %}color:#92400e;{% else %}color:#065f46;{% endif %}">R$ {{ total_saldo|floatformat:"2g" }}</div>
       </div>
     </div>
   </div>
@@ -120,9 +120,9 @@
           {{ grupo.status|title }}
         </span>
         <div class="mt-2 req-meta">
-          <strong>Emprestado:</strong> R$ {{ grupo.total_emprestado_valor|floatformat:2 }}<br>
-          <strong>Devolvido:</strong> R$ {{ grupo.total_devolvido_valor|floatformat:2 }}<br>
-          <strong>Saldo:</strong> R$ {{ grupo.saldo_pendente_valor|floatformat:2 }}
+          <strong>Emprestado:</strong> R$ {{ grupo.total_emprestado_valor|floatformat:"2g" }}<br>
+          <strong>Devolvido:</strong> R$ {{ grupo.total_devolvido_valor|floatformat:"2g" }}<br>
+          <strong>Saldo:</strong> R$ {{ grupo.saldo_pendente_valor|floatformat:"2g" }}
         </div>
       </div>
     </div>
@@ -147,20 +147,20 @@
           {% for emp in grupo.emprestimos %}
           <tr>
             <td>{{ emp.produto.nome }}</td>
-            <td class="text-end">{{ emp.quantidade_emprestada|floatformat:3 }}</td>
-            <td class="text-end">{{ emp.quantidade_devolvida|floatformat:3 }}</td>
-            <td class="text-end"><strong>{{ emp.saldo_pendente|floatformat:3 }}</strong></td>
+            <td class="text-end">{{ emp.quantidade_emprestada|floatformat:"3g" }}</td>
+            <td class="text-end">{{ emp.quantidade_devolvida|floatformat:"3g" }}</td>
+            <td class="text-end"><strong>{{ emp.saldo_pendente|floatformat:"3g" }}</strong></td>
             <td>{{ emp.unidade_medida.sigla }}</td>
-            <td class="text-end">R$ {{ emp.produto.preco_venda|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ emp.saldo_pendente|mul:emp.produto.preco_venda|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ emp.produto.preco_venda|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ emp.quantidade_emprestada|mul:emp.produto.preco_venda|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ emp.saldo_pendente|mul:emp.produto.preco_venda|floatformat:"2g" }}</td>
             <td>{{ emp.get_status_display }}</td>
           </tr>
           {% endfor %}
           <tr class="totals-row">
             <td colspan="6" class="text-end">Total da Requisição</td>
-            <td class="text-end">R$ {{ grupo.total_emprestado_valor|floatformat:2 }}</td>
-            <td class="text-end">R$ {{ grupo.saldo_pendente_valor|floatformat:2 }}</td>
+            <td class="text-end">R$ {{ grupo.total_emprestado_valor|floatformat:"2g" }}</td>
+            <td class="text-end">R$ {{ grupo.saldo_pendente_valor|floatformat:"2g" }}</td>
             <td></td>
           </tr>
         </tbody>

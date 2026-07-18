@@ -82,12 +82,17 @@ class ProgramaEnforcementMiddleware:
         if not url_name:
             return None
 
+        from empresas.acesso import eh_ajax_helper_leitura, usuario_tem_acesso
         from empresas.models import Programa
 
-        programa = Programa.objects.filter(url_name=url_name, ativo=True).first()
-        permitidos = self._programas_permitidos(request)
+        # Helpers AJAX de leitura (dropdowns em cascata, preview, autocomplete)
+        # não exigem Programa concedido — ver empresas/acesso.py.
+        if eh_ajax_helper_leitura(url_name):
+            return None
 
-        if programa is not None and url_name in permitidos:
+        programa = Programa.objects.filter(url_name=url_name, ativo=True).first()
+
+        if programa is not None and usuario_tem_acesso(request, url_name):
             return None
 
         # Bloqueado: ou o Programa não existe (URL não sincronizada — fail
@@ -110,21 +115,3 @@ class ProgramaEnforcementMiddleware:
             '<a href="/empresas/roles/">Funções e Permissões</a>.'
         )
         return redirect('dashboard:index')
-
-    @staticmethod
-    def _programas_permitidos(request):
-        """Set de url_names que o usuário pode acessar, calculado uma vez por request."""
-        cache_attr = '_programas_permitidos_cache'
-        cached = getattr(request, cache_attr, None)
-        if cached is not None:
-            return cached
-
-        from empresas.models import Programa
-
-        url_names = set(
-            Programa.objects.filter(
-                ativo=True, roles__usuarios=request.user
-            ).values_list('url_name', flat=True)
-        )
-        setattr(request, cache_attr, url_names)
-        return url_names

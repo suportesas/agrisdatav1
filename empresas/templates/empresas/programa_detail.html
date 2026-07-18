@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1100px;">
+  {% breadcrumb "bi-house-door|Dashboard:dashboard:index" "bi-shield-lock|Funções:empresas:roles_list" "bi-window-stack|Programas:empresas:programa_list" programa.nome %}
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold mb-0"><i class="bi bi-window-stack"></i> {{ programa.nome }}</h4>
+    <a href="{% url 'empresas:programa_list' %}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+  </div>
+
+  <div class="row g-3">
+    <!-- Dados do Programa -->
+    <div class="col-md-5">
+      <div class="card">
+        <div class="card-header fw-semibold">Dados</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'empresas:programa_update' pk=programa.pk %}">
+            {% csrf_token %}
+            <div class="mb-2">
+              <label class="form-label small text-muted">ID</label>
+              <input type="text" class="form-control form-control-sm" value="{{ programa.pk }}" disabled>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small text-muted">Classe de controle (url_name)</label>
+              <input type="text" class="form-control form-control-sm" value="{{ programa.url_name }}" disabled>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small text-muted">Tipo de ação</label>
+              <input type="text" class="form-control form-control-sm" value="{{ programa.get_tipo_acao_display }}" disabled>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Nome</label>
+              <input type="text" name="nome" class="form-control form-control-sm" value="{{ programa.nome }}" {% if not pode_editar_global %}disabled{% endif %}>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">Caminho no menu (opcional)</label>
+              <input type="text" name="caminho_menu" class="form-control form-control-sm" value="{{ programa.caminho_menu }}" {% if not pode_editar_global %}disabled{% endif %}>
+            </div>
+            {% if pode_editar_global %}
+            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-floppy"></i> Salvar</button>
+            {% else %}
+            <p class="text-muted small mb-0"><i class="bi bi-info-circle"></i> Nome e caminho são compartilhados por todas as empresas — só o administrador do SaaS pode editar.</p>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+
+      <!-- Grupos (Funções) deste Programa específico -->
+      <div class="card mt-3">
+        <div class="card-header fw-semibold">Funções com acesso</div>
+        <div class="card-body">
+          {% if not roles %}
+            <p class="text-muted small mb-0">Sua conta não está vinculada a uma empresa.</p>
+          {% else %}
+            <div id="grupos-lista-{{ programa.pk }}">
+              {% for role in roles %}
+              <label class="d-flex align-items-center gap-2 mb-1">
+                <input type="checkbox" class="grupo-cb" data-programa-id="{{ programa.pk }}"
+                       value="{{ role.id }}" {% if role.id in roles_com_acesso %}checked{% endif %}>
+                {{ role.name }}
+              </label>
+              {% endfor %}
+            </div>
+            <button type="button" class="btn btn-sm btn-success mt-2 btn-salvar-grupos" data-programa-id="{{ programa.pk }}">
+              <i class="bi bi-floppy"></i> Salvar
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Ações (só pra Programas de Listagem) -->
+    <div class="col-md-7">
+      {% if programa.tipo_acao == 'listagem' %}
+      <div class="card">
+        <div class="card-header fw-semibold">
+          Ações
+          <div class="small fw-normal text-muted mt-1">
+            Por padrão, quem acessa esta Listagem também acessa o Detalhe e
+            o Excluir dela. Marque abaixo quais Funções podem usar cada
+            ação pra restringir isso — a partir do primeiro Função marcada
+            numa ação, o acesso livre acaba pra todo mundo nessa ação
+            específica.
+          </div>
+        </div>
+        <div class="card-body">
+          {% for acao in acoes %}
+          <div class="border rounded p-2 mb-2">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <strong>{{ acao.nome }}</strong>
+              <span class="badge bg-light text-dark border">{{ acao.get_tipo_acao_display }}</span>
+            </div>
+            {% if roles %}
+              {% for role in roles %}
+              <label class="d-flex align-items-center gap-2 small mb-1">
+                <input type="checkbox" class="grupo-cb" data-programa-id="{{ acao.pk }}"
+                       value="{{ role.id }}" {% if role in acao.roles.all %}checked{% endif %}>
+                {{ role.name }}
+              </label>
+              {% endfor %}
+              <button type="button" class="btn btn-sm btn-outline-success mt-1 btn-salvar-grupos" data-programa-id="{{ acao.pk }}">
+                <i class="bi bi-floppy"></i> Salvar
+              </button>
+            {% endif %}
+          </div>
+          {% empty %}
+          <p class="text-muted small">Nenhuma ação de Detalhe/Excluir encontrada pra esta tela.</p>
+          {% endfor %}
+
+          {% if pode_editar_global %}
+          <hr>
+          <form method="post" action="{% url 'empresas:programa_acao_create' pk=programa.pk %}" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="text" name="nome" class="form-control form-control-sm" placeholder="Nome da nova ação (ex.: Aprovar)">
+            <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap"><i class="bi bi-plus-circle"></i> Adicionar</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function getCsrfTokenPrograma() {
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? match[1] : '';
+}
+
+document.querySelectorAll('.btn-salvar-grupos').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const programaId = btn.dataset.programaId;
+    const roleIds = Array.from(
+      document.querySelectorAll(`.grupo-cb[data-programa-id="${programaId}"]:checked`)
+    ).map(cb => parseInt(cb.value, 10));
+
+    btn.disabled = true;
+    try {
+      const resp = await fetch(`/empresas/programas/${programaId}/grupos/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfTokenPrograma() },
+        body: JSON.stringify({ role_ids: roleIds }),
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        btn.innerHTML = '<i class="bi bi-check2"></i> Salvo';
+        setTimeout(() => { btn.innerHTML = '<i class="bi bi-floppy"></i> Salvar'; btn.disabled = false; }, 1500);
+      } else {
+        throw new Error(data.error || 'Erro desconhecido');
+      }
+    } catch (err) {
+      alert('Erro ao salvar: ' + err.message);
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+{% endblock %}

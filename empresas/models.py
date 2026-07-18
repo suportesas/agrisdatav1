@@ -779,7 +779,8 @@ class Programa(models.Model):
     """
 
     TIPO_ACAO_CHOICES = [
-        ('abrir', 'Abrir/Ver'),
+        ('listagem', 'Listagem'),
+        ('detalhe', 'Detalhe'),
         ('criar', 'Criar'),
         ('editar', 'Editar'),
         ('excluir', 'Excluir'),
@@ -800,6 +801,14 @@ class Programa(models.Model):
         'Ativo', default=True,
         help_text='Desativado automaticamente quando a URL some do sistema (não é excluído, para preservar concessões).'
     )
+    descoberta_automatica = models.BooleanField(
+        'Descoberto automaticamente', default=True,
+        help_text=(
+            'Se True, foi criado pela varredura de URLs e pode ser atualizado/desativado por ela. '
+            'Se False, é uma ação de regra de negócio sem URL própria (ex.: "criar solicitação '
+            'emergencial"), cadastrada manualmente — a sincronização automática nunca a desativa.'
+        )
+    )
     data_descoberta = models.DateTimeField('Descoberto em', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Atualizado em', auto_now=True)
 
@@ -814,7 +823,10 @@ class Programa(models.Model):
 
 class Role(models.Model):
     """
-    Função (Role) vinculada a uma Empresa.
+    Função (Role) vinculada a uma Empresa — ou Função Global quando
+    `empresa is None` (gerida pelo superuser no painel SaaS, disponível
+    pra todas as empresas até que uma delas a "personalize", criando sua
+    própria cópia via `origem_global` — ver empresas/views.py::role_fork).
     Cada Role possui um Group do Django que armazena as permissões.
     """
 
@@ -822,7 +834,10 @@ class Role(models.Model):
         Empresa,
         on_delete=models.CASCADE,
         related_name='roles',
-        verbose_name='Empresa'
+        verbose_name='Empresa',
+        null=True,
+        blank=True,
+        help_text='Vazio = Função Global (compartilhada por todas as empresas do SaaS).'
     )
     name = models.CharField('Nome da Função', max_length=100)
     description = models.TextField('Descrição', blank=True)
@@ -845,32 +860,45 @@ class Role(models.Model):
         related_name='roles',
         verbose_name='Telas com acesso'
     )
+    origem_global = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='forks',
+        verbose_name='Personalizada a partir da Função Global',
+        help_text='Preenchido automaticamente quando uma empresa personaliza uma Função Global.'
+    )
     data_criacao = models.DateTimeField('Criado em', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Atualizado em', auto_now=True)
 
     class Meta:
         unique_together = ('empresa', 'name')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name'], condition=models.Q(empresa__isnull=True),
+                name='role_nome_global_unico'
+            ),
+        ]
         verbose_name = 'Função (Role)'
         verbose_name_plural = 'Funções (Roles)'
         ordering = ['empresa__nome', 'name']
 
     def __str__(self):
-        return f"{self.name} ({self.empresa.nome})"
+        if self.empresa_id:
+            return f"{self.name} ({self.empresa.nome})"
+        return f"{self.name} (Global)"
 
     def save(self, *args, **kwargs):
         """Garante que exista um Group associado com nome consistente."""
-        # Cria/obtém o Group se necessário
+        empresa_slug = f"empresa_{self.empresa_id}" if self.empresa_id else "global"
+        expected_name = f"{empresa_slug}_role_{slugify(self.name)}"
         if not self.group:
-            # group name uses empresa id, may be None until empresa saved with id
-            group_name = f"empresa_{self.empresa.id}_role_{slugify(self.name)}"
-            group, created = Group.objects.get_or_create(name=group_name)
+            group, created = Group.objects.get_or_create(name=expected_name)
             self.group = group
-        else:
-            # Mantém nome do grupo consistente com empresa e role
-            expected_name = f"empresa_{self.empresa.id}_role_{slugify(self.name)}"
-            if self.group.name != expected_name:
-                self.group.name = expected_name
-                self.group.save()
+        elif self.group.name != expected_name:
+            self.group.name = expected_name
+            self.group.save()
         super().save(*args, **kwargs)
 
     def set_permissions(self, codenames, actor=None):
@@ -919,6 +947,21 @@ class Role(models.Model):
             RoleAudit.objects.create(role=self, actor=actor, action='permissions_updated', details=details)
         except Exception:
             pass
+
+    def criar_fork(self, empresa, actor=None):
+        """Cria uma cópia desta Função Global (`self.empresa` deve ser None)
+        pra `empresa`, copiando os Programas atuais. Usado tanto pelo botão
+        "Personalizar" (`empresas/views.py::role_fork`) quanto na criação
+        automática de empresa nova (`empresas/signals.py::create_default_roles`)."""
+        fork = Role.objects.create(
+            empresa=empresa,
+            name=self.name,
+            description=self.description,
+            builtin=self.builtin,
+            origem_global=self,
+        )
+        fork.set_programas(list(self.programas.values_list('id', flat=True)), actor=actor)
+        return fork
 
 
 class RoleAudit(models.Model):

@@ -17,10 +17,10 @@ from django.utils import timezone
 
 from produtos.models import Produto
 from .models import SolicitacaoCompra, ItemSolicitacaoCompra
-from .permissions import atalho_compras_required
+from empresas.acesso import programa_required
 
 
-@atalho_compras_required('criar_cotacao_direto_estoque_minimo')
+@programa_required('compras:central_alertas_gerar_solicitacao')
 @transaction.atomic
 def central_alertas_gerar_solicitacao(request):
     """Gera 1 SolicitacaoCompra (origem=ESTOQUE_MINIMO) com os produtos selecionados em lote."""

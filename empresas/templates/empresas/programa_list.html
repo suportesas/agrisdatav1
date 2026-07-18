@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1200px;">
+  {% breadcrumb "bi-house-door|Dashboard:dashboard:index" "bi-shield-lock|Funções:empresas:roles_list" "Programas" %}
+
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h4 class="fw-bold mb-1"><i class="bi bi-window-stack"></i> Programas</h4>
+      <p class="text-muted mb-0 small">
+        Todas as telas do sistema, descobertas automaticamente. Abra uma
+        tela do tipo "Listagem" pra gerenciar Detalhe/Excluir e Ações
+        customizadas.
+      </p>
+    </div>
+  </div>
+
+  <form method="get" class="row g-2 mb-3">
+    <div class="col-auto">
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+             placeholder="Buscar por nome..." style="width:240px;">
+    </div>
+    <div class="col-auto">
+      <select name="app" class="form-select form-select-sm" style="width:220px;">
+        <option value="">Todos os apps</option>
+        {% for app_key, app_nome in apps_disponiveis %}
+        <option value="{{ app_key }}" {% if app_key == app_filtro %}selected{% endif %}>{{ app_nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
+      <a href="{% url 'empresas:programa_list' %}" class="btn btn-sm btn-link">Limpar</a>
+    </div>
+  </form>
+
+  <div class="table-responsive bg-white rounded" style="border:1px solid #e5e7eb;">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Nome</th>
+          <th>App</th>
+          <th>Tela</th>
+          <th>Tipo</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in page_obj %}
+        <tr>
+          <td>{{ p.nome }}</td>
+          <td><span class="badge bg-light text-dark border">{{ p.app_label }}</span></td>
+          <td class="text-muted small">{{ p.grupo_tela }}</td>
+          <td><span class="badge bg-light text-dark border">{{ p.get_tipo_acao_display }}</span></td>
+          <td class="text-end">
+            <a href="{% url 'empresas:programa_detail' pk=p.pk %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-pencil"></i> Abrir
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Nenhum Programa encontrado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&app={{ app_filtro }}">Anterior</a></li>
+      {% endif %}
+      <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&app={{ app_filtro }}">Próxima</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

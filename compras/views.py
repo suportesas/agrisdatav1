@@ -108,7 +108,7 @@ def cotacao_item_comparativo(request, pk):
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .permissions import atalho_compras_required, usuario_tem_atalho
+from empresas.acesso import programa_required, usuario_tem_acesso
 from django.contrib import messages
 from django.db import transaction
 from django.core.paginator import Paginator
@@ -194,7 +194,7 @@ def solicitacao_create(request):
         if form.is_valid() and formset.is_valid():
             solicitacao = form.save(commit=False)
 
-            if solicitacao.emergencial and not usuario_tem_atalho(request.user, 'criar_solicitacao_emergencial'):
+            if solicitacao.emergencial and not usuario_tem_acesso(request, 'compras:solicitacao_emergencial'):
                 messages.error(request, 'Você não tem permissão para criar compras emergenciais.')
                 return redirect('compras:solicitacao_create')
 
@@ -1031,7 +1031,7 @@ def pedido_gerar(request, cotacao_pk):
         return redirect('compras:pedido_list')
 
 
-@atalho_compras_required('criar_pedido_direto_fornecedor_unico')
+@programa_required('compras:pedido_direto_create')
 @transaction.atomic
 def pedido_direto_create(request):
     """

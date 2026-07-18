@@ -3,13 +3,22 @@
 {% block page_title %}Tipos de Embalagem{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width: 860px">
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
-    <h3 class="mb-0 me-auto">{% if object %}Editar Tipo de Embalagem{% else %}Novo Tipo de Embalagem{% endif %}</h3>
-    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
-      <i class="bi bi-question-circle me-1"></i>Ajuda
-    </button>
+<div class="container py-4" style="max-width: 900px">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-box"></i></span>
+        <h2>{% if object %}Editar Tipo de Embalagem{% else %}Novo Tipo de Embalagem{% endif %}</h2>
+      </div>
+      <div class="form-header-actions">
+        <button type="button" class="btn btn-outline" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+          <i class="bi bi-question-circle me-1"></i>Ajuda
+        </button>
+        <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de Ajuda -->
@@ -94,70 +103,74 @@
 
   <form method="post">
     {% csrf_token %}
-    <div class="card border-0 shadow-sm mb-3">
-      <div class="card-header fw-semibold">Identificação</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Identificação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Nome <span class="req">*</span></label>
             {{ form.nome }}
-            {% if form.nome.errors %}<div class="text-danger small mt-1">{{ form.nome.errors }}</div>{% endif %}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Variedade</label>
+          <div class="field col-6">
+            <label class="form-label">Variedade</label>
             {{ form.variedade }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Produto</label>
+          <div class="field col-4">
+            <label class="form-label">Produto</label>
             {{ form.produto }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Cultura</label>
+          <div class="field col-4">
+            <label class="form-label">Cultura</label>
             {{ form.cultura }}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Subcategoria</label>
+          <div class="field col-4">
+            <label class="form-label">Subcategoria</label>
             {{ form.subcategoria }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Marca</label>
+          <div class="field col-6">
+            <label class="form-label">Marca</label>
             {{ form.marca }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo / Calibre</label>
+          <div class="field col-6">
+            <label class="form-label">Tipo / Calibre</label>
             {{ form.tipo_calibre }}
-            <small class="text-muted">Ex: 2, 3, 14</small>
+            <div class="helper-note">Ex: 2, 3, 14</div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-3">
-      <div class="card-header fw-semibold">Pesos e Quantidades</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Peso líquido / Cx (kg) <span class="text-danger">*</span></label>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm orange"><i class="bi bi-speedometer"></i></span>
+        <span class="title">Pesos e Quantidades</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Peso líquido / Cx (kg) <span class="req">*</span></label>
             {{ form.peso_liquido_cx }}
-            {% if form.peso_liquido_cx.errors %}<div class="text-danger small mt-1">{{ form.peso_liquido_cx.errors }}</div>{% endif %}
+            {% if form.peso_liquido_cx.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_liquido_cx.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Peso bruto / Cx (kg) <span class="text-danger">*</span></label>
+          <div class="field col-3">
+            <label class="form-label">Peso bruto / Cx (kg) <span class="req">*</span></label>
             {{ form.peso_bruto_cx }}
-            {% if form.peso_bruto_cx.errors %}<div class="text-danger small mt-1">{{ form.peso_bruto_cx.errors }}</div>{% endif %}
+            {% if form.peso_bruto_cx.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_bruto_cx.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Caixas / Pallet <span class="text-danger">*</span></label>
+          <div class="field col-3">
+            <label class="form-label">Caixas / Pallet <span class="req">*</span></label>
             {{ form.caixas_por_pallet }}
-            {% if form.caixas_por_pallet.errors %}<div class="text-danger small mt-1">{{ form.caixas_por_pallet.errors }}</div>{% endif %}
+            {% if form.caixas_por_pallet.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.caixas_por_pallet.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Tara do Pallet (kg)</label>
+          <div class="field col-3">
+            <label class="form-label">Tara do Pallet (kg)</label>
             {{ form.peso_pallet_vazio }}
           </div>
-        </div>
-        <div class="row g-3 mt-1">
-          <div class="col-md-6">
+          <div class="field col-6">
             <div class="alert alert-info py-2 mb-0" id="calc-resultado">
               <i class="bi bi-calculator me-1"></i>
               <span id="calc-text">Preencha os campos para calcular automaticamente.</span>
@@ -167,18 +180,21 @@
       </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-4">
-      <div class="card-body">
-        <div class="form-check form-switch">
-          {{ form.ativo }}
-          <label class="form-check-label fw-semibold" for="{{ form.ativo.id_for_label }}">Ativo</label>
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="switch-row">
+          <label class="switch">
+            {{ form.ativo }}
+            <span class="slider"></span>
+          </label>
+          <label class="switch-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
         </div>
       </div>
     </div>
 
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Salvar</button>
-      <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    <div class="app-footer-bar">
+      <a href="{% url 'embalagem:tipo_embalagem_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
     </div>
   </form>
 </div>

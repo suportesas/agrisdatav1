@@ -5,126 +5,119 @@
 {% block content %}
 {% include 'compras/includes/fluxo_compras.html' with etapa_atual='cotacao' solicitacao=cotacao.solicitacao cotacao=cotacao %}
 
-<div class="alert alert-info mx-3 mt-3">
-    <i class="bi bi-clipboard-check"></i> <strong>Cadastro de Propostas:</strong> Informe os preços e condições de cada fornecedor para comparação.
-</div>
+<div class="container-fluid py-4">
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-12">
-            <div class="card shadow-lg border-0 mb-4 animate__animated animate__fadeIn w-100">
-                <div class="card-body p-4">
-                    <div class="mb-4 text-center">
-                        <span class="d-inline-block bg-primary bg-opacity-10 rounded-circle p-3 mb-2">
-                            <i class="bi bi-clipboard-check text-primary fs-2"></i>
-                        </span>
-                        <h2 class="fw-bold mb-1">Cadastro de Propostas</h2>
-                        <div class="text-muted small">Produto: <strong>{{ item.produto.nome }}</strong> | Quantidade: <strong>{{ item.quantidade|floatformat:"3g" }} {{ item.unidade_medida.sigla }}</strong></div>
-                        
-                        {% if not produto_tem_fornecedores %}
-                        <div class="alert alert-info mt-3 mb-0">
-                            <i class="bi bi-info-circle"></i> <strong>Este produto não tem fornecedores cadastrados.</strong> 
-                            Você pode adicionar fornecedores manualmente para cotar.
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    {% if not produto_tem_fornecedores and fornecedores_disponiveis %}
-                    <div class="card border-primary mb-4">
-                        <div class="card-body">
-                            <h5 class="card-title"><i class="bi bi-plus-circle"></i> Adicionar Fornecedor</h5>
-                            <form method="post" class="row g-2 align-items-end">
-                                {% csrf_token %}
-                                <div class="col-md-8">
-                                    <label class="form-label">Selecione o Fornecedor</label>
-                                    <select name="adicionar_fornecedor" class="form-select" required>
-                                        <option value="">-- Escolha um fornecedor --</option>
-                                        {% for fornecedor in fornecedores_disponiveis %}
-                                        <option value="{{ fornecedor.id }}">{{ fornecedor.get_nome_exibicao_com_documento }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="bi bi-plus-lg"></i> Adicionar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    <form method="post" autocomplete="off">
-                        {% csrf_token %}
-                        <div class="row g-3">
-                            {% for proposta in propostas %}
-                            <div class="col-12">
-                                <div class="card border-0 shadow-sm mb-3">
-                                    <div class="card-body">
-                                        <div class="mb-3 d-flex justify-content-between align-items-center">
-                                            <span class="fw-bold text-primary fs-5"><i class="bi bi-truck"></i> {{ proposta.fornecedor.get_nome_exibicao }}</span>
-                                            {% if not produto_tem_fornecedores %}
-                                            <a href="{% url 'compras:remover_proposta' proposta.pk %}" 
-                                               class="btn btn-sm btn-outline-danger" 
-                                               onclick="return confirm('Remover este fornecedor?')">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                            {% endif %}
-                                        </div>
-                                        <div class="row g-2">
-                                            <div class="col-6 col-lg-4">
-                                                <label class="form-label mb-1">Preço Unitário</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-light">R$</span>
-                                                    <input type="text" inputmode="decimal" name="preco_unitario_{{ proposta.pk }}" value="{{ proposta.preco_unitario|floatformat:"2g" }}" class="form-control form-control-sm text-end preco-unitario" required autocomplete="off">
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-lg-4">
-                                                <label class="form-label mb-1">Total</label>
-                                                <div class="input-group">
-                                                    <span class="input-group-text bg-light">R$</span>
-                                                    <input type="text" name="preco_total_{{ proposta.pk }}" value="{{ proposta.preco_total|floatformat:"2g" }}" class="form-control form-control-sm text-end bg-light preco-total" required readonly id="preco_total_{{ proposta.pk }}" tabindex="-1">
-                                                </div>
-                                            </div>
-                                            <div class="col-6 col-lg-4">
-                                                <label class="form-label mb-1">Prazo (dias)</label>
-                                                <input type="number" min="1" name="prazo_entrega_{{ proposta.pk }}" value="{{ proposta.prazo_entrega }}" class="form-control form-control-sm text-center" required>
-                                            </div>
-                                            <div class="col-6 col-lg-4">
-                                                <label class="form-label mb-1">Condições</label>
-                                                <input type="text" name="condicao_pagamento_{{ proposta.pk }}" value="{{ proposta.condicao_pagamento }}" class="form-control form-control-sm">
-                                            </div>
-                                            <div class="col-6 col-lg-4">
-                                                <label class="form-label mb-1">Marca</label>
-                                                <input type="text" name="marca_{{ proposta.pk }}" value="{{ proposta.marca }}" class="form-control form-control-sm">
-                                            </div>
-                                            <div class="col-6 col-lg-4">
-                                                <label class="form-label mb-1">Observações</label>
-                                                <input type="text" name="observacoes_{{ proposta.pk }}" value="{{ proposta.observacoes }}" class="form-control form-control-sm">
-                                            </div>
-                                            <div class="col-12">
-                                                <label class="form-label mb-1">Motivo (se não menor preço)</label>
-                                                <input type="text" name="motivo_{{ proposta.pk }}" class="form-control form-control-sm" value="{{ proposta.motivo_escolha }}" {% if proposta.melhor_preco %}readonly{% endif %} placeholder="Motivo da escolha">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        <div class="d-flex justify-content-between mt-4">
-                            <a href="{% url 'compras:cotacao_item_comparativo' cotacao.pk %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Voltar
-                            </a>
-                            <button type="submit" class="btn btn-success px-4 shadow">
-                                <i class="bi bi-save"></i> Salvar Propostas
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge blue"><i class="bi bi-clipboard-check"></i></span>
+        <div>
+          <h2>Cadastro de Propostas</h2>
+          <p class="text-muted mb-0">Produto: <strong>{{ item.produto.nome }}</strong> &middot; Quantidade: <strong>{{ item.quantidade|floatformat:"3g" }} {{ item.unidade_medida.sigla }}</strong></p>
         </div>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'compras:cotacao_item_comparativo' cotacao.pk %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
+  </div>
+
+  {% if not produto_tem_fornecedores %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> <strong>Este produto não tem fornecedores cadastrados.</strong>
+    Você pode adicionar fornecedores manualmente para cotar.
+  </div>
+  {% endif %}
+
+  {% if not produto_tem_fornecedores and fornecedores_disponiveis %}
+  <div class="form-section">
+    <div class="form-section-header">
+      <span class="icon-badge sm"><i class="bi bi-plus-circle"></i></span>
+      <span class="title">Adicionar Fornecedor</span>
+    </div>
+    <div class="form-section-body">
+      <form method="post" class="form-grid">
+        {% csrf_token %}
+        <div class="field col-8">
+          <label class="form-label">Selecione o Fornecedor</label>
+          <select name="adicionar_fornecedor" class="form-select" required>
+            <option value="">-- Escolha um fornecedor --</option>
+            {% for fornecedor in fornecedores_disponiveis %}
+            <option value="{{ fornecedor.id }}">{{ fornecedor.get_nome_exibicao_com_documento }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field col-4">
+          <label class="form-label">&nbsp;</label>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-plus-lg"></i> Adicionar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+
+    {% for proposta in propostas %}
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm blue"><i class="bi bi-truck"></i></span>
+        <span class="title">{{ proposta.fornecedor.get_nome_exibicao }}</span>
+        {% if not produto_tem_fornecedores %}
+        <a href="{% url 'compras:remover_proposta' proposta.pk %}"
+           class="row-action danger ms-auto"
+           onclick="return confirm('Remover este fornecedor?')" title="Remover">
+          <i class="bi bi-trash"></i>
+        </a>
+        {% endif %}
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Preço Unitário</label>
+            <div class="input-suffix">
+              <input type="text" inputmode="decimal" name="preco_unitario_{{ proposta.pk }}" value="{{ proposta.preco_unitario|floatformat:"2g" }}" class="form-control text-end preco-unitario" required autocomplete="off">
+            </div>
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Total</label>
+            <input type="text" name="preco_total_{{ proposta.pk }}" value="{{ proposta.preco_total|floatformat:"2g" }}" class="form-control text-end bg-light preco-total" required readonly id="preco_total_{{ proposta.pk }}" tabindex="-1">
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Prazo (dias)</label>
+            <input type="number" min="1" name="prazo_entrega_{{ proposta.pk }}" value="{{ proposta.prazo_entrega }}" class="form-control text-center" required>
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Condições</label>
+            <input type="text" name="condicao_pagamento_{{ proposta.pk }}" value="{{ proposta.condicao_pagamento }}" class="form-control">
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Marca</label>
+            <input type="text" name="marca_{{ proposta.pk }}" value="{{ proposta.marca }}" class="form-control">
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Observações</label>
+            <input type="text" name="observacoes_{{ proposta.pk }}" value="{{ proposta.observacoes }}" class="form-control">
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Motivo (se não menor preço)</label>
+            <input type="text" name="motivo_{{ proposta.pk }}" class="form-control" value="{{ proposta.motivo_escolha }}" {% if proposta.melhor_preco %}readonly{% endif %} placeholder="Motivo da escolha">
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div class="app-footer-bar">
+      <a href="{% url 'compras:cotacao_item_comparativo' cotacao.pk %}" class="btn btn-outline">Voltar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Salvar Propostas</button>
+    </div>
+  </form>
 </div>
 <script>
 // Cálculo automático do total
@@ -167,21 +160,4 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endfor %}
 });
 </script>
-<style>
-body { background: #f8fafc; }
-.card { border-radius: 1rem; }
-.form-label { font-weight: 500; color: #495057; }
-.btn-success { box-shadow: 0 2px 8px rgba(40,167,69,0.08); }
-.btn-outline-secondary { box-shadow: 0 2px 8px rgba(108,117,125,0.08); }
-.bg-primary.bg-opacity-10 { background-color: rgba(13,110,253,0.08)!important; }
-.input-group-text { font-weight: 500; color: #495057; background: #f3f4f6; }
-.input-group-text { font-weight: 500; color: #495057; background: #f3f4f6; }
-input.preco-unitario, input.preco-total { font-variant-numeric: tabular-nums; }
-@media (max-width: 991.98px) {
-    .card { border-radius: .5rem; }
-    .card-body { padding: 1.25rem !important; }
-}
-.container, .container-fluid { max-width: 100% !important; }
-.row { margin-left: 0; margin-right: 0; }
-</style>
 {% endblock %}

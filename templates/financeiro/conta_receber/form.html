@@ -1,47 +1,62 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{{ title }}{% endblock %}
 {% block page_title %}Contas a Receber{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
-    <h3 class="mb-0">{{ title }}</h3>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-cash-stack"></i></span>
+        <h2>{{ title }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <form method="post">
     {% csrf_token %}
     {{ formset.management_form }}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
 
-    {% if form.non_field_errors %}
-    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-    {% endif %}
+    <nav class="section-nav">
+      <a href="#sec-dados" data-tab="sec-dados">Dados da Conta</a>
+      <a href="#sec-valores" data-tab="sec-valores">Valores</a>
+      <a href="#sec-parcelas" data-tab="sec-parcelas">Parcelas</a>
+    </nav>
 
-    <div class="row g-3">
-      <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold">Dados da Conta</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">Cliente *</label>
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-dados" data-tab-panel="sec-dados">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+          <span class="title">Dados da Conta</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-12">
+              <label class="form-label">Cliente <span class="req">*</span></label>
               {{ form.cliente }}
-              {% if form.cliente.errors %}<div class="text-danger small">{{ form.cliente.errors }}</div>{% endif %}
+              {% if form.cliente.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cliente.errors }}</div>{% endif %}
             </div>
-            <div class="row g-2">
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Emissão *</label>
-                {{ form.data_emissao }}
-              </div>
-              <div class="col-md-6 mb-3">
-                <label class="form-label">Vencimento *</label>
-                {{ form.data_vencimento }}
-              </div>
+            <div class="field col-6">
+              <label class="form-label">Emissão <span class="req">*</span></label>
+              {{ form.data_emissao }}
             </div>
-            <div class="mb-3">
-              <label class="form-label">Descrição / Referência *</label>
+            <div class="field col-6">
+              <label class="form-label">Vencimento <span class="req">*</span></label>
+              {{ form.data_vencimento }}
+            </div>
+            <div class="field col-12">
+              <label class="form-label">Descrição / Referência <span class="req">*</span></label>
               {{ form.descricao }}
             </div>
-            <div class="mb-3">
+            <div class="field col-12">
               <label class="form-label">Observações</label>
               {{ form.observacoes }}
             </div>
@@ -49,19 +64,22 @@
         </div>
       </div>
 
-      <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold">Valores</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label class="form-label">Moeda *</label>
+      <div class="form-section" id="sec-valores" data-tab-panel="sec-valores">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-cash-coin"></i></span>
+          <span class="title">Valores</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label">Moeda <span class="req">*</span></label>
               {{ form.moeda }}
             </div>
-            <div class="mb-3">
-              <label class="form-label">Valor na Moeda Original *</label>
+            <div class="field col-6">
+              <label class="form-label">Valor na Moeda Original <span class="req">*</span></label>
               {{ form.valor_moeda }}
             </div>
-            <div class="mb-3">
+            <div class="field col-6">
               <label class="form-label d-flex justify-content-between">
                 Taxa de Câmbio (para BRL)
                 <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
@@ -69,67 +87,67 @@
                 </button>
               </label>
               {{ form.taxa_cambio }}
-              <div id="info-cotacao" class="form-text text-success mt-1" style="display:none"></div>
-              <div class="form-text">Deixar em branco para BRL. Para USD/EUR, informar o câmbio do dia.</div>
+              <div id="info-cotacao" class="helper-note text-success" style="display:none"></div>
+              <div class="helper-note">Deixar em branco para BRL. Para USD/EUR, informar o câmbio do dia.</div>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Valor em BRL *</label>
+            <div class="field col-6">
+              <label class="form-label">Valor em BRL <span class="req">*</span></label>
               {{ form.valor_brl }}
-              <div class="form-text">Para BRL = mesmo valor. Para moeda estrangeira = valor × câmbio.</div>
+              <div class="helper-note">Para BRL = mesmo valor. Para moeda estrangeira = valor × câmbio.</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="col-12">
-        <div class="card border-0 shadow-sm">
-          <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
-            Parcelas
-            <button type="button" class="btn btn-sm btn-outline-primary" id="add-parcela">
-              <i class="bi bi-plus"></i> Adicionar Parcela
-            </button>
-          </div>
-          <div class="card-body p-0">
-            <table class="table table-sm mb-0" id="parcelas-table">
-              <thead class="table-light">
-                <tr>
-                  <th style="width:80px">Nº</th>
-                  <th>Valor Moeda</th>
-                  <th>Valor BRL</th>
-                  <th>Vencimento</th>
-                  <th>Observações</th>
-                  <th style="width:40px"></th>
-                </tr>
-              </thead>
-              <tbody id="parcelas-body">
-                {% for pf in formset %}
-                <tr class="parcela-row">
-                  <td>{{ pf.id }}{{ pf.DELETE }}{{ pf.numero_parcela }}</td>
-                  <td>{{ pf.valor_parcela_moeda }}</td>
-                  <td>{{ pf.valor_parcela_brl }}</td>
-                  <td>{{ pf.data_vencimento }}</td>
-                  <td>{{ pf.observacoes }}</td>
-                  <td>
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-parcela">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+      <div class="form-section" id="sec-parcelas" data-tab-panel="sec-parcelas">
+        <div class="section-toolbar">
+          <span class="title">Parcelas</span>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="add-parcela">
+            <i class="bi bi-plus"></i> Adicionar Parcela
+          </button>
+        </div>
+        <div class="items-table-wrap">
+          <table class="items-table mb-0" id="parcelas-table">
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Valor Moeda</th>
+                <th>Valor BRL</th>
+                <th>Vencimento</th>
+                <th>Observações</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="parcelas-body">
+              {% for pf in formset %}
+              <tr class="parcela-row">
+                <td>{{ pf.id }}{{ pf.DELETE }}{{ pf.numero_parcela }}</td>
+                <td>{{ pf.valor_parcela_moeda }}</td>
+                <td>{{ pf.valor_parcela_brl }}</td>
+                <td>{{ pf.data_vencimento }}</td>
+                <td>{{ pf.observacoes }}</td>
+                <td>
+                  <button type="button" class="row-action danger remove-parcela">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
+
     </div>
 
-    <div class="d-flex gap-2 mt-4">
+    <div class="app-footer-bar">
       <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar</button>
-      <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+      <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-outline">Cancelar</a>
     </div>
   </form>
 </div>
 
+<script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 (function() {
   const TOTAL = document.getElementById('id_parcelas-TOTAL_FORMS');

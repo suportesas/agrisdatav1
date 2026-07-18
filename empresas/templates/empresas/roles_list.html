@@ -213,12 +213,16 @@
       <div class="d-flex align-items-center gap-3">
           <span class="page-header-icon green"><i class="bi bi-shield-lock"></i></span>
           <div>
-              <h2>Funções e Permissões</h2>
+              <h2>{% if modo_global %}Funções Globais (SaaS){% else %}Funções e Permissões{% endif %}</h2>
               {% if request.user.empresa %}
               <p class="text-muted mb-0 small">
                 <i class="bi bi-building me-1"></i><strong>{{ request.user.empresa.nome }}</strong>
                 — {{ total_roles }} função{{ total_roles|pluralize:",ões" }}
                 ({{ builtin_roles }} padrão, {{ custom_roles }} personalizada{{ custom_roles|pluralize }})
+              </p>
+              {% elif modo_global %}
+              <p class="text-muted mb-0 small">
+                <i class="bi bi-globe me-1"></i>{{ total_roles }} função{{ total_roles|pluralize:",ões" }} global{{ total_roles|pluralize:",is" }} — disponíveis pra todas as empresas do SaaS
               </p>
               {% endif %}
           </div>
@@ -267,6 +271,7 @@
             <div class="role-info">
               <div class="role-name">{{ role.name }}</div>
               <div class="role-meta">
+                {% if not role.empresa_id %}<span class="badge text-bg-info me-1" style="font-size:.7rem;"><i class="bi bi-globe"></i> Global</span>{% endif %}
                 {% if role.builtin %}<span class="badge text-bg-warning me-1" style="font-size:.7rem;">Padrão</span>{% endif %}
                 {% if role.num_usuarios %}
                   {{ role.num_usuarios }} usuário{{ role.num_usuarios|pluralize }}
@@ -276,21 +281,33 @@
               </div>
             </div>
             <div class="d-flex flex-column gap-1 align-items-end">
-              {% if request.user.is_superuser or request.user.is_admin_empresa %}
+              {% if not role.empresa_id and not modo_global %}
+                {% if request.user.is_admin_empresa %}
+                <button class="btn btn-link btn-sm p-0 text-success btn-fork-role"
+                        data-role-id="{{ role.pk }}"
+                        title="Criar minha própria cópia desta Função Global">
+                  <i class="bi bi-magic" style="font-size:.85rem;"></i> Personalizar
+                </button>
+                <button class="btn btn-link btn-sm p-0 text-muted btn-clone-role"
+                        data-role-id="{{ role.pk }}"
+                        data-role-name="{{ role.name }}"
+                        title="Clonar como Função independente">
+                  <i class="bi bi-copy" style="font-size:.85rem;"></i>
+                </button>
+                {% endif %}
+              {% elif request.user.is_superuser or request.user.is_admin_empresa %}
               {% if not role.builtin or request.user.is_superuser %}
               <a href="{% url 'empresas:role_update' role.pk %}"
-                 class="btn btn-link btn-sm p-0 text-muted" title="Editar"
-                 onclick="event.stopPropagation();">
+                 class="btn btn-link btn-sm p-0 text-muted" title="Editar">
                 <i class="bi bi-pencil" style="font-size:.85rem;"></i>
               </a>
+              {% endif %}
               <button class="btn btn-link btn-sm p-0 text-muted btn-clone-role"
                       data-role-id="{{ role.pk }}"
                       data-role-name="{{ role.name }}"
-                      title="Clonar função"
-                      onclick="event.stopPropagation();">
+                      title="Clonar função">
                 <i class="bi bi-copy" style="font-size:.85rem;"></i>
               </button>
-              {% endif %}
               {% endif %}
             </div>
           </div>
@@ -330,6 +347,16 @@
             <div>
               <h6 class="mb-0 fw-bold" id="perms-role-name" style="color:#1a7a3c;">—</h6>
               <small class="text-muted" id="perms-role-meta">Clique nos checkboxes para editar</small>
+              <div id="perms-readonly-banner" class="alert alert-info py-1 px-2 mt-1 mb-0 d-none" style="font-size:.8rem;">
+                <i class="bi bi-info-circle"></i> Isto é uma Função Global — clique em
+                <strong>Personalizar</strong> na lista à esquerda pra criar sua própria cópia editável.
+              </div>
+              <br>
+              <small class="text-muted">
+                Detalhe e Excluir de cada tela são liberados automaticamente
+                junto com a Listagem. Pra restringir algum caso específico,
+                use a <a href="{% url 'empresas:programa_list' %}">tela de Programas</a>.
+              </small>
             </div>
             <div class="perms-toolbar">
               <span class="unsaved-badge hidden" id="unsaved-badge">
@@ -361,19 +388,8 @@
             <table class="perms-table" id="perms-table">
               <thead>
                 <tr>
-                  <th style="width:40%">Recurso</th>
-                  <th class="text-center" style="width:15%">
-                    <span class="perm-icon add d-inline-flex me-1"><i class="bi bi-plus"></i></span> Criar
-                  </th>
-                  <th class="text-center" style="width:15%">
-                    <span class="perm-icon change d-inline-flex me-1"><i class="bi bi-pencil"></i></span> Editar
-                  </th>
-                  <th class="text-center" style="width:15%">
-                    <span class="perm-icon delete d-inline-flex me-1"><i class="bi bi-trash"></i></span> Excluir
-                  </th>
-                  <th class="text-center" style="width:15%">
-                    <span class="perm-icon view d-inline-flex me-1"><i class="bi bi-eye"></i></span> Ver
-                  </th>
+                  <th class="text-center" style="width:8%">Acesso</th>
+                  <th>Programa</th>
                 </tr>
               </thead>
               <tbody id="perms-tbody">
@@ -434,6 +450,7 @@
 <div id="roles-url-config"
      data-clone-url="{% url 'empresas:role_clone' role_id=0 %}"
      data-perms-url="{% url 'empresas:role_permissions' role_id=0 %}"
+     data-fork-url="{% url 'empresas:role_fork' role_id=0 %}"
      class="d-none" aria-hidden="true"></div>
 
 {% include 'empresas/roles_js.html' %}
@@ -474,6 +491,27 @@ document.addEventListener('DOMContentLoaded', function () {
       const item = e.target.closest('.role-item');
       if (item) { e.preventDefault(); item.click(); }
     }
+  });
+
+  // ── Personalizar (fork) Função Global ───────────────────────
+  document.getElementById('roles-list').addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-fork-role');
+    if (!btn) return;
+    e.stopPropagation();
+    if (!confirm('Isso cria sua própria cópia desta Função, com as mesmas permissões de hoje. Continuar?')) return;
+
+    const baseForkUrl = document.getElementById('roles-url-config').dataset.forkUrl;
+    const url = baseForkUrl.replace('/0/', '/' + btn.dataset.roleId + '/');
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = url;
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = 'csrfmiddlewaretoken';
+    csrf.value = getCsrfToken();
+    form.appendChild(csrf);
+    document.body.appendChild(form);
+    form.submit();
   });
 
   // ── Clonar role ─────────────────────────────────────────────

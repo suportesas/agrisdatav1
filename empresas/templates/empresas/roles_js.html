@@ -1,6 +1,6 @@
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// Roles JS — carregamento e edição de permissões
+// Roles JS — carregamento e edição de permissões por Programa (tela) / Ação
 // ─────────────────────────────────────────────────────────────────────────────
 
 let currentRoleId = null;
@@ -8,45 +8,6 @@ let pendingChanges = 0;
 // URL base lida do data-attribute para evitar avaliação server-side no JS
 const PERM_URL_TEMPLATE = document.getElementById('roles-url-config')?.dataset.permsUrl
   || "{% url 'empresas:role_permissions' role_id=0 %}";
-
-// Nomes amigáveis para modelos comuns (app:model → label PT)
-const MODEL_LABELS = {
-  // Cadastros
-  'cadastros:fazenda': 'Fazenda', 'cadastros:enderecofazenda': 'Endereço de Fazenda',
-  'cadastros:contatofazenda': 'Contato de Fazenda', 'cadastros:contabancariafazenda': 'Banco de Fazenda',
-  'cadastros:documentofazenda': 'Documento de Fazenda', 'cadastros:cliente': 'Cliente',
-  'cadastros:produtor': 'Produtor', 'cadastros:fornecedor': 'Fornecedor',
-  'cadastros:transportadora': 'Transportadora', 'cadastros:area': 'Área Agrícola',
-  'cadastros:talhao': 'Talhão', 'cadastros:cultura': 'Cultura', 'cadastros:safra': 'Safra',
-  'cadastros:praga': 'Praga', 'cadastros:requisicao': 'Requisição',
-  'cadastros:vendedor': 'Vendedor', 'cadastros:cfop': 'CFOP', 'cadastros:ncm': 'NCM',
-  // RH
-  'rh:funcionario': 'Funcionário', 'rh:funcaofuncionario': 'Função/Cargo',
-  'rh:feriasfuncionario': 'Férias', 'rh:afastamentofuncionario': 'Afastamento',
-  'rh:rescisaocontrato': 'Rescisão', 'rh:vinculocontrato': 'Vínculo Contratual',
-  'rh:solicitacaoaso': 'Solicitação ASO', 'rh:laudorisco': 'Laudo de Risco',
-  // Operações de Campo
-  'operacoes_campo:ordemservico': 'Ordem de Serviço', 'operacoes_campo:custotalhao': 'Custo por Talhão',
-  'operacoes_campo:etapacolheita': 'Etapa de Colheita', 'operacoes_campo:registrocadernocampo': 'Caderno de Campo',
-  'operacoes_campo:registropluviometria': 'Pluviometria', 'operacoes_campo:planejamentocustosafra': 'Planejamento de Custo',
-  // Produtos / Estoque
-  'produtos:produto': 'Produto', 'produtos:unidademedida': 'Unidade de Medida',
-  'estoque:movimentacaoestoque': 'Movimentação de Estoque', 'estoque:armazem': 'Armazém',
-  // Compras
-  'compras:pedidocompra': 'Pedido de Compra', 'compras:recebimento': 'Recebimento de Compra',
-  // Financeiro
-  'financeiro:contapagar': 'Conta a Pagar', 'financeiro:contareceber': 'Conta a Receber',
-  'financeiro:parcelacontareceber': 'Parcela a Receber',
-  // Faturamento
-  'faturamento:notafiscal': 'Nota Fiscal (NF-e)', 'faturamento:invoice': 'Invoice de Exportação',
-  // Vendas
-  'vendas:pedidovenda': 'Pedido de Venda',
-};
-
-function getModelLabel(appLabel, modelName) {
-  const key = appLabel + ':' + modelName;
-  return MODEL_LABELS[key] || modelName.charAt(0).toUpperCase() + modelName.slice(1).replace(/_/g, ' ');
-}
 
 function getCsrfToken() {
   const match = document.cookie.match(/csrftoken=([^;]+)/);
@@ -137,56 +98,57 @@ async function loadPermissions(roleId) {
       document.getElementById('perms-loading').classList.add('d-none');
       document.getElementById('perms-table-wrap').classList.remove('d-none');
       document.getElementById('perms-tbody').innerHTML =
-        `<tr><td colspan="5"><div class="alert alert-danger m-3">
+        `<tr><td colspan="2"><div class="alert alert-danger m-3">
           <i class="bi bi-x-circle me-2"></i>Erro ao carregar permissões (${resp.status}).
         </div></td></tr>`;
       return;
     }
     const data = await resp.json();
-    renderPermissions(roleId, data.permissions || []);
+    renderPermissions(roleId, data.grupos || [], data.pode_editar !== false, data.is_global === true);
   } catch (err) {
     document.getElementById('perms-loading').classList.add('d-none');
     document.getElementById('perms-table-wrap').classList.remove('d-none');
     document.getElementById('perms-tbody').innerHTML =
-      `<tr><td colspan="5"><div class="alert alert-danger m-3">
+      `<tr><td colspan="2"><div class="alert alert-danger m-3">
         <i class="bi bi-x-circle me-2"></i>Erro de conexão.
       </div></td></tr>`;
   }
 }
 
-function renderPermissions(roleId, perms) {
+function renderPermissions(roleId, grupos, podeEditar = true, isGlobal = false) {
   // Atualiza nome do role no cabeçalho
   const roleItem = document.querySelector(`.role-item[data-role-id="${roleId}"]`);
   const roleName = roleItem ? roleItem.querySelector('.role-name').textContent.trim() : 'Função';
   document.getElementById('perms-role-name').textContent = roleName;
-  document.getElementById('perms-role-meta').textContent = 'Clique nos checkboxes para editar permissões';
+
+  const avisoSomenteLeitura = document.getElementById('perms-readonly-banner');
+  if (isGlobal && !podeEditar) {
+    document.getElementById('perms-role-meta').textContent = 'Função Global — somente leitura';
+    if (avisoSomenteLeitura) avisoSomenteLeitura.classList.remove('d-none');
+  } else {
+    document.getElementById('perms-role-meta').textContent = 'Clique nos checkboxes para editar permissões';
+    if (avisoSomenteLeitura) avisoSomenteLeitura.classList.add('d-none');
+  }
 
   const tbody = document.getElementById('perms-tbody');
   tbody.innerHTML = '';
 
-  if (!perms.length) {
-    tbody.innerHTML = '<tr><td colspan="5"><div class="alert alert-info m-3">Nenhuma permissão disponível.</div></td></tr>';
+  if (!grupos.length) {
+    tbody.innerHTML = '<tr><td colspan="2"><div class="alert alert-info m-3">Nenhuma tela disponível.</div></td></tr>';
     document.getElementById('perms-loading').classList.add('d-none');
     document.getElementById('perms-table-wrap').classList.remove('d-none');
     return;
   }
 
-  // Agrupa por app_label
-  const apps = {};
-  perms.forEach(p => {
-    if (!apps[p.app_label]) apps[p.app_label] = { nome: p.app_nome || p.app_label, items: [] };
-    apps[p.app_label].items.push(p);
-  });
-
-  Object.entries(apps).forEach(([app, group]) => {
-    const moduleName = app;
+  grupos.forEach(grupo => {
+    const moduleName = grupo.app_label;
     // Cabeçalho do módulo
     const headerRow = document.createElement('tr');
     headerRow.className = 'perms-module-header';
     headerRow.innerHTML = `
-      <td colspan="5">
+      <td colspan="2">
         <div class="d-flex align-items-center justify-content-between gap-2">
-          <span class="fw-bold">${group.nome}</span>
+          <span class="fw-bold">${grupo.app_nome}</span>
           <div class="d-flex align-items-center gap-2">
             <span class="module-count empty" data-module="${moduleName}">0/0</span>
             <button type="button"
@@ -206,30 +168,16 @@ function renderPermissions(roleId, perms) {
       </td>`;
     tbody.appendChild(headerRow);
 
-    // Linhas de modelo
-    group.items.forEach(item => {
+    // Lista plana: uma linha + um checkbox por Programa
+    grupo.programas.forEach(item => {
       const row = document.createElement('tr');
       row.dataset.module = moduleName;
-      const label = getModelLabel(app, item.model);
-      const p = item.perms;
       row.innerHTML = `
-        <td><span class="model-label">${label}</span></td>
         <td class="text-center">
-          <input type="checkbox" class="perm-cb" ${p.add ? 'checked' : ''}
-                 data-codename="add_${item.model}" title="Criar ${label}">
+          <input type="checkbox" class="perm-cb" ${item.concedido ? 'checked' : ''} ${podeEditar ? '' : 'disabled'}
+                 data-programa-id="${item.id}">
         </td>
-        <td class="text-center">
-          <input type="checkbox" class="perm-cb" ${p.change ? 'checked' : ''}
-                 data-codename="change_${item.model}" title="Editar ${label}">
-        </td>
-        <td class="text-center">
-          <input type="checkbox" class="perm-cb" ${p.delete ? 'checked' : ''}
-                 data-codename="delete_${item.model}" title="Excluir ${label}">
-        </td>
-        <td class="text-center">
-          <input type="checkbox" class="perm-cb" ${p.view ? 'checked' : ''}
-                 data-codename="view_${item.model}" title="Ver ${label}">
-        </td>`;
+        <td><span class="model-label">${item.nome}</span></td>`;
       tbody.appendChild(row);
     });
   });
@@ -277,13 +225,19 @@ function renderPermissions(roleId, perms) {
   // Selecionar/desmarcar todos globais
   const btnAll    = document.getElementById('btn-select-all');
   const btnNone   = document.getElementById('btn-deselect-all');
-  if (btnAll)  btnAll.onclick  = () => { tbody.querySelectorAll('.perm-cb').forEach(c => c.checked = true);  setSaveEnabled(true); pendingChanges++; updateUnsavedBadge(); updateAllModuleCounts(); };
-  if (btnNone) btnNone.onclick = () => { tbody.querySelectorAll('.perm-cb').forEach(c => c.checked = false); setSaveEnabled(true); pendingChanges++; updateUnsavedBadge(); updateAllModuleCounts(); };
+  if (btnAll)  { btnAll.classList.toggle('d-none', !podeEditar);  btnAll.onclick  = () => { tbody.querySelectorAll('.perm-cb').forEach(c => c.checked = true);  setSaveEnabled(true); pendingChanges++; updateUnsavedBadge(); updateAllModuleCounts(); }; }
+  if (btnNone) { btnNone.classList.toggle('d-none', !podeEditar); btnNone.onclick = () => { tbody.querySelectorAll('.perm-cb').forEach(c => c.checked = false); setSaveEnabled(true); pendingChanges++; updateUnsavedBadge(); updateAllModuleCounts(); }; }
+
+  // Marcar todos/Desmarcar por módulo — some quando não pode editar
+  tbody.querySelectorAll('.module-check-all, .module-uncheck-all').forEach(b => b.classList.toggle('d-none', !podeEditar));
 
   // Salvar
   ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {
     const btn = document.getElementById(id);
-    if (btn) btn.onclick = () => savePermissions(roleId);
+    if (btn) {
+      btn.classList.toggle('d-none', !podeEditar);
+      btn.onclick = () => savePermissions(roleId);
+    }
   });
 
   // Exibe tabela
@@ -295,15 +249,15 @@ function renderPermissions(roleId, perms) {
 function getPermState() {
   const state = {};
   document.querySelectorAll('#perms-tbody .perm-cb').forEach(cb => {
-    state[cb.dataset.codename] = cb.checked;
+    state[cb.dataset.programaId] = cb.checked;
   });
   return state;
 }
 
 async function savePermissions(roleId) {
-  const codenames = [];
+  const programaIds = [];
   document.querySelectorAll('#perms-tbody .perm-cb:checked').forEach(cb => {
-    codenames.push(cb.dataset.codename);
+    programaIds.push(parseInt(cb.dataset.programaId, 10));
   });
 
   ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {
@@ -319,7 +273,7 @@ async function savePermissions(roleId) {
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
-      body: JSON.stringify({ permissions: codenames }),
+      body: JSON.stringify({ programa_ids: programaIds }),
     });
     const data = await resp.json();
     if (data.ok) {

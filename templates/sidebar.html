@@ -1,4 +1,5 @@
 {% load static %}
+{% load permissoes_tags %}
 
 <!-- Sidebar Profissional -->
 <div class="sidebar-modern {% if user.is_superuser %}saas-owner-nav{% endif %}" id="sidebar">
@@ -33,16 +34,16 @@
         </a>
         <ul class="nav-submenu">
           <li><a href="{% url 'dashboard:index' %}"><i class="bi bi-speedometer2"></i> Geral</a></li>
-          {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:dashboard' %}
           <li><a href="{% url 'estoque:dashboard' %}"><i class="bi bi-box-seam"></i> Estoque</a></li>
           {% endif %}
-          {% if user.is_admin_empresa or perms.compras.view_pedidocompra %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:dashboard_compras' %}
           <li><a href="{% url 'compras:dashboard_compras' %}"><i class="bi bi-cart-check"></i> Compras</a></li>
           {% endif %}
-          {% if user.is_admin_empresa or perms.financeiro.view_contapagar %}
+          {% if user.is_admin_empresa or request|tem_acesso:'financeiro:dashboard' %}
           <li><a href="{% url 'financeiro:dashboard' %}"><i class="bi bi-cash-coin"></i> Financeiro</a></li>
           {% endif %}
-          {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_rastreamento_dashboard' %}
           <li><a href="{% url 'estoque:relatorio_rastreamento_dashboard' %}"><i class="bi bi-activity"></i> Rastreamento</a></li>
           {% endif %}
           <li><a href="{% url 'produtos:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard de Produtos</a></li>
@@ -66,6 +67,7 @@
           <li><a href="{% url 'empresas:empresa_create' %}"><i class="bi bi-plus-circle"></i> Nova Empresa</a></li>
           <li><a href="{% url 'empresas:plano_list' %}"><i class="bi bi-card-checklist"></i> Planos</a></li>
           <li><a href="{% url 'empresas:roles_list' %}"><i class="bi bi-shield-lock"></i> Funções/Roles</a></li>
+          <li><a href="{% url 'empresas:programa_list' %}"><i class="bi bi-window-stack"></i> Programas</a></li>
         </ul>
       </li>
 
@@ -146,14 +148,14 @@
       {% if not user.is_superuser and user.empresa %}
 
       <!-- ── PRODUÇÃO AGRÍCOLA ── -->
-      {% if user.is_admin_empresa or perms.operacoes_campo.view_ordemservico or perms.estufas.view_estufa or perms.mip.view_monitoramentomip %}
+      {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:os_list,mip:monitoramento_mip_list,estufas:estufa_list' %}
       <li class="nav-section">
         <span>PRODUÇÃO AGRÍCOLA</span>
       </li>
       {% endif %}
 
       <!-- Agro -->
-      {% if user.is_admin_empresa or perms.operacoes_campo.view_ordemservico or perms.mip.view_monitoramentomip %}
+      {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:os_list,mip:monitoramento_mip_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-brightness-high"></i>
@@ -215,7 +217,7 @@
       {% endif %}
 
       <!-- Estufas e Mudas -->
-      {% if user.is_admin_empresa or perms.estufas.view_estufa %}
+      {% if user.is_admin_empresa or request|tem_acesso:'estufas:estufa_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-flower1"></i>
@@ -237,6 +239,7 @@
       </li>
 
       <!-- Cadastros -->
+      {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cliente_list,cadastros:produtor_list,cadastros:fornecedor_list,cadastros:transportadora_list,cadastros:vendedor_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-folder-fill"></i>
@@ -259,9 +262,10 @@
           <li><a href="{% url 'cadastros:vendedor_list' %}"><i class="bi bi-person-lines-fill"></i> Vendedores</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Frota (Menu Principal) -->
-      {% if user.is_admin_empresa or perms.frota.view_vehicle %}
+      {% if user.is_admin_empresa or request|tem_acesso:'frota:vehicle_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-truck-front-fill"></i>
@@ -294,7 +298,7 @@
       {% endif %}
 
       <!-- RH - Recursos Humanos (Menu Principal) -->
-      {% if user.is_admin_empresa or perms.rh.view_funcionario %}
+      {% if user.is_admin_empresa or request|tem_acesso:'rh:funcionario_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-people-fill"></i>
@@ -339,7 +343,7 @@
       {% endif %}
 
       <!-- Patrimônio / Ativos -->
-      {% if user.is_admin_empresa or perms.patrimonio.view_patrimonio %}
+      {% if user.is_admin_empresa or request|tem_acesso:'patrimonio:patrimonio_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-house-fill"></i>
@@ -363,6 +367,7 @@
       </li>
 
       <!-- Produtos -->
+      {% if user.is_admin_empresa or request|tem_acesso:'produtos:produto_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-box-seam-fill"></i>
@@ -381,9 +386,10 @@
           <li><a href="{% url 'produtos:naturezaoperacao_list' %}"><i class="bi bi-file-text"></i> Naturezas</a></li>
         </ul>
       </li>
+      {% endif %}
 
       <!-- Estoque -->
-      {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
+      {% if user.is_admin_empresa or request|tem_acesso:'estoque:movimentacao_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-archive-fill"></i>
@@ -417,7 +423,7 @@
               {% endif %}
             </a>
           </li>
-          {% if user.tipo in 'ADMIN,GERENTE' %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:requisicao_pendentes_aprovacao' %}
           <li><a href="{% url 'cadastros:requisicao_pendentes_aprovacao' %}" class="fw-bold text-danger"><i class="bi bi-hourglass-split text-warning"></i> <span class="badge bg-danger">Pendentes</span> Aprovação</a></li>
           {% endif %}
           <li>
@@ -445,7 +451,7 @@
       {% endif %}
 
       <!-- Compras -->
-      {% if user.is_admin_empresa or perms.compras.view_pedidocompra %}
+      {% if user.is_admin_empresa or request|tem_acesso:'compras:pedido_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-cart-check-fill"></i>
@@ -454,7 +460,7 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          {% if perms.compras.criar_pedido_direto_fornecedor_unico or user.is_admin_empresa %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:pedido_direto_create' %}
           <li><a href="{% url 'compras:pedido_direto_create' %}"><i class="bi bi-lightning-charge text-success"></i> Pedido Direto</a></li>
           {% endif %}
           <li class="submenu-divider"></li>
@@ -481,6 +487,7 @@
       </li>
 
       <!-- Fiscal -->
+      {% if user.is_admin_empresa or request|tem_acesso:'cadastros:ncm_list,cadastros:cfop_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-receipt-cutoff"></i>
@@ -491,14 +498,15 @@
           <li><a href="{% url 'cadastros:ncm_list' %}"><i class="bi bi-upc-scan"></i> NCMs</a></li>
           <li><a href="{% url 'cadastros:cfop_list' %}"><i class="bi bi-journal-code"></i> CFOP</a></li>
           <li><a href="{% url 'produtos:naturezaoperacao_list' %}"><i class="bi bi-arrow-repeat"></i> Natureza da Operação</a></li>
-          {% if perms.cadastros.add_cfop %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cfop_import' %}
           <li><a href="{% url 'cadastros:cfop_import' %}"><i class="bi bi-download"></i> Importar CFOP</a></li>
           {% endif %}
         </ul>
       </li>
+      {% endif %}
 
       <!-- Financeiro -->
-      {% if user.is_admin_empresa or perms.financeiro.view_contapagar %}
+      {% if user.is_admin_empresa or request|tem_acesso:'financeiro:conta_pagar_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-cash-stack"></i>
@@ -579,14 +587,14 @@
 
       <li class="nav-divider"></li>
       <!-- ── COMERCIAL & EXPORTAÇÃO ── -->
-      {% if user.is_admin_empresa or perms.exportacao.view_booking or perms.embalagem.view_ordemembalagem or perms.vendas.view_pedidovenda or perms.faturamento.view_notafiscal %}
+      {% if user.is_admin_empresa or request|tem_acesso:'exportacao:booking_list,embalagem:ordem_list,vendas:pedido_list,faturamento:nota_fiscal_list' %}
       <li class="nav-section">
         <span>COMERCIAL &amp; EXPORTAÇÃO</span>
       </li>
       {% endif %}
 
       <!-- Exportação -->
-      {% if user.is_admin_empresa or perms.exportacao.view_booking %}
+      {% if user.is_admin_empresa or request|tem_acesso:'exportacao:booking_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-box-seam"></i>
@@ -627,7 +635,7 @@
       {% endif %}
 
       <!-- Embalagem -->
-      {% if user.is_admin_empresa or perms.embalagem.view_ordemembalagem %}
+      {% if user.is_admin_empresa or request|tem_acesso:'embalagem:ordem_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-box2-heart-fill"></i>
@@ -651,7 +659,7 @@
       {% endif %}
 
       <!-- Etiquetas de Pallet Avulso -->
-      {% if user.is_admin_empresa or perms.etiquetas_avulsas.view_loteetiquetaavulsa %}
+      {% if user.is_admin_empresa or request|tem_acesso:'etiquetas_avulsas:lote_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-tag-fill"></i>
@@ -668,7 +676,7 @@
       {% endif %}
 
       <!-- Vendas -->
-      {% if user.is_admin_empresa or perms.vendas.view_pedidovenda %}
+      {% if user.is_admin_empresa or request|tem_acesso:'vendas:pedido_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-cart-check"></i>
@@ -684,7 +692,7 @@
       {% endif %}
 
       <!-- Faturamento -->
-      {% if user.is_admin_empresa or perms.faturamento.view_notafiscal %}
+      {% if user.is_admin_empresa or request|tem_acesso:'faturamento:nota_fiscal_list' %}
       <li class="nav-item has-submenu">
         <a href="#" class="nav-link">
           <i class="bi bi-receipt"></i>
@@ -721,7 +729,7 @@
 
       <li class="nav-divider"></li>
       <!-- ── INFRAESTRUTURA ── -->
-      {% if user.is_admin_empresa or perms.energia.view_usina %}
+      {% if user.is_admin_empresa or request|tem_acesso:'energia:usina_list' %}
       <li class="nav-section">
         <span>INFRAESTRUTURA</span>
       </li>
@@ -766,7 +774,7 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
-          {% if user.is_admin_empresa or perms.estoque.view_movimentacaoestoque %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:movimentacao_list' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-archive"></i> Estoque <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
@@ -795,7 +803,7 @@
             </ul>
           </li>
           {% endif %}
-          {% if user.is_admin_empresa or perms.compras.view_pedidocompra %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:pedido_list' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-cart-check"></i> Compras <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
@@ -820,7 +828,7 @@
               <li><a href="{% url 'cadastros:fornecedor_ranking_avaliacoes' %}"><i class="bi bi-star-fill"></i> Ranking de Avaliações</a></li>
             </ul>
           </li>
-          {% if user.is_admin_empresa or perms.patrimonio.view_patrimonio %}
+          {% if user.is_admin_empresa or request|tem_acesso:'patrimonio:patrimonio_list' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-tools"></i> Patrimônio <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">

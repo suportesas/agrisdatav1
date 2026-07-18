@@ -10,9 +10,8 @@ from django.db.models.deletion import ProtectedError
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from django.contrib.auth.models import Permission
 
-from .models import APIKey, Empresa, Plano, Role, PermissionTemplate, RoleAudit
+from .models import APIKey, Empresa, Plano, Programa, Role, PermissionTemplate, RoleAudit
 from .forms import APIKeyForm, EmpresaForm, EmpresaPreferenciasForm, PlanoForm
 
 # Nomes amigáveis dos apps do ERP (usados na matriz de permissões)
@@ -44,9 +43,6 @@ APP_LABELS_PT = {
     'portal': 'Portal do Cliente',
     'auth': 'Autenticação (sistema)',
 }
-
-# Apps de sistema a mostrar por último (menos relevantes para o ERP)
-SYSTEM_APPS = {'admin', 'contenttypes', 'sessions', 'authtoken', 'rest_framework'}
 
 
 def is_owner(user):
@@ -292,14 +288,28 @@ def empresa_logo_update(request):
 
 @login_required
 def role_list(request):
-    """Lista funções (roles) da empresa do usuário logado"""
-    if not request.user.empresa:
+    """Lista funções (roles).
+
+    - Empresa comum: suas próprias Funções + Funções Globais que ela ainda
+      não personalizou (ver Role.origem_global).
+    - Superuser sem empresa vinculada (SaaS Owner): gerencia as Funções
+      Globais diretamente — essa é a tela de "Funções Globais" do painel SaaS.
+    """
+    modo_global = False
+
+    if request.user.empresa:
+        from .acesso import roles_visiveis_para_empresa
+        roles = roles_visiveis_para_empresa(request.user.empresa).annotate(
+            num_usuarios=Count('usuarios', distinct=True)
+        ).order_by('builtin', 'name')
+    elif request.user.is_superuser:
+        modo_global = True
+        roles = Role.objects.filter(empresa__isnull=True).annotate(
+            num_usuarios=Count('usuarios', distinct=True)
+        ).order_by('name')
+    else:
         messages.warning(request, "Nenhuma empresa vinculada à sua conta.")
         return redirect('dashboard:index')
-
-    roles = Role.objects.filter(empresa=request.user.empresa).annotate(
-        num_usuarios=Count('usuarios', distinct=True)
-    ).order_by('builtin', 'name')
 
     # Estatísticas
     total_roles = roles.count()
@@ -311,14 +321,18 @@ def role_list(request):
         'total_roles': total_roles,
         'builtin_roles': builtin_roles,
         'custom_roles': custom_roles,
+        'modo_global': modo_global,
+        'empresa_atual_id': request.user.empresa_id,
     }
     return render(request, 'empresas/roles_list.html', context)
 
 
 @login_required
 def role_create(request):
-    """Cria nova função (Role) para a empresa do usuário"""
-    if not request.user.empresa or not request.user.is_admin_empresa():
+    """Cria nova função (Role) para a empresa do usuário, ou uma Função
+    Global se quem cria é superuser sem empresa vinculada (painel SaaS)."""
+    criar_global = request.user.is_superuser and not request.user.empresa
+    if not criar_global and (not request.user.empresa or not request.user.is_admin_empresa()):
         messages.error(request, '❌ Você não tem permissão para criar funções.')
         return redirect('empresas:roles_list')
 
@@ -328,7 +342,7 @@ def role_create(request):
         form = RoleForm(request.POST)
         if form.is_valid():
             role = form.save(commit=False)
-            role.empresa = request.user.empresa
+            role.empresa = None if criar_global else request.user.empresa
             role.builtin = False
             role.save()
             messages.success(request, f'✅ Função "{role.name}" criada com sucesso!')
@@ -336,7 +350,7 @@ def role_create(request):
     else:
         form = RoleForm()
 
-    return render(request, 'empresas/role_form.html', {'form': form, 'action': 'Criar'})
+    return render(request, 'empresas/role_form.html', {'form': form, 'action': 'Criar', 'criar_global': criar_global})
 
 
 @login_required
@@ -368,6 +382,38 @@ def role_update(request, role_id):
     return render(request, 'empresas/role_form.html', {'form': form, 'action': 'Editar', 'role': role})
 
 
+@login_required
+@require_POST
+def role_fork(request, role_id):
+    """Cria uma cópia própria da empresa a partir de uma Função Global
+    ("Personalizar"). A cópia começa com os mesmos Programas da Global no
+    momento do fork, e os usuários dessa empresa que já usavam a Global são
+    reapontados pra cópia — dali em diante é uma Função comum, independente."""
+    role = get_object_or_404(Role, pk=role_id, empresa__isnull=True)
+
+    if not request.user.empresa or not request.user.is_admin_empresa():
+        messages.error(request, '❌ Você não tem permissão pra personalizar Funções.')
+        return redirect('empresas:roles_list')
+
+    empresa = request.user.empresa
+    if Role.objects.filter(empresa=empresa, name=role.name).exists():
+        messages.error(
+            request,
+            f'❌ Você já tem uma Função chamada "{role.name}" — renomeie uma delas antes de personalizar.'
+        )
+        return redirect('empresas:roles_list')
+
+    fork = role.criar_fork(empresa, actor=request.user)
+
+    from usuarios.models import Usuario
+    for usuario in Usuario.objects.filter(empresa=empresa, roles=role):
+        usuario.roles.remove(role)
+        usuario.roles.add(fork)
+
+    messages.success(request, f'✅ "{role.name}" personalizada — agora você tem sua própria cópia.')
+    return redirect('empresas:role_permissions', role_id=fork.id)
+
+
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 @login_required
@@ -377,66 +423,107 @@ def role_permissions(request, role_id):
        POST: atualiza permissões da role (espera JSON {'permissions': [codename,...]})
     """
     role = get_object_or_404(Role, pk=role_id)
+    is_global = role.empresa_id is None
 
-    # Verifica permissão: somente admin da empresa ou superuser
-    if not request.user.is_superuser:
-        if not request.user.empresa or role.empresa != request.user.empresa or not request.user.is_admin_empresa():
-            return JsonResponse({'error': 'Permissão negada'}, status=403)
+    def _pode_ver():
+        if request.user.is_superuser:
+            return True
+        if not (hasattr(request.user, 'is_admin_empresa') and request.user.is_admin_empresa()):
+            return False
+        if is_global:
+            return bool(request.user.empresa)  # qualquer admin de empresa pode VER uma Função Global
+        return role.empresa_id == request.user.empresa_id
+
+    def _pode_editar():
+        if request.user.is_superuser:
+            return True
+        if is_global:
+            return False  # Função Global só é editável pelo superuser — empresa usa "Personalizar"
+        return (
+            hasattr(request.user, 'is_admin_empresa') and request.user.is_admin_empresa()
+            and role.empresa_id == request.user.empresa_id
+        )
+
+    if not _pode_ver():
+        return JsonResponse({'error': 'Permissão negada'}, status=403)
 
     if request.method == 'GET':
         # If request is AJAX or client expects JSON, return JSON payload
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
-            # Lista todas as permissões do sistema agrupadas por app/model
-            perms = Permission.objects.all().select_related('content_type')
-            role_perms = set(p.codename for p in role.get_permissions())
+            # Lista plana de Programas (uma linha + um checkbox por Programa).
+            # 'detalhe'/'excluir' não aparecem aqui — são geridos na tela do
+            # próprio Programa, com herança automática a partir da Listagem
+            # (ver empresas/acesso.py).
+            ACAO_LABEL = {'listagem': 'Listagem', 'criar': 'Criar', 'editar': 'Editar'}
 
-            grouped = {}
-            for p in perms:
-                app = p.content_type.app_label
-                if app in SYSTEM_APPS:
-                    continue  # Oculta apps de sistema irrelevantes
-                model = p.content_type.model
-                key = f"{app}:{model}"
+            programas = list(
+                Programa.objects.filter(ativo=True, tipo_acao__in=['listagem', 'criar', 'editar', 'outro'])
+            )
+            concedidos = set(role.programas.values_list('id', flat=True))
+            nomes_tela = {
+                (p.app_label, p.grupo_tela): p.nome
+                for p in programas if p.tipo_acao == 'listagem'
+            }
+            ordem_acao = {'listagem': 0, 'criar': 1, 'editar': 2, 'outro': 3}
+
+            apps = {}
+            for p in programas:
+                app = p.app_label
                 app_nome = APP_LABELS_PT.get(app, app.replace('_', ' ').title())
-                if key not in grouped:
-                    grouped[key] = {
-                        'app_label': app,
-                        'app_nome': app_nome,
-                        'model': model,
-                        'perms': {'add': False, 'change': False, 'delete': False, 'view': False}
-                    }
-                action = p.codename.split('_')[0]
-                if action in ('add', 'change', 'delete', 'view'):
-                    grouped[key]['perms'][action] = p.codename in role_perms
+                if app not in apps:
+                    apps[app] = {'app_label': app, 'app_nome': app_nome, 'programas': []}
+
+                if p.tipo_acao in ACAO_LABEL:
+                    tela_nome = nomes_tela.get((p.app_label, p.grupo_tela), p.nome)
+                    nome_exibicao = f'{tela_nome} — {ACAO_LABEL[p.tipo_acao]}'
+                else:
+                    nome_exibicao = p.nome
+
+                apps[app]['programas'].append({
+                    'id': p.id,
+                    'nome': nome_exibicao,
+                    'concedido': p.id in concedidos,
+                    '_ordem': (p.grupo_tela, ordem_acao.get(p.tipo_acao, 9)),
+                })
 
             # Ordena: apps do ERP primeiro (por APP_LABELS_PT order), system last
             erp_order = list(APP_LABELS_PT.keys())
-            def sort_key(k):
-                app = grouped[k]['app_label']
+            def sort_key(app_key):
                 try:
-                    return (0, erp_order.index(app), k)
+                    return (0, erp_order.index(app_key))
                 except ValueError:
-                    return (1, 0, k)
+                    return (1, 0)
 
-            items = []
-            for k in sorted(grouped.keys(), key=sort_key):
-                item = grouped[k]
-                item['key'] = k
-                items.append(item)
+            grupos = []
+            for app_key in sorted(apps.keys(), key=sort_key):
+                grupo = apps[app_key]
+                itens = sorted(grupo['programas'], key=lambda x: x['_ordem'])
+                for item in itens:
+                    item.pop('_ordem')
+                grupos.append({
+                    'app_label': grupo['app_label'],
+                    'app_nome': grupo['app_nome'],
+                    'programas': itens,
+                })
 
-            return JsonResponse({'permissions': items})
+            return JsonResponse({'grupos': grupos, 'pode_editar': _pode_editar(), 'is_global': is_global})
         # Otherwise render an HTML page that will load the permissions via JS
         return render(request, 'empresas/role_permissions_page.html', {'role': role})
 
     if request.method == 'POST':
+        if not _pode_editar():
+            return JsonResponse({
+                'error': 'Esta é uma Função Global — só o administrador do SaaS pode editá-la. '
+                         'Use "Personalizar" pra criar sua própria cópia.'
+            }, status=403)
         try:
             payload = json.loads(request.body.decode('utf-8'))
-            codenames = payload.get('permissions', [])
+            programa_ids = payload.get('programa_ids', [])
         except Exception:
             return JsonResponse({'error': 'Payload inválido'}, status=400)
 
-        role.set_permissions(codenames, actor=request.user if request.user.is_authenticated else None)
-        return JsonResponse({'ok': True, 'updated': len(codenames)})
+        role.set_programas(programa_ids, actor=request.user if request.user.is_authenticated else None)
+        return JsonResponse({'ok': True, 'updated': len(programa_ids)})
 
 
 @login_required
@@ -486,20 +573,10 @@ def apply_template_to_role(request, role_id):
     if tpl.empresa != role.empresa:
         return JsonResponse({'error': 'Template não pertence à mesma empresa'}, status=400)
 
-    # 'dados' tem o formato {"model": {"add": true, ...}}
-    codenames = []
-    for model, perms in tpl.dados.items():
-        if perms.get('add'):
-            codenames.append('add_' + model)
-        if perms.get('change'):
-            codenames.append('change_' + model)
-        if perms.get('delete'):
-            codenames.append('delete_' + model)
-        if perms.get('view'):
-            codenames.append('view_' + model)
-
-    role.set_permissions(codenames, actor=request.user if request.user.is_authenticated else None)
-    return JsonResponse({'ok': True, 'applied': len(codenames)})
+    # 'dados' tem o formato {"programa_ids": [1, 2, ...]}
+    programa_ids = tpl.dados.get('programa_ids', [])
+    role.set_programas(programa_ids, actor=request.user if request.user.is_authenticated else None)
+    return JsonResponse({'ok': True, 'applied': len(programa_ids)})
 
 
 @login_required
@@ -522,18 +599,8 @@ def apply_template_bulk(request):
             continue
         if not request.user.is_superuser and r.empresa != request.user.empresa:
             continue
-        # Constrói codename list
-        codenames = []
-        for model, perms in tpl.dados.items():
-            if perms.get('add'):
-                codenames.append('add_' + model)
-            if perms.get('change'):
-                codenames.append('change_' + model)
-            if perms.get('delete'):
-                codenames.append('delete_' + model)
-            if perms.get('view'):
-                codenames.append('view_' + model)
-        r.set_permissions(codenames, actor=request.user if request.user.is_authenticated else None)
+        programa_ids = tpl.dados.get('programa_ids', [])
+        r.set_programas(programa_ids, actor=request.user if request.user.is_authenticated else None)
         applied += 1
 
     return JsonResponse({'ok': True, 'roles_updated': applied})
@@ -567,12 +634,30 @@ def permission_template_detail(request, pk):
 @login_required
 @require_POST
 def role_clone(request, role_id):
-    """Clona uma função copiando todas as suas permissões para um novo nome."""
+    """Clona uma função copiando todas as suas permissões para um novo nome.
+
+    Diferente de "Personalizar" (`role_fork`): o clone é uma Função nova e
+    independente, com nome escolhido pelo usuário — não fica vinculada via
+    `origem_global`, e a Global de origem continua disponível pra ser
+    personalizada normalmente depois.
+    """
     role = get_object_or_404(Role, pk=role_id)
-    if not request.user.is_superuser and (
-        not request.user.empresa or role.empresa != request.user.empresa
-    ):
-        return JsonResponse({'error': 'Permissão negada'}, status=403)
+
+    if role.empresa_id:
+        empresa_destino = role.empresa
+        if not request.user.is_superuser and (
+            not request.user.empresa or role.empresa != request.user.empresa
+        ):
+            return JsonResponse({'error': 'Permissão negada'}, status=403)
+    else:
+        # Clonando uma Função Global: superuser sem empresa (painel SaaS) gera
+        # outra Global; admin de empresa gera uma cópia independente da empresa dele.
+        if request.user.is_superuser and not request.user.empresa:
+            empresa_destino = None
+        elif request.user.empresa and request.user.is_admin_empresa():
+            empresa_destino = request.user.empresa
+        else:
+            return JsonResponse({'error': 'Permissão negada'}, status=403)
 
     try:
         payload = json.loads(request.body.decode('utf-8'))
@@ -584,17 +669,17 @@ def role_clone(request, role_id):
     if not new_name:
         return JsonResponse({'error': 'Informe o nome para a nova função.'}, status=400)
 
-    if Role.objects.filter(empresa=role.empresa, name=new_name).exists():
+    if Role.objects.filter(empresa=empresa_destino, name=new_name).exists():
         return JsonResponse({'error': f'Já existe uma função com o nome "{new_name}".'}, status=400)
 
     new_role = Role.objects.create(
-        empresa=role.empresa,
+        empresa=empresa_destino,
         name=new_name,
         description=new_desc or f'Clonada de: {role.name}',
         builtin=False,
     )
-    codenames = list(role.get_permissions().values_list('codename', flat=True))
-    new_role.set_permissions(codenames, actor=request.user)
+    programa_ids = list(role.programas.values_list('id', flat=True))
+    new_role.set_programas(programa_ids, actor=request.user)
 
     return JsonResponse({'ok': True, 'role_id': new_role.pk, 'role_name': new_role.name})
 

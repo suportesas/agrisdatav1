@@ -27,14 +27,28 @@ except Exception:
 
 @receiver(post_save, sender=Empresa)
 def create_default_roles(sender, instance, created, **kwargs):
-    """Cria roles padrao quando uma Empresa e criada (idempotente)."""
+    """Empresa nova NÃO ganha mais cópia própria das 6 Funções padrão.
+
+    Elas agora são Funções Globais (`Role.objects.filter(empresa__isnull=True,
+    builtin=True)`, geridas pelo superuser no painel SaaS) — toda empresa já
+    enxerga elas automaticamente na tela de Funções e Permissões
+    (`empresas/acesso.py::roles_visiveis_para_empresa`), ao vivo, sem
+    precisar de nenhum registro por-empresa. Só vira algo "da empresa" se o
+    admin clicar "Personalizar" de propósito (`empresas/views.py::role_fork`).
+
+    Fallback: se nenhuma Global padrão existir ainda (banco novo antes de
+    rodar `criar_funcoes_globais_padrao`), cria as 6 vazias do jeito antigo,
+    só pra não deixar a empresa sem nenhuma Função — mecanismo antigo,
+    mantido só como rede de segurança.
+    """
     if kwargs.get('raw'):
         return
     if not created:
         return
 
-    for nome in DEFAULT_ROLES:
-        Role.objects.get_or_create(empresa=instance, name=nome, defaults={'builtin': True})
+    if not Role.objects.filter(empresa__isnull=True, builtin=True).exists():
+        for nome in DEFAULT_ROLES:
+            Role.objects.get_or_create(empresa=instance, name=nome, defaults={'builtin': True})
 
 
 @receiver(post_save, sender=Empresa)

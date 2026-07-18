@@ -206,30 +206,32 @@ class UsuarioCreateForm(UserCreationForm):
             self.fields['comissao_vendas'].required = False
             self.fields['comissao_vendas'].widget.attrs.update({'placeholder': 'Apenas para vendedores (opcional)'})
 
-        # Configura queryset de roles
+        # Configura queryset de roles (próprias da empresa + Globais ainda não
+        # personalizadas — mesma fonte usada na tela de Funções e Permissões)
         from empresas.models import Role
+        from empresas.acesso import roles_visiveis_para_empresa
         if 'roles' in self.fields:
             # PRIORIDADE 1: Se o usuário sendo CRIADO tem empresa, filtrar por ela
             if self.instance and self.instance.empresa:
-                self.fields['roles'].queryset = Role.objects.filter(empresa=self.instance.empresa)
+                self.fields['roles'].queryset = roles_visiveis_para_empresa(self.instance.empresa)
             # PRIORIDADE 2: Se quem está criando é admin de empresa, filtrar pela sua empresa
             elif self.user and not self.user.is_superuser and self.user.empresa:
-                self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
+                self.fields['roles'].queryset = roles_visiveis_para_empresa(self.user.empresa)
             # PRIORIDADE 3: Caso contrário (superuser criando novo), mostrar todas
             else:
                 self.fields['roles'].queryset = Role.objects.all()
-    
+
     def clean_roles(self):
-        """Valida que as roles selecionadas pertencem à empresa correta"""
+        """Valida que as roles selecionadas pertencem à empresa correta (ou são Globais)"""
         roles = self.cleaned_data.get('roles')
-        
+
         # Se o usuário sendo criado tem empresa, valida contra ela
         if roles and self.instance and self.instance.empresa:
             invalid_roles = []
             for role in roles:
-                if role.empresa != self.instance.empresa:
+                if role.empresa_id and role.empresa != self.instance.empresa:
                     invalid_roles.append(role.name)
-            
+
             if invalid_roles:
                 raise ValidationError(
                     f'❌ Você não pode atribuir funções de outras empresas. '
@@ -239,15 +241,15 @@ class UsuarioCreateForm(UserCreationForm):
         elif roles and self.user and not self.user.is_superuser and self.user.empresa:
             invalid_roles = []
             for role in roles:
-                if role.empresa != self.user.empresa:
+                if role.empresa_id and role.empresa != self.user.empresa:
                     invalid_roles.append(role.name)
-            
+
             if invalid_roles:
                 raise ValidationError(
                     f'❌ Você não pode atribuir funções de outras empresas. '
                     f'Funções inválidas: {", ".join(invalid_roles)}'
                 )
-        
+
         return roles
     
     def clean_email(self):
@@ -426,15 +428,17 @@ class UsuarioUpdateForm(UserChangeForm):
             self.fields['comissao_vendas'].required = False
             self.fields['comissao_vendas'].widget.attrs.update({'placeholder': 'Apenas para vendedores (opcional)'})
 
-        # Configura queryset de roles
+        # Configura queryset de roles (próprias da empresa + Globais ainda não
+        # personalizadas — mesma fonte usada na tela de Funções e Permissões)
         from empresas.models import Role
+        from empresas.acesso import roles_visiveis_para_empresa
         if 'roles' in self.fields:
             # PRIORIDADE 1: Se o usuário sendo EDITADO tem empresa, filtrar por ela
             if self.instance and self.instance.empresa:
-                self.fields['roles'].queryset = Role.objects.filter(empresa=self.instance.empresa)
+                self.fields['roles'].queryset = roles_visiveis_para_empresa(self.instance.empresa)
             # PRIORIDADE 2: Se quem está editando é admin de empresa, filtrar pela sua empresa
             elif self.user and not self.user.is_superuser and self.user.empresa:
-                self.fields['roles'].queryset = Role.objects.filter(empresa=self.user.empresa)
+                self.fields['roles'].queryset = roles_visiveis_para_empresa(self.user.empresa)
             # PRIORIDADE 3: Caso contrário (superuser editando superuser), mostrar todas
             else:
                 self.fields['roles'].queryset = Role.objects.all()
@@ -462,16 +466,16 @@ class UsuarioUpdateForm(UserChangeForm):
         return tipo
     
     def clean_roles(self):
-        """Valida que as roles selecionadas pertencem à empresa correta"""
+        """Valida que as roles selecionadas pertencem à empresa correta (ou são Globais)"""
         roles = self.cleaned_data.get('roles')
-        
+
         # Se o usuário sendo editado tem empresa, valida contra ela
         if roles and self.instance and self.instance.empresa:
             invalid_roles = []
             for role in roles:
-                if role.empresa != self.instance.empresa:
+                if role.empresa_id and role.empresa != self.instance.empresa:
                     invalid_roles.append(role.name)
-            
+
             if invalid_roles:
                 raise ValidationError(
                     f'❌ Você não pode atribuir funções de outras empresas. '
@@ -481,9 +485,9 @@ class UsuarioUpdateForm(UserChangeForm):
         elif roles and self.user and not self.user.is_superuser and self.user.empresa:
             invalid_roles = []
             for role in roles:
-                if role.empresa != self.user.empresa:
+                if role.empresa_id and role.empresa != self.user.empresa:
                     invalid_roles.append(role.name)
-            
+
             if invalid_roles:
                 raise ValidationError(
                     f'❌ Você não pode atribuir funções de outras empresas. '

@@ -66,7 +66,7 @@ from .forms import (
     FazendaForm, EnderecoFazendaForm, ContatoFazendaForm,
     ContaBancariaFazendaForm, DocumentoFazendaForm, DocumentoFornecedorForm,
     
-    AreaForm, TalhaoForm, CulturaForm, PragaForm, HistoricoTalhaoForm, SafraForm, SafraPlanForm, PortoForm, NCMForm, EmpresaNCMForm, CFOPForm,
+    AreaForm, TalhaoForm, CulturaForm, PragaForm, HistoricoTalhaoForm, SafraForm, SafraPlanForm, PortoForm, NCMForm, EmpresaNCMForm, CFOPForm, EmpresaCFOPForm,
     AgenteExportacaoForm,
 
     # Cliente-related forms
@@ -757,11 +757,13 @@ def cfop_list(request):
 
 @login_required
 def cfop_create(request):
-    # If user has empresa, create company-scoped CFOP (requires permission)
+    from empresas.acesso import usuario_tem_acesso
+    if not usuario_tem_acesso(request, 'cadastros:cfop_create'):
+        messages.warning(request, '⚠️ Você não tem permissão para criar CFOPs.')
+        return redirect('cadastros:cfop_list')
+
+    # If user has empresa, create company-scoped CFOP
     if request.user.is_authenticated and getattr(request.user, 'empresa', None):
-        if not request.user.has_perm('cadastros.add_empresacfop'):
-            messages.warning(request, '⚠️ Você não tem permissão para criar CFOPs da empresa.')
-            return redirect('cadastros:cfop_list')
         empresa = request.user.empresa
         if request.method == 'POST':
             form = EmpresaCFOPForm(request.POST)
@@ -775,11 +777,7 @@ def cfop_create(request):
             form = EmpresaCFOPForm()
         return render(request, 'cadastros/cfop/cfop_form.html', {'form': form, 'action': 'Cadastrar'})
 
-    # Otherwise require add_cfop permission to create global templates
-    if not request.user.has_perm('cadastros.add_cfop'):
-        messages.warning(request, '⚠️ Você não tem permissão para criar templates de CFOP.')
-        return redirect('cadastros:cfop_list')
-
+    # Otherwise, global template
     if request.method == 'POST':
         form = CFOPForm(request.POST)
         if form.is_valid():
@@ -793,11 +791,13 @@ def cfop_create(request):
 
 @login_required
 def cfop_update(request, pk):
+    from empresas.acesso import usuario_tem_acesso
+    if not usuario_tem_acesso(request, 'cadastros:cfop_update'):
+        messages.warning(request, '⚠️ Você não tem permissão para editar CFOPs.')
+        return redirect('cadastros:cfop_list')
+
     # If company user, fetch company-scoped CFOP
     if request.user.is_authenticated and getattr(request.user, 'empresa', None):
-        if not request.user.has_perm('cadastros.change_empresacfop'):
-            messages.warning(request, '⚠️ Você não tem permissão para editar CFOPs da empresa.')
-            return redirect('cadastros:cfop_list')
         empresa = request.user.empresa
         obj = get_object_or_404(EmpresaCFOP, pk=pk, empresa=empresa)
         if request.method == 'POST':
@@ -810,12 +810,8 @@ def cfop_update(request, pk):
             form = EmpresaCFOPForm(instance=obj)
         return render(request, 'cadastros/cfop/cfop_form.html', {'form': form, 'action': 'Editar'})
 
-    # Otherwise global template
+    # Otherwise, global template
     cf = get_object_or_404(CFOP, pk=pk)
-    if not request.user.has_perm('cadastros.change_cfop'):
-        messages.warning(request, '⚠️ Você não tem permissão para editar templates de CFOP.')
-        return redirect('cadastros:cfop_list')
-
     if request.method == 'POST':
         form = CFOPForm(request.POST, instance=cf)
         if form.is_valid():
@@ -830,8 +826,8 @@ def cfop_update(request, pk):
 
 @login_required
 def cfop_import(request):
-    # Only users with add_cfop permission can import global templates
-    if not request.user.has_perm('cadastros.add_cfop'):
+    from empresas.acesso import usuario_tem_acesso
+    if not usuario_tem_acesso(request, 'cadastros:cfop_import'):
         messages.warning(request, '⚠️ Você não tem permissão para importar CFOPs.')
         return redirect('cadastros:cfop_list')
 
@@ -878,11 +874,13 @@ def cfop_import(request):
 
 @login_required
 def cfop_delete(request, pk):
+    from empresas.acesso import usuario_tem_acesso
+    if not usuario_tem_acesso(request, 'cadastros:cfop_delete'):
+        messages.warning(request, '⚠️ Você não tem permissão para excluir CFOPs.')
+        return redirect('cadastros:cfop_list')
+
     # If company user, delete EmpresaCFOP
     if request.user.is_authenticated and getattr(request.user, 'empresa', None):
-        if not request.user.has_perm('cadastros.delete_empresacfop'):
-            messages.warning(request, '⚠️ Você não tem permissão para excluir CFOPs da empresa.')
-            return redirect('cadastros:cfop_list')
         empresa = request.user.empresa
         obj = get_object_or_404(EmpresaCFOP, pk=pk, empresa=empresa)
         if request.method == 'POST':
@@ -892,12 +890,8 @@ def cfop_delete(request, pk):
             return redirect('cadastros:cfop_list')
         return render(request, 'cadastros/cfop/cfop_confirm_delete.html', {'cfop': obj})
 
-    # Otherwise global template
+    # Otherwise, global template
     cf = get_object_or_404(CFOP, pk=pk)
-    if not request.user.has_perm('cadastros.delete_cfop'):
-        messages.warning(request, '⚠️ Você não tem permissão para excluir templates de CFOP.')
-        return redirect('cadastros:cfop_list')
-
     if request.method == 'POST':
         nome = cf.nome
         cf.delete()

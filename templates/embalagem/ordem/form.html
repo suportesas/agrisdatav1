@@ -3,13 +3,22 @@
 {% block page_title %}Ordens de Embalagem{% endblock %}
 
 {% block content %}
-<div class="container py-4" style="max-width: 860px">
-  <div class="d-flex align-items-center mb-4">
-    <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
-    <h3 class="mb-0 me-auto">Nova Ordem de Embalagem</h3>
-    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalAjuda">
-      <i class="bi bi-question-circle me-1"></i>Ajuda
-    </button>
+<div class="container py-4" style="max-width: 900px">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-box-seam"></i></span>
+        <h2>Nova Ordem de Embalagem</h2>
+      </div>
+      <div class="form-header-actions">
+        <button type="button" class="btn btn-outline" data-bs-toggle="modal" data-bs-target="#modalAjuda">
+          <i class="bi bi-question-circle me-1"></i>Ajuda
+        </button>
+        <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- Modal de Ajuda -->
@@ -103,63 +112,69 @@
 
   <form method="post">
     {% csrf_token %}
-    <div class="card border-0 shadow-sm mb-3">
-      <div class="card-header fw-semibold">Dados da Ordem</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Data <span class="text-danger">*</span></label>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-clipboard-data"></i></span>
+        <span class="title">Dados da Ordem</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Data <span class="req">*</span></label>
             {{ form.data }}
-            {% if form.data.errors %}<div class="text-danger small mt-1">{{ form.data.errors }}</div>{% endif %}
+            {% if form.data.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-5">
-            <label class="form-label fw-semibold">Tipo de Embalagem <span class="text-danger">*</span></label>
+          <div class="field col-5">
+            <label class="form-label">Tipo de Embalagem <span class="req">*</span></label>
             {{ form.tipo_embalagem }}
-            {% if form.tipo_embalagem.errors %}<div class="text-danger small mt-1">{{ form.tipo_embalagem.errors }}</div>{% endif %}
+            {% if form.tipo_embalagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_embalagem.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">Responsável</label>
+          <div class="field col-4">
+            <label class="form-label">Responsável</label>
             {{ form.responsavel }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Lote de Origem <span class="text-danger">*</span></label>
+          <div class="field col-6">
+            <label class="form-label">Lote de Origem <span class="req">*</span></label>
             {{ form.lote_origem }}
-            {% if form.lote_origem.errors %}<div class="text-danger small mt-1">{{ form.lote_origem.errors }}</div>{% endif %}
+            {% if form.lote_origem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.lote_origem.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Quantidade de Entrada (kg) <span class="text-danger">*</span></label>
+          <div class="field col-6">
+            <label class="form-label">Quantidade de Entrada (kg) <span class="req">*</span></label>
             {{ form.quantidade_entrada_kg }}
-            <div id="pallets-estimados" class="form-text text-info fw-semibold"></div>
-            {% if form.quantidade_entrada_kg.errors %}<div class="text-danger small mt-1">{{ form.quantidade_entrada_kg.errors }}</div>{% endif %}
+            <div id="pallets-estimados" class="helper-note text-info"></div>
+            {% if form.quantidade_entrada_kg.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade_entrada_kg.errors|striptags }}</div>{% endif %}
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card border-0 shadow-sm mb-3">
-      <div class="card-header fw-semibold">Destino</div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Armazém Destino <span class="text-danger">*</span></label>
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm blue"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Destino</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Armazém Destino <span class="req">*</span></label>
             {{ form.armazem_destino }}
-            {% if form.armazem_destino.errors %}<div class="text-danger small mt-1">{{ form.armazem_destino.errors }}</div>{% endif %}
+            {% if form.armazem_destino.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.armazem_destino.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Local de Estocagem</label>
+          <div class="field col-6">
+            <label class="form-label">Local de Estocagem</label>
             {{ form.local_destino }}
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Observações</label>
+          <div class="field col-12">
+            <label class="form-label">Observações</label>
             {{ form.observacoes }}
           </div>
         </div>
       </div>
     </div>
 
-    <div class="d-flex gap-2">
-      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Criar Ordem</button>
-      <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+    <div class="app-footer-bar">
+      <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Criar Ordem</button>
     </div>
   </form>
 </div>

@@ -3,58 +3,52 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h1 class="mb-0">
-                <i class="bi bi-tag"></i> {{ titulo }}
-            </h1>
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-tag"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Nome <span class="req">*</span></label>
+            {{ form.nome }}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Código <span class="req">*</span></label>
+            {{ form.codigo }}
+            {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors }}</div>{% endif %}
+          </div>
+          <div class="field col-2">
+            <div class="switch-row" style="margin-top:28px">
+              <label class="switch">
+                {{ form.ativo }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="id_ativo">Ativo</label>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="id_nome" class="form-label">Nome *</label>
-                        {{ form.nome }}
-                        {% if form.nome.errors %}
-                        <div class="text-danger">{{ form.nome.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <label for="id_codigo" class="form-label">Código *</label>
-                        {{ form.codigo }}
-                        {% if form.codigo.errors %}
-                        <div class="text-danger">{{ form.codigo.errors }}</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="form-label d-block">Ativo</label>
-                        <div class="form-check">
-                            {{ form.ativo }}
-                            <label class="form-check-label" for="id_ativo">
-                                Tipo ativo
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-lg"></i> Salvar
-                    </button>
-                    <a href="{% url 'produtos:tipo_produto_list' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-x-lg"></i> Cancelar
-                    </a>
-                </div>
-            </form>
-        </div>
+    <div class="app-footer-bar">
+      <a href="{% url 'produtos:tipo_produto_list' %}" class="btn btn-outline">
+        <i class="bi bi-x-lg"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> Salvar
+      </button>
     </div>
+  </form>
 </div>
 {% endblock %}

@@ -1,389 +1,326 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{% if form.instance.id %}Editar{% else %}Novo{% endif %} Navio{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-sailboat"></i> 
-                {% if form.instance.id %}
-                    Editar Navio: {{ form.instance.nome }}
-                {% else %}
-                    Novo Navio
-                {% endif %}
-            </h1>
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-sailboat"></i></span>
+        <h2>{% if form.instance.id %}Editar Navio: {{ form.instance.nome }}{% else %}Novo Navio{% endif %}</h2>
+      </div>
+      <div class="form-header-actions">
+        <button type="button" class="btn btn-outline" data-bs-toggle="modal" data-bs-target="#ajudaModal">
+          <i class="bi bi-question-circle"></i> Ajuda
+        </button>
+        <a href="{% url 'cadastros:navio_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Cancelar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if form.non_field_errors %}
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> <strong>Erro!</strong>
+    {% for error in form.non_field_errors %}
+    <div>{{ error }}</div>
+    {% endfor %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endif %}
+
+  <form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+
+    <nav class="section-nav">
+      <a href="#sec-identificacao" data-tab="sec-identificacao">Identificação</a>
+      <a href="#sec-fisicas" data-tab="sec-fisicas">Características Físicas</a>
+      <a href="#sec-capacidade" data-tab="sec-capacidade">Capacidade</a>
+      <a href="#sec-portos" data-tab="sec-portos">Portos de Operação</a>
+      <a href="#sec-status" data-tab="sec-status">Status</a>
+    </nav>
+
+    <div class="complex-main">
+
+      <div class="form-section" id="sec-identificacao" data-tab-panel="sec-identificacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm"><i class="bi bi-clipboard-data"></i></span>
+          <span class="title">Identificação</span>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:navio_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Cancelar
-            </a>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }} <span class="req">*</span></label>
+              {{ form.codigo }}
+              {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.nome.id_for_label }}">{{ form.nome.label }} <span class="req">*</span></label>
+              {{ form.nome }}
+              {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.imo.id_for_label }}">{{ form.imo.label }}</label>
+              {{ form.imo }}
+              {% if form.imo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.imo.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.bandeira.id_for_label }}">{{ form.bandeira.label }}</label>
+              {{ form.bandeira }}
+              {% if form.bandeira.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.bandeira.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.tipo.id_for_label }}">{{ form.tipo.label }} <span class="req">*</span></label>
+              {{ form.tipo }}
+              {% if form.tipo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }} <span class="req">*</span></label>
+              {{ form.status }}
+              {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-12">
+              <label class="form-label" for="{{ form.armador.id_for_label }}">{{ form.armador.label }}</label>
+              <div class="input-group">
+                {{ form.armador }}
+                <a href="{% url 'cadastros:armador_create' %}" class="btn btn-outline-primary" title="Criar novo armador">
+                  <i class="bi bi-plus-circle"></i> Novo
+                </a>
+              </div>
+              {% if form.armador.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.armador.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="form-section" id="sec-fisicas" data-tab-panel="sec-fisicas">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-rulers"></i></span>
+          <span class="title">Características Físicas</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.ano_construcao.id_for_label }}">{{ form.ano_construcao.label }}</label>
+              {{ form.ano_construcao }}
+              {% if form.ano_construcao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ano_construcao.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.comprimento_metros.id_for_label }}">{{ form.comprimento_metros.label }}</label>
+              {{ form.comprimento_metros }}
+              {% if form.comprimento_metros.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.comprimento_metros.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-12">
+              <label class="form-label" for="{{ form.velocidade_media_nos.id_for_label }}">{{ form.velocidade_media_nos.label }}</label>
+              {{ form.velocidade_media_nos }}
+              {% if form.velocidade_media_nos.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.velocidade_media_nos.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-capacidade" data-tab-panel="sec-capacidade">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-box"></i></span>
+          <span class="title">Capacidade</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.capacidade_containers.id_for_label }}">{{ form.capacidade_containers.label }} (TEU)</label>
+              {{ form.capacidade_containers }}
+              {% if form.capacidade_containers.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.capacidade_containers.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
+              <label class="form-label" for="{{ form.capacidade_toneladas.id_for_label }}">{{ form.capacidade_toneladas.label }} (ton)</label>
+              {{ form.capacidade_toneladas }}
+              {% if form.capacidade_toneladas.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.capacidade_toneladas.errors.0 }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-portos" data-tab-panel="sec-portos">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-water"></i></span>
+          <span class="title">Portos de Operação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="field">
+            <label class="form-label" for="{{ form.portos_operacao.id_for_label }}">{{ form.portos_operacao.label }}</label>
+            {{ form.portos_operacao }}
+            {% if form.portos_operacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.portos_operacao.errors.0 }}</div>{% endif %}
+            <div class="helper-note">Selecione um ou mais portos (Ctrl+Clique para múltiplos)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-status" data-tab-panel="sec-status">
+        <div class="form-section-header">
+          <span class="icon-badge sm orange"><i class="bi bi-toggle-on"></i></span>
+          <span class="title">Status</span>
+        </div>
+        <div class="form-section-body">
+          <div class="switch-row">
+            <label class="switch">
+              {{ form.ativo }}
+              <span class="slider"></span>
+            </label>
+            <label class="switch-label" for="{{ form.ativo.id_for_label }}">{{ form.ativo.label }} - Marque para ativar este navio</label>
+          </div>
+          {% if form.ativo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ativo.errors.0 }}</div>{% endif %}
+        </div>
+      </div>
+
     </div>
 
-    {% if form.non_field_errors %}
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle"></i> <strong>Erro!</strong>
-        {% for error in form.non_field_errors %}
-        <div>{{ error }}</div>
-        {% endfor %}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="app-footer-bar">
+      <a href="{% url 'cadastros:navio_list' %}" class="btn btn-outline">
+        <i class="bi bi-x-circle"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i>
+        {% if form.instance.id %}Atualizar{% else %}Criar{% endif %} Navio
+      </button>
     </div>
-    {% endif %}
-
-    <form method="post" class="needs-validation" novalidate>
-        {% csrf_token %}
-        <div class="row">
-            <div class="col-lg-8">
-                <!-- Identificação -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Identificação</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.codigo.id_for_label }}" class="form-label">{{ form.codigo.label }} <span class="text-danger">*</span></label>
-                                {{ form.codigo }}
-                                {% if form.codigo.errors %}
-                                <div class="invalid-feedback d-block">{{ form.codigo.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }} <span class="text-danger">*</span></label>
-                                {{ form.nome }}
-                                {% if form.nome.errors %}
-                                <div class="invalid-feedback d-block">{{ form.nome.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.imo.id_for_label }}" class="form-label">{{ form.imo.label }}</label>
-                                {{ form.imo }}
-                                {% if form.imo.errors %}
-                                <div class="invalid-feedback d-block">{{ form.imo.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.bandeira.id_for_label }}" class="form-label">{{ form.bandeira.label }}</label>
-                                {{ form.bandeira }}
-                                {% if form.bandeira.errors %}
-                                <div class="invalid-feedback d-block">{{ form.bandeira.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.tipo.id_for_label }}" class="form-label">{{ form.tipo.label }} <span class="text-danger">*</span></label>
-                                {{ form.tipo }}
-                                {% if form.tipo.errors %}
-                                <div class="invalid-feedback d-block">{{ form.tipo.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }} <span class="text-danger">*</span></label>
-                                {{ form.status }}
-                                {% if form.status.errors %}
-                                <div class="invalid-feedback d-block">{{ form.status.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.armador.id_for_label }}" class="form-label">{{ form.armador.label }}</label>
-                            <div class="input-group">
-                                {{ form.armador }}
-                                <a href="{% url 'cadastros:armador_create' %}" class="btn btn-outline-primary" title="Criar novo armador">
-                                    <i class="bi bi-plus-circle"></i> Novo
-                                </a>
-                            </div>
-                            {% if form.armador.errors %}
-                            <div class="invalid-feedback d-block">{{ form.armador.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CaracterÃ­sticas FÃ­sicas -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-rulers"></i> CaracterÃ­sticas FÃ­sicas</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.ano_construcao.id_for_label }}" class="form-label">{{ form.ano_construcao.label }}</label>
-                                {{ form.ano_construcao }}
-                                {% if form.ano_construcao.errors %}
-                                <div class="invalid-feedback d-block">{{ form.ano_construcao.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.comprimento_metros.id_for_label }}" class="form-label">{{ form.comprimento_metros.label }}</label>
-                                {{ form.comprimento_metros }}
-                                {% if form.comprimento_metros.errors %}
-                                <div class="invalid-feedback d-block">{{ form.comprimento_metros.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="{{ form.velocidade_media_nos.id_for_label }}" class="form-label">{{ form.velocidade_media_nos.label }}</label>
-                            {{ form.velocidade_media_nos }}
-                            {% if form.velocidade_media_nos.errors %}
-                            <div class="invalid-feedback d-block">{{ form.velocidade_media_nos.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Capacidade -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-box"></i> Capacidade</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.capacidade_containers.id_for_label }}" class="form-label">{{ form.capacidade_containers.label }} (TEU)</label>
-                                {{ form.capacidade_containers }}
-                                {% if form.capacidade_containers.errors %}
-                                <div class="invalid-feedback d-block">{{ form.capacidade_containers.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ form.capacidade_toneladas.id_for_label }}" class="form-label">{{ form.capacidade_toneladas.label }} (ton)</label>
-                                {{ form.capacidade_toneladas }}
-                                {% if form.capacidade_toneladas.errors %}
-                                <div class="invalid-feedback d-block">{{ form.capacidade_toneladas.errors.0 }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Portos de OperaÃ§Ã£o -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-water"></i> Portos de OperaÃ§Ã£o</h5>
-                    </div>
-                    <div class="card-body">
-                        <label for="{{ form.portos_operacao.id_for_label }}" class="form-label">{{ form.portos_operacao.label }}</label>
-                        {{ form.portos_operacao }}
-                        {% if form.portos_operacao.errors %}
-                        <div class="invalid-feedback d-block">{{ form.portos_operacao.errors.0 }}</div>
-                        {% endif %}
-                        <small class="form-text text-muted d-block mt-2">Selecione um ou mais portos (Ctrl+Clique para mÃºltiplos)</small>
-                    </div>
-                </div>
-
-                <!-- Status -->
-                <div class="card mb-4">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-toggle-on"></i> Status</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-check form-switch">
-                            {{ form.ativo }}
-                            <label class="form-check-label" for="{{ form.ativo.id_for_label }}">
-                                {{ form.ativo.label }} - Marque para ativar este navio
-                            </label>
-                        </div>
-                        {% if form.ativo.errors %}
-                        <div class="invalid-feedback d-block">{{ form.ativo.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sidebar -->
-            <div class="col-lg-4">
-                <!-- Botão de Ajuda (Modal) -->
-                <div class="mb-3">
-                    <button type="button" class="btn btn-info w-100" data-bs-toggle="modal" data-bs-target="#ajudaModal">
-                        <i class="bi bi-question-circle"></i> Precisa de Ajuda?
-                    </button>
-                </div>
-
-                <!-- Ajuda -->
-                <div class="card sticky-top" style="top: 20px;">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="bi bi-info-circle"></i> Guia Rápido</h5>
-                    </div>
-                    <div class="card-body small">
-                        <div class="mb-3">
-                            <strong class="text-primary">Campos Obrigatórios:</strong>
-                            <ul class="mt-2 mb-0">
-                                <li>Código</li>
-                                <li>Nome</li>
-                                <li>Tipo de Navio</li>
-                                <li>Status</li>
-                            </ul>
-                        </div>
-                        <hr>
-                        <div>
-                            <strong class="text-primary">Tipos de Navio:</strong>
-                            <ul class="mt-2 mb-0 small">
-                                <li><strong>CONTAINER:</strong> Contêineres</li>
-                                <li><strong>REEFER:</strong> Refrigeradas</li>
-                                <li><strong>BREAKBULK:</strong> Cargas gerais</li>
-                                <li><strong>MULTIPURPOSE:</strong> Múltiplos tipos</li>
-                                <li><strong>GENERAL:</strong> Cargas diversas</li>
-                                <li><strong>TANKER:</strong> Líquidos a granel</li>
-                                <li><strong>RORO:</strong> Veículos</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- BotÃµes de AÃ§Ã£o -->
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4 mb-4">
-            <a href="{% url 'cadastros:navio_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-x-circle"></i> Cancelar
-            </a>
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-circle"></i> 
-                {% if form.instance.id %}Atualizar{% else %}Criar{% endif %} Navio
-            </button>
-        </div>
-    </form>
+  </form>
 </div>
 
 <!-- Modal de Ajuda -->
 <div class="modal fade" id="ajudaModal" tabindex="-1" aria-labelledby="ajudaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title" id="ajudaModalLabel">
-                    <i class="bi bi-question-circle"></i> Guia de Preenchimento - Criar Navio
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="ajudaModalLabel">
+          <i class="bi bi-question-circle"></i> Guia de Preenchimento - Criar Navio
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="accordion" id="accordionAjuda">
+          <!-- Campos Obrigatórios -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseObrigatorios" aria-expanded="true" aria-controls="collapseObrigatorios">
+                <i class="bi bi-exclamation-circle"></i> Campos Obrigatórios
+              </button>
+            </h2>
+            <div id="collapseObrigatorios" class="accordion-collapse collapse show" data-bs-parent="#accordionAjuda">
+              <div class="accordion-body">
+                <ul>
+                  <li><strong>Código:</strong> Identificação única do navio (ex: SHIP001)</li>
+                  <li><strong>Nome:</strong> Nome oficial da embarcação</li>
+                  <li><strong>Tipo de Navio:</strong> Categoria operacional (CONTAINER, REEFER, etc)</li>
+                  <li><strong>Status:</strong> Situação da embarcação (Ativo, Inativo)</li>
+                </ul>
+              </div>
             </div>
-            <div class="modal-body">
-                <div class="accordion" id="accordionAjuda">
-                    <!-- Campos Obrigatórios -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseObrigatorios" aria-expanded="true" aria-controls="collapseObrigatorios">
-                                <i class="bi bi-exclamation-circle"></i> Campos Obrigatórios
-                            </button>
-                        </h2>
-                        <div id="collapseObrigatorios" class="accordion-collapse collapse show" data-bs-parent="#accordionAjuda">
-                            <div class="accordion-body">
-                                <ul>
-                                    <li><strong>Código:</strong> Identificação única do navio (ex: SHIP001)</li>
-                                    <li><strong>Nome:</strong> Nome oficial da embarcação</li>
-                                    <li><strong>Tipo de Navio:</strong> Categoria operacional (CONTAINER, REEFER, etc)</li>
-                                    <li><strong>Status:</strong> Situação da embarcação (Ativo, Inativo)</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+          </div>
 
-                    <!-- Informações Gerais -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeral" aria-expanded="false" aria-controls="collapseGeral">
-                                <i class="bi bi-ship"></i> Informações Gerais
-                            </button>
-                        </h2>
-                        <div id="collapseGeral" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
-                            <div class="accordion-body">
-                                <ul>
-                                    <li><strong>Armador:</strong> Selecione a empresa proprietária do navio</li>
-                                    <li><strong>IMO:</strong> Número de registro internacional (se disponível)</li>
-                                    <li><strong>Comprimento/Largura/Altura:</strong> Dimensões em metros</li>
-                                    <li><strong>Calado:</strong> Profundidade necessária em metros</li>
-                                    <li><strong>Tonelagem:</strong> Peso bruto da embarcação</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tipos de Navio -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTypes" aria-expanded="false" aria-controls="collapseTypes">
-                                <i class="bi bi-diagram-3"></i> Tipos de Navio
-                            </button>
-                        </h2>
-                        <div id="collapseTypes" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
-                            <div class="accordion-body">
-                                <dl class="row">
-                                    <dt class="col-sm-3"><strong>CONTAINER:</strong></dt>
-                                    <dd class="col-sm-9">Especializado em contêineres de 20 e 40 pés</dd>
-                                    
-                                    <dt class="col-sm-3"><strong>REEFER:</strong></dt>
-                                    <dd class="col-sm-9">Equipado com câmaras refrigeradas para cargas perecíveis</dd>
-                                    
-                                    <dt class="col-sm-3"><strong>BREAKBULK:</strong></dt>
-                                    <dd class="col-sm-9">Cargas gerais em paletes, sacos, caixas</dd>
-                                    
-                                    <dt class="col-sm-3"><strong>MULTIPURPOSE:</strong></dt>
-                                    <dd class="col-sm-9">Adaptável para múltiplos tipos de carga</dd>
-                                    
-                                    <dt class="col-sm-3"><strong>GENERAL:</strong></dt>
-                                    <dd class="col-sm-9">Cargas diversas sem especialização</dd>
-                                    
-                                    <dt class="col-sm-3"><strong>TANKER:</strong></dt>
-                                    <dd class="col-sm-9">Transporte de líquidos a granel (óleo, químicos)</dd>
-                                    
-                                    <dt class="col-sm-3"><strong>RORO:</strong></dt>
-                                    <dd class="col-sm-9">Veículos rodantes (carros, tratores, máquinas)</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Portos -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePortos" aria-expanded="false" aria-controls="collapsePortos">
-                                <i class="bi bi-geo-alt"></i> Portos Operacionais
-                            </button>
-                        </h2>
-                        <div id="collapsePortos" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
-                            <div class="accordion-body">
-                                <p>Selecione os portos onde esta embarcação opera regularmente. Você pode selecionar múltiplos portos usando Ctrl+Click (Windows/Linux) ou Cmd+Click (Mac).</p>
-                                <p class="text-muted small">Cada porto registra as operações e movimentações de carga realizadas.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Dicas -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDicas" aria-expanded="false" aria-controls="collapseDicas">
-                                <i class="bi bi-lightbulb"></i> Dicas Úteis
-                            </button>
-                        </h2>
-                        <div id="collapseDicas" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
-                            <div class="accordion-body">
-                                <ul>
-                                    <li>Use um código único e fácil de lembrar para identificar o navio</li>
-                                    <li>O Armador deve estar cadastrado antes de criar o navio</li>
-                                    <li>Preencha os portos operacionais para melhor rastreamento</li>
-                                    <li>Mantenha as dimensões sempre atualizadas no sistema</li>
-                                    <li>Use a opção "Inativo" para desativar navios descontinuados</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          <!-- Informações Gerais -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeral" aria-expanded="false" aria-controls="collapseGeral">
+                <i class="bi bi-ship"></i> Informações Gerais
+              </button>
+            </h2>
+            <div id="collapseGeral" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+              <div class="accordion-body">
+                <ul>
+                  <li><strong>Armador:</strong> Selecione a empresa proprietária do navio</li>
+                  <li><strong>IMO:</strong> Número de registro internacional (se disponível)</li>
+                  <li><strong>Comprimento/Largura/Altura:</strong> Dimensões em metros</li>
+                  <li><strong>Calado:</strong> Profundidade necessária em metros</li>
+                  <li><strong>Tonelagem:</strong> Peso bruto da embarcação</li>
+                </ul>
+              </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+
+          <!-- Tipos de Navio -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTypes" aria-expanded="false" aria-controls="collapseTypes">
+                <i class="bi bi-diagram-3"></i> Tipos de Navio
+              </button>
+            </h2>
+            <div id="collapseTypes" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+              <div class="accordion-body">
+                <dl class="row">
+                  <dt class="col-sm-3"><strong>CONTAINER:</strong></dt>
+                  <dd class="col-sm-9">Especializado em contêineres de 20 e 40 pés</dd>
+
+                  <dt class="col-sm-3"><strong>REEFER:</strong></dt>
+                  <dd class="col-sm-9">Equipado com câmaras refrigeradas para cargas perecíveis</dd>
+
+                  <dt class="col-sm-3"><strong>BREAKBULK:</strong></dt>
+                  <dd class="col-sm-9">Cargas gerais em paletes, sacos, caixas</dd>
+
+                  <dt class="col-sm-3"><strong>MULTIPURPOSE:</strong></dt>
+                  <dd class="col-sm-9">Adaptável para múltiplos tipos de carga</dd>
+
+                  <dt class="col-sm-3"><strong>GENERAL:</strong></dt>
+                  <dd class="col-sm-9">Cargas diversas sem especialização</dd>
+
+                  <dt class="col-sm-3"><strong>TANKER:</strong></dt>
+                  <dd class="col-sm-9">Transporte de líquidos a granel (óleo, químicos)</dd>
+
+                  <dt class="col-sm-3"><strong>RORO:</strong></dt>
+                  <dd class="col-sm-9">Veículos rodantes (carros, tratores, máquinas)</dd>
+                </dl>
+              </div>
             </div>
+          </div>
+
+          <!-- Portos -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePortos" aria-expanded="false" aria-controls="collapsePortos">
+                <i class="bi bi-geo-alt"></i> Portos Operacionais
+              </button>
+            </h2>
+            <div id="collapsePortos" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+              <div class="accordion-body">
+                <p>Selecione os portos onde esta embarcação opera regularmente. Você pode selecionar múltiplos portos usando Ctrl+Click (Windows/Linux) ou Cmd+Click (Mac).</p>
+                <p class="text-muted small">Cada porto registra as operações e movimentações de carga realizadas.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dicas -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDicas" aria-expanded="false" aria-controls="collapseDicas">
+                <i class="bi bi-lightbulb"></i> Dicas Úteis
+              </button>
+            </h2>
+            <div id="collapseDicas" class="accordion-collapse collapse" data-bs-parent="#accordionAjuda">
+              <div class="accordion-body">
+                <ul>
+                  <li>Use um código único e fácil de lembrar para identificar o navio</li>
+                  <li>O Armador deve estar cadastrado antes de criar o navio</li>
+                  <li>Preencha os portos operacionais para melhor rastreamento</li>
+                  <li>Mantenha as dimensões sempre atualizadas no sistema</li>
+                  <li>Use a opção "Inativo" para desativar navios descontinuados</li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+      </div>
     </div>
+  </div>
 </div>
 
 {% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/section-nav.js' %}"></script>
+{% endblock %}

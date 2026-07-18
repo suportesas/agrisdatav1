@@ -3,7 +3,24 @@
 
 {% block content %}
 <div class="container py-4">
-  <div class="alert alert-info">A funcionalidade de atribuir motorista foi removida do sistema. Se precisar reativá-la, entre em contato com o time de desenvolvimento.</div>
-  <a href="{% url 'frota:vehicle_list' %}" class="btn btn-outline">Voltar para Veículos</a>
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge gray"><i class="bi bi-slash-circle"></i></span>
+        <h2>Funcionalidade Removida</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'frota:vehicle_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar para Veículos
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <div class="form-section-body">
+      <div class="alert alert-info mb-0">A funcionalidade de atribuir motorista foi removida do sistema. Se precisar reativá-la, entre em contato com o time de desenvolvimento.</div>
+    </div>
+  </div>
 </div>
 {% endblock %}

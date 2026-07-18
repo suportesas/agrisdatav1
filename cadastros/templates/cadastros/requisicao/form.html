@@ -3,135 +3,136 @@
 {% block title %}{{ titulo }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-clipboard-plus"></i> {{ titulo }}
-            </h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'cadastros:requisicao_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Voltar
-            </a>
-        </div>
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-clipboard-plus"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'cadastros:requisicao_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
     </div>
+  </div>
 
-    <div class="card">
-        <div class="card-body">
-            <form method="post" id="form-requisicao">
-                {% csrf_token %}
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">Numero</label>
-                        {{ form.numero }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Tipo</label>
-                        {{ form.tipo }}
-                    </div>
-                    {% if requisicao %}
-                    <div class="col-md-3">
-                        <label class="form-label">Status</label>
-                        <div class="form-control-plaintext">
-                            <strong>
-                                {% if requisicao.status == 'PENDENTE' %}
-                                <span class="badge bg-warning text-dark">Pendente</span>
-                                {% elif requisicao.status == 'APROVADA' %}
-                                <span class="badge bg-info text-dark">Aprovada</span>
-                                {% elif requisicao.status == 'ATENDIDA' %}
-                                <span class="badge bg-success">Atendida</span>
-                                {% else %}
-                                <span class="badge bg-danger">Cancelada</span>
-                                {% endif %}
-                            </strong>
-                        </div>
-                    </div>
-                    {% endif %}
-                    <div class="col-md-3">
-                        <label class="form-label">Funcionario Destino</label>
-                        {{ form.funcionario_destino }}
-                        <small class="text-muted d-block mt-1" id="hint-funcionario">Selecione uma fazenda para filtrar</small>
-                    </div>
-
-                    <div class="col-md-3" id="field-codigo-talhao">
-                        <label class="form-label">Código do Talhão</label>
-                        {{ form.codigo_talhao }}
-                        <small class="text-muted d-block mt-1">Digite para buscar talhão</small>
-                        <ul id="lista-talhoes" class="list-group mt-2" style="display: none; position: absolute; z-index: 100; max-width: 250px;"></ul>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Fazenda</label>
-                        {{ form.fazenda }}
-                    </div>
-                    <div class="col-md-3" id="field-talhao">
-                        <label class="form-label">Talhao</label>
-                        {{ form.talhao }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Safra</label>
-                        {{ form.safra }}
-                    </div>
-
-                    <div class="col-md-4" id="field-parceiro" style="display: none;">
-                        <label class="form-label">Parceiro</label>
-                        {{ form.parceiro }}
-                    </div>
-                    <div class="col-md-4" id="field-produtor" style="display: none;">
-                        <label class="form-label">Produtor</label>
-                        {{ form.produtor }}
-                    </div>
-                    <div class="col-md-4" id="field-direcao-emprestimo" style="display: none;">
-                        <label class="form-label">Direção do Empréstimo</label>
-                        {{ form.direcao_emprestimo }}
-                    </div>
-                    <div class="col-md-4" id="field-recebedor-material" style="display: none;">
-                        <label class="form-label">Recebedor do Material</label>
-                        {{ form.recebedor_material }}
-                        <small class="text-muted d-block mt-1">Informe nome completo e documento.</small>
-                    </div>
-                    <div class="col-md-4" id="field-promessa-devolucao" style="display: none;">
-                        <label class="form-label">Data Promessa de Devolução</label>
-                        {{ form.data_promessa_devolucao }}
-                    </div>
-                    <div class="col-md-4" id="field-veiculo" style="display: none;">
-                        <label class="form-label">Veiculo</label>
-                        {{ form.veiculo }}
-                    </div>
-                    <div class="col-md-2" id="field-horimetro" style="display: none;">
-                        <label class="form-label">Horimetro</label>
-                        {{ form.horimetro }}
-                    </div>
-                    <div class="col-md-2" id="field-odometro" style="display: none;">
-                        <label class="form-label">Odometro</label>
-                        {{ form.odometro }}
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Centro de Custo</label>
-                        {{ form.centro_custo_nome }}
-                    </div>
-                    <div class="col-md-12">
-                        <label class="form-label">Observacoes</label>
-                        {{ form.observacoes }}
-                    </div>
-                </div>
-
-                {% if form.errors %}
-                <div class="alert alert-danger mt-3">
-                    <strong>Verifique os campos:</strong>
-                    {{ form.errors }}
-                </div>
+  <div class="form-section">
+    <div class="form-section-body">
+      <form method="post" id="form-requisicao">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="field col-3">
+            <label class="form-label">Numero</label>
+            {{ form.numero }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Tipo</label>
+            {{ form.tipo }}
+          </div>
+          {% if requisicao %}
+          <div class="field col-3">
+            <label class="form-label">Status</label>
+            <div class="form-control-plaintext">
+              <strong>
+                {% if requisicao.status == 'PENDENTE' %}
+                <span class="status-pill orange">Pendente</span>
+                {% elif requisicao.status == 'APROVADA' %}
+                <span class="status-pill blue">Aprovada</span>
+                {% elif requisicao.status == 'ATENDIDA' %}
+                <span class="status-pill green">Atendida</span>
+                {% else %}
+                <span class="status-pill red">Cancelada</span>
                 {% endif %}
+              </strong>
+            </div>
+          </div>
+          {% endif %}
+          <div class="field col-3">
+            <label class="form-label">Funcionario Destino</label>
+            {{ form.funcionario_destino }}
+            <div class="helper-note" id="hint-funcionario">Selecione uma fazenda para filtrar</div>
+          </div>
 
-                <div class="mt-4 text-end">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-check-circle"></i> Salvar
-                    </button>
-                </div>
-            </form>
+          <div class="field col-3" id="field-codigo-talhao">
+            <label class="form-label">Código do Talhão</label>
+            {{ form.codigo_talhao }}
+            <div class="helper-note">Digite para buscar talhão</div>
+            <ul id="lista-talhoes" class="list-group mt-2" style="display: none; position: absolute; z-index: 100; max-width: 250px;"></ul>
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Fazenda</label>
+            {{ form.fazenda }}
+          </div>
+          <div class="field col-3" id="field-talhao">
+            <label class="form-label">Talhao</label>
+            {{ form.talhao }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Safra</label>
+            {{ form.safra }}
+          </div>
+
+          <div class="field col-4" id="field-parceiro" style="display: none;">
+            <label class="form-label">Parceiro</label>
+            {{ form.parceiro }}
+          </div>
+          <div class="field col-4" id="field-produtor" style="display: none;">
+            <label class="form-label">Produtor</label>
+            {{ form.produtor }}
+          </div>
+          <div class="field col-4" id="field-direcao-emprestimo" style="display: none;">
+            <label class="form-label">Direção do Empréstimo</label>
+            {{ form.direcao_emprestimo }}
+          </div>
+          <div class="field col-4" id="field-recebedor-material" style="display: none;">
+            <label class="form-label">Recebedor do Material</label>
+            {{ form.recebedor_material }}
+            <div class="helper-note">Informe nome completo e documento.</div>
+          </div>
+          <div class="field col-4" id="field-promessa-devolucao" style="display: none;">
+            <label class="form-label">Data Promessa de Devolução</label>
+            {{ form.data_promessa_devolucao }}
+          </div>
+          <div class="field col-4" id="field-veiculo" style="display: none;">
+            <label class="form-label">Veiculo</label>
+            {{ form.veiculo }}
+          </div>
+          <div class="field col-2" id="field-horimetro" style="display: none;">
+            <label class="form-label">Horimetro</label>
+            {{ form.horimetro }}
+          </div>
+          <div class="field col-2" id="field-odometro" style="display: none;">
+            <label class="form-label">Odometro</label>
+            {{ form.odometro }}
+          </div>
+
+          <div class="field col-6">
+            <label class="form-label">Centro de Custo</label>
+            {{ form.centro_custo_nome }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Observacoes</label>
+            {{ form.observacoes }}
+          </div>
         </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mt-3">
+          <strong>Verifique os campos:</strong>
+          {{ form.errors }}
+        </div>
+        {% endif %}
+
+        <div class="app-footer-bar">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Salvar
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <script>
@@ -146,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const recebedorMaterialInput = document.getElementById('id_recebedor_material');
     const codigoTalhaoInput = document.getElementById('id_codigo_talhao');
     const listaTalhoesUl = document.getElementById('lista-talhoes');
-    
+
     // Função para mostrar/esconder campos por tipo
     function updateFieldsVisibility() {
         const tipo = tipoSelect.value;
@@ -175,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('field-horimetro').style.display = tipo === 'ABASTECIMENTO' ? 'block' : 'none';
         document.getElementById('field-odometro').style.display = tipo === 'ABASTECIMENTO' ? 'block' : 'none';
     }
-    
+
     // Função para filtrar funcionários por fazenda
     function updateFuncionariosByFazenda(fazendaId, valorAtual) {
         if (!fazendaId) {
@@ -213,23 +214,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const talhaoId = talhaoSelect.value;
         console.log('Atualizando safra para talhão ID:', talhaoId);
         console.log('safraSelect element:', safraSelect);
-        
+
         if (!talhaoId) {
             safraSelect.innerHTML = '<option value="">---------</option>';
             return;
         }
-        
+
         fetch(`/cadastros/api/requisicoes/safras-por-talhao/${talhaoId}/`)
             .then(response => response.json())
             .then(data => {
                 console.log('Resposta da API:', data);
                 console.log('Data safras array:', data.safras);
-                
+
                 safraSelect.innerHTML = '<option value="">---------</option>';
-                
+
                 if (data.safras && Array.isArray(data.safras) && data.safras.length > 0) {
                     console.log('Safras encontradas:', data.safras.length);
-                    
+
                     data.safras.forEach((safra, index) => {
                         console.log(`Adicionando safra ${index}:`, safra);
                         const option = document.createElement('option');
@@ -238,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log(`Option criada:`, option);
                         safraSelect.appendChild(option);
                     });
-                    
+
                     console.log('Total de options após adicionar:', safraSelect.options.length);
                 } else {
                     console.warn('Nenhuma safra encontrada. Debug:', data.debug);
@@ -249,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 safraSelect.innerHTML = '<option value="">Erro na busca</option>';
             });
     }
-    
+
     // Função para buscar talhão por código
     function searchTalhaoByCode() {
         const codigo = codigoTalhaoInput.value.trim();
@@ -257,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
             listaTalhoesUl.style.display = 'none';
             return;
         }
-        
+
         fetch(`/cadastros/api/requisicoes/talhao-por-codigo/?codigo=${encodeURIComponent(codigo)}`)
             .then(response => response.json())
             .then(data => {
@@ -265,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     listaTalhoesUl.style.display = 'none';
                     return;
                 }
-                
+
                 listaTalhoesUl.innerHTML = '';
                 data.talhoes.forEach(talhao => {
                     const li = document.createElement('li');
@@ -284,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 listaTalhoesUl.style.display = 'none';
             });
     }
-    
+
     // Função para selecionar um talhão da lista
     function selectTalhao(talhao) {
         codigoTalhaoInput.value = talhao.codigo;

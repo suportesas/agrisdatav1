@@ -1607,7 +1607,7 @@ def relatorio_alertas_estoque(request):
     unificar as duas telas que existiam antes.
     """
     from compras.models import ItemSolicitacaoCompra
-    from compras.permissions import usuario_tem_atalho
+    from empresas.acesso import usuario_tem_acesso
 
     empresa = request.user.empresa
     produtos = Produto.objects.filter(ativo=True, categoria__empresa=empresa)
@@ -1664,7 +1664,7 @@ def relatorio_alertas_estoque(request):
         'total_criticos': len(alertas_criticos),
         'total_excesso': len(alertas_excesso),
         'total_alertas': len(alertas_criticos) + len(alertas_excesso),
-        'pode_gerar_compra': usuario_tem_atalho(request.user, 'criar_cotacao_direto_estoque_minimo'),
+        'pode_gerar_compra': usuario_tem_acesso(request, 'compras:central_alertas_gerar_solicitacao'),
         'tem_criticos_compraveis': any(a['pode_comprar'] for a in alertas_criticos),
     }
 

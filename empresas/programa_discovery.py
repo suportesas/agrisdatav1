@@ -13,6 +13,7 @@ Uso: `sincronizar_programas()`, chamado pelo comando de management
 from django.apps import apps as django_apps
 from django.urls import URLPattern, URLResolver, get_resolver
 
+from .acesso import eh_ajax_helper_leitura
 from .models import Programa
 
 # Namespaces inteiros que ficam fora do controle de acesso por Programa —
@@ -37,7 +38,8 @@ EXCLUDED_URL_NAMES = {
 
 # Sufixos de nome de URL → tipo de ação. Ordem importa (mais específico primeiro).
 _SUFIXOS_TIPO_ACAO = [
-    ('_list', 'abrir'), ('_detail', 'abrir'), ('_view', 'abrir'), ('_dashboard', 'abrir'),
+    ('_list', 'listagem'), ('_dashboard', 'listagem'),
+    ('_detail', 'detalhe'), ('_view', 'detalhe'),
     ('_create', 'criar'), ('_novo', 'criar'), ('_nova', 'criar'), ('_add', 'criar'),
     ('_update', 'editar'), ('_edit', 'editar'), ('_editar', 'editar'),
     ('_delete', 'excluir'), ('_excluir', 'excluir'), ('_remove', 'excluir'),
@@ -70,6 +72,8 @@ def _deve_ignorar(full_name, full_path):
     if not namespace and bare_name in EXCLUDED_URL_NAMES:
         return True
     if '/api/' in full_path or full_path.startswith('api/'):
+        return True
+    if eh_ajax_helper_leitura(full_name):
         return True
     return False
 
@@ -151,7 +155,9 @@ def sincronizar_programas():
             )
             stats['criados'] += 1
 
-    desativados_qs = Programa.objects.filter(ativo=True).exclude(url_name__in=vistos)
+    # Nunca desativa Programas cadastrados manualmente (descoberta_automatica=False) —
+    # eles não têm URL própria para a varredura encontrar (ver Programa.descoberta_automatica).
+    desativados_qs = Programa.objects.filter(ativo=True, descoberta_automatica=True).exclude(url_name__in=vistos)
     stats['desativados'] = desativados_qs.count()
     desativados_qs.update(ativo=False)
 

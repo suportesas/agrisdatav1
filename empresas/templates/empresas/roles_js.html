@@ -60,6 +60,11 @@ function updateModuleCount(moduleName) {
     countEl.textContent = active + '/' + total;
     countEl.className = 'module-count' + (active === total && total > 0 ? ' full' : active === 0 ? ' empty' : '');
   }
+  const selectAllEl = document.querySelector(`.module-select-all[data-module="${moduleName}"]`);
+  if (selectAllEl) {
+    selectAllEl.checked = active === total && total > 0;
+    selectAllEl.indeterminate = active > 0 && active < total;
+  }
 }
 
 function updateAllModuleCounts() {
@@ -148,7 +153,11 @@ function renderPermissions(roleId, grupos, podeEditar = true, isGlobal = false) 
     headerRow.innerHTML = `
       <td colspan="2">
         <div class="d-flex align-items-center justify-content-between gap-2">
-          <span class="fw-bold">${grupo.app_nome}</span>
+          <span class="fw-bold d-flex align-items-center gap-2">
+            <input type="checkbox" class="module-select-all" data-module="${moduleName}"
+                   title="Marcar/desmarcar todas as telas de ${grupo.app_nome}">
+            ${grupo.app_nome}
+          </span>
           <div class="d-flex align-items-center gap-2">
             <span class="module-count empty" data-module="${moduleName}">0/0</span>
             <button type="button"
@@ -198,6 +207,19 @@ function renderPermissions(roleId, grupos, podeEditar = true, isGlobal = false) 
     updateAllModuleCounts();
   });
 
+  // Checkbox mestre no cabeçalho do módulo (marca/desmarca tudo daquele grupo)
+  tbody.addEventListener('change', function (e) {
+    if (!e.target.classList.contains('module-select-all')) return;
+    const m = e.target.dataset.module;
+    const marcar = e.target.checked;
+    tbody.querySelectorAll(`tr[data-module="${m}"] .perm-cb`).forEach(cb => cb.checked = marcar);
+    updateModuleCount(m);
+    setSaveEnabled(true);
+    updateAllModuleCounts();
+    pendingChanges++;
+    updateUnsavedBadge();
+  });
+
   // Marcar/desmarcar todos por módulo
   tbody.addEventListener('click', function (e) {
     const checkBtn = e.target.closest('.module-check-all');
@@ -230,6 +252,7 @@ function renderPermissions(roleId, grupos, podeEditar = true, isGlobal = false) 
 
   // Marcar todos/Desmarcar por módulo — some quando não pode editar
   tbody.querySelectorAll('.module-check-all, .module-uncheck-all').forEach(b => b.classList.toggle('d-none', !podeEditar));
+  tbody.querySelectorAll('.module-select-all').forEach(cb => cb.disabled = !podeEditar);
 
   // Salvar
   ['btn-save-perms', 'btn-save-perms-bottom'].forEach(id => {

@@ -349,6 +349,14 @@ class NCMImportForm(forms.Form):
     dry_run = forms.BooleanField(required=False, initial=True, label='Somente simular (dry-run)')
 
 
+class CFOPImportForm(forms.Form):
+    """Form para upload de CSV de CFOP"""
+    arquivo = forms.FileField(label='Arquivo CSV', help_text='CSV com colunas de código e nome')
+    replace = forms.BooleanField(required=False, initial=False, label='Substituir templates não presentes')
+    apply_to_all = forms.BooleanField(required=False, initial=False, label='Aplicar para todas as empresas (EmpresaCFOP)')
+    dry_run = forms.BooleanField(required=False, initial=True, label='Somente simular (dry-run)')
+
+
 class CFOPForm(forms.ModelForm):
     """Form para cadastro/edição de CFOP"""
 

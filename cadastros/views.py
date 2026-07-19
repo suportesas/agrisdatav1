@@ -831,7 +831,7 @@ def cfop_import(request):
         messages.warning(request, '⚠️ Você não tem permissão para importar CFOPs.')
         return redirect('cadastros:cfop_list')
 
-    from .forms.import_form import CFOPImportForm
+    from .forms import CFOPImportForm
     import tempfile, io, os
     from django.core.management import call_command
 

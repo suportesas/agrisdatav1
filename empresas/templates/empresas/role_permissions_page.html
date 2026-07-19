@@ -310,18 +310,73 @@
     </div>
   </div>
 
-  <div id="permissions-area">
-    <div class="text-center py-5 loading-skeleton">
-      <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-        <span class="visually-hidden">Carregando...</span>
+  <div id="permissions-area" class="permissions-table-wrapper">
+    <!-- roles_js.html (compartilhado com roles_list.html) espera esses IDs -->
+    <div id="perms-empty" class="empty-state d-none"></div>
+
+    <div id="perms-content">
+      <div class="perms-panel-header p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h6 class="mb-0 fw-bold" id="perms-role-name" style="color:#1a7a3c;">—</h6>
+          <small class="text-muted" id="perms-role-meta">Clique nos checkboxes para editar</small>
+          <div id="perms-readonly-banner" class="alert alert-info py-1 px-2 mt-1 mb-0 d-none" style="font-size:.8rem;">
+            <i class="bi bi-info-circle"></i> Isto é uma Função Global — clique em
+            <strong>Personalizar</strong> na lista de Funções pra criar sua própria cópia editável.
+          </div>
+        </div>
+        <div class="perms-toolbar d-flex align-items-center gap-2">
+          <span class="unsaved-badge hidden" id="unsaved-badge">
+            <i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>
+            <span id="unsaved-count">0</span> alteração(ões) não salva(s)
+          </span>
+          <button id="btn-select-all" class="btn btn-outline-secondary btn-sm" title="Marcar todas as permissões">
+            <i class="bi bi-check-all"></i>
+          </button>
+          <button id="btn-deselect-all" class="btn btn-outline-secondary btn-sm" title="Desmarcar todas as permissões">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <button id="btn-save-perms" class="btn-save-perms btn" disabled>
+            <i class="bi bi-floppy me-1"></i> Salvar
+          </button>
+        </div>
       </div>
-      <p class="text-muted">Carregando permissões...</p>
+
+      <div id="perms-loading" class="text-center py-5 loading-skeleton d-none">
+        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Carregando...</span>
+        </div>
+        <p class="text-muted">Carregando permissões...</p>
+      </div>
+
+      <div class="table-scroll d-none" id="perms-table-wrap">
+        <table class="permissions-table" id="perms-table">
+          <thead>
+            <tr>
+              <th class="text-center" style="width:8%">Acesso</th>
+              <th>Programa</th>
+            </tr>
+          </thead>
+          <tbody id="perms-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="p-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <small class="text-muted" id="perms-total-label">—</small>
+        <button id="btn-save-perms-bottom" class="btn-save-perms btn" disabled>
+          <i class="bi bi-floppy me-1"></i> Salvar Permissões
+        </button>
+      </div>
     </div>
   </div>
-  
+
   <!-- Ensure CSRF token is present in DOM for AJAX and E2E tests to read -->
   <form style="display:none">{% csrf_token %}</form>
 </div>
+
+{# data-perms-url usado por roles_js.html #}
+<div id="roles-url-config"
+     data-perms-url="{% url 'empresas:role_permissions' role_id=0 %}"
+     class="d-none" aria-hidden="true"></div>
 
 {% include 'empresas/roles_js.html' %}
 <script>

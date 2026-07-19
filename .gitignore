@@ -117,3 +117,11 @@ celerybeat.pid
 *~
 .sass-cache/
 node_modules/
+
+# ==============================================================================
+# ARTEFATOS DE TESTE E2E (screenshots/html/traces de falhas)
+# ==============================================================================
+# Gerados por tests/e2e/*.py em falha; o CI ja faz upload deles como
+# artifact do workflow (ver .github/workflows/e2e-playwright.yml) — nao
+# precisam ser commitados.
+tests/e2e/artifacts/

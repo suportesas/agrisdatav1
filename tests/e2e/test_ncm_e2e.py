@@ -16,7 +16,11 @@ User = get_user_model()
 @pytest.fixture
 def e2e_ncm_data(django_db_blocker):
     with django_db_blocker.unblock():
-        empresa = Empresa.objects.create(nome='E2E Empresa NCM')
+        # auto_seed_ncm=False: o teste quer um conjunto controlado de 2 NCMs
+        # para testar o filtro de busca, nao o catalogo global inteiro (que o
+        # signal post_save de Empresa copiaria automaticamente e colidiria
+        # com o codigo '01022110' criado manualmente abaixo)
+        empresa = Empresa.objects.create(nome='E2E Empresa NCM', auto_seed_ncm=False)
         user = User.objects.create_user(username='e2encm', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()

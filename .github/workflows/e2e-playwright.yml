@@ -57,6 +57,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      - name: Install system dependencies
+        run: |
+          # libcairo2-dev is required to build pycairo/rlPyCairo from source
+          # (no prebuilt wheel yet for this Python version)
+          sudo apt-get update
+          sudo apt-get install -y libcairo2-dev pkg-config
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip

@@ -86,9 +86,13 @@ jobs:
         run: |
           python manage.py migrate --noinput
 
-      - name: Run unit tests
+      - name: Run Django unit tests
         run: |
-          pytest -q
+          # python_files in pytest.ini is scoped to tests/e2e/*.py, so `pytest -q`
+          # only ever collected the E2E suite (redundant with the step below) and
+          # the real per-app unit tests (cadastros/tests/, empresas/tests.py, etc.)
+          # were never actually run in CI. This runs them for real.
+          python manage.py test --noinput -v 2
 
       - name: Run E2E tests
         id: run-e2e

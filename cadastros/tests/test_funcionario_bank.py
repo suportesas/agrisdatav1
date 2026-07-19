@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from empresas.models import Plano, Empresa
 from usuarios.models import Usuario
-from cadastros.models import Funcionario
+from rh.models import Funcionario
 
 
 class FuncionarioBankTests(TestCase):

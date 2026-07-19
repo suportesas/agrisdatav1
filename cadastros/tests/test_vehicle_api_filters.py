@@ -5,7 +5,8 @@ from datetime import timedelta
 
 from empresas.models import Plano, Empresa
 from usuarios.models import Usuario
-from cadastros.models import Vehicle, FuncaoFuncionario, Funcionario
+from frota.models import Vehicle
+from rh.models import FuncaoFuncionario, Funcionario
 
 
 class VehicleApiFilterTests(TestCase):
@@ -27,7 +28,7 @@ class VehicleApiFilterTests(TestCase):
 
 
     def test_filter_by_tipo_combustivel(self):
-        url = reverse('cadastros:api_vehicles') + '?tipo_combustivel=GASOLINA'
+        url = reverse('frota:api_vehicles') + '?tipo_combustivel=GASOLINA'
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
@@ -38,7 +39,7 @@ class VehicleApiFilterTests(TestCase):
 
 
     def test_ordering_consumo(self):
-        url = reverse('cadastros:api_vehicles') + '?sort=-consumo_medio'
+        url = reverse('frota:api_vehicles') + '?sort=-consumo_medio'
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         data = resp.json()

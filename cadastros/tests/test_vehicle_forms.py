@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from empresas.models import Plano, Empresa
-from cadastros.models import FuncaoFuncionario, Funcionario, Vehicle
+from frota.models import Vehicle
 
 class VehicleFormTests(TestCase):
     def setUp(self):
@@ -11,7 +11,7 @@ class VehicleFormTests(TestCase):
         self.empresa = Empresa.objects.create(nome='E', plano=self.plano)
 
     def test_vehicle_form_accepts_optional_fields(self):
-        from cadastros.forms import VehicleForm
+        from frota.forms import VehicleForm
         data = {
             'tipo': 'LEVE',
             'marca': 'Test',
@@ -47,14 +47,14 @@ class VehicleFormTests(TestCase):
         self.assertEqual(str(v2.estimated_range_km), '923.08')
 
     def test_apply_variation_requires_value(self):
-        from cadastros.forms import VehicleForm
+        from frota.forms import VehicleForm
         data = {'tipo': 'LEVE', 'marca': 'V', 'modelo': 'Z', 'percentual_variacao': '5.00', 'tipo_variacao': 'VAL', 'aplicar_variacao_agora': True}
         form = VehicleForm(data=data, empresa=self.empresa)
         self.assertFalse(form.is_valid())
         self.assertIn('valor_atual', form.errors)
 
     def test_apply_variation_applies_correctly_and_creates_history(self):
-        from cadastros.forms import VehicleForm
+        from frota.forms import VehicleForm
         data = {'tipo': 'LEVE', 'marca': 'V', 'modelo': 'Z', 'valor_atual': '100.00', 'percentual_variacao': '10.00', 'tipo_variacao': 'VAL', 'aplicar_variacao_agora': True}
         form = VehicleForm(data=data, empresa=self.empresa)
         self.assertTrue(form.is_valid(), form.errors)
@@ -62,7 +62,7 @@ class VehicleFormTests(TestCase):
         v.refresh_from_db()
         self.assertEqual(str(v.valor_atual), '110.00')
         # check history
-        from cadastros.models import VehicleValueHistory
+        from frota.models import VehicleValueHistory
         history = VehicleValueHistory.objects.filter(vehicle=v).first()
         self.assertIsNotNone(history)
         self.assertEqual(str(history.previous_value), '100.00')

@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from usuarios.models import Usuario
 from empresas.models import Empresa, Plano
-from cadastros.models import Vehicle
+from frota.models import Vehicle
 
 
 class VehicleApiTests(TestCase):
@@ -22,12 +22,12 @@ class VehicleApiTests(TestCase):
         self.v1 = Vehicle.objects.create(empresa=self.empresa, marca='A', modelo='One', renavam='R1', chassis='C1', numero_motor='M1', tipo_combustivel='DIESEL', codigo_patrimonio='P1', consumo_medio=7.5)
         self.v2 = Vehicle.objects.create(empresa=self.empresa, marca='B', modelo='Two')
         # create transportadora info
-        from cadastros.models import Funcionario, FuncaoFuncionario
+        from rh.models import Funcionario, FuncaoFuncionario
         f_role = FuncaoFuncionario.objects.create(empresa=self.empresa, nome='Motorista')
         self.driver = Funcionario.objects.create(empresa=self.empresa, nome_completo='CurDriver', cpf='0001', funcao=f_role, salario=0, cnh='X', cnh_validade=timezone.now().date() + timedelta(days=10))
 
     def test_api_vehicles_includes_optional_fields(self):
-        url = reverse('cadastros:api_vehicles')
+        url = reverse('frota:api_vehicles')
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
@@ -46,7 +46,7 @@ class VehicleApiTests(TestCase):
 
     def test_placa_atual_fallback_behavior(self):
         # v1 has no plates initially; check None
-        url = reverse('cadastros:api_vehicles')
+        url = reverse('frota:api_vehicles')
         resp = self.client.get(url)
         data = resp.json()
         items = {i['id']: i for i in data['items']}
@@ -54,7 +54,7 @@ class VehicleApiTests(TestCase):
         self.assertIsNone(i1['placa_atual'])
 
         # add a plate not marked as 'atual' -> should be returned as fallback
-        from cadastros.models import VehiclePlate
+        from frota.models import VehiclePlate
         VehiclePlate.objects.create(vehicle=self.v1, placa='FALL-111', vigencia_inicio=timezone.now().date(), atual=False)
         resp = self.client.get(url)
         data = resp.json()

@@ -10,7 +10,8 @@ from cadastros.models import Cliente, PrazoPagamentoPadrao, Porto
 from django.urls import reverse
 from datetime import date, timedelta
 from empresas.models import Empresa, Plano
-from cadastros.models import FuncaoFuncionario, Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario
+from rh.models import FuncaoFuncionario
+from cadastros.models import Fornecedor, FornecedorEndereco, FornecedorContato, FornecedorDadoBancario
 from django.utils import timezone
 
 User = get_user_model()

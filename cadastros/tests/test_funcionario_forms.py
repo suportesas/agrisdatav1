@@ -3,7 +3,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from empresas.models import Plano, Empresa
-from cadastros.models import FuncaoFuncionario
+from rh.models import FuncaoFuncionario
 from cadastros.forms import FuncionarioForm
 
 

@@ -5,7 +5,9 @@ from datetime import timedelta
 
 from usuarios.models import Usuario
 from empresas.models import Plano, Empresa
-from cadastros.models import Vehicle, VehiclePlate, FuncaoFuncionario, Funcionario, Transportadora
+from frota.models import Vehicle
+from rh.models import FuncaoFuncionario, Funcionario
+from cadastros.models import Transportadora
 
 
 class VehicleListViewTests(TestCase):
@@ -26,38 +28,45 @@ class VehicleListViewTests(TestCase):
         Vehicle.objects.create(empresa=self.empresa, marca='Heavy', modelo='H', tipo='PESADO')
         Vehicle.objects.create(empresa=self.empresa, marca='Med', modelo='M', tipo='MEDIO')
 
-    def test_vehicle_list_shows_transportadora_and_driver(self):
-        url = reverse('cadastros:vehicle_list')
+    def test_vehicle_list_shows_transportadora_and_type_filters(self):
+        """cadastros/templates/cadastros/vehicle/vehicle_list.html renderiza
+        os veículos numa tabela (não cards) e os contadores por tipo como
+        links .kpi-card com ?tipo=<TIPO>."""
+        url = reverse('frota:vehicle_list')
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
         self.assertIn('Trans X', content)
-        # Verify type count cards appear
         self.assertIn('Leve', content)
         self.assertIn('Pesado', content)
         self.assertIn('Médio', content)
-        # counts should show numbers (at least 1 for each created type)
-        self.assertRegex(content, r'Leve[\s\S]*?\d+')
-        self.assertRegex(content, r'Pesado[\s\S]*?\d+')
-        self.assertRegex(content, r'Médio[\s\S]*?\d+')
-        # cards should be clickable filter links
+        # cards de tipo devem ser links de filtro clicáveis
         self.assertIn('?tipo=LEVE', content)
+        self.assertIn('?tipo=PESADO', content)
+        self.assertIn('?tipo=MEDIO', content)
 
-    def test_pagination_shows_ten_per_page(self):
-        # Create enough vehicles to require pagination
-        for i in range(12):
+        # filtro por tipo de fato restringe a listagem
+        resp_pesado = self.client.get(url + '?tipo=PESADO')
+        content_pesado = resp_pesado.content.decode('utf-8')
+        self.assertIn('Heavy', content_pesado)
+        self.assertNotIn('Med', content_pesado)
+
+    def test_pagination_shows_twenty_per_page(self):
+        # frota/views_vehicle.py:vehicle_list pagina com Paginator(veiculos, 20)
+        for i in range(20):
             Vehicle.objects.create(empresa=self.empresa, marca=f'M{i}', modelo=f'Mod{i}')
-        url = reverse('cadastros:vehicle_list')
+        # total = 3 (setUp) + 20 = 23 veículos -> 2 páginas (20 + 3)
+
+        url = reverse('frota:vehicle_list')
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
-        # There should be at most 10 vehicle cards on the first page
-        cards = content.count('fornecedor-card')
-        self.assertTrue(cards <= 10)
-        # And pagination controls should be present
+        rows = content.count('<tr>') - 1  # subtrai a linha de cabeçalho da thead
+        self.assertEqual(rows, 20)
         self.assertIn('page-item', content)
-        # Request the second page and assert remaining items show
+
         resp2 = self.client.get(url + '?page=2')
         self.assertEqual(resp2.status_code, 200)
         content2 = resp2.content.decode('utf-8')
-        self.assertTrue('fornecedor-card' in content2)
+        rows2 = content2.count('<tr>') - 1
+        self.assertEqual(rows2, 3)

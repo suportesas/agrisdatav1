@@ -8,7 +8,8 @@ from urllib.parse import urlparse
 from django.test import Client
 from django.contrib.auth import get_user_model
 from empresas.models import Empresa
-from cadastros.models import Vehicle, VehiclePlate, Funcionario
+from frota.models import Vehicle, VehiclePlate
+from rh.models import Funcionario
 from django.utils import timezone
 from datetime import timedelta
 

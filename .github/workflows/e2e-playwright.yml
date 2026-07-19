@@ -13,6 +13,11 @@ jobs:
 
     env:
       DJANGO_ALLOW_ASYNC_UNSAFE: '1'
+      # settings.py requires SECRET_KEY whenever DEBUG is not truthy
+      DEBUG: 'True'
+      SECRET_KEY: ci-e2e-insecure-secret-key
+      # Optional — avoids the "sensitive fields not encrypted" warning during tests
+      FIELD_ENCRYPTION_KEY: 'RcxBSziF9kIyGkcOPGSUsA0JYHRVfv3zJ5FfwHktoCQ='
       # Postgres service credentials (used by Django settings when PG_NAME is provided)
       PG_NAME: erp_agricola
       PG_USER: erp_user
@@ -77,14 +82,14 @@ jobs:
           pytest tests/e2e -q
 
       - name: Upload E2E artifacts on failure
-        if: ${{ failure() }}
+        if: ${{ steps.run-e2e.outcome == 'failure' }}
         uses: actions/upload-artifact@v4
         with:
           name: e2e-artifacts-${{ github.run_id }}
           path: tests/e2e/artifacts/**
 
       - name: Fail if E2E failed
-        if: ${{ failure() }}
+        if: ${{ steps.run-e2e.outcome == 'failure' }}
         run: |
           echo "E2E tests failed — artifacts uploaded" >&2
           exit 1

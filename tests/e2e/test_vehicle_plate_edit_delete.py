@@ -20,7 +20,7 @@ User = get_user_model()
 def e2e_plate_data(django_db_blocker):
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa Plate')
-        user = User.objects.create_user(username='e2eplate', password='pass')
+        user = User.objects.create_user(username='e2eplate', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 
@@ -49,7 +49,7 @@ def test_edit_and_delete_plate(page, live_server, e2e_plate_data):
     }])
 
     # Go to vehicle detail
-    page.goto(f"{live_server.url}/cadastros/veiculos/{vehicle.pk}/")
+    page.goto(f"{live_server.url}/frota/veiculos/{vehicle.pk}/")
 
     # Click Edit on first plate (opens modal)
     page.wait_for_selector('button.btn-plate-edit')

@@ -16,7 +16,7 @@ User = get_user_model()
 def e2e_ncm_menu_data(django_db_blocker):
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa NCM')
-        user = User.objects.create_user(username='e2encm', password='pass')
+        user = User.objects.create_user(username='e2encm', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 
@@ -45,8 +45,8 @@ def test_sidebar_contains_ncm_link_and_navigates(page, live_server, e2e_ncm_menu
     page.click('text=Fiscal')
 
     # Wait for NCMs link and click it
-    page.wait_for_selector('a.submenu-link >> text=NCMs', timeout=3000)
-    page.click('a.submenu-link >> text=NCMs')
+    page.wait_for_selector('.nav-submenu a:has-text("NCMs")', timeout=3000)
+    page.click('.nav-submenu a:has-text("NCMs")')
 
     # Ensure we navigated to NCM list
     page.wait_for_url(f"{live_server.url}/cadastros/ncm/")

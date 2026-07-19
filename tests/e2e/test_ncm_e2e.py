@@ -17,7 +17,7 @@ User = get_user_model()
 def e2e_ncm_data(django_db_blocker):
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa NCM')
-        user = User.objects.create_user(username='e2encm', password='pass')
+        user = User.objects.create_user(username='e2encm', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 

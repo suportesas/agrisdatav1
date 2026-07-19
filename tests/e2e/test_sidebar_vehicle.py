@@ -16,7 +16,7 @@ User = get_user_model()
 def e2e_vehicle_menu_data(django_db_blocker):
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa Menu')
-        user = User.objects.create_user(username='e2emenu', password='pass')
+        user = User.objects.create_user(username='e2emenu', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 
@@ -40,14 +40,14 @@ def test_sidebar_contains_vehicle_link_and_navigates(page, live_server, e2e_vehi
 
     page.goto(f"{live_server.url}/")
 
-    # Open Cadastros submenu
-    page.wait_for_selector('text=Cadastros', timeout=5000)
-    page.click('text=Cadastros')
+    # Open Frota submenu (Veículos link lives there, not under Cadastros)
+    page.wait_for_selector('text=Frota', timeout=5000)
+    page.click('text=Frota')
 
     # Wait for Veículos link and click it
-    page.wait_for_selector('a.submenu-link >> text=Veículos', timeout=3000)
-    page.click('a.submenu-link >> text=Veículos')
+    page.wait_for_selector('.nav-submenu a:has-text("Veículos")', timeout=3000)
+    page.click('.nav-submenu a:has-text("Veículos")')
 
     # Ensure we navigated to vehicle list
-    page.wait_for_url(f"{live_server.url}/cadastros/veiculos/")
+    page.wait_for_url(f"{live_server.url}/frota/veiculos/")
     assert page.locator('text=Veículos').count() >= 1

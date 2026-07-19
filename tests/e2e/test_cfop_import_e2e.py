@@ -18,7 +18,7 @@ User = get_user_model()
 def e2e_cfop_import_data(django_db_blocker):
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa CFOP')
-        user = User.objects.create_user(username='e2eimport', password='pass')
+        user = User.objects.create_user(username='e2eimport', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 

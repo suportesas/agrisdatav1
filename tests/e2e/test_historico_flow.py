@@ -13,7 +13,7 @@ def e2e_data(django_db_blocker):
     # Create DB objects synchronously to avoid running DB ops inside async test
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa')
-        user = User.objects.create_user(username='e2euser', password='pass')
+        user = User.objects.create_user(username='e2euser', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 

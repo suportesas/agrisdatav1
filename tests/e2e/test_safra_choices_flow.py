@@ -26,7 +26,7 @@ def e2e_safra_data(django_db_blocker):
             empresas_models.CATEGORIAS_AGRICOLAS = []
 
         empresa = Empresa.objects.create(nome='E2E Empresa 2')
-        user = User.objects.create_user(username='e2euser2', password='pass')
+        user = User.objects.create_user(username='e2euser2', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 

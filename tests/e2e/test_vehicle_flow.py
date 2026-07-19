@@ -20,7 +20,7 @@ User = get_user_model()
 def e2e_vehicle_data(django_db_blocker):
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa Veiculos')
-        user = User.objects.create_user(username='e2eveiculo', password='pass')
+        user = User.objects.create_user(username='e2eveiculo', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
 
@@ -52,7 +52,7 @@ def test_vehicle_create_plate_assign(page, live_server, e2e_vehicle_data):
     }])
 
     # Go to vehicle list
-    page.goto(f"{live_server.url}/cadastros/veiculos/")
+    page.goto(f"{live_server.url}/frota/veiculos/")
 
     # Click add
     page.wait_for_selector('#addVehicleBtn', state='attached')
@@ -77,7 +77,7 @@ def test_vehicle_create_plate_assign(page, live_server, e2e_vehicle_data):
 
     # Wait for redirect to detail page
     try:
-        page.wait_for_url(f"{live_server.url}/cadastros/veiculos/*", timeout=30000)
+        page.wait_for_url(f"{live_server.url}/frota/veiculos/*", timeout=30000)
     except Exception:
         import os
         os.makedirs('artifacts/screenshots', exist_ok=True)

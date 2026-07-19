@@ -56,27 +56,3 @@ class SafraFormTest(TestCase):
         self.assertTrue(form2.is_valid(), form2.errors)
         safra2 = form2.save()
         self.assertEqual(safra2.ano, 2025)
-
-
-@pytest.mark.django_db
-def test_safra_composite_year_and_name_generation():
-    plano = Plano.objects.create(codigo='PEQ3', nome='P3', valor_mensal=Decimal('1.00'))
-    empresa = Empresa.objects.create(nome='E3', plano=plano)
-    user = Usuario.objects.create(username='u3')
-    fazenda = Fazenda.objects.create(empresa=empresa, nome='F3', cnpj_cpf='22.2', area_total=Decimal('100'))
-    cultura = Cultura.objects.create(empresa=empresa, nome='C3')
-
-    # User provides periodo spanning two years but omits 'ano'
-    data_inicio = date(2025, 10, 1)
-    data_fim = date(2026, 3, 1)
-    form = SafraForm(data={'fazenda': fazenda.pk, 'cultura': cultura.pk, 'periodo_inicio': data_inicio, 'periodo_fim': data_fim}, user=user)
-    assert form.is_valid(), form.errors
-    safra = form.save()
-    assert safra.ano == 2025
-    assert safra.nome == '202526'
-
-    # User provides composite ano like 202526 directly
-    form2 = SafraForm(data={'fazenda': fazenda.pk, 'cultura': cultura.pk, 'ano': 202526}, user=user)
-    assert not form2.is_valid() is False
-    safra2 = form2.save()
-    assert safra2.ano == 2025

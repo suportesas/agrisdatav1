@@ -8,21 +8,22 @@ User = get_user_model()
 
 
 @pytest.fixture
-def e2e_templates_data(db):
-    empresa = Empresa.objects.create(nome='E2E Empresa Tpl')
-    user = User.objects.create_user(username='tpladmin', password='pass', tipo='ADMIN')
-    user.empresa = empresa
-    user.save()
+def e2e_templates_data(django_db_blocker):
+    with django_db_blocker.unblock():
+        empresa = Empresa.objects.create(nome='E2E Empresa Tpl')
+        user = User.objects.create_user(username='tpladmin', password='pass', tipo='ADMIN')
+        user.empresa = empresa
+        user.save()
 
-    role = Role.objects.create(empresa=empresa, name='TemplateRole')
+        role = Role.objects.create(empresa=empresa, name='TemplateRole')
 
-    client = Client()
-    assert client.login(username='tpladmin', password='pass')
+        client = Client()
+        assert client.login(username='tpladmin', password='pass')
 
     return {'empresa': empresa, 'role': role, 'client': client}
 
 
-def test_save_and_apply_permission_template_via_api(e2e_templates_data):
+def test_save_and_apply_permission_template_via_api(e2e_templates_data, django_db_blocker):
     """Salva e aplica um template de permissões batendo direto na API.
 
     A UI de "salvar/aplicar template" que esse teste cobria via Playwright
@@ -35,32 +36,33 @@ def test_save_and_apply_permission_template_via_api(e2e_templates_data):
     role = e2e_templates_data['role']
     client = e2e_templates_data['client']
 
-    programa = Programa.objects.filter(ativo=True).first()
-    assert programa is not None, 'Nenhum Programa ativo encontrado — rode a sincronização de programas antes dos testes'
+    with django_db_blocker.unblock():
+        programa = Programa.objects.filter(ativo=True).first()
+        assert programa is not None, 'Nenhum Programa ativo encontrado — rode a sincronização de programas antes dos testes'
 
-    # Salva as permissões atuais como template
-    resp = client.post(
-        f'/empresas/roles/{role.id}/permissions/save-template/',
-        data=json.dumps({'nome': 'E2E Template', 'dados': {'programa_ids': [programa.id]}}),
-        content_type='application/json',
-    )
-    assert resp.status_code == 200
-    template_id = resp.json()['template_id']
+        # Salva as permissões atuais como template
+        resp = client.post(
+            f'/empresas/roles/{role.id}/permissions/save-template/',
+            data=json.dumps({'nome': 'E2E Template', 'dados': {'programa_ids': [programa.id]}}),
+            content_type='application/json',
+        )
+        assert resp.status_code == 200
+        template_id = resp.json()['template_id']
 
-    # Template aparece na listagem da empresa
-    resp = client.get('/empresas/roles/templates/')
-    assert resp.status_code == 200
-    assert any(t['nome'] == 'E2E Template' for t in resp.json()['templates'])
+        # Template aparece na listagem da empresa
+        resp = client.get('/empresas/roles/templates/')
+        assert resp.status_code == 200
+        assert any(t['nome'] == 'E2E Template' for t in resp.json()['templates'])
 
-    # Aplica o template na role
-    resp = client.post(
-        f'/empresas/roles/{role.id}/permissions/apply-template/',
-        data=json.dumps({'template_id': template_id}),
-        content_type='application/json',
-    )
-    assert resp.status_code == 200
-    assert resp.json() == {'ok': True, 'applied': 1}
+        # Aplica o template na role
+        resp = client.post(
+            f'/empresas/roles/{role.id}/permissions/apply-template/',
+            data=json.dumps({'template_id': template_id}),
+            content_type='application/json',
+        )
+        assert resp.status_code == 200
+        assert resp.json() == {'ok': True, 'applied': 1}
 
-    role.refresh_from_db()
-    assert programa in role.programas.all()
-    assert RoleAudit.objects.filter(role=role, action='permissions_updated').exists()
+        role.refresh_from_db()
+        assert programa in role.programas.all()
+        assert RoleAudit.objects.filter(role=role, action='permissions_updated').exists()

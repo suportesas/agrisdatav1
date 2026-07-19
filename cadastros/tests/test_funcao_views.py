@@ -18,7 +18,7 @@ class FuncaoViewsTests(TestCase):
         self.client.force_login(self.user)
 
     def test_update_funcao(self):
-        url = reverse('cadastros:funcao_update', args=[self.funcao.pk])
+        url = reverse('rh:funcao_update', args=[self.funcao.pk])
         resp = self.client.post(url, {'nome': 'Motorista X', 'descricao': '', 'salario_base': '', 'ativa': True})
         self.assertEqual(resp.status_code, 302)
         self.funcao.refresh_from_db()
@@ -26,14 +26,14 @@ class FuncaoViewsTests(TestCase):
 
     def test_cannot_delete_when_has_employees(self):
         f = Funcionario.objects.create(empresa=self.empresa, nome_completo='Joao', cpf='00000000123', funcao=self.funcao, salario=0)
-        url = reverse('cadastros:funcao_delete', args=[self.funcao.pk])
+        url = reverse('rh:funcao_delete', args=[self.funcao.pk])
         resp = self.client.post(url)
         self.assertEqual(resp.status_code, 302)
         # function should still exist
         self.assertTrue(FuncaoFuncionario.objects.filter(pk=self.funcao.pk).exists())
 
     def test_create_funcao_non_ajax_fallback(self):
-        url = reverse('cadastros:funcao_create')
+        url = reverse('rh:funcao_create')
         resp = self.client.post(url, {'nome': 'Operador', 'descricao': 'x', 'salario_base': '0', 'ativa': 'on'})
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(FuncaoFuncionario.objects.filter(nome='Operador').exists())

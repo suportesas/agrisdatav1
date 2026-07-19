@@ -189,7 +189,7 @@ class FuncaoAjaxTests(TestCase):
 		self.client.login(username='u', password='pass')
 
 	def test_create_funcao_ajax_success(self):
-		url = reverse('cadastros:funcao_create_ajax')
+		url = reverse('rh:funcao_create_ajax')
 		data = {'nome': 'Tratorista', 'descricao': 'Operador', 'salario_base': '1500.00', 'ativa': 'on'}
 		resp = self.client.post(url, data)
 		self.assertEqual(resp.status_code, 200)
@@ -198,7 +198,7 @@ class FuncaoAjaxTests(TestCase):
 		self.assertTrue(FuncaoFuncionario.objects.filter(nome='Tratorista').exists())
 
 	def test_create_funcao_ajax_validation_error(self):
-		url = reverse('cadastros:funcao_create_ajax')
+		url = reverse('rh:funcao_create_ajax')
 		data = {'descricao': 'Sem nome'}
 		resp = self.client.post(url, data)
 		self.assertEqual(resp.status_code, 400)

@@ -16,14 +16,14 @@ class FuncionarioBankTests(TestCase):
         self.client.login(username='tuser2', password='pass')
 
     def test_funcionario_form_renders_tipo_conta(self):
-        url = reverse('cadastros:funcionario_create')
+        url = reverse('rh:funcionario_create')
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
         self.assertIn('name="tipo_conta"', content)
 
     def test_creating_funcionario_with_tipo_conta(self):
-        url = reverse('cadastros:funcionario_create')
+        url = reverse('rh:funcionario_create')
         data = {
             'nome_completo': 'Carlos',
             'cpf': '12345678901',
@@ -43,7 +43,7 @@ class FuncionarioBankTests(TestCase):
         self.assertEqual(f.tipo_conta, 'CORRENTE')
 
     def test_funcionario_form_renders_pix_fields(self):
-        url = reverse('cadastros:funcionario_create')
+        url = reverse('rh:funcionario_create')
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
@@ -56,7 +56,7 @@ class FuncionarioBankTests(TestCase):
         self.assertIn('id="chave_pix_field"', content)
 
     def test_creating_funcionario_with_pix(self):
-        url = reverse('cadastros:funcionario_create')
+        url = reverse('rh:funcionario_create')
         data = {
             'nome_completo': 'Mariana',
             'cpf': '22233344455',

@@ -4,9 +4,8 @@ from django.utils import timezone
 from datetime import timedelta
 
 from empresas.models import Plano, Empresa
-from cadastros.models import (
-    FuncaoFuncionario, Funcionario, Vehicle, VehiclePlate
-)
+from frota.models import Vehicle, VehiclePlate
+from rh.models import FuncaoFuncionario
 
 
 class VehicleModelTests(TestCase):

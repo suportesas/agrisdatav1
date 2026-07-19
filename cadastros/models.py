@@ -1296,7 +1296,7 @@ class NCM(models.Model):
     sem afetar outras empresas (SaaS multi-tenant behavior).
     """
     codigo = models.CharField('Código NCM', max_length=8, unique=True, help_text='8 dígitos numéricos')
-    nome = models.CharField('Descrição', max_length=500)
+    nome = models.TextField('Descrição')
     descricao = models.TextField('Observações', blank=True)
     cest = models.CharField('CEST', max_length=10, blank=True, help_text='CEST (se aplicável)')
     ativo = models.BooleanField('Ativo', default=True)
@@ -1323,7 +1323,7 @@ class EmpresaNCM(models.Model):
     """NCM específico de cada empresa. Cópia da tabela mestre para customização por empresa."""
     empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='ncms')
     codigo = models.CharField('Código NCM', max_length=8, help_text='8 dígitos numéricos')
-    nome = models.CharField('Descrição', max_length=500)
+    nome = models.TextField('Descrição')
     descricao = models.TextField('Observações', blank=True)
     cest = models.CharField('CEST', max_length=10, blank=True)
     ativo = models.BooleanField('Ativo', default=True)

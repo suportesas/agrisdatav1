@@ -16,7 +16,7 @@
       <i class="bi bi-person-circle"></i>
     </div>
     <div class="user-details">
-      <span class="user-name">{{ user.get_full_name|default:user.username }}</span>
+      <span class="user-name">{{ user.empresa.nome|default:user.get_full_name|default:user.username }}</span>
       <span class="user-role">{{ user.get_tipo_display }}</span>
     </div>
   </div>

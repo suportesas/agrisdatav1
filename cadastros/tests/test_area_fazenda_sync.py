@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
+from empresas.models import Empresa, Plano
 from cadastros.models import Fazenda, Area
 
 User = get_user_model()
@@ -9,11 +10,16 @@ User = get_user_model()
 
 class AreaFazendaSyncTests(TestCase):
     def setUp(self):
-        # cria usuário e empresa mínima via fixtures do projeto (assume estrutura simples)
+        # Fazenda.empresa e uma FK obrigatoria (sem null=True) — precisa de
+        # uma Empresa de verdade, nao dava pra criar com empresa=None.
+        plano = Plano.objects.create(codigo='PEQ', nome='P', valor_mensal=1)
+        self.empresa = Empresa.objects.create(nome='E', plano=plano)
         self.user = User.objects.create(username='testuser')
+        self.user.empresa = self.empresa
+        self.user.save()
         # cria fazenda
         self.fazenda = Fazenda.objects.create(
-            empresa=getattr(self.user, 'empresa', None),
+            empresa=self.empresa,
             nome='Fazenda Teste',
             area_total=Decimal('100.00'),
         )

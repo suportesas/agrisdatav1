@@ -5,7 +5,14 @@ from cadastros.models import CFOP
 
 User = get_user_model()
 
+
 class TestCFOPViews(TestCase):
+    """cadastros.views.cfop_create/update/delete/import checam
+    empresas.acesso.usuario_tem_acesso() (sistema de Programas/Role), nao
+    mais auth.Permission/Group — conceder Permission a um Group nao tem
+    nenhum efeito nessas views. tipo='ADMIN' bypassa via is_admin_empresa()
+    (ver empresas/acesso.py), com ou sem empresa vinculada.
+    """
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user('user1', 'u1@example.com', 'pass')
@@ -71,37 +78,25 @@ class TestCFOPViews(TestCase):
         resp = self.client.post(post_url, {'codigo': '5201', 'nome': 'Empresa CFOP', 'descricao': '', 'ativo': True}, follow=True)
         self.assertContains(resp, 'Você não tem permissão')
 
-        # Grant permission via group and try again
-        from django.contrib.auth.models import Group, Permission
-        g, _ = Group.objects.get_or_create(name='Test Fiscal')
-        perms = ['add_empresacfop']
-        for p in perms:
-            perm = Permission.objects.get(codename=p, content_type__app_label='cadastros')
-            g.permissions.add(perm)
-        user.groups.add(g)
+        # tipo='ADMIN' concede acesso (is_admin_empresa() bypassa usuario_tem_acesso)
+        user.tipo = 'ADMIN'
+        user.save()
 
         resp = self.client.post(post_url, {'codigo': '5201', 'nome': 'Empresa CFOP', 'descricao': '', 'ativo': True})
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(EmpresaCFOP.objects.filter(empresa=empresa, codigo='5201').exists())
 
-    def test_group_allows_global_cfop_management(self):
-        # Non-superuser cannot create global CFOP
+    def test_admin_tipo_allows_global_cfop_management(self):
+        # Non-superuser sem empresa nao pode criar CFOP global
         resp = self.client.get(reverse('cadastros:cfop_create'), follow=True)
         self.assertContains(resp, 'Você não tem permissão')
 
-        # Create group with global permissions
-        from django.contrib.auth.models import Group, Permission
-        g, _ = Group.objects.get_or_create(name='Fiscal Admin Test')
-        perms = ['add_cfop','change_cfop','delete_cfop']
-        for p in perms:
-            perm = Permission.objects.get(codename=p, content_type__app_label='cadastros')
-            g.permissions.add(perm)
-
-        user = User.objects.create_user('fiscal', 'f@f', 'pass')
-        user.groups.add(g)
+        # tipo='ADMIN' sem empresa vinculada tambem bypassa usuario_tem_acesso
+        # (is_admin_empresa() checa self.tipo == 'ADMIN' direto, nao exige empresa)
+        # e cai no branch de CFOP global (getattr(request.user, 'empresa', None) é None)
+        user = User.objects.create_user('fiscal', 'f@f', 'pass', tipo='ADMIN')
         self.client.force_login(user)
 
-        # Should be able to create global CFOP
         resp = self.client.post(reverse('cadastros:cfop_create'), {'codigo': '5301', 'nome': 'Global CFOP', 'descricao': '', 'ativo': True})
         self.assertEqual(resp.status_code, 302)
         self.assertTrue(CFOP.objects.filter(codigo='5301').exists())
@@ -110,17 +105,11 @@ class TestCFOPViews(TestCase):
         from django.core.files.uploadedfile import SimpleUploadedFile
         csv_content = b"codigo,nome,descricao\n5102,Venda Interna,Teste\nabcd,Invalido,Top"
         f = SimpleUploadedFile('cfop_sample.csv', csv_content, content_type='text/csv')
-        # user must have add_cfop permission
-        from django.contrib.auth.models import Group, Permission
-        g, _ = Group.objects.get_or_create(name='Import Test')
-        perm = Permission.objects.get(codename='add_cfop', content_type__app_label='cadastros')
-        g.permissions.add(perm)
 
-        admin = User.objects.create_user('impuser', 'i@i', 'pass')
-        admin.groups.add(g)
+        admin = User.objects.create_user('impuser', 'i@i', 'pass', tipo='ADMIN')
         self.client.force_login(admin)
 
         url = reverse('cadastros:cfop_import')
         resp = self.client.post(url, {'arquivo': f, 'dry_run': True, 'replace': False, 'apply_to_all': False}, follow=True)
         self.assertEqual(resp.status_code, 200)
-        self.assertTrue('Import concluído' in resp.content.decode() or 'Inválidos' in resp.content.decode() or 'inválido' in resp.content.decode())
+        self.assertTrue('Importação concluída' in resp.content.decode() or 'Inválidos' in resp.content.decode())

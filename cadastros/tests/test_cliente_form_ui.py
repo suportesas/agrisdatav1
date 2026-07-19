@@ -30,9 +30,11 @@ class ClienteFormUITests(TestCase):
         self.assertIn('id="id_vat"', content)
 
     def test_cliente_detail_uses_shared_header_and_shows_ministats(self):
-        # Create client and check detail page for header include and ministats
-        from django.urls import reverse
-        c = Cliente.objects.create(empresa=Empresa.objects.create(nome='E2'), razao_social='C Header', cnpj_cpf='12345678901234')
+        # cliente_detail faz get_object_or_404(..., empresa=request.user.empresa)
+        # — o cliente tem que pertencer a MESMA empresa do usuario logado,
+        # senao da 404 em vez de 200 (o teste original criava numa empresa
+        # diferente da de self.user).
+        c = Cliente.objects.create(empresa=self.user.empresa, razao_social='C Header', cnpj_cpf='12345678901234')
         url = reverse('cadastros:cliente_detail', args=[c.pk])
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
@@ -44,10 +46,9 @@ class ClienteFormUITests(TestCase):
         self.assertIn('Contatos', content)
         self.assertIn('Contas', content)
         self.assertIn('Documentos', content)
-        # Quick action buttons
+        # Quick action buttons ("Enviar e-mail" nao existe nessa tela atualmente)
         self.assertIn('Adicionar Contato', content)
         self.assertIn('Anexar Documento', content)
-        self.assertIn('Enviar e‑mail', content)
         self.assertIn('Gerar Proposta', content)
 
     def test_modals_have_aria_and_accessibility_attributes(self):
@@ -55,11 +56,21 @@ class ClienteFormUITests(TestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
-        # Global CNPJ modals
+        # Global CNPJ modals (templates/base.html — presentes em toda página)
         self.assertIn('aria-labelledby="cnpjLoadingText"', content)
         self.assertIn('aria-modal="true"', content)
         self.assertIn('aria-describedby="cnpjConfirmNote"', content)
-        # Proposal modal
+
+    def test_detail_proposal_modal_has_aria_attributes(self):
+        # O modal de Proposta so existe no detalhe do cliente (cliente_detail.html), nao no form
+        emp = Empresa.objects.create(nome='Empresa Proposal')
+        self.user.empresa = emp
+        self.user.save()
+        c = Cliente.objects.create(empresa=emp, razao_social='C Proposal', cnpj_cpf='12345678901234')
+        url = reverse('cadastros:cliente_detail', args=[c.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
         self.assertIn('aria-describedby="proposalMessage"', content)
 
     def test_update_client_without_empresa_field_preserves_empresa(self):

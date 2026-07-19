@@ -24,10 +24,18 @@ class BuscarCepTests(TestCase):
 
     @patch('cadastros.views.requests.get')
     def test_buscar_cep_not_found(self, mock_get):
-        mock_resp = Mock()
-        mock_resp.status_code = 200
-        mock_resp.json.return_value = {'erro': True}
-        mock_get.return_value = mock_resp
+        # buscar_cep e buscar_cep_brasil_api (fallback) usam o mesmo
+        # requests.get patchado - o ViaCEP retorna {'erro': True} (200),
+        # o que aciona o fallback para a Brasil API; o teste so bate 404
+        # se o fallback tambem falhar (aqui simulado com status_code != 200).
+        viacep_resp = Mock()
+        viacep_resp.status_code = 200
+        viacep_resp.json.return_value = {'erro': True}
+
+        brasilapi_resp = Mock()
+        brasilapi_resp.status_code = 404
+
+        mock_get.side_effect = [viacep_resp, brasilapi_resp]
 
         url = reverse('cadastros:buscar_cep')
         resp = self.client.post(url, {'cep': '00000000'})

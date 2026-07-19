@@ -4,10 +4,10 @@ from django.core.management import call_command
 from django.contrib.auth.models import Permission
 from django.contrib.auth import get_user_model
 
-from .models import Empresa, Role, PermissionTemplate
+from empresas.models import Empresa, Role, PermissionTemplate
 from django.test import Client
 try:
-    from .management.commands.seed_roles import DEFAULT_ROLES
+    from empresas.management.commands.seed_roles import DEFAULT_ROLES
 except Exception:
     DEFAULT_ROLES = [
         'Proprietário',
@@ -77,7 +77,7 @@ class RoleTests(TestCase):
         user.save()
 
         # Nenhum audit ainda
-        from .models import RoleAudit
+        from empresas.models import RoleAudit
         self.assertEqual(RoleAudit.objects.count(), 0)
 
         # Atribui role
@@ -89,7 +89,7 @@ class RoleTests(TestCase):
         role = Role.objects.create(empresa=self.empresa, name='PermRoleLogs')
         actor = get_user_model().objects.create_user(username='actoruser', password='pass')
         role.set_permissions([], actor=actor)
-        from .models import RoleAudit
+        from empresas.models import RoleAudit
         self.assertTrue(RoleAudit.objects.filter(role=role, action='permissions_updated', actor=actor).exists())
 
     def test_empresa_creation_auto_creates_roles(self):
@@ -137,7 +137,7 @@ class PermissionTemplateTests(TestCase):
         dados = {'empresa': {'add': True, 'change': False, 'delete': False, 'view': True}}
         resp = self.client.post(url, data=json.dumps({'nome': 'Tpl1', 'dados': dados}), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-        from .models import PermissionTemplate
+        from empresas.models import PermissionTemplate
         self.assertTrue(PermissionTemplate.objects.filter(empresa=self.empresa, nome='Tpl1').exists())
 
         # Também lista via endpoint
@@ -154,7 +154,7 @@ class PermissionTemplateTests(TestCase):
         url = f"/empresas/roles/{role.id}/permissions/apply-template/"
         resp = self.client.post(url, data=json.dumps({'template_id': tpl.id}), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-        from .models import RoleAudit
+        from empresas.models import RoleAudit
         self.assertTrue(RoleAudit.objects.filter(role=role, action='permissions_updated').exists())
 
     def test_apply_template_bulk_updates_roles(self):
@@ -165,6 +165,6 @@ class PermissionTemplateTests(TestCase):
         url = '/empresas/roles/templates/apply-bulk/'
         resp = self.client.post(url, data=json.dumps({'template_id': tpl.id, 'role_ids': [r1.id, r2.id]}), content_type='application/json')
         self.assertEqual(resp.status_code, 200)
-        from .models import RoleAudit
+        from empresas.models import RoleAudit
         self.assertTrue(RoleAudit.objects.filter(role=r1, action='permissions_updated').exists())
         self.assertTrue(RoleAudit.objects.filter(role=r2, action='permissions_updated').exists())

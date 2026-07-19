@@ -41,6 +41,22 @@ class DocumentoFazendaUploadTests(TestCase):
         self.assertIn('Número do Documento', content)
         self.assertIn('name="numero_documento"', content)
 
+    def test_fazenda_document_form_field_types(self):
+        url = reverse('cadastros:documento_create', args=[self.fazenda.pk])
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        # Emissão/validade devem ser date inputs
+        self.assertIn('name="data_emissao"', content)
+        self.assertIn('type="date"', content)
+        self.assertIn('name="data_validade"', content)
+        # Dias de antecedência deve ser number input
+        self.assertIn('name="dias_antecedencia_alerta"', content)
+        self.assertIn('type="number"', content)
+        # Observações deve ser uma textarea
+        self.assertIn('<textarea', content)
+        self.assertIn('name="observacoes"', content)
+
     def test_edit_document_via_view(self):
         # Create a document
         doc = DocumentoFazenda.objects.create(fazenda=self.fazenda, tipo='OUTROS', titulo='Old', arquivo='fazendas/documentos/a.pdf')

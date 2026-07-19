@@ -9,9 +9,7 @@ from django.test import Client
 from django.contrib.auth import get_user_model
 from empresas.models import Empresa
 from frota.models import Vehicle, VehiclePlate
-from rh.models import Funcionario
 from django.utils import timezone
-from datetime import timedelta
 
 User = get_user_model()
 
@@ -60,27 +58,13 @@ def test_edit_and_delete_plate(page, live_server, e2e_plate_data):
     page.fill('#modal_placa', 'NEW-2222')
     page.click('#plateEditModal button:has-text("Salvar")')
 
-    # Wait for DOM update
-    try:
-        page.wait_for_selector('text=NEW-2222', timeout=20000)
-        assert page.locator('text=NEW-2222').count() >= 1
-    except Exception:
-        import os
-        os.makedirs('artifacts/screenshots', exist_ok=True)
-        os.makedirs('artifacts/html', exist_ok=True)
-        screenshot_path = 'artifacts/screenshots/plate_edit_debug.png'
-        html_path = 'artifacts/html/plate_edit_debug.html'
-        page.screenshot(path=screenshot_path, full_page=True)
-        with open(html_path, 'w', encoding='utf-8') as fh:
-            fh.write(page.content())
-        print(f'DEBUG: saved screenshot {screenshot_path} and html {html_path}')
-        raise
+    # Wait for the AJAX update to replace the plate text in the list
+    page.wait_for_selector('text=NEW-2222', timeout=5000)
 
-    # Now delete the plate (confirm page)
+    # Now delete the plate: link -> confirm page -> submit (POST tradicional, com reload)
     page.click('a:has-text("Excluir")')
     page.wait_for_selector('button:has-text("Excluir")')
     page.click('button:has-text("Excluir")')
 
-    # Confirm plate not present
-    page.wait_for_timeout(500)
+    page.wait_for_url(f"{live_server.url}/frota/veiculos/{vehicle.pk}/", timeout=10000)
     assert page.locator('text=NEW-2222').count() == 0

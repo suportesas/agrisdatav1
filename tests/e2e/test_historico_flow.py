@@ -2,7 +2,7 @@ import pytest
 from datetime import date
 from urllib.parse import urlparse
 from django.test import Client
-from cadastros.models import Fazenda, Area, Talhao, Cultura, HistoricoTalhao
+from cadastros.models import Fazenda, Area, Talhao, Cultura
 from empresas.models import Empresa
 from django.contrib.auth import get_user_model
 
@@ -71,7 +71,7 @@ def test_create_historico_via_ui(page, live_server, e2e_data):
 
     # Aguardar e verificar que redirecionou para a página do talhão e mensagem está presente
     page.wait_for_url(f"{live_server.url}/cadastros/talhoes/{talhao.pk}/")
-    assert page.locator('text=Histórico registrado').count() >= 0
+    assert page.locator('text=Histórico registrado').count() >= 1
 
-    # Verification via UI (avoid DB access in async test)
-    assert page.locator(f'text={cultura.nome}').count() >= 0
+    # O histórico recém-criado deve aparecer na tabela "Histórico de Cultivo"
+    assert page.locator(f'text={cultura.nome}').count() >= 1

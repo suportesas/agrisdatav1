@@ -49,6 +49,12 @@ def test_live_search_filters(page, live_server, e2e_ncm_data):
 
     page.goto(f"{live_server.url}/cadastros/ncm/")
 
+    # O painel de filtros e um Bootstrap collapse fechado por padrao (so abre
+    # sozinho se `q`/`descricao` ja vierem preenchidos na URL) — precisa
+    # abrir antes de conseguir preencher o campo.
+    page.click('button[title="Pesquisar / Filtrar"]')
+    page.wait_for_selector('input[name="q"]', state='visible', timeout=3000)
+
     # Type into search box and submit (press Enter) to perform full-page search (like porto_list)
     page.fill('input[name="q"]', '01022110')
     page.press('input[name="q"]', 'Enter')

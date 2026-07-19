@@ -9,7 +9,6 @@ from django.test import Client
 from django.contrib.auth import get_user_model
 from empresas.models import Empresa
 from cadastros.models import CFOP
-from django.contrib.auth.models import Group, Permission
 
 User = get_user_model()
 
@@ -18,15 +17,12 @@ User = get_user_model()
 def e2e_cfop_import_data(django_db_blocker):
     with django_db_blocker.unblock():
         empresa = Empresa.objects.create(nome='E2E Empresa CFOP')
+        # tipo='ADMIN' -> is_admin_empresa() bypassa o ProgramaEnforcementMiddleware
+        # (core/middleware/programa_enforcement.py) e o check manual de
+        # usuario_tem_acesso() dentro de cadastros.views.cfop_import
         user = User.objects.create_user(username='e2eimport', password='pass', tipo='ADMIN')
         user.empresa = empresa
         user.save()
-
-        # Grant group permission to import CFOPs
-        g, _ = Group.objects.get_or_create(name='E2E Import Test')
-        perm = Permission.objects.get(codename='add_cfop', content_type__app_label='cadastros')
-        g.permissions.add(perm)
-        user.groups.add(g)
 
         client = Client()
         assert client.login(username='e2eimport', password='pass')
@@ -51,17 +47,18 @@ def test_cfop_import_dry_run_and_persist(page, live_server, e2e_cfop_import_data
     # Prepare CSV with one valid and one invalid row
     csv_bytes = b"codigo,nome,descricao\n5102,Venda Interna,Teste\nabcd,Invalido,Top\n"
 
-    # Dry-run (default checkbox is checked)
+    # Dry-run (default checkbox is checked). O form em cfop_import.html e um
+    # POST tradicional (sem preventDefault) que recarrega a pagina inteira
+    # renderizando o mesmo template com `result` populado — nao ha estado
+    # "disabled" para checar de forma confiavel apos o clique, so o resultado
+    # final pos-reload.
     page.set_input_files('input[name="arquivo"]', {'name': 'cfop_sample.csv', 'mimeType': 'text/csv', 'buffer': csv_bytes})
     page.click('button:has-text("Enviar")')
-
-    # Button should be disabled immediately to prevent duplicate submits
-    page.wait_for_function("() => document.querySelector('button#cfopImportBtn').disabled === true", timeout=2000)
 
     # Wait for result block
     page.wait_for_selector('pre', timeout=5000)
     text = page.locator('pre').inner_text()
-    assert 'dry_run=True' in text or 'Import concluído' in text
+    assert 'dry_run=True' in text
 
     # A transient toast should also be shown and provide a details link
     page.wait_for_selector("div.alert", timeout=5000)
@@ -83,7 +80,7 @@ def test_cfop_import_dry_run_and_persist(page, live_server, e2e_cfop_import_data
 
     page.wait_for_selector('pre', timeout=5000)
     text2 = page.locator('pre').inner_text()
-    assert 'Criado' in text2 or 'Import concluído' in text2
+    assert 'Criado' in text2 or 'Importação concluída' in text2
 
     # Verify CFOP was persisted
     with django_db_blocker.unblock():

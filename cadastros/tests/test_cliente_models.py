@@ -68,26 +68,26 @@ class ClienteModelTests(TestCase):
         c_sub.refresh_from_db()
         self.assertEqual(c_sub.indicador_ie, '1')
 
-    def test_importador_requires_fields(self):
+    def test_importador_missing_fields_generates_warnings_not_errors(self):
+        """Cliente.clean() e "mais tolerante para importadores": campos
+        IMPORTADOR ausentes (eori/porto_destino/vat) nao levantam
+        ValidationError - viram avisos anexados a observacoes_comerciais,
+        e pais vazio vira 'Nao informado' (ver docstring do metodo)."""
         c = Cliente(empresa=self.empresa, tipo_cliente='IMPORTADOR', tipo_pessoa='PJ', razao_social='Importador', cnpj_cpf='33333333333333')
-        # falta EORI -> erro
-        with self.assertRaises(ValidationError):
-            c.full_clean()
+        c.full_clean()  # nao levanta mais - so anexa avisos
+        self.assertEqual(c.pais, 'Não informado')
+        self.assertIn('EORI não informado', c.observacoes_comerciais)
+        self.assertIn('Porto de destino não selecionado', c.observacoes_comerciais)
+        self.assertIn('VAT não informado', c.observacoes_comerciais)
+
+        # Preenchendo tudo, os avisos somem e full_clean segue passando
         c.eori = 'EORI123'
-        # falta PAIS -> erro
-        with self.assertRaises(ValidationError):
-            c.full_clean()
         c.pais = 'Brasil'
-        # falta PORTO -> erro
-        with self.assertRaises(ValidationError):
-            c.full_clean()
         c.porto_destino = self.porto
-        # falta VAT -> erro
-        with self.assertRaises(ValidationError):
-            c.full_clean()
         c.vat = 'VAT12345'
-        # agora deve passar
-        c.full_clean()  # Now should pass
+        c.observacoes_comerciais = ''
+        c.full_clean()
+        self.assertEqual(c.observacoes_comerciais, '')
 
     def test_importador_without_cnpj_generates_unique_cnpj(self):
         # Importadores podem ser criados sem CNPJ e receberão um número fictício único
@@ -271,8 +271,13 @@ class ClienteModelTests(TestCase):
         resp2 = self.client.post(reverse('cadastros:cliente_create'), data)
         self.assertEqual(resp2.status_code, 302)
 
-    def test_importador_create_view_requires_vat_and_generates_cnpj(self):
-        """Simulate create view for IMPORTADOR: VAT required; when provided, CNPJ generated if missing."""
+    def test_importador_create_view_without_vat_still_creates_and_generates_cnpj(self):
+        """A criacao de um IMPORTADOR novo nao exige vat/eori/porto no form
+        (ClienteForm.clean() so passa a exigi-los quando um cliente JA
+        EXISTENTE muda de tipo para IMPORTADOR - ver `getattr(self.instance,
+        'pk', None)` em ClienteForm.clean()). Para criacao, o model.clean()
+        so anexa avisos (ver test_importador_missing_fields_generates_warnings_not_errors),
+        entao o POST tem sucesso e o CNPJ ficticio e gerado no save()."""
         from django.urls import reverse
         from usuarios.models import Usuario
 
@@ -281,9 +286,8 @@ class ClienteModelTests(TestCase):
         user.save()
         self.client.force_login(user)
 
-        # 1) IMPORTADOR without VAT should fail
-        data_fail = {
-            'razao_social': 'Import Fail',
+        data = {
+            'razao_social': 'Import Sem Vat',
             'tipo_pessoa': 'PJ',
             'tipo_cliente': 'IMPORTADOR',
             'eori': 'E1',
@@ -291,23 +295,40 @@ class ClienteModelTests(TestCase):
             'porto_destino': str(self.porto.pk),
             # no cnpj_cpf, no vat
         }
-        resp = self.client.post(reverse('cadastros:cliente_create'), data_fail)
-        # Should render form with errors (not redirect)
+        resp = self.client.post(reverse('cadastros:cliente_create'), data)
+        self.assertEqual(resp.status_code, 302)
+
+        c = Cliente.objects.get(razao_social='Import Sem Vat')
+        self.assertEqual(len(c.cnpj_cpf), 14)
+        self.assertIn('VAT não informado', c.observacoes_comerciais)
+
+    def test_importador_update_to_importador_requires_vat(self):
+        """Diferente da criacao: transformar um cliente JA EXISTENTE em
+        IMPORTADOR exige eori/vat/porto_destino no form (ClienteForm.clean())."""
+        from django.urls import reverse
+        from usuarios.models import Usuario
+
+        user = Usuario.objects.create_user(username='updatetest', password='pass')
+        user.empresa = self.empresa
+        user.save()
+        self.client.force_login(user)
+
+        c = Cliente.objects.create(empresa=self.empresa, razao_social='Vira Importador', cnpj_cpf='44445555666677', tipo_cliente='NACIONAL')
+        url = reverse('cadastros:cliente_update', args=[c.pk])
+        data = {
+            'razao_social': 'Vira Importador',
+            'cnpj_cpf': c.cnpj_cpf,
+            'tipo_pessoa': 'PJ',
+            'tipo_cliente': 'IMPORTADOR',
+            # falta eori, vat, porto_destino
+        }
+        resp = self.client.post(url, data)
         self.assertNotEqual(resp.status_code, 302)
         form = resp.context.get('form')
         self.assertIsNotNone(form)
+        self.assertIn('eori', form.errors)
         self.assertIn('vat', form.errors)
-
-        # 2) IMPORTADOR with VAT should pass and generate cnpj
-        data_ok = data_fail.copy()
-        data_ok['vat'] = 'VAT-ABC-123'
-        resp2 = self.client.post(reverse('cadastros:cliente_create'), data_ok)
-        self.assertEqual(resp2.status_code, 302)
-
-        # Verify created client
-        c = Cliente.objects.get(razao_social='Import Fail')
-        self.assertEqual(len(c.cnpj_cpf), 14)
-        self.assertEqual(c.vat, 'VAT-ABC-123')
+        self.assertIn('porto_destino', form.errors)
 
     def test_cliente_deactivate_and_reactivate(self):
         from django.urls import reverse

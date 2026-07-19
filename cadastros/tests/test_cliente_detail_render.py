@@ -13,8 +13,9 @@ class ClienteDetailRenderTests(TestCase):
         self.user.save()
         self.client = Client()
         self.client.login(username='u', password='pass')
-        # Create a porto
-        self.porto = Porto.objects.create(nome='Porto Teste')
+        # Create a porto - empresa/codigo/pais/cidade sao obrigatorios no model
+        # (empresa e FK NOT NULL; sem ela objects.create() levanta IntegrityError)
+        self.porto = Porto.objects.create(empresa=self.empresa, codigo='PT01', nome='Porto Teste', pais='Brasil', cidade='Salvador')
         # Create cliente with several fields populated to exercise template
         self.cliente = Cliente.objects.create(
             empresa=self.empresa,

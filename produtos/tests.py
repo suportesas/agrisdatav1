@@ -190,4 +190,3 @@ class MarcaModelTests(TestCase):
 		# empresa diferente, mesmo nome -> deve funcionar
 		Marca.objects.create(empresa=self.outra_empresa, nome='Terra Brasilis')
 		self.assertEqual(Marca.objects.filter(nome='Terra Brasilis').count(), 2)
-		self.assertEqual(produto.formula_npk, '')

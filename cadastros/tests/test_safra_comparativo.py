@@ -19,13 +19,12 @@ class SafraComparativoTest(TestCase):
         user = Usuario.objects.create(username='u', email='u@example.com')
 
         fazenda = Fazenda.objects.create(empresa=empresa, nome='Fazenda 1', cnpj_cpf='00.000.000/0000-00', area_total=Decimal('100'))
-        cultura = Cultura.objects.create(empresa=empresa, nome='Milho')
 
         area = Area.objects.create(fazenda=fazenda, nome='Área 1', area_total=Decimal('10'), empresa=empresa)
         talhao1 = Talhao.objects.create(area=area, fazenda=fazenda, nome='T1', codigo='T1', area_hac=Decimal('2.5'), empresa=empresa)
         talhao2 = Talhao.objects.create(area=area, fazenda=fazenda, nome='T2', codigo='T2', area_hac=Decimal('3.0'), empresa=empresa)
 
-        safra = Safra.objects.create(nome='Safra 2025', fazenda=fazenda, cultura=cultura, ano=2025, cadastrado_por=user)
+        safra = Safra.objects.create(nome='Safra 2025', fazenda=fazenda, ano=2025, cadastrado_por=user)
         safra.talhoes.set([talhao1, talhao2])
 
         # Planejado: 50 ton

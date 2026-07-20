@@ -2,7 +2,7 @@ from django.urls import reverse
 from django.test import Client, TestCase
 from django.contrib.auth import get_user_model
 from empresas.models import Empresa, Plano
-from cadastros.models import Safra, Talhao, Cultura
+from cadastros.models import Safra, SafraCultura, Talhao, Cultura
 from cadastros.forms import SafraForm
 
 
@@ -34,20 +34,19 @@ class SafraViewsTest(TestCase):
         resp = self.client.get(reverse('cadastros:safra_create'))
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
-        # Smoke test da tela de criacao: garante renderizacao do formulario
+        # Smoke test da tela de criacao: garante renderizacao do formulario e do formset de culturas
         self.assertIn('id="id_fazenda"', content)
-        self.assertIn('id="id_cultura"', content)
-        self.assertIn('id="id_periodo_inicio"', content)
+        self.assertIn('id="id_culturas-0-cultura"', content)
+        self.assertIn('id="id_culturas-0-periodo_inicio"', content)
 
 
     def test_safra_list_filters_and_pagination(self):
         # Cria fazenda e cultura
         fazenda = self.empresa.fazendas.create(nome='F Teste', area_total=10)
-        cultura = fazenda.empresa.culturas.create(nome='C Teste')
 
         # Cria 30 safras para testar paginação
         for i in range(30):
-            Safra.objects.create(fazenda=fazenda, cultura=cultura, ano=2000 + i)
+            Safra.objects.create(fazenda=fazenda, ano=2000 + i)
 
         resp = self.client.get(reverse('cadastros:safra_list'))
         self.assertEqual(resp.status_code, 200)
@@ -68,10 +67,9 @@ class SafraViewsTest(TestCase):
     def test_safra_list_filter_by_fazenda_and_search(self):
         fazenda1 = self.empresa.fazendas.create(nome='Fazenda A', area_total=10, cnpj_cpf='11111111000101')
         fazenda2 = self.empresa.fazendas.create(nome='Fazenda B', area_total=10, cnpj_cpf='22222222000102')
-        cultura = self.empresa.culturas.create(nome='C Teste')
 
-        Safra.objects.create(fazenda=fazenda1, cultura=cultura, ano=2025, nome='Safra Alfa')
-        Safra.objects.create(fazenda=fazenda2, cultura=cultura, ano=2025, nome='Safra Beta')
+        Safra.objects.create(fazenda=fazenda1, ano=2025, nome='Safra Alfa')
+        Safra.objects.create(fazenda=fazenda2, ano=2025, nome='Safra Beta')
 
         # Filter by fazenda1
         resp = self.client.get(reverse('cadastros:safra_list') + f'?fazenda={fazenda1.pk}')
@@ -86,10 +84,11 @@ class SafraViewsTest(TestCase):
         self.assertTrue(any('Alfa' in str(s) for s in safras2))
 
     def test_safra_edit_prefills_periodo_fields(self):
-        # Create related objects and a safra with period filled
+        # Create related objects and a safra cuja cultura tem periodo preenchido
         fazenda = self.empresa.fazendas.create(nome='F Teste 3', area_total=10)
         cultura = self.empresa.culturas.create(nome='C Teste 3')
-        safra = Safra.objects.create(fazenda=fazenda, cultura=cultura, periodo_inicio='2025-01-01', periodo_fim='2025-12-31')
+        safra = Safra.objects.create(fazenda=fazenda)
+        SafraCultura.objects.create(safra=safra, cultura=cultura, periodo_inicio='2025-01-01', periodo_fim='2025-12-31')
 
         url = reverse('cadastros:safra_update', args=[safra.pk])
         resp = self.client.get(url)
@@ -105,9 +104,8 @@ class SafraViewsTest(TestCase):
         fazenda = self.empresa.fazendas.create(nome='F Teste 2', area_total=10)
         area = fazenda.areas.create(nome='A1', area_total=5, area_plantavel=4, empresa=self.empresa)
         talhao = Talhao.objects.create(area=area, fazenda=fazenda, nome='T1', codigo='T1', area_hac=1, empresa=self.empresa)
-        cultura = Cultura.objects.create(empresa=self.empresa, nome='C1')
 
-        safra_existing = Safra.objects.create(fazenda=fazenda, cultura=cultura, ano=2025)
+        safra_existing = Safra.objects.create(fazenda=fazenda, ano=2025)
         safra_existing.talhoes.add(talhao)
 
         # AJAX should mark talhao as in_use
@@ -117,16 +115,11 @@ class SafraViewsTest(TestCase):
         data = resp.json()
         self.assertTrue(any(item['id'] == talhao.id and item['in_use'] for item in data))
 
-        # Form should reject selecting talhao for a new safra
+        # Form should reject uma 2a safra para a mesma fazenda/ano
         form_data = {
             'fazenda': fazenda.pk,
-            'cultura': cultura.pk,
             'ano': 2025,
-            'periodo_inicio': '2025-01-01',
-            'periodo_fim': '2025-12-31',
-            'talhoes': [talhao.pk],
-            'status': 'PLANEJADA'
         }
         form = SafraForm(data=form_data, user=self.user)
         self.assertFalse(form.is_valid())
-        self.assertTrue('talhoes' in form.errors or '__all__' in form.errors)
+        self.assertIn('__all__', form.errors)

@@ -61,7 +61,7 @@ def etapa_nova(request, os_pk):
         return redirect('operacoes_campo:os_detail', pk=os_pk)
 
     # Verifica limite de etapas da cultura
-    cultura = os_obj.safra.cultura if os_obj.safra_id else None
+    cultura = os_obj.safra_cultura.cultura if os_obj.safra_cultura_id else None
     max_etapas = cultura.max_etapas_colheita if cultura else 1
     num_existentes = EtapaColheita.objects.filter(os=os_obj).count()
     if num_existentes >= max_etapas:
@@ -188,7 +188,7 @@ def etapa_concluir(request, os_pk, etapa_pk):
     if os_obj.safra_id and os_obj.talhao_id:
         try:
             from operacoes_campo.models import LoteProducao
-            cultura = os_obj.safra.cultura if os_obj.safra_id else None
+            cultura = os_obj.safra_cultura.cultura if os_obj.safra_cultura_id else None
             if not LoteProducao.objects.filter(etapa_colheita=etapa).exists():
                 lote = LoteProducao(
                     empresa=empresa,
@@ -204,7 +204,7 @@ def etapa_concluir(request, os_pk, etapa_pk):
             pass  # Não bloqueia conclusão da etapa por falha no lote
 
     # Verifica se é a última etapa prevista
-    cultura = os_obj.safra.cultura if os_obj.safra_id else None
+    cultura = os_obj.safra_cultura.cultura if os_obj.safra_cultura_id else None
     max_etapas = cultura.max_etapas_colheita if cultura else 1
     num_concluidas = EtapaColheita.objects.filter(os=os_obj, status='CONCLUIDA').count()
 

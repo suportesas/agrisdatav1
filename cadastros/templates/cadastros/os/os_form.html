@@ -89,6 +89,11 @@
               <label class="form-label">Safra <small class="text-muted">(auto-preenchida)</small></label>
               {{ form.safra }}
             </div>
+            <div class="field col-4">
+              <label class="form-label">Cultura da Safra</label>
+              {{ form.safra_cultura }}
+              <div class="helper-note" id="safra-cultura-hint">Selecione a safra primeiro</div>
+            </div>
             <div class="field col-4" id="div_poco" style="display:none;">
               <label class="form-label">
                 <i class="bi bi-water text-primary me-1"></i>Poço / Bomba
@@ -819,12 +824,32 @@ if (tipoSelect) {
 const AJAX_TALHAO_URL = "{% url 'operacoes_campo:os_ajax_opcoes_talhao' %}";
 const talhaoSelect = document.getElementById('id_talhao');
 const safraSelect = document.getElementById('id_safra');
+const safraCulturaSelect = document.getElementById('id_safra_cultura');
 const culturaInput = document.getElementById('id_cultura_display');
+
+let safrasCache = [];
+
+function atualizarCulturasSafra(safraId, preservarCultura) {
+  if (!safraCulturaSelect) return;
+  const valorAtual = preservarCultura || safraCulturaSelect.value || '';
+  safraCulturaSelect.innerHTML = '<option value="">---------</option>';
+  const safra = safrasCache.find(s => String(s.id) === String(safraId));
+  const culturas = safra ? safra.culturas : [];
+  culturas.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.nome;
+    if (String(c.id) === String(valorAtual)) opt.selected = true;
+    safraCulturaSelect.appendChild(opt);
+  });
+  if (culturas.length === 1 && !valorAtual) safraCulturaSelect.value = culturas[0].id;
+}
 
 function carregarSafrasTalhao(talhaoId, preservarSafra) {
   if (!talhaoId) {
     if (safraSelect) safraSelect.innerHTML = '<option value="">---------</option>';
     if (culturaInput) { culturaInput.value = ''; culturaInput.placeholder = 'Selecione um Talhão'; }
+    safrasCache = [];
+    atualizarCulturasSafra('', '');
     return;
   }
   fetch(AJAX_TALHAO_URL + '?talhao_id=' + talhaoId)
@@ -836,6 +861,7 @@ function carregarSafrasTalhao(talhaoId, preservarSafra) {
       }
       const areaInput = document.getElementById('id_area_executada_ha');
       if (areaInput && !areaInput.value && data.area_hac) areaInput.value = data.area_hac;
+      safrasCache = data.safras || [];
       if (safraSelect) {
         const valorAtual = preservarSafra || safraSelect.value || '';
         safraSelect.innerHTML = '<option value="">---------</option>';
@@ -848,6 +874,7 @@ function carregarSafrasTalhao(talhaoId, preservarSafra) {
           });
           if (data.safras.length === 1 && !valorAtual) safraSelect.value = data.safras[0].id;
         }
+        atualizarCulturasSafra(safraSelect.value, '');
       }
     })
     .catch(err => console.error('Erro ao carregar safras:', err));
@@ -857,6 +884,10 @@ if (talhaoSelect) {
   talhaoSelect.addEventListener('change', function () { carregarSafrasTalhao(this.value, ''); });
   const safraAtual = safraSelect ? safraSelect.value : '';
   if (talhaoSelect.value) carregarSafrasTalhao(talhaoSelect.value, safraAtual);
+}
+
+if (safraSelect) {
+  safraSelect.addEventListener('change', function () { atualizarCulturasSafra(this.value, ''); });
 }
 </script>
 {% endblock %}

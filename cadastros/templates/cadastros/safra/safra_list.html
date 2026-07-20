@@ -122,19 +122,25 @@
                 <a href="{% url 'cadastros:safra_detail' s.pk %}" class="text-decoration-none"><strong>{{ s }}</strong></a>
               </td>
               <td>{{ s.fazenda.nome }}</td>
-              <td>{{ s.cultura.nome }}</td>
+              <td>
+                {% for sc in s.culturas.all %}
+                  <span class="badge bg-light text-dark border">{{ sc.cultura.nome }}</span>
+                {% endfor %}
+              </td>
               <td class="text-center">{{ s.ano }}</td>
               <td class="text-center">
                 <span class="badge bg-info">{{ s.talhoes.count }}</span>
               </td>
               <td class="text-center">
-                {% if s.status == 'PLANEJADA' %}
-                  <span class="badge-status badge-planejada">{{ s.get_status_display }}</span>
-                {% elif s.status == 'EM_ANDAMENTO' %}
-                  <span class="badge-status badge-andamento">{{ s.get_status_display }}</span>
-                {% else %}
-                  <span class="badge-status badge-finalizada">{{ s.get_status_display }}</span>
-                {% endif %}
+                {% for sc in s.culturas.all %}
+                  {% if sc.status == 'PLANEJADA' %}
+                    <span class="badge-status badge-planejada">{{ sc.get_status_display }}</span>
+                  {% elif sc.status == 'EM_ANDAMENTO' %}
+                    <span class="badge-status badge-andamento">{{ sc.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge-status badge-finalizada">{{ sc.get_status_display }}</span>
+                  {% endif %}
+                {% endfor %}
               </td>
               <td class="text-center">
                 <div class="d-flex gap-3 justify-content-center">

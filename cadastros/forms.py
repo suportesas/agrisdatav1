@@ -29,7 +29,7 @@ import re
 
 
 from .models import Area, Talhao, HistoricoTalhao, Cultura, Praga
-from .models import Safra, SafraPlan, SafraReal, Requisicao, RequisicaoItem, Produtor
+from .models import Safra, SafraCultura, SafraPlan, SafraReal, Requisicao, RequisicaoItem, Produtor
 from mip.models import (
     EstagioDesenvolvimento, MonitoramentoMIP,
     PragaNoMonitoramento, PontoMonitoramento
@@ -2112,11 +2112,12 @@ class TalhaoForm(forms.ModelForm):
 # cadastros/forms.py - Localize a classe SafraForm e SUBSTITUA completamente:
 
 class SafraForm(forms.ModelForm):
-    """Formulário para criar/editar `Safra` com validações de integridade"""
-    
+    """Formulário para criar/editar `Safra` (período). As culturas cultivadas na safra
+    são gerenciadas separadamente via `SafraCulturaFormSet`."""
+
     class Meta:
         model = Safra
-        fields = ['nome', 'codigo', 'fazenda', 'cultura', 'ano', 'periodo_inicio', 'periodo_fim', 'status', 'imagem']
+        fields = ['nome', 'codigo', 'fazenda', 'ano', 'imagem']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo': forms.TextInput(attrs={
@@ -2125,11 +2126,7 @@ class SafraForm(forms.ModelForm):
                 'maxlength': '10',
             }),
             'fazenda': forms.Select(attrs={'class': 'form-select'}),
-            'cultura': forms.Select(attrs={'class': 'form-select'}),
             'ano': forms.NumberInput(attrs={'class': 'form-control'}),
-            'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'status': forms.Select(attrs={'class': 'form-select'}),
             'imagem': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'type': 'file'}),
         }
 
@@ -2137,46 +2134,15 @@ class SafraForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
-        def _safra_label(safra):
-            base = safra.nome or str(safra.ano or '')
-            cultura = safra.cultura.nome if safra.cultura else ''
-            if base and cultura:
-                return f"{base} - {cultura}"
-            return base or cultura or str(safra)
-
         if self.user and getattr(self.user, 'empresa', None):
             self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
-            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.user.empresa, ativa=True).order_by('nome')
         else:
             self.fields['fazenda'].queryset = Fazenda.objects.none()
-            self.fields['cultura'].queryset = Cultura.objects.none()
-
-        if 'status' in self.fields:
-            self.fields['status'].initial = 'PLANEJADA'
-            self.fields['status'].required = True
-
-        # Se editando, formata datas corretamente
-        if self.instance and self.instance.pk:
-            if getattr(self.instance, 'periodo_inicio', None):
-                self.fields['periodo_inicio'].initial = self.instance.periodo_inicio.strftime('%Y-%m-%d')
-            if getattr(self.instance, 'periodo_fim', None):
-                self.fields['periodo_fim'].initial = self.instance.periodo_fim.strftime('%Y-%m-%d')
 
     def clean(self):
         cleaned = super().clean()
-        inicio = cleaned.get('periodo_inicio')
-        fim = cleaned.get('periodo_fim')
-        fazenda = cleaned.get('fazenda')
-        cultura = cleaned.get('cultura')
         ano = cleaned.get('ano')
-
-        # Validação de período
-        if inicio and fim and inicio > fim:
-            raise forms.ValidationError({'periodo_inicio': 'Data de início não pode ser posterior à data fim'})
-
-        if inicio and fim:
-            if fim.year not in (inicio.year, inicio.year + 1):
-                raise forms.ValidationError({'periodo_fim': 'Período inválido: o término deve estar no mesmo ano ou no ano seguinte ao início'})
+        fazenda = cleaned.get('fazenda')
 
         # Normaliza ano composto
         if ano and ano > 9999:
@@ -2187,37 +2153,58 @@ class SafraForm(forms.ModelForm):
             except Exception:
                 pass
 
-        # Infere ano se não fornecido
-        if not ano and inicio:
-            ano = inicio.year
-            cleaned['ano'] = ano
-
-        # Valida unicidade
-        if fazenda and cultura and ano:
-            qs = Safra.objects.filter(fazenda=fazenda, cultura=cultura, ano=ano)
+        # Valida unicidade do período por fazenda
+        if fazenda and ano:
+            qs = Safra.objects.filter(fazenda=fazenda, ano=ano)
             if self.instance and self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                raise forms.ValidationError('Já existe uma safra para esta fazenda, cultura e ano')
+                raise forms.ValidationError('Já existe uma safra para esta fazenda e ano')
 
         return cleaned
-    
+
     def save(self, commit=True):
         instance = super().save(commit=False)
-        
-        # Preenche nome padrão se necessário
-        inicio = self.cleaned_data.get('periodo_inicio')
-        fim = self.cleaned_data.get('periodo_fim')
-        if not instance.nome:
-            if inicio and fim:
-                instance.nome = f"{inicio.year}{fim.year % 100:02d}"
-            elif inicio:
-                instance.nome = str(inicio.year)
-
         if commit:
             instance.save()
-
         return instance
+
+
+class SafraCulturaForm(forms.ModelForm):
+    """Formulário de uma linha de cultura dentro do formset de `Safra`"""
+
+    class Meta:
+        model = SafraCultura
+        fields = ['cultura', 'periodo_inicio', 'periodo_fim', 'status']
+        widgets = {
+            'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['status'].initial = 'PLANEJADA'
+        if empresa:
+            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+        else:
+            self.fields['cultura'].queryset = Cultura.objects.none()
+
+    def clean(self):
+        cleaned = super().clean()
+        inicio = cleaned.get('periodo_inicio')
+        fim = cleaned.get('periodo_fim')
+        if inicio and fim and inicio > fim:
+            raise forms.ValidationError({'periodo_inicio': 'Data de início não pode ser posterior à data fim'})
+        if inicio and fim and fim.year not in (inicio.year, inicio.year + 1):
+            raise forms.ValidationError({'periodo_fim': 'Período inválido: o término deve estar no mesmo ano ou no ano seguinte ao início'})
+        return cleaned
+
+
+SafraCulturaFormSet = forms.inlineformset_factory(
+    Safra, SafraCultura, form=SafraCulturaForm, extra=1, can_delete=True, min_num=1, validate_min=True,
+)
 
 
 
@@ -2306,18 +2293,10 @@ class RequisicaoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if self.user and getattr(self.user, 'empresa', None):
-            def _safra_label(safra):
-                base = safra.nome or str(safra.ano or '')
-                cultura = safra.cultura.nome if safra.cultura else ''
-                if base and cultura:
-                    return f"{base} - {cultura}"
-                return base or cultura or str(safra)
-
             empresa = self.user.empresa
             self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
             self.fields['talhao'].queryset = Talhao.objects.filter(empresa=empresa, ativo=True).order_by('codigo')
-            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=empresa).order_by('-ano', 'nome')
-            self.fields['safra'].label_from_instance = _safra_label
+            self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=empresa).prefetch_related('culturas__cultura').order_by('-ano', 'nome')
             self.fields['funcionario_destino'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True).order_by('nome_completo')
             self.fields['parceiro'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
             self.fields['produtor'].queryset = Produtor.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
@@ -3358,7 +3337,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
         cultura = cleaned.get('cultura')
         
         # Validar que tem cultura (pela safra ou direto)
-        if not cultura and safra and safra.cultura:
+        if not cultura and safra and safra.culturas.exists():
             # OK - cultura virá da safra
             pass
         elif not cultura and talhao and talhao.cultura_atual:

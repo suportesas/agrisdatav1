@@ -2,7 +2,7 @@ from django.urls import reverse
 from django.test import Client, TestCase
 from django.contrib.auth import get_user_model
 from empresas.models import Empresa, Plano
-from cadastros.models import Safra, SafraPlan, Cultura
+from cadastros.models import Safra, SafraPlan
 
 class SafraPlanViewsTest(TestCase):
     def setUp(self):
@@ -16,8 +16,7 @@ class SafraPlanViewsTest(TestCase):
         self.client.login(username='u', password='pass')
 
         self.fazenda = self.empresa.fazendas.create(nome='F Teste', area_total=10)
-        self.cultura = Cultura.objects.create(empresa=self.empresa, nome='C Teste')
-        self.safra = Safra.objects.create(fazenda=self.fazenda, cultura=self.cultura, ano=2026)
+        self.safra = Safra.objects.create(fazenda=self.fazenda, ano=2026)
 
     def test_get_create_plan(self):
         url = reverse('cadastros:safra_plan_create', args=[self.safra.pk])

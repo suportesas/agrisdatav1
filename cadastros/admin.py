@@ -7,7 +7,7 @@ from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, Cultura, Praga,
 )
-from .models import Area, Talhao, HistoricoTalhao, Safra, SafraPlan, SafraReal
+from .models import Area, Talhao, HistoricoTalhao, Safra, SafraCultura, SafraPlan, SafraReal
 # FuncaoFuncionario is registered in rh/admin.py
 from .models import Vendedor, ComissaoVendedor
 
@@ -252,12 +252,20 @@ class SafraPlanInline(admin.StackedInline):
     verbose_name_plural = 'Planejamentos de Safra'
     max_num = 1
 
+
+class SafraCulturaInline(admin.TabularInline):
+    model = SafraCultura
+    extra = 1
+    verbose_name = 'Cultura da Safra'
+    verbose_name_plural = 'Culturas da Safra'
+
+
 @admin.register(Safra)
 class SafraAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'fazenda', 'cultura', 'ano', 'status']
-    list_filter = ['status', 'fazenda', 'cultura', 'ano']
-    search_fields = ['nome', 'fazenda__nome', 'cultura__nome']
-    inlines = [SafraPlanInline]
+    list_display = ['nome', 'fazenda', 'ano']
+    list_filter = ['fazenda', 'ano']
+    search_fields = ['nome', 'fazenda__nome', 'culturas__cultura__nome']
+    inlines = [SafraCulturaInline, SafraPlanInline]
 
 
 @admin.register(SafraPlan)

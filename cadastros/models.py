@@ -2987,7 +2987,7 @@ class HistoricoTalhao(models.Model):
 
 
 class Safra(models.Model):
-    """Safra agrícola por fazenda e cultura"""
+    """Safra agrícola por fazenda (período). Pode conter mais de uma cultura — ver `SafraCultura`."""
     STATUS = [
         ('PLANEJADA', 'Planejada'),
         ('EM_ANDAMENTO', 'Em Andamento'),
@@ -3002,12 +3002,8 @@ class Safra(models.Model):
         help_text='Código usado no início do código de barras dos pallets. Ex: 202526 (safra 2025/2026)',
     )
     fazenda = models.ForeignKey(Fazenda, on_delete=models.CASCADE, related_name='safras')
-    cultura = models.ForeignKey(Cultura, on_delete=models.PROTECT, related_name='safras')
     ano = models.IntegerField('Ano', null=True, blank=True)
-    periodo_inicio = models.DateField('Início', null=True, blank=True)
-    periodo_fim = models.DateField('Fim', null=True, blank=True)
     talhoes = models.ManyToManyField(Talhao, related_name='safras', blank=True)
-    status = models.CharField('Status', max_length=20, choices=STATUS, default='PLANEJADA')
     imagem = models.ImageField('Imagem da Safra', upload_to='safra/%Y/%m/', null=True, blank=True)
 
     cadastrado_por = models.ForeignKey(
@@ -3021,7 +3017,9 @@ class Safra(models.Model):
         ordering = ['-ano', 'nome']
 
     def __str__(self):
-        return self.nome or f"Safra {self.ano} - {self.fazenda.nome} - {self.cultura.nome}"
+        base = self.nome or f"Safra {self.ano} - {self.fazenda.nome}"
+        nomes = ', '.join(sc.cultura.nome for sc in self.culturas.all())
+        return f"{base} - {nomes}" if nomes else base
 
     def planned_production(self):
         try:
@@ -3040,6 +3038,29 @@ class Safra(models.Model):
         if planned and planned > 0:
             return ((real - planned) / planned) * 100
         return None
+
+
+class SafraCultura(models.Model):
+    """Uma cultura cultivada dentro de uma `Safra` (período), com seu próprio ciclo e status.
+
+    Uma `Safra` pode ter mais de uma `SafraCultura` (ex: soja e milho na mesma safra 2026/27).
+    """
+    STATUS = Safra.STATUS
+
+    safra = models.ForeignKey(Safra, on_delete=models.CASCADE, related_name='culturas')
+    cultura = models.ForeignKey(Cultura, on_delete=models.PROTECT, related_name='ciclos_safra')
+    periodo_inicio = models.DateField('Início', null=True, blank=True)
+    periodo_fim = models.DateField('Fim', null=True, blank=True)
+    status = models.CharField('Status', max_length=20, choices=STATUS, default='PLANEJADA')
+
+    class Meta:
+        verbose_name = 'Cultura da Safra'
+        verbose_name_plural = 'Culturas da Safra'
+        ordering = ['cultura__nome']
+        unique_together = [['safra', 'cultura']]
+
+    def __str__(self):
+        return f"{self.safra} - {self.cultura.nome}"
 
 
 class SafraPlan(models.Model):

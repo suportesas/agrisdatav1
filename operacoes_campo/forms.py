@@ -25,7 +25,7 @@ class OrdemServicoForm(forms.ModelForm):
         model = OrdemServico
         fields = [
             'tipo_servico', 'subtipo_servico', 'modalidade_execucao',
-            'talhao', 'safra', 'poco', 'responsavel', 'data_prevista',
+            'talhao', 'safra', 'safra_cultura', 'poco', 'responsavel', 'data_prevista',
             'area_executada_ha', 'fornecedor_servico', 'valor_servico_externo',
             'unidade_cobranca', 'requisicao', 'observacoes', 'foto_evidencia',
             'custo_estimado_mao_obra', 'custo_estimado_maquinario', 'custo_estimado_insumos',
@@ -35,7 +35,8 @@ class OrdemServicoForm(forms.ModelForm):
             'subtipo_servico': forms.Select(attrs={'class': 'form-select', 'id': 'id_subtipo_servico'}),
             'modalidade_execucao': forms.Select(attrs={'class': 'form-select', 'id': 'id_modalidade_execucao'}),
             'talhao': forms.Select(attrs={'class': 'form-select'}),
-            'safra': forms.Select(attrs={'class': 'form-select'}),
+            'safra': forms.Select(attrs={'class': 'form-select', 'id': 'id_safra'}),
+            'safra_cultura': forms.Select(attrs={'class': 'form-select', 'id': 'id_safra_cultura'}),
             'poco': forms.Select(attrs={'class': 'form-select', 'id': 'id_poco'}),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'data_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -77,11 +78,28 @@ class OrdemServicoForm(forms.ModelForm):
             else:
                 self.fields['subtipo_servico'].queryset = SubtipoServicoOS.objects.none()
 
-            from cadastros.models import Talhao, Safra, Requisicao, Fornecedor
+            from cadastros.models import Talhao, Safra, SafraCultura, Requisicao, Fornecedor
             self.fields['talhao'].queryset = Talhao.objects.filter(empresa=empresa, ativo=True).order_by('nome')
             self.fields['safra'].queryset = Safra.objects.filter(
-                fazenda__empresa=empresa, status__in=['PLANEJADA', 'EM_ANDAMENTO']
-            ).order_by('-ano', 'nome')
+                fazenda__empresa=empresa, culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
+            ).distinct().order_by('-ano', 'nome')
+
+            safra_id = None
+            if self.instance and self.instance.pk and self.instance.safra_id:
+                safra_id = self.instance.safra_id
+            elif self.data.get('safra'):
+                try:
+                    safra_id = int(self.data.get('safra'))
+                except (TypeError, ValueError):
+                    safra_id = None
+
+            if safra_id:
+                self.fields['safra_cultura'].queryset = SafraCultura.objects.filter(
+                    safra_id=safra_id
+                ).select_related('cultura').order_by('cultura__nome')
+            else:
+                self.fields['safra_cultura'].queryset = SafraCultura.objects.none()
+
             from rh.models import Funcionario
             self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True).order_by('nome_completo')
             self.fields['fornecedor_servico'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome_fantasia', 'nome')

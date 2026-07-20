@@ -572,21 +572,19 @@ def ajax_safras_por_talhao(request, talhao_id):
         }
         
         # Busca APENAS safras vinculadas ao talhão (relação M2M)
-        safras = talhao.safras.select_related('cultura').order_by('-ano', 'nome')
-        
+        safras = talhao.safras.prefetch_related('culturas__cultura').order_by('-ano', 'nome')
+
         debug_info['total_safras_vinculadas'] = safras.count()
-        
+
         result = []
         for safra in safras:
-            base = safra.nome or str(safra.ano or '')
-            cultura = safra.cultura.nome if safra.cultura else ''
-            label = f"{base} - {cultura}" if base and cultura else (base or cultura or f"Safra {safra.id}")
+            culturas = ', '.join(sc.cultura.nome for sc in safra.culturas.all())
             result.append({
                 'id': safra.id,
-                'label': label,
+                'label': str(safra),
                 'nome': safra.nome,
                 'ano': safra.ano,
-                'cultura': cultura
+                'cultura': culturas
             })
         
         return JsonResponse({'safras': result, 'debug': debug_info})

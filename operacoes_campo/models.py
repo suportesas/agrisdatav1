@@ -153,6 +153,11 @@ class OrdemServico(models.Model):
 
     talhao = models.ForeignKey('cadastros.Talhao', on_delete=models.PROTECT, related_name='ordens_servico', verbose_name='Talhão')
     safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Safra')
+    safra_cultura = models.ForeignKey(
+        'cadastros.SafraCultura', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ordens_servico', verbose_name='Cultura da Safra',
+        help_text='Qual cultura da safra esta OS se refere (necessário quando a safra tem mais de uma cultura)',
+    )
     poco = models.ForeignKey(
         'cadastros.Poco', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='ordens_servico', verbose_name='Poço / Bomba',

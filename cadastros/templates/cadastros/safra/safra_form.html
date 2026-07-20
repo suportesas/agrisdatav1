@@ -266,6 +266,7 @@
 
     <nav class="section-nav" id="safra-section-nav">
       <a href="#sec-basicas" data-tab="sec-basicas">Informações Básicas</a>
+      <a href="#sec-culturas" data-tab="sec-culturas">Culturas</a>
       <a href="#sec-talhoes" data-tab="sec-talhoes">Seleção de Talhões</a>
     </nav>
 
@@ -293,27 +294,10 @@
             {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
             <div class="helper-note">Prefixo do código de barras dos pallets. Ex: 202526</div>
           </div>
-          <div class="field col-6">
-            <label class="form-label">{{ form.cultura.label }}<span class="req">*</span></label>
-            {{ form.cultura }}
-            {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors|striptags }}</div>{% endif %}
-          </div>
-          <div class="field col-6">
-            <label class="form-label">{{ form.status.label }}</label>
-            {{ form.status }}
-          </div>
           <div class="field col-4">
             <label class="form-label">{{ form.ano.label }}<span class="req">*</span></label>
             {{ form.ano }}
             {% if form.ano.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ano.errors|striptags }}</div>{% endif %}
-          </div>
-          <div class="field col-4">
-            <label class="form-label">{{ form.periodo_inicio.label }}</label>
-            {{ form.periodo_inicio }}
-          </div>
-          <div class="field col-4">
-            <label class="form-label">{{ form.periodo_fim.label }}</label>
-            {{ form.periodo_fim }}
           </div>
           <div class="field col-12">
             <label class="form-label">{{ form.imagem.label }}</label>
@@ -322,6 +306,68 @@
             {% if form.imagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.imagem.errors|striptags }}</div>{% endif %}
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="form-section" id="sec-culturas" data-tab-panel="sec-culturas">
+      <div class="section-toolbar">
+        <span class="title"><i class="bi bi-tree text-success"></i> Culturas da Safra</span>
+        <button type="button" class="btn btn-sm btn-outline" id="btn-add-cultura">
+          <i class="bi bi-plus-lg me-1"></i>Adicionar Cultura
+        </button>
+      </div>
+      <div class="form-section-body">
+        <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Uma safra pode ter mais de uma cultura (ex: soja e milho na mesma "2026/27"), cada uma com seu próprio período e status.
+        </div>
+        {% if culturas_formset.non_form_errors %}
+        <div class="alert alert-danger py-2 px-3 small rounded-3 mb-3">
+          {% for error in culturas_formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        {{ culturas_formset.management_form }}
+        <div class="items-table-wrap">
+          <table id="culturas-table" class="items-table mb-0">
+            <thead>
+              <tr>
+                <th>Cultura</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Status</th>
+                <th style="width:40px"></th>
+              </tr>
+            </thead>
+            <tbody id="culturas-tbody">
+              {% for cf in culturas_formset %}
+              <tr class="cultura-row">
+                {{ cf.id }}
+                <td>{{ cf.cultura }}{% if cf.cultura.errors %}<div class="error-msg small"><i class="bi bi-exclamation-circle"></i> {{ cf.cultura.errors|striptags }}</div>{% endif %}</td>
+                <td>{{ cf.periodo_inicio }}</td>
+                <td>{{ cf.periodo_fim }}</td>
+                <td>{{ cf.status }}</td>
+                <td>
+                  <span class="d-none">{{ cf.DELETE }}</span>
+                  <button type="button" class="row-action danger btn-remove-cultura"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <template id="cultura-empty-form-template">
+          <tr class="cultura-row">
+            {{ culturas_formset.empty_form.id }}
+            <td>{{ culturas_formset.empty_form.cultura }}</td>
+            <td>{{ culturas_formset.empty_form.periodo_inicio }}</td>
+            <td>{{ culturas_formset.empty_form.periodo_fim }}</td>
+            <td>{{ culturas_formset.empty_form.status }}</td>
+            <td>
+              <span class="d-none">{{ culturas_formset.empty_form.DELETE }}</span>
+              <button type="button" class="row-action danger btn-remove-cultura"><i class="bi bi-trash"></i></button>
+            </td>
+          </tr>
+        </template>
       </div>
     </div>
 
@@ -443,8 +489,8 @@
         <div class="d-flex gap-3 mb-4">
           <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">1</div>
           <div>
-            <h6 class="fw-bold mb-1">Nome da Safra</h6>
-            <p class="text-muted mb-0">Informe um nome identificador para a safra, como <strong>Safra 2024/25</strong>. O sistema pode preencher automaticamente com base nas datas de início e fim — basta preencher os períodos e o nome será gerado.</p>
+            <h6 class="fw-bold mb-1">Nome, Fazenda e Ano</h6>
+            <p class="text-muted mb-0">Informe um nome identificador para a safra, como <strong>Safra 2024/25</strong>, selecione a <strong>fazenda</strong> e o <strong>ano</strong>. Não é possível cadastrar duas safras para a mesma fazenda e ano.</p>
           </div>
         </div>
 
@@ -452,8 +498,8 @@
         <div class="d-flex gap-3 mb-4">
           <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">2</div>
           <div>
-            <h6 class="fw-bold mb-1">Fazenda e Cultura</h6>
-            <p class="text-muted mb-0">Selecione a <strong>fazenda</strong> onde a safra será realizada e a <strong>cultura</strong> que será plantada (ex.: Soja, Milho, Cana). Ambos os campos são obrigatórios. Ao trocar a fazenda, os talhões disponíveis serão carregados automaticamente.</p>
+            <h6 class="fw-bold mb-1">Culturas da Safra</h6>
+            <p class="text-muted mb-0">Adicione uma linha para cada <strong>cultura</strong> plantada nesta safra (ex.: Soja, Milho, Cana). Uma mesma safra pode ter mais de uma cultura — cada uma com seu próprio <strong>período</strong> (início/fim) e <strong>status</strong> (Planejada, Em Andamento, Finalizada).</p>
           </div>
         </div>
 
@@ -461,38 +507,14 @@
         <div class="d-flex gap-3 mb-4">
           <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">3</div>
           <div>
-            <h6 class="fw-bold mb-1">Ano e Período</h6>
-            <p class="text-muted mb-0">Informe o <strong>ano</strong> da safra e as datas de <strong>início</strong> e <strong>fim</strong> do período de plantio. A data de início deve ser anterior à data de fim. O sistema não permitirá cadastrar duas safras com a mesma fazenda, cultura e ano.</p>
+            <h6 class="fw-bold mb-1">Imagem (opcional)</h6>
+            <p class="text-muted mb-0">Você pode anexar uma <strong>foto ou imagem</strong> representativa da safra (ex.: foto da lavoura). Este campo é opcional e aceita formatos JPG, PNG e similares.</p>
           </div>
         </div>
 
         <!-- Passo 4 -->
         <div class="d-flex gap-3 mb-4">
           <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">4</div>
-          <div>
-            <h6 class="fw-bold mb-1">Status da Safra</h6>
-            <p class="text-muted mb-0">Defina o status inicial da safra:
-              <ul class="mt-1 mb-0">
-                <li><strong>Planejada</strong> — safra ainda não iniciada, em fase de planejamento.</li>
-                <li><strong>Em Andamento</strong> — plantio ou colheita em execução.</li>
-                <li><strong>Finalizada</strong> — safra concluída.</li>
-              </ul>
-            </p>
-          </div>
-        </div>
-
-        <!-- Passo 5 -->
-        <div class="d-flex gap-3 mb-4">
-          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">5</div>
-          <div>
-            <h6 class="fw-bold mb-1">Imagem (opcional)</h6>
-            <p class="text-muted mb-0">Você pode anexar uma <strong>foto ou imagem</strong> representativa da safra (ex.: foto da lavoura). Este campo é opcional e aceita formatos JPG, PNG e similares.</p>
-          </div>
-        </div>
-
-        <!-- Passo 6 -->
-        <div class="d-flex gap-3 mb-4">
-          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">6</div>
           <div>
             <h6 class="fw-bold mb-1">Seleção de Talhões</h6>
             <p class="text-muted mb-0">Após selecionar a fazenda, os talhões disponíveis serão exibidos em cards. Clique nos talhões que farão parte desta safra. Use os filtros para exibir apenas talhões <strong>Disponíveis</strong>, <strong>Plantados</strong> ou <strong>Em Preparação</strong>. Talhões bloqueados (<span class="text-danger fw-semibold">Em uso</span>) já estão vinculados a outra safra ativa e não podem ser selecionados.</p>
@@ -502,9 +524,9 @@
           </div>
         </div>
 
-        <!-- Passo 7 -->
+        <!-- Passo 5 -->
         <div class="d-flex gap-3 mb-2">
-          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">7</div>
+          <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">5</div>
           <div>
             <h6 class="fw-bold mb-1">Salvar a Safra</h6>
             <p class="text-muted mb-0">Revise todas as informações e clique em <strong>Salvar Safra</strong>. Após salvar, você poderá acessar o detalhamento da safra para adicionar o <strong>planejamento de produção</strong> (área, produtividade esperada, custos) e registrar os <strong>resultados reais</strong> ao final da safra.</p>
@@ -829,21 +851,43 @@ document.addEventListener('DOMContentLoaded', function() {
     return labels[status] || status;
   }
 
-  // Auto-preencher nome da safra
-  const periodoInicio = document.getElementById('id_periodo_inicio');
-  const periodoFim = document.getElementById('id_periodo_fim');
-  const nomeInput = document.getElementById('id_nome');
+  // Formset de Culturas da Safra: adicionar/remover linhas
+  const culturasTbody = document.getElementById('culturas-tbody');
+  const culturasTotalForms = document.getElementById('id_culturas-TOTAL_FORMS');
+  const culturaTemplate = document.getElementById('cultura-empty-form-template');
+  const btnAddCultura = document.getElementById('btn-add-cultura');
 
-  function atualizarNomeSafra() {
-    if (periodoInicio && periodoFim && nomeInput && periodoInicio.value && periodoFim.value) {
-      const ano1 = new Date(periodoInicio.value).getFullYear();
-      const ano2 = new Date(periodoFim.value).getFullYear() % 100;
-      nomeInput.value = `Safra ${ano1}/${String(ano2).padStart(2, '0')}`;
-    }
+  function bindRemoveCultura(row) {
+    const btn = row.querySelector('.btn-remove-cultura');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      const deleteInput = row.querySelector('input[name$="-DELETE"]');
+      const idInput = row.querySelector('input[name$="-id"]');
+      if (deleteInput && idInput && idInput.value) {
+        // Linha existente: marca DELETE e esconde (o formset se encarrega de excluir ao salvar)
+        deleteInput.checked = true;
+        row.style.display = 'none';
+      } else {
+        // Linha nova (ainda não salva): remove do DOM
+        row.remove();
+      }
+    });
   }
 
-  if (periodoInicio) periodoInicio.addEventListener('change', atualizarNomeSafra);
-  if (periodoFim) periodoFim.addEventListener('change', atualizarNomeSafra);
+  document.querySelectorAll('#culturas-tbody .cultura-row').forEach(bindRemoveCultura);
+
+  if (btnAddCultura && culturaTemplate && culturasTotalForms) {
+    btnAddCultura.addEventListener('click', function() {
+      const index = parseInt(culturasTotalForms.value, 10);
+      const html = culturaTemplate.innerHTML.replace(/__prefix__/g, index);
+      const wrapper = document.createElement('tbody');
+      wrapper.innerHTML = html;
+      const newRow = wrapper.firstElementChild;
+      culturasTbody.appendChild(newRow);
+      bindRemoveCultura(newRow);
+      culturasTotalForms.value = index + 1;
+    });
+  }
 
   // 🔥 Inicializar Tooltip do botão de ajuda (Bootstrap)
   const helpBtn = document.getElementById('talhoes-help-btn');

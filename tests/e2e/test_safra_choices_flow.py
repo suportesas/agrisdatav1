@@ -79,14 +79,15 @@ def test_safra_create_talhoes_choices(page, live_server, e2e_safra_data):
 def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, django_db_blocker):
     # Cria safra que usa o talhao e verifica que ele não aparece no dropdown
     with django_db_blocker.unblock():
-        from cadastros.models import Safra, Talhao
+        from cadastros.models import Safra, SafraCultura, Talhao
         fazenda = e2e_safra_data['fazenda']
         area = e2e_safra_data['area']
         talhao = e2e_safra_data['talhao']
         cultura = e2e_safra_data['cultura']
         # Create an additional available talhão so the form has at least one option to select
         Talhao.objects.create(area=area, fazenda=fazenda, nome='T-e2e-available', codigo='E2E-AV', area_hac=2, empresa=fazenda.empresa)
-        safra = Safra.objects.create(fazenda=fazenda, cultura=cultura, ano=2025)
+        safra = Safra.objects.create(fazenda=fazenda, ano=2025)
+        SafraCultura.objects.create(safra=safra, cultura=cultura)
         safra.talhoes.add(talhao)
 
     parsed = urlparse(live_server.url)
@@ -108,17 +109,17 @@ def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, dja
     # Talhão em uso deve aparecer bloqueado
     assert page.locator('.talhao-card.disabled', has_text='E2E2').count() == 1
 
-    # Seleciona cultura e talhão disponível (card)
-    page.select_option('#id_cultura', str(cultura.pk))
+    # Seleciona talhão disponível (card)
     page.locator('.talhao-card', has_text='E2E-AV').first.click()
     page.wait_for_function("() => (document.getElementById('talhoes-input')?.value || '').length > 0", timeout=5000)
 
-    # Preenche datas mínimas
+    # Preenche dados mínimos, incluindo a linha de cultura da safra (formset)
     today = date.today().isoformat()
     page.fill('#id_nome', 'Safra E2E UI')
     page.fill('#id_ano', str(date.today().year))
-    page.fill('#id_periodo_inicio', today)
-    page.fill('#id_periodo_fim', today)
+    page.select_option('#id_culturas-0-cultura', str(cultura.pk))
+    page.fill('#id_culturas-0-periodo_inicio', today)
+    page.fill('#id_culturas-0-periodo_fim', today)
 
     # Submete o formulário
     page.click("button:has-text('Salvar Safra')")

@@ -1276,12 +1276,12 @@ def os_iniciar(request, pk):
                     messages.error(request, 'Para iniciar uma OS de plantio, selecione a safra vinculada.')
                     return redirect('operacoes_campo:os_detail', pk=pk)
 
-                if not os_obj.safra.cultura_id:
-                    messages.error(request, 'A safra vinculada não possui cultura definida para iniciar o plantio.')
+                if not os_obj.safra_cultura_id:
+                    messages.error(request, 'Selecione a cultura da safra para iniciar o plantio.')
                     return redirect('operacoes_campo:os_detail', pk=pk)
 
                 talhao = os_obj.talhao
-                cultura_safra = os_obj.safra.cultura
+                cultura_safra = os_obj.safra_cultura.cultura
                 if (
                     talhao.cultura_atual_id
                     and talhao.cultura_atual_id != cultura_safra.id
@@ -1306,7 +1306,7 @@ def os_iniciar(request, pk):
 
             if tipo_legado == 'PLANTIO':
                 os_obj.talhao.iniciar_cultivo(
-                    cultura=os_obj.safra.cultura,
+                    cultura=os_obj.safra_cultura.cultura,
                     data_plantio=timezone.localdate(),
                 )
             messages.success(request, f'OS {os_obj.numero} iniciada!')
@@ -1620,26 +1620,32 @@ def ajax_opcoes_talhao(request):
     except Talhao.DoesNotExist:
         return JsonResponse({'safras': [], 'cultura': None})
 
-    # Retorna apenas safras PLANEJADA ou EM_ANDAMENTO vinculadas a este talhão
-    # Inclui cultura_id para derivar a cultura sem query adicional
-    safras = list(
-        talhao.safras.filter(
-            fazenda__empresa=empresa,
-            status__in=['PLANEJADA', 'EM_ANDAMENTO']
-        ).order_by('-ano', 'nome').values('id', 'nome', 'ano', 'cultura_id', 'cultura__nome')
-    )
+    # Retorna apenas safras PLANEJADA ou EM_ANDAMENTO vinculadas a este talhão,
+    # com a lista de culturas (SafraCultura) de cada uma para popular o combo em cascata.
+    safras_qs = talhao.safras.filter(
+        fazenda__empresa=empresa,
+        culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
+    ).prefetch_related('culturas__cultura').distinct().order_by('-ano', 'nome')
 
-    # Monta nome da safra no mesmo padrão do modelo Safra.__str__()
-    for s in safras:
-        if not s['nome']:
-            s['nome'] = f"Safra {s['ano']} - {s['cultura__nome']}"
+    safras = []
+    for s in safras_qs:
+        culturas_safra = list(s.culturas.all())
+        safras.append({
+            'id': s.id,
+            'nome': str(s),
+            'ano': s.ano,
+            'culturas': [
+                {'id': sc.id, 'cultura_id': sc.cultura_id, 'nome': sc.cultura.nome}
+                for sc in culturas_safra
+            ],
+        })
 
-    # Cultura: campo direto no talhão OU derivada da primeira safra ativa
+    # Cultura: campo direto no talhão OU derivada da única cultura da primeira safra ativa
     cultura = None
     if talhao.cultura_atual_id:
         cultura = {'id': talhao.cultura_atual_id, 'nome': talhao.cultura_atual.nome}
-    elif safras and safras[0].get('cultura__nome'):
-        cultura = {'id': safras[0]['cultura_id'], 'nome': safras[0]['cultura__nome']}
+    elif safras and len(safras[0]['culturas']) == 1:
+        cultura = {'id': safras[0]['culturas'][0]['cultura_id'], 'nome': safras[0]['culturas'][0]['nome']}
 
     return JsonResponse({
         'safras': safras,

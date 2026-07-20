@@ -181,8 +181,9 @@ def monitoramento_mip_create(request):
                 monitoramento.status = 'COMPLETO'
 
                 if monitoramento.talhao and not monitoramento.cultura:
-                    if monitoramento.safra and monitoramento.safra.cultura:
-                        monitoramento.cultura = monitoramento.safra.cultura
+                    culturas_safra = list(monitoramento.safra.culturas.all()) if monitoramento.safra else []
+                    if len(culturas_safra) == 1:
+                        monitoramento.cultura = culturas_safra[0].cultura
                     elif monitoramento.talhao.cultura_atual:
                         monitoramento.cultura = monitoramento.talhao.cultura_atual
 
@@ -691,23 +692,22 @@ def ajax_buscar_talhoes(request):
 
     resultado = []
     for talhao in talhoes:
-        safra_ativa = talhao.safras.filter(
-            status__in=['PLANEJADA', 'EM_ANDAMENTO']
-        ).select_related('cultura').first()
+        safras_ativas = talhao.safras.filter(
+            culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
+        ).prefetch_related('culturas__cultura').distinct().order_by('-ano')
+
+        safra_ativa = safras_ativas.first()
+        culturas_safra_ativa = list(safra_ativa.culturas.all()) if safra_ativa else []
 
         cultura_id = None
         cultura_nome = None
 
-        if safra_ativa and safra_ativa.cultura:
-            cultura_id = safra_ativa.cultura.id
-            cultura_nome = safra_ativa.cultura.nome
+        if len(culturas_safra_ativa) == 1:
+            cultura_id = culturas_safra_ativa[0].cultura.id
+            cultura_nome = culturas_safra_ativa[0].cultura.nome
         elif talhao.cultura_atual:
             cultura_id = talhao.cultura_atual.id
             cultura_nome = talhao.cultura_atual.nome
-
-        safras_ativas = talhao.safras.filter(
-            status__in=['PLANEJADA', 'EM_ANDAMENTO']
-        ).select_related('cultura').order_by('-ano')
 
         resultado.append({
             'id': talhao.id,
@@ -722,10 +722,12 @@ def ajax_buscar_talhoes(request):
             'safras_ativas': [
                 {
                     'id': safra.id,
-                    'nome': safra.nome or f"Safra {safra.ano} - {safra.cultura.nome}",
+                    'nome': str(safra),
                     'ano': safra.ano,
-                    'cultura_nome': safra.cultura.nome,
-                    'status': safra.get_status_display() if hasattr(safra, 'get_status_display') else safra.status
+                    'culturas': [
+                        {'id': sc.cultura_id, 'nome': sc.cultura.nome, 'status': sc.get_status_display()}
+                        for sc in safra.culturas.all()
+                    ],
                 }
                 for safra in safras_ativas
             ]
@@ -745,8 +747,8 @@ def ajax_talhao_info(request, talhao_id):
         return JsonResponse({'error': 'Talhão não encontrado'}, status=404)
 
     safras_ativas = talhao.safras.filter(
-        status__in=['PLANEJADA', 'EM_ANDAMENTO']
-    ).select_related('cultura').order_by('-ano')
+        culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
+    ).prefetch_related('culturas__cultura').distinct().order_by('-ano')
 
     cultura_id = None
     cultura_nome = None
@@ -754,9 +756,10 @@ def ajax_talhao_info(request, talhao_id):
 
     if safras_ativas.exists():
         primeira_safra = safras_ativas.first()
-        if primeira_safra.cultura:
-            cultura_id = primeira_safra.cultura.id
-            cultura_nome = primeira_safra.cultura.nome
+        culturas_primeira_safra = list(primeira_safra.culturas.all())
+        if len(culturas_primeira_safra) == 1:
+            cultura_id = culturas_primeira_safra[0].cultura.id
+            cultura_nome = culturas_primeira_safra[0].cultura.nome
         if safras_ativas.count() == 1:
             safra_id_auto = primeira_safra.id
     elif talhao.cultura_atual:
@@ -772,9 +775,11 @@ def ajax_talhao_info(request, talhao_id):
         'safras_ativas': [
             {
                 'id': s.id,
-                'nome': s.nome or f'Safra {s.ano} - {s.cultura.nome if s.cultura else ""}',
-                'cultura_nome': s.cultura.nome if s.cultura else '',
-                'status': s.status,
+                'nome': str(s),
+                'culturas': [
+                    {'id': sc.cultura_id, 'nome': sc.cultura.nome, 'status': sc.get_status_display()}
+                    for sc in s.culturas.all()
+                ],
             }
             for s in safras_ativas
         ],

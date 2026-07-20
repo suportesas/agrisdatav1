@@ -62,8 +62,8 @@ class MonitoramentoMIPForm(forms.ModelForm):
 
             self.fields['safra'].queryset = Safra.objects.filter(
                 fazenda__empresa=self.empresa,
-                status__in=['PLANEJADA', 'EM_ANDAMENTO']
-            ).select_related('fazenda', 'cultura').order_by('-ano', 'nome')
+                culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
+            ).select_related('fazenda').prefetch_related('culturas__cultura').distinct().order_by('-ano', 'nome')
 
             self.fields['safra'].required = True
 
@@ -87,7 +87,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
         safra = cleaned.get('safra')
         cultura = cleaned.get('cultura')
 
-        if not cultura and safra and safra.cultura:
+        if not cultura and safra and safra.culturas.exists():
             pass
         elif not cultura and talhao and talhao.cultura_atual:
             pass

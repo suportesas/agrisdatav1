@@ -28,7 +28,7 @@
     <div>
       <a href="{% url 'patrimonio:patrimonio_edit' patrimonio.pk %}" class="btn btn-outline-secondary me-2">Editar</a>
       {% if patrimonio.veiculo %}
-      <a href="{% url 'cadastros:vehicle_detail' patrimonio.veiculo.pk %}" class="btn btn-info me-2">
+      <a href="{% url 'frota:vehicle_detail' patrimonio.veiculo.pk %}" class="btn btn-info me-2">
         <i class="bi bi-link-45deg"></i> Ver Veículo
       </a>
       {% endif %}

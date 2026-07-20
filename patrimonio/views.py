@@ -162,7 +162,7 @@ def patrimonio_from_veiculo(request, vehicle_pk):
     # Verificar se já existe patrimônio vinculado
     if hasattr(veiculo, 'patrimonio') and veiculo.patrimonio:
         messages.warning(request, f'Este veículo já está vinculado ao patrimônio {veiculo.patrimonio.numero_patrimonio}')
-        return redirect('cadastros:vehicle_detail', pk=veiculo.pk)
+        return redirect('frota:vehicle_detail', pk=veiculo.pk)
     
     if request.method == 'POST':
         form = PatrimonioVeiculoExportForm(request.POST, empresa=request.user.empresa)

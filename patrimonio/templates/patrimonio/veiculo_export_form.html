@@ -7,8 +7,8 @@
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
       <li class="breadcrumb-item"><a href="{% url 'dashboard:index' %}">Dashboard</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:vehicle_list' %}">Veículos</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}">{{ veiculo }}</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:vehicle_list' %}">Veículos</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'frota:vehicle_detail' veiculo.pk %}">{{ veiculo }}</a></li>
       <li class="breadcrumb-item active">{{ action }}</li>
     </ol>
   </nav>
@@ -23,7 +23,7 @@
         </div>
       </div>
       <div class="form-header-actions">
-        <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-ghost">
+        <a href="{% url 'frota:vehicle_detail' veiculo.pk %}" class="btn btn-ghost">
           <i class="bi bi-arrow-left"></i> Voltar
         </a>
       </div>
@@ -88,7 +88,7 @@
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-4">
-              <a href="{% url 'cadastros:vehicle_detail' veiculo.pk %}" class="btn btn-outline">Cancelar</a>
+              <a href="{% url 'frota:vehicle_detail' veiculo.pk %}" class="btn btn-outline">Cancelar</a>
               <button type="submit" class="btn btn-primary">
                 <i class="bi bi-check-circle"></i> Registrar como Patrimônio
               </button>

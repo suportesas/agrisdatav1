@@ -509,7 +509,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
     <tr>
       <td class="br" style="width:36%">
         <span class="lbl">Nome / Razão Social</span>
-        <span class="val2">{{ nf.transp_nome|default:nf.transportadora.razao_social|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_nome|default:"—" }}</span>
       </td>
       <td class="br" style="width:13%">
         <span class="lbl">Frete</span>
@@ -522,7 +522,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
       </td>
       <td class="br" style="width:15%">
         <span class="lbl">Código ANTT</span>
-        <span class="val2">{{ nf.transp_rntc|default:nf.transportadora.rntc|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_rntc|default:"—" }}</span>
       </td>
       <td class="br" style="width:10%">
         <span class="lbl">Placa do Veículo</span>
@@ -534,25 +534,25 @@ td, th { padding: 1px 2px; vertical-align: top; }
       </td>
       <td style="width:20%">
         <span class="lbl">CNPJ / CPF</span>
-        <span class="val2">{{ nf.transp_cnpj|default:nf.transportadora.cnpj|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_cnpj|default:"—" }}</span>
       </td>
     </tr>
     <tr class="dr">
       <td class="br" colspan="2">
         <span class="lbl">Endereço</span>
-        <span class="val2">{{ nf.transp_endereco|default:nf.transportadora.logradouro|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_endereco|default:"—" }}</span>
       </td>
       <td class="br" colspan="2">
         <span class="lbl">Município</span>
-        <span class="val2">{{ nf.transp_municipio|default:nf.transportadora.cidade|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_municipio|default:"—" }}</span>
       </td>
       <td class="br">
         <span class="lbl">UF</span>
-        <span class="val2">{{ nf.transp_uf|default:nf.transportadora.uf|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_uf|default:"—" }}</span>
       </td>
       <td>
         <span class="lbl">Inscrição Estadual</span>
-        <span class="val2">{{ nf.transp_ie|default:nf.transportadora.inscricao_estadual|default:"—" }}</span>
+        <span class="val2">{{ nf.transp_ie|default:"—" }}</span>
       </td>
     </tr>
     <tr class="dr">

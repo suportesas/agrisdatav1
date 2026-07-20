@@ -98,7 +98,7 @@ def planejamento_custo_create(request):
         safra_id = request.GET.get('safra_id')
         if safra_id:
             try:
-                safra_pre = Safra.objects.select_related('cultura').get(
+                safra_pre = Safra.objects.get(
                     pk=safra_id, fazenda__empresa=empresa
                 )
                 area_ha = None

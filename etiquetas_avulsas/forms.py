@@ -59,7 +59,7 @@ class LoteEtiquetaAvulsaForm(forms.ModelForm):
         if empresa:
             from cadastros.models import Cliente, Fazenda, Navio, Porto, Safra
             self.fields['safra'].queryset = Safra.objects.filter(
-                fazenda__empresa=empresa).select_related('cultura', 'fazenda').order_by('-ano', 'nome')
+                fazenda__empresa=empresa).select_related('fazenda').order_by('-ano', 'nome')
             self.fields['fazenda'].queryset = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
             self.fields['porto_origem'].queryset = Porto.objects.filter(empresa=empresa, ativo=True).order_by('nome')

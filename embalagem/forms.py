@@ -96,7 +96,7 @@ class OrdemEmbalagemForm(forms.ModelForm):
             from usuarios.models import Usuario
             from cadastros.models import Safra
             self.fields['safra'].queryset = Safra.objects.filter(
-                fazenda__empresa=empresa).select_related('cultura', 'fazenda').order_by('-ano', 'nome')
+                fazenda__empresa=empresa).select_related('fazenda').order_by('-ano', 'nome')
             self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
                 empresa=empresa, ativo=True).order_by('nome')
             self.fields['lote_origem'].queryset = Lote.objects.filter(

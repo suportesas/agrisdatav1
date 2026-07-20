@@ -3355,7 +3355,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
             self.fields['safra'].queryset = Safra.objects.filter(
                 fazenda__empresa=self.empresa,
                 status__in=['PLANEJADA', 'EM_ANDAMENTO']
-            ).select_related('fazenda', 'cultura').order_by('-ano', 'nome')
+            ).select_related('fazenda').order_by('-ano', 'nome')
             
             # Marcar safra como obrigatória
             self.fields['safra'].required = True

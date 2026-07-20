@@ -84,6 +84,7 @@
               <label class="form-label">Talhão<span class="req">*</span></label>
               {{ form.talhao }}
               {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors|striptags }}</div>{% endif %}
+              <div class="helper-note" id="talhao-sugestao-hint"></div>
             </div>
             <div class="field col-4">
               <label class="form-label">Safra <small class="text-muted">(auto-preenchida)</small></label>
@@ -888,6 +889,51 @@ if (talhaoSelect) {
 
 if (safraSelect) {
   safraSelect.addEventListener('change', function () { atualizarCulturasSafra(this.value, ''); });
+}
+
+// ── Sugestão de talhão a partir da cultura da safra escolhida ────────────────
+const AJAX_TALHOES_SAFRA_CULTURA_URL = "{% url 'operacoes_campo:os_ajax_talhoes_por_safra_cultura' %}";
+const talhaoHint = document.getElementById('talhao-sugestao-hint');
+
+function sugerirTalhoesPorSafraCultura(safraCulturaId) {
+  if (!talhaoHint) return;
+  talhaoHint.innerHTML = '';
+  if (!safraCulturaId) return;
+
+  fetch(AJAX_TALHOES_SAFRA_CULTURA_URL + '?safra_cultura_id=' + safraCulturaId)
+    .then(r => r.json())
+    .then(data => {
+      const talhoes = data.talhoes || [];
+      if (talhoes.length === 0) return;
+
+      if (talhoes.length === 1 && talhaoSelect && !talhaoSelect.value) {
+        talhaoSelect.value = talhoes[0].id;
+        talhaoSelect.dispatchEvent(new Event('change'));
+        return;
+      }
+
+      talhaoHint.textContent = 'Sugeridos por esta cultura: ';
+      talhoes.forEach((t, idx) => {
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = `${t.codigo || t.nome}`;
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          if (talhaoSelect) {
+            talhaoSelect.value = t.id;
+            talhaoSelect.dispatchEvent(new Event('change'));
+          }
+        });
+        talhaoHint.appendChild(link);
+        if (idx < talhoes.length - 1) talhaoHint.appendChild(document.createTextNode(', '));
+      });
+    })
+    .catch(err => console.error('Erro ao sugerir talhões:', err));
+}
+
+if (safraCulturaSelect) {
+  safraCulturaSelect.addEventListener('change', function () { sugerirTalhoesPorSafraCultura(this.value); });
+  if (safraCulturaSelect.value) sugerirTalhoesPorSafraCultura(safraCulturaSelect.value);
 }
 </script>
 {% endblock %}

@@ -2175,21 +2175,25 @@ class SafraCulturaForm(forms.ModelForm):
 
     class Meta:
         model = SafraCultura
-        fields = ['cultura', 'periodo_inicio', 'periodo_fim', 'status']
+        fields = ['cultura', 'periodo_inicio', 'periodo_fim', 'status', 'talhoes']
         widgets = {
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
+            'talhoes': forms.SelectMultiple(attrs={'class': 'd-none'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].initial = 'PLANEJADA'
+        self.fields['talhoes'].required = False
         if empresa:
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=empresa, ativa=True).order_by('nome')
+            self.fields['talhoes'].queryset = Talhao.objects.filter(empresa=empresa, ativo=True).order_by('codigo')
         else:
             self.fields['cultura'].queryset = Cultura.objects.none()
+            self.fields['talhoes'].queryset = Talhao.objects.none()
 
     def clean(self):
         cleaned = super().clean()
@@ -2202,8 +2206,49 @@ class SafraCulturaForm(forms.ModelForm):
         return cleaned
 
 
+class BaseSafraCulturaFormSet(forms.BaseInlineFormSet):
+    """Valida que um talhão não seja atribuído a duas culturas da mesma safra
+    nem a uma cultura ativa de outra safra."""
+
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+
+        talhoes_no_formset = {}
+        culturas_validas = 0
+        for form in self.forms:
+            if not hasattr(form, 'cleaned_data') or form.cleaned_data.get('DELETE'):
+                continue
+            if form.cleaned_data.get('cultura'):
+                culturas_validas += 1
+
+            talhoes = form.cleaned_data.get('talhoes')
+            if not talhoes:
+                continue
+
+            for talhao in talhoes:
+                if talhao in talhoes_no_formset:
+                    form.add_error('talhoes', f'Talhão {talhao.codigo} já foi atribuído a outra cultura desta safra.')
+                    continue
+                talhoes_no_formset[talhao] = form
+
+                conflito_qs = SafraCultura.objects.filter(
+                    talhoes=talhao, status__in=['PLANEJADA', 'EM_ANDAMENTO']
+                )
+                if self.instance.pk:
+                    conflito_qs = conflito_qs.exclude(safra_id=self.instance.pk)
+                conflito = conflito_qs.select_related('safra').first()
+                if conflito:
+                    form.add_error('talhoes', f'Talhão {talhao.codigo} já está em uso em {conflito.safra}.')
+
+        if culturas_validas == 0:
+            raise forms.ValidationError('Adicione ao menos uma cultura para esta safra.')
+
+
 SafraCulturaFormSet = forms.inlineformset_factory(
-    Safra, SafraCultura, form=SafraCulturaForm, extra=1, can_delete=True, min_num=1, validate_min=True,
+    Safra, SafraCultura, form=SafraCulturaForm, formset=BaseSafraCulturaFormSet,
+    extra=0, can_delete=True, min_num=0, validate_min=False,
 )
 
 

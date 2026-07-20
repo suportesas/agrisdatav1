@@ -34,6 +34,7 @@ urlpatterns = [
     # AJAX – Classificação de OS
     path('ordens-servico/ajax/opcoes-servico/', views_os.ajax_opcoes_servico, name='os_ajax_opcoes_servico'),
     path('ordens-servico/ajax/opcoes-talhao/', views_os.ajax_opcoes_talhao, name='os_ajax_opcoes_talhao'),
+    path('ordens-servico/ajax/talhoes-por-safra-cultura/', views_os.ajax_talhoes_por_safra_cultura, name='os_ajax_talhoes_por_safra_cultura'),
     path('ordens-servico/ajax/produto-info/', views_os.ajax_produto_info, name='os_ajax_produto_info'),
 
     # Delegação

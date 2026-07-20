@@ -30,9 +30,9 @@
   }
 
   .talhao-card.selected {
-    border-color: #10b981;
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    border-color: var(--cultura-color, #10b981);
+    background: color-mix(in srgb, var(--cultura-color, #10b981) 18%, white);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--cultura-color, #10b981) 35%, transparent);
   }
 
   .talhao-card.disabled {
@@ -53,6 +53,48 @@
     padding: 4px 8px;
     border-radius: 12px;
     font-weight: 600;
+  }
+
+  .talhao-card .cultura-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--cultura-color, #10b981);
+    color: white;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  /* Abas de cultura ativa — mesmo padrão visual dos .filter-btn */
+  .cultura-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .cultura-tab {
+    padding: 8px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+  }
+
+  .cultura-tab:hover {
+    border-color: var(--cultura-color, #10b981);
+    color: var(--cultura-color, #10b981);
+  }
+
+  .cultura-tab.active {
+    background: var(--cultura-color, #10b981);
+    border-color: var(--cultura-color, #10b981);
+    color: white;
   }
 
   .talhao-card .checkbox-icon {
@@ -122,6 +164,7 @@
   .status-em-uso { background: #fee2e2; color: #991b1b; }
   .status-plantado { background: #fef3c7; color: #92400e; }
   .status-preparacao { background: #dbeafe; color: #1e40af; }
+  .status-reservado { background: #cffafe; color: #155e75; }
 
   /* Resumo da Seleção */
   .selection-summary {
@@ -340,8 +383,8 @@
             </thead>
             <tbody id="culturas-tbody">
               {% for cf in culturas_formset %}
-              <tr class="cultura-row">
-                {{ cf.id }}
+              <tr class="cultura-row" data-index="{{ forloop.counter0 }}">
+                <td class="d-none">{{ cf.id }}{{ cf.talhoes }}</td>
                 <td>{{ cf.cultura }}{% if cf.cultura.errors %}<div class="error-msg small"><i class="bi bi-exclamation-circle"></i> {{ cf.cultura.errors|striptags }}</div>{% endif %}</td>
                 <td>{{ cf.periodo_inicio }}</td>
                 <td>{{ cf.periodo_fim }}</td>
@@ -356,8 +399,8 @@
           </table>
         </div>
         <template id="cultura-empty-form-template">
-          <tr class="cultura-row">
-            {{ culturas_formset.empty_form.id }}
+          <tr class="cultura-row" data-index="__prefix__">
+            <td class="d-none">{{ culturas_formset.empty_form.id }}{{ culturas_formset.empty_form.talhoes }}</td>
             <td>{{ culturas_formset.empty_form.cultura }}</td>
             <td>{{ culturas_formset.empty_form.periodo_inicio }}</td>
             <td>{{ culturas_formset.empty_form.periodo_fim }}</td>
@@ -378,6 +421,14 @@
       </div>
       <div class="form-section-body">
 
+        <div class="alert alert-info py-2 px-3 small rounded-3 mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Escolha a cultura ativa abaixo e clique nos talhões para atribuí-los a ela. Um talhão só pode pertencer a uma cultura desta safra.
+        </div>
+
+        <!-- Abas de cultura ativa -->
+        <div class="cultura-tabs mb-3" id="cultura-tabs"></div>
+
         <!-- Filtros -->
         <div class="talhoes-filters" id="talhoes-filters" style="display: none;">
           <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%;">
@@ -387,6 +438,9 @@
               </button>
               <button type="button" class="filter-btn" data-filter="DISPONIVEL">
                 <i class="bi bi-check-circle"></i> Disponíveis
+              </button>
+              <button type="button" class="filter-btn" data-filter="RESERVADO">
+                <i class="bi bi-bookmark-check"></i> Reservados
               </button>
               <button type="button" class="filter-btn" data-filter="PLANTADO">
                 <i class="bi bi-tree"></i> Plantados
@@ -424,11 +478,6 @@
 
         <!-- Grid de Talhões -->
         <div id="talhoes-grid" class="talhoes-grid" style="display: none;"></div>
-
-        <!-- Campo hidden para enviar IDs selecionados -->
-        <!-- ℹ️ Envia IDs separados por vírgula: "1,2,3" -->
-        <!-- O formulário Django deve processar este campo e converter para Many-to-Many -->
-        <input type="hidden" name="talhoes" id="talhoes-input" value="">
 
         <!-- Resumo da Seleção -->
         <div id="selection-summary" class="selection-summary">
@@ -516,8 +565,8 @@
         <div class="d-flex gap-3 mb-4">
           <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle bg-success text-white fw-bold" style="width:40px; height:40px; font-size:16px;">4</div>
           <div>
-            <h6 class="fw-bold mb-1">Seleção de Talhões</h6>
-            <p class="text-muted mb-0">Após selecionar a fazenda, os talhões disponíveis serão exibidos em cards. Clique nos talhões que farão parte desta safra. Use os filtros para exibir apenas talhões <strong>Disponíveis</strong>, <strong>Plantados</strong> ou <strong>Em Preparação</strong>. Talhões bloqueados (<span class="text-danger fw-semibold">Em uso</span>) já estão vinculados a outra safra ativa e não podem ser selecionados.</p>
+            <h6 class="fw-bold mb-1">Seleção de Talhões por Cultura</h6>
+            <p class="text-muted mb-0">Após selecionar a fazenda, os talhões disponíveis serão exibidos em cards. Escolha a <strong>aba da cultura</strong> (acima do grid) e clique nos talhões que vão para ela — cada talhão só pode pertencer a uma cultura desta safra, e o card fica colorido conforme a cultura atribuída. Use os filtros para exibir apenas talhões <strong>Disponíveis</strong>, <strong>Plantados</strong> ou <strong>Em Preparação</strong>. Talhões bloqueados (<span class="text-danger fw-semibold">Em uso</span>) já estão vinculados a outra safra ativa e não podem ser selecionados.</p>
             <div class="alert alert-warning mt-2 mb-0 py-2">
               <i class="bi bi-exclamation-triangle me-1"></i> <strong>Atenção:</strong> a seleção de talhões é opcional — você pode salvar a safra e adicionar os talhões depois.
             </div>
@@ -551,7 +600,7 @@
 document.addEventListener('DOMContentLoaded', function() {
   // Aplicar classes Bootstrap
   document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
-    if (!el.classList.contains('form-control') && !el.classList.contains('form-select')) {
+    if (!el.classList.contains('form-control') && !el.classList.contains('form-select') && !el.classList.contains('d-none')) {
       el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
     }
   });
@@ -560,16 +609,148 @@ document.addEventListener('DOMContentLoaded', function() {
   const talhoesGrid = document.getElementById('talhoes-grid');
   const emptyState = document.getElementById('empty-state');
   const loadingState = document.getElementById('loading-talhoes');
-  const talhoesInput = document.getElementById('talhoes-input');
   const selectionSummary = document.getElementById('selection-summary');
   const filters = document.getElementById('talhoes-filters');
+  const culturaTabsEl = document.getElementById('cultura-tabs');
+  const culturasTbody = document.getElementById('culturas-tbody');
+  const culturasTotalForms = document.getElementById('id_culturas-TOTAL_FORMS');
+  const culturaTemplate = document.getElementById('cultura-empty-form-template');
+  const btnAddCultura = document.getElementById('btn-add-cultura');
+
+  const CORES_CULTURA = ['#10b981', '#2563eb', '#f59e0b', '#ef4444', '#8b5cf6', '#0891b2', '#db2777', '#65a30d'];
+  const SAFRA_PK = {{ safra.pk|default:"null" }};
 
   let talhoesData = [];
-  let selectedIds = new Set();
   let currentFilter = 'todos'; // 🔥 Rastreia o filtro atualmente selecionado
+  let assignments = new Map(); // índice da linha de cultura (string) -> Set<talhaoId>
+  let culturaAtiva = null; // índice (string) da aba ativa
 
-  // 🔥 DADOS INICIAIS DA SAFRA SENDO EDITADA (renderizado pelo Django UMA VEZ)
-  const initialSelectedIds = [{% if safra and safra.talhoes.all %}{% for t in safra.talhoes.all %}{{ t.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% endif %}];
+  function getCulturaColor(index) {
+    const n = parseInt(index, 10) || 0;
+    return CORES_CULTURA[n % CORES_CULTURA.length];
+  }
+
+  function getCulturaRows() {
+    return Array.from(culturasTbody.querySelectorAll('.cultura-row')).filter(r => r.style.display !== 'none');
+  }
+
+  function getCulturaNome(row) {
+    const select = row.querySelector('select[id$="-cultura"]');
+    if (!select || select.selectedIndex < 0) return null;
+    const opt = select.options[select.selectedIndex];
+    return opt && opt.value ? opt.textContent : null;
+  }
+
+  function getAssignedIndexForTalhao(id) {
+    for (const [index, ids] of assignments.entries()) {
+      if (ids.has(id)) return index;
+    }
+    return null;
+  }
+
+  // Sincroniza o <select multiple> hidden da linha de cultura com o Map de atribuições
+  function syncHiddenSelect(index) {
+    const row = culturasTbody.querySelector(`.cultura-row[data-index="${index}"]`);
+    if (!row) return;
+    const select = row.querySelector('select[id$="-talhoes"]');
+    if (!select) return;
+    const ids = assignments.get(index) || new Set();
+    Array.from(select.options).forEach(opt => {
+      opt.selected = ids.has(parseInt(opt.value, 10));
+    });
+  }
+
+  // Lê o estado inicial (edição) direto dos <select> renderizados pelo Django
+  function lerAtribuicoesIniciais() {
+    getCulturaRows().forEach(row => {
+      const index = row.dataset.index;
+      const select = row.querySelector('select[id$="-talhoes"]');
+      if (!select) return;
+      const ids = new Set(Array.from(select.selectedOptions).map(o => parseInt(o.value, 10)));
+      if (ids.size > 0) assignments.set(index, ids);
+    });
+  }
+
+  // Reconstrói a barra de abas a partir das linhas de cultura atuais
+  function renderTabs() {
+    culturaTabsEl.innerHTML = '';
+    // Só vira aba quem já tem uma cultura escolhida na linha
+    const rows = getCulturaRows()
+      .map(row => ({ row, index: row.dataset.index, nome: getCulturaNome(row) }))
+      .filter(item => item.nome !== null);
+
+    if (rows.length === 0) {
+      culturaTabsEl.innerHTML = '<span class="text-muted small">Escolha a cultura na aba "Culturas" para poder atribuir talhões a ela.</span>';
+      culturaAtiva = null;
+      return;
+    }
+
+    if (culturaAtiva === null || !rows.some(r => r.index === culturaAtiva)) {
+      culturaAtiva = rows[0].index;
+    }
+
+    rows.forEach(({ index, nome }) => {
+      const count = (assignments.get(index) || new Set()).size;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `cultura-tab${index === culturaAtiva ? ' active' : ''}`;
+      btn.style.setProperty('--cultura-color', getCulturaColor(index));
+      btn.textContent = count > 0 ? `${nome} (${count})` : nome;
+      btn.addEventListener('click', () => {
+        culturaAtiva = index;
+        renderTabs();
+      });
+      culturaTabsEl.appendChild(btn);
+    });
+  }
+
+  function bindCulturaSelectChange(row) {
+    const select = row.querySelector('select[id$="-cultura"]');
+    if (select) select.addEventListener('change', renderTabs);
+  }
+
+  function bindRemoveCultura(row) {
+    const btn = row.querySelector('.btn-remove-cultura');
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      const deleteInput = row.querySelector('input[name$="-DELETE"]');
+      const idInput = row.querySelector('input[name$="-id"]');
+      assignments.delete(row.dataset.index);
+      if (deleteInput && idInput && idInput.value) {
+        // Linha existente: marca DELETE e esconde (o formset se encarrega de excluir ao salvar)
+        deleteInput.checked = true;
+        row.style.display = 'none';
+      } else {
+        // Linha nova (ainda não salva): remove do DOM
+        row.remove();
+      }
+      renderTabs();
+      renderTalhoes(talhoesData, currentFilter);
+    });
+  }
+
+  getCulturaRows().forEach(row => {
+    bindRemoveCultura(row);
+    bindCulturaSelectChange(row);
+  });
+  lerAtribuicoesIniciais();
+  renderTabs();
+
+  if (btnAddCultura && culturaTemplate && culturasTotalForms) {
+    btnAddCultura.addEventListener('click', function() {
+      const index = parseInt(culturasTotalForms.value, 10);
+      const html = culturaTemplate.innerHTML.replace(/__prefix__/g, index);
+      const wrapper = document.createElement('tbody');
+      wrapper.innerHTML = html;
+      const newRow = wrapper.firstElementChild;
+      culturasTbody.appendChild(newRow);
+      bindRemoveCultura(newRow);
+      bindCulturaSelectChange(newRow);
+      culturasTotalForms.value = index + 1;
+      culturaAtiva = String(index);
+      renderTabs();
+    });
+  }
 
   // Listener de mudança de fazenda
   if (fazendaSelect) {
@@ -588,32 +769,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // 🔥 Após carregarTalhoes completar e renderizar, aplicar seleção inicial (se editando)
-  // Usando setTimeout para garantir que renderTalhoes já executou
-  setTimeout(() => {
-    if (initialSelectedIds.length > 0) {
-      selectedIds = new Set(initialSelectedIds);
-
-      // Marcar os cards como selecionados
-      selectedIds.forEach(id => {
-        const card = document.querySelector(`.talhao-card[data-id="${id}"]`);
-        if (card) {
-          card.classList.add('selected');
-        }
-      });
-
-      // Atualizar UI
-      updateHiddenInput();
-      updateSummary();
-    }
-  }, 100);
-
   // Função para carregar talhões via AJAX
   async function carregarTalhoes(fazendaId) {
     showLoading();
 
     try {
-      const url = "{% url 'cadastros:ajax_talhoes_fazenda' 0 %}".replace('/0/', `/${fazendaId}/`);
+      let url = "{% url 'cadastros:ajax_talhoes_fazenda' 0 %}".replace('/0/', `/${fazendaId}/`);
+      if (SAFRA_PK) url += `?exclude_safra_id=${SAFRA_PK}`;
       const response = await fetch(url);
 
       if (!response.ok) throw new Error('Erro ao carregar talhões');
@@ -645,16 +807,18 @@ document.addEventListener('DOMContentLoaded', function() {
     talhoesGrid.innerHTML = '';
 
     talhoesFiltrados.forEach(talhao => {
-      const isSelected = selectedIds.has(talhao.id);
+      const assignedIndex = getAssignedIndexForTalhao(talhao.id);
+      const isSelected = assignedIndex !== null;
       const isDisabled = talhao.in_use && !isSelected;
 
       const card = document.createElement('div');
       card.className = `talhao-card ${isSelected ? 'selected' : ''} ${isDisabled ? 'disabled' : ''}`;
       card.dataset.id = talhao.id;
       card.dataset.area = talhao.area_hac || 0;
+      if (isSelected) card.style.setProperty('--cultura-color', getCulturaColor(assignedIndex));
 
       if (!isDisabled) {
-        card.onclick = () => toggleTalhao(talhao.id, card);
+        card.onclick = () => toggleTalhao(talhao.id, talhao);
       }
 
       const statusClass = getStatusClass(talhao.status || 'DISPONIVEL');
@@ -671,9 +835,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const codigoSafra = escaparHTML(talhao.codigo || 'S/N');
       const culturaSafra = escaparHTML(culturaAtual);
       const statusLabel = getStatusLabel(talhao.status || 'DISPONIVEL');
+      const rowAssociada = isSelected ? culturasTbody.querySelector(`.cultura-row[data-index="${assignedIndex}"]`) : null;
+      const nomeCulturaAtribuida = rowAssociada ? escaparHTML(getCulturaNome(rowAssociada) || 'Cultura') : '';
 
       card.innerHTML = `
         <div class="checkbox-icon"></div>
+        ${isSelected ? `<span class="cultura-badge">${nomeCulturaAtribuida}</span>` : ''}
         <div class="talhao-nome">${nomeSafra}</div>
         <div class="talhao-info">
           <div class="talhao-info-item">
@@ -701,60 +868,43 @@ document.addEventListener('DOMContentLoaded', function() {
     emptyState.style.display = 'none';
     loadingState.style.display = 'none';
 
-    // Backwards-compatibility: populate a hidden select (#id_talhoes) so older clients/tests
-    // that expect <select><option> elements (Choices.js workflows) keep working
-    (function(){
-      let select = document.getElementById('id_talhoes');
-      if (!select) {
-        select = document.createElement('select');
-        select.id = 'id_talhoes';
-        select.name = 'id_talhoes';
-        select.style.display = 'none';
-        // keep single-select behavior expected by tests
-        select.multiple = false;
-        talhoesGrid.parentNode.insertBefore(select, talhoesGrid.nextSibling);
-      }
-      select.innerHTML = '';
-      talhoesFiltrados.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.id;
-        opt.text = t.nome;
-        if (t.in_use) {
-          // mark as disabled so it's not selectable by user
-          opt.disabled = true;
-          opt.setAttribute('data-in-use', '1');
-          opt.title = t.in_use_by || 'Em uso';
-        }
-        select.appendChild(opt);
-      });
-    })();
-
     updateSummary();
   }
 
-  // Toggle seleção de talhão
-  function toggleTalhao(id, card) {
-    if (selectedIds.has(id)) {
-      selectedIds.delete(id);
-      card.classList.remove('selected');
-    } else {
-      selectedIds.add(id);
-      card.classList.add('selected');
+  // Atribui/desatribui um talhão à cultura da aba ativa
+  function toggleTalhao(id, talhao) {
+    if (culturaAtiva === null) {
+      alert('Adicione e selecione uma cultura antes de atribuir talhões.');
+      return;
     }
 
-    updateHiddenInput();
-    updateSummary();
+    const indexAtual = getAssignedIndexForTalhao(id);
+    if (indexAtual === culturaAtiva) {
+      // Já está na cultura ativa: desatribui
+      assignments.get(indexAtual).delete(id);
+      syncHiddenSelect(indexAtual);
+    } else {
+      // Move da cultura anterior (se houver) para a ativa
+      if (indexAtual !== null) {
+        assignments.get(indexAtual).delete(id);
+        syncHiddenSelect(indexAtual);
+      }
+      if (!assignments.has(culturaAtiva)) assignments.set(culturaAtiva, new Set());
+      assignments.get(culturaAtiva).add(id);
+      syncHiddenSelect(culturaAtiva);
+    }
+
+    renderTabs();
+    renderTalhoes(talhoesData, currentFilter);
   }
 
-  // Atualizar campo hidden com IDs selecionados
-  function updateHiddenInput() {
-    talhoesInput.value = Array.from(selectedIds).join(',');
-    document.getElementById('selected-count').textContent = selectedIds.size;
-  }
-
-  // Atualizar resumo da seleção
+  // Atualizar resumo da seleção (agregado de todas as culturas)
   function updateSummary() {
-    const count = selectedIds.size;
+    const allIds = new Set();
+    assignments.forEach(ids => ids.forEach(id => allIds.add(id)));
+    const count = allIds.size;
+
+    document.getElementById('selected-count').textContent = count;
 
     if (count === 0) {
       selectionSummary.classList.remove('active');
@@ -766,17 +916,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let totalArea = 0;
     let totalProd = 0;
 
-    selectedIds.forEach(id => {
+    allIds.forEach(id => {
       const card = document.querySelector(`.talhao-card[data-id="${id}"]`);
-      if (card) {
-        const area = parseFloat(card.dataset.area || 0);
-        totalArea += area;
+      const area = card ? parseFloat(card.dataset.area || 0) : 0;
+      totalArea += area;
 
-        // Busca a produtividade do talhão (padrão: 25 ton/ha)
-        const talhao = talhoesData.find(t => t.id === id);
-        const produtividade = (talhao && talhao.produtividade_estimada) ? parseFloat(talhao.produtividade_estimada) : 25;
-        totalProd += area * produtividade;
-      }
+      // Busca a produtividade do talhão (padrão: 25 ton/ha)
+      const talhao = talhoesData.find(t => t.id === id);
+      const produtividade = (talhao && talhao.produtividade_estimada) ? parseFloat(talhao.produtividade_estimada) : 25;
+      totalProd += area * produtividade;
     });
 
     document.getElementById('summary-count').textContent = count;
@@ -784,17 +932,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('summary-prod').textContent = totalProd.toFixed(0);
   }
 
-  // Limpar seleção
+  // Limpar toda a seleção (todas as culturas)
   window.limparSelecao = function() {
     if (!confirm('Deseja realmente limpar toda a seleção?')) return;
 
-    selectedIds.clear();
-    document.querySelectorAll('.talhao-card.selected').forEach(card => {
-      card.classList.remove('selected');
-    });
+    const indices = Array.from(assignments.keys());
+    assignments.clear();
+    indices.forEach(syncHiddenSelect);
 
-    updateHiddenInput();
-    updateSummary();
+    renderTabs();
+    renderTalhoes(talhoesData, currentFilter);
   };
 
   // Filtros
@@ -823,10 +970,6 @@ document.addEventListener('DOMContentLoaded', function() {
     loadingState.style.display = 'none';
     filters.style.display = 'none';
 
-    // Clear compatibility select if present
-    const compatSelect = document.getElementById('id_talhoes');
-    if (compatSelect) compatSelect.innerHTML = '';
-
     if (msg) {
       emptyState.querySelector('p').textContent = msg;
     }
@@ -835,6 +978,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function getStatusClass(status) {
     const classes = {
       'DISPONIVEL': 'status-disponivel',
+      'RESERVADO': 'status-reservado',
       'PLANTADO': 'status-plantado',
       'PREPARACAO': 'status-preparacao',
     };
@@ -844,49 +988,12 @@ document.addEventListener('DOMContentLoaded', function() {
   function getStatusLabel(status) {
     const labels = {
       'DISPONIVEL': 'Disponível',
+      'RESERVADO': 'Reservado',
       'PLANTADO': 'Plantado',
       'PREPARACAO': 'Em Preparação',
       'DESCANSO': 'Descanso',
     };
     return labels[status] || status;
-  }
-
-  // Formset de Culturas da Safra: adicionar/remover linhas
-  const culturasTbody = document.getElementById('culturas-tbody');
-  const culturasTotalForms = document.getElementById('id_culturas-TOTAL_FORMS');
-  const culturaTemplate = document.getElementById('cultura-empty-form-template');
-  const btnAddCultura = document.getElementById('btn-add-cultura');
-
-  function bindRemoveCultura(row) {
-    const btn = row.querySelector('.btn-remove-cultura');
-    if (!btn) return;
-    btn.addEventListener('click', function() {
-      const deleteInput = row.querySelector('input[name$="-DELETE"]');
-      const idInput = row.querySelector('input[name$="-id"]');
-      if (deleteInput && idInput && idInput.value) {
-        // Linha existente: marca DELETE e esconde (o formset se encarrega de excluir ao salvar)
-        deleteInput.checked = true;
-        row.style.display = 'none';
-      } else {
-        // Linha nova (ainda não salva): remove do DOM
-        row.remove();
-      }
-    });
-  }
-
-  document.querySelectorAll('#culturas-tbody .cultura-row').forEach(bindRemoveCultura);
-
-  if (btnAddCultura && culturaTemplate && culturasTotalForms) {
-    btnAddCultura.addEventListener('click', function() {
-      const index = parseInt(culturasTotalForms.value, 10);
-      const html = culturaTemplate.innerHTML.replace(/__prefix__/g, index);
-      const wrapper = document.createElement('tbody');
-      wrapper.innerHTML = html;
-      const newRow = wrapper.firstElementChild;
-      culturasTbody.appendChild(newRow);
-      bindRemoveCultura(newRow);
-      culturasTotalForms.value = index + 1;
-    });
   }
 
   // 🔥 Inicializar Tooltip do botão de ajuda (Bootstrap)

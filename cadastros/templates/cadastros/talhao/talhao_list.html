@@ -139,6 +139,7 @@
         <select name="status" class="form-select">
           <option value="">-- Todos os Status --</option>
           <option value="DISPONIVEL" {% if request.GET.status == "DISPONIVEL" %}selected{% endif %}>Disponível</option>
+          <option value="RESERVADO" {% if request.GET.status == "RESERVADO" %}selected{% endif %}>Reservado</option>
           <option value="PREPARACAO" {% if request.GET.status == "PREPARACAO" %}selected{% endif %}>Preparação</option>
           <option value="PLANTADO" {% if request.GET.status == "PLANTADO" %}selected{% endif %}>Plantado</option>
           <option value="COLHEITA" {% if request.GET.status == "COLHEITA" %}selected{% endif %}>Colheita</option>
@@ -248,6 +249,8 @@
               <td class="text-center">
                 {% if talhao.status == "DISPONIVEL" %}
                   <span class="badge bg-success">✓ Disponível</span>
+                {% elif talhao.status == "RESERVADO" %}
+                  <span class="badge bg-info text-dark">🔖 Reservado</span>
                 {% elif talhao.status == "PLANTADO" %}
                   <span class="badge bg-primary">🌾 Plantado</span>
                 {% elif talhao.status == "PREPARACAO" %}

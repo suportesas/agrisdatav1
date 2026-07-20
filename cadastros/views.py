@@ -42,6 +42,7 @@ from django.db.models import Q, Count, Sum, Avg, Case, When, Value, IntegerField
 from django.db import transaction
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from decimal import Decimal
 import requests
 import re
@@ -53,7 +54,7 @@ from rh.forms import FuncionarioForm, FuncaoFuncionarioForm, DocumentoFuncionari
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
     ContaBancariaFazenda, DocumentoFazenda, DocumentoFornecedor,
-    Area, Talhao, Cultura, Praga, HistoricoTalhao, Safra,
+    Area, Talhao, Cultura, Praga, HistoricoTalhao, Safra, SafraCultura,
     Vendedor, ComissaoVendedor, Fornecedor, FornecedorContato, FornecedorDadoBancario, Porto, NCM, EmpresaNCM, CFOP,
     Cliente, EnderecoCliente, ContatoCliente, ContaBancariaCliente, DocumentoCliente, PrazoPagamentoPadrao,
     AgenteExportacao,
@@ -2487,6 +2488,53 @@ def safra_list(request):
 
 # cadastros/views.py
 
+def _erros_formulario_safra(form, culturas_formset):
+    """Monta uma mensagem HTML listando, campo a campo, os erros do form de safra
+    e das linhas do formset de culturas — em vez do genérico "corrija os erros"."""
+    campos_com_erro = []
+
+    for field_name, errors in form.errors.items():
+        campo_label = 'Formulário' if field_name == '__all__' else form.fields[field_name].label if field_name in form.fields else field_name
+        campos_com_erro.append(f"{campo_label}: {', '.join(errors)}")
+
+    for i, cultura_form in enumerate(culturas_formset.forms, start=1):
+        if not cultura_form.errors:
+            continue
+        cultura_nome = cultura_form.data.get(cultura_form.add_prefix('cultura')) if cultura_form.data else None
+        rotulo_linha = f'Cultura (linha {i})'
+        for field_name, errors in cultura_form.errors.items():
+            if field_name == '__all__':
+                campo_label = rotulo_linha
+            else:
+                field_label = cultura_form.fields[field_name].label if field_name in cultura_form.fields else field_name
+                campo_label = f'{rotulo_linha} - {field_label}'
+            campos_com_erro.append(f"{campo_label}: {', '.join(errors)}")
+
+    for erro in culturas_formset.non_form_errors():
+        campos_com_erro.append(f"Culturas: {erro}")
+
+    if not campos_com_erro:
+        campos_com_erro.append('Verifique os campos destacados no formulário.')
+
+    return '❌ Corrija os erros no formulário:<br>' + '<br>'.join(f'• {erro}' for erro in campos_com_erro)
+
+
+def _sincronizar_status_talhoes_reservados(safra, talhoes_antes_ids):
+    """Após salvar as culturas de uma safra, marca como RESERVADO os talhões que
+    entraram numa cultura ativa (PLANEJADA/EM_ANDAMENTO) e devolve para DISPONIVEL
+    os que saíram (removidos da seleção, cultura excluída ou finalizada)."""
+    talhoes_ativos_ids = set(
+        Talhao.objects.filter(
+            culturas_safra__safra=safra,
+            culturas_safra__status__in=['PLANEJADA', 'EM_ANDAMENTO'],
+        ).values_list('id', flat=True)
+    )
+    Talhao.objects.filter(id__in=talhoes_ativos_ids, status='DISPONIVEL').update(status='RESERVADO')
+
+    liberados_ids = set(talhoes_antes_ids) - talhoes_ativos_ids
+    Talhao.objects.filter(id__in=liberados_ids, status='RESERVADO').update(status='DISPONIVEL')
+
+
 @login_required
 def safra_create(request):
     empresa = request.user.empresa
@@ -2507,53 +2555,7 @@ def safra_create(request):
 
                 culturas_formset.instance = safra
                 culturas_formset.save()
-
-                talhoes_ids = request.POST.get('talhoes', '').strip()
-                if talhoes_ids:
-                    try:
-                        talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
-                        talhoes = Talhao.objects.filter(
-                            id__in=talhao_ids_list,
-                            empresa=empresa,
-                            ativo=True
-                        )
-                        invalidos = [t.codigo for t in talhoes if t.fazenda != safra.fazenda]
-                        if invalidos:
-                            messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
-                            safra.delete()
-                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'action': 'Cadastrar'})
-
-                        # Valida conflitos (talhão já em outra safra com pelo menos 1 cultura não finalizada)
-                        conflitos = []
-                        for talhao in talhoes:
-                            safras_conflito = Safra.objects.filter(
-                                talhoes=talhao,
-                                culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO'],
-                            ).exclude(
-                                pk=safra.pk
-                            ).distinct()
-                            if safras_conflito.exists():
-                                conflitos.append(f"{talhao.codigo} (em {safras_conflito.first()})")
-
-                        if conflitos:
-                            messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
-                            safra.delete()
-                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'action': 'Cadastrar'})
-
-                        # Limpa e associa
-                        safra.talhoes.clear()
-                        safra.talhoes.set(talhoes)
-
-                    except ValueError as e:
-                        messages.error(request, f'❌ IDs de talhões inválidos: {e}')
-                        safra.delete()
-                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'action': 'Cadastrar'})
-                    except Exception as e:
-                        import traceback
-                        traceback.print_exc()
-                        messages.error(request, f'❌ Erro ao processar talhões: {e}')
-                        safra.delete()
-                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'action': 'Cadastrar'})
+                _sincronizar_status_talhoes_reservados(safra, talhoes_antes_ids=set())
 
                 total_talhoes = safra.talhoes.count()
                 messages.success(request, f'✅ Safra "{safra}" cadastrada com {total_talhoes} talhão(ões)!')
@@ -2563,7 +2565,7 @@ def safra_create(request):
                 traceback.print_exc()
                 messages.error(request, f'❌ Erro ao salvar: {e}')
         else:
-            messages.error(request, '❌ Corrija os erros do formulário de safra')
+            messages.error(request, mark_safe(_erros_formulario_safra(form, culturas_formset)))
     else:
         form = SafraForm(user=request.user)
         culturas_formset = SafraCulturaFormSet(prefix='culturas', form_kwargs={'empresa': empresa})
@@ -2583,49 +2585,10 @@ def safra_update(request, pk):
         )
         if form.is_valid() and culturas_formset.is_valid():
             try:
+                talhoes_antes_ids = set(safra.talhoes.values_list('id', flat=True))
                 safra = form.save()
                 culturas_formset.save()
-                talhoes_ids = request.POST.get('talhoes', '').strip()
-                safra.talhoes.clear()
-                if talhoes_ids:
-                    try:
-                        talhao_ids_list = [int(tid.strip()) for tid in talhoes_ids.split(',') if tid.strip()]
-                        talhoes = Talhao.objects.filter(
-                            id__in=talhao_ids_list,
-                            empresa=empresa,
-                            ativo=True
-                        )
-
-                        invalidos = [t.codigo for t in talhoes if t.fazenda != safra.fazenda]
-                        if invalidos:
-                            messages.error(request, f'❌ Talhões não pertencem à fazenda: {", ".join(invalidos)}')
-                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'safra': safra, 'action': 'Editar'})
-
-                        # Valida conflitos (talhão já em outra safra com pelo menos 1 cultura não finalizada)
-                        conflitos = []
-                        for talhao in talhoes:
-                            safras_conflito = Safra.objects.filter(
-                                talhoes=talhao,
-                                culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO'],
-                            ).exclude(
-                                pk=safra.pk
-                            ).distinct()
-                            if safras_conflito.exists():
-                                conflitos.append(f"{talhao.codigo} (em {safras_conflito.first()})")
-
-                        if conflitos:
-                            messages.error(request, f'❌ Talhões já estão em uso: {", ".join(conflitos)}')
-                            return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'safra': safra, 'action': 'Editar'})
-
-                        safra.talhoes.set(talhoes)
-                    except ValueError as e:
-                        messages.error(request, f'❌ IDs de talhões inválidos: {e}')
-                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'safra': safra, 'action': 'Editar'})
-                    except Exception as e:
-                        import traceback
-                        traceback.print_exc()
-                        messages.error(request, f'❌ Erro ao processar talhões: {e}')
-                        return render(request, 'cadastros/safra/safra_form.html', {'form': form, 'culturas_formset': culturas_formset, 'safra': safra, 'action': 'Editar'})
+                _sincronizar_status_talhoes_reservados(safra, talhoes_antes_ids)
 
                 messages.success(request, f'✅ Safra "{safra}" atualizada com sucesso')
                 return redirect('cadastros:safra_detail', pk=safra.pk)
@@ -2634,7 +2597,7 @@ def safra_update(request, pk):
                 traceback.print_exc()
                 messages.error(request, f'❌ Erro ao salvar safra: {e}')
         else:
-            messages.error(request, f'❌ Corrija os erros no formulário: {form.errors}')
+            messages.error(request, mark_safe(_erros_formulario_safra(form, culturas_formset)))
     else:
         form = SafraForm(instance=safra, user=request.user)
         culturas_formset = SafraCulturaFormSet(instance=safra, prefix='culturas', form_kwargs={'empresa': empresa})
@@ -2655,7 +2618,7 @@ def safra_detail(request, pk):
     safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
     empresa = request.user.empresa
 
-    talhoes = safra.talhoes.select_related('area', 'fazenda').all()
+    talhoes = Talhao.objects.filter(culturas_safra__safra=safra).select_related('area', 'fazenda').distinct()
     total_talhoes = talhoes.count()
 
     area_total = talhoes.aggregate(
@@ -2762,6 +2725,7 @@ def safra_detail(request, pk):
     context = {
         'safra': safra,
         'form': form,
+        'talhoes': talhoes,
         'area_total': area_total,
         'area_media': area_media,
         'total_talhoes': total_talhoes,
@@ -2875,7 +2839,9 @@ def safra_delete(request, pk):
     safra = get_object_or_404(Safra, pk=pk, fazenda__empresa=request.user.empresa)
     if request.method == 'POST':
         nome = str(safra)
+        talhoes_ids = list(safra.talhoes.values_list('id', flat=True))
         safra.delete()
+        Talhao.objects.filter(id__in=talhoes_ids, status='RESERVADO').update(status='DISPONIVEL')
         messages.success(request, f'🗑️ Safra "{nome}" excluída com sucesso!')
         return redirect('cadastros:safra_list')
     return render(request, 'cadastros/safra/safra_confirm_delete.html', {'safra': safra})
@@ -3130,11 +3096,11 @@ def talhao_list(request):
     if hasattr(Talhao.objects, 'da_empresa'):
         talhoes = Talhao.objects.da_empresa(empresa).select_related(
             'fazenda', 'area', 'cultura_atual'
-        ).prefetch_related('safras')
+        ).prefetch_related('culturas_safra__safra', 'culturas_safra__cultura')
     else:
         talhoes = Talhao.objects.filter(empresa=empresa).select_related(
             'fazenda', 'area', 'cultura_atual'
-        ).prefetch_related('safras')
+        ).prefetch_related('culturas_safra__safra', 'culturas_safra__cultura')
     
     # Busca
     q = request.GET.get('q', '').strip()
@@ -3176,11 +3142,11 @@ def talhao_list(request):
 
     # 🔥 NOVO: Adiciona informação da safra ativa para cada talhão (apenas da página atual)
     for talhao in talhoes_page:
-        # Busca safra ativa (não finalizada) associada ao talhão
-        safra_ativa = talhao.safras.filter(
+        # Busca cultura de safra ativa (não finalizada) associada ao talhão
+        safra_ativa = talhao.culturas_safra.filter(
             status__in=['PLANEJADA', 'EM_ANDAMENTO']
-        ).select_related('cultura').first()
-        
+        ).select_related('safra', 'cultura').first()
+
         # Anexa a safra e cultura ao objeto talhão
         talhao.safra_ativa = safra_ativa
         if safra_ativa:
@@ -3603,15 +3569,21 @@ def ajax_talhoes_por_fazenda(request, fazenda_id):
         empresa=empresa,
         ativo=True
     ).values('id', 'nome', 'codigo', 'area_hac', 'status', 'cultura_atual__nome')
-    # Para cada talhão, informa se já está associado a uma safra não finalizada
+    # Para cada talhão, informa se já está associado a uma cultura de safra não finalizada
+    # (exclui a própria safra em edição, se houver, via ?exclude_safra_id=)
     talhao_ids = [t['id'] for t in talhoes]
+    exclude_safra_id = request.GET.get('exclude_safra_id')
     safra_map = {}
     if talhao_ids:
-        safras = Safra.objects.filter(talhoes__in=talhao_ids).exclude(status='FINALIZADA').select_related('fazenda')
-        for s in safras:
-            for t in s.talhoes.all():
+        culturas_ativas = SafraCultura.objects.filter(
+            talhoes__in=talhao_ids, status__in=['PLANEJADA', 'EM_ANDAMENTO']
+        ).select_related('safra', 'cultura')
+        if exclude_safra_id:
+            culturas_ativas = culturas_ativas.exclude(safra_id=exclude_safra_id)
+        for sc in culturas_ativas:
+            for t in sc.talhoes.all():
                 if t.id in talhao_ids and t.id not in safra_map:
-                    safra_map[t.id] = str(s)
+                    safra_map[t.id] = str(sc)
 
     result = []
     for t in talhoes:

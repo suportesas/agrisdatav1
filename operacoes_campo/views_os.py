@@ -22,7 +22,7 @@ from .models import (
     EtapaColheita, PushSubscriptionCampo, OSIntervalo,
     OSTransplantio, OSReplantio,
 )
-from cadastros.models import Talhao, Safra
+from cadastros.models import Talhao, Safra, SafraCultura
 from .forms import (
     OrdemServicoForm, OSFuncionarioFormSet, OSMaquinaFormSet,
     OrdemServicoInsumoForm, CustoHoraMaquinaForm,
@@ -1620,38 +1620,59 @@ def ajax_opcoes_talhao(request):
     except Talhao.DoesNotExist:
         return JsonResponse({'safras': [], 'cultura': None})
 
-    # Retorna apenas safras PLANEJADA ou EM_ANDAMENTO vinculadas a este talhão,
-    # com a lista de culturas (SafraCultura) de cada uma para popular o combo em cascata.
-    safras_qs = talhao.safras.filter(
-        fazenda__empresa=empresa,
-        culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
-    ).prefetch_related('culturas__cultura').distinct().order_by('-ano', 'nome')
+    # Um talhão pertence a no máximo 1 cultura ativa por safra (atribuição feita no
+    # cadastro da safra) — cada SafraCultura aqui já corresponde à safra + cultura certas.
+    culturas_ativas = list(talhao.culturas_safra.filter(
+        safra__fazenda__empresa=empresa,
+        status__in=['PLANEJADA', 'EM_ANDAMENTO']
+    ).select_related('safra', 'cultura').order_by('-safra__ano', 'safra__nome'))
 
-    safras = []
-    for s in safras_qs:
-        culturas_safra = list(s.culturas.all())
-        safras.append({
-            'id': s.id,
-            'nome': str(s),
-            'ano': s.ano,
-            'culturas': [
-                {'id': sc.id, 'cultura_id': sc.cultura_id, 'nome': sc.cultura.nome}
-                for sc in culturas_safra
-            ],
-        })
+    safras = [
+        {
+            'id': sc.safra_id,
+            'nome': str(sc),
+            'ano': sc.safra.ano,
+            'culturas': [{'id': sc.id, 'cultura_id': sc.cultura_id, 'nome': sc.cultura.nome}],
+        }
+        for sc in culturas_ativas
+    ]
 
-    # Cultura: campo direto no talhão OU derivada da única cultura da primeira safra ativa
+    # Cultura: campo direto no talhão OU derivada da (única) cultura da safra mais recente
     cultura = None
     if talhao.cultura_atual_id:
         cultura = {'id': talhao.cultura_atual_id, 'nome': talhao.cultura_atual.nome}
-    elif safras and len(safras[0]['culturas']) == 1:
-        cultura = {'id': safras[0]['culturas'][0]['cultura_id'], 'nome': safras[0]['culturas'][0]['nome']}
+    elif culturas_ativas:
+        cultura = {'id': culturas_ativas[0].cultura_id, 'nome': culturas_ativas[0].cultura.nome}
 
     return JsonResponse({
         'safras': safras,
         'cultura': cultura,
         'area_hac': str(talhao.area_hac),
     })
+
+
+@login_required
+def ajax_talhoes_por_safra_cultura(request):
+    """
+    Retorna os talhões atribuídos a uma SafraCultura (definidos no cadastro da safra).
+    Usado na tela de OS para sugerir/filtrar o campo Talhão ao escolher a cultura da safra.
+    GET ?safra_cultura_id=<id>
+    """
+    empresa = request.user.empresa
+    safra_cultura_id = request.GET.get('safra_cultura_id')
+
+    if not safra_cultura_id:
+        return JsonResponse({'talhoes': []})
+
+    try:
+        sc = SafraCultura.objects.select_related('safra').get(
+            pk=safra_cultura_id, safra__fazenda__empresa=empresa
+        )
+    except SafraCultura.DoesNotExist:
+        return JsonResponse({'talhoes': []})
+
+    talhoes = list(sc.talhoes.filter(ativo=True).values('id', 'nome', 'codigo').order_by('codigo'))
+    return JsonResponse({'talhoes': talhoes})
 
 
 @login_required

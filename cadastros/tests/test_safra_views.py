@@ -35,9 +35,12 @@ class SafraViewsTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
         # Smoke test da tela de criacao: garante renderizacao do formulario e do formset de culturas
+        # (o formset começa vazio — a linha só existe no template usado pelo JS "Adicionar Cultura")
         self.assertIn('id="id_fazenda"', content)
-        self.assertIn('id="id_culturas-0-cultura"', content)
-        self.assertIn('id="id_culturas-0-periodo_inicio"', content)
+        self.assertIn('id="btn-add-cultura"', content)
+        self.assertIn('id="cultura-empty-form-template"', content)
+        self.assertIn('id="id_culturas-__prefix__-cultura"', content)
+        self.assertIn('id="id_culturas-__prefix__-periodo_inicio"', content)
 
 
     def test_safra_list_filters_and_pagination(self):
@@ -105,8 +108,10 @@ class SafraViewsTest(TestCase):
         area = fazenda.areas.create(nome='A1', area_total=5, area_plantavel=4, empresa=self.empresa)
         talhao = Talhao.objects.create(area=area, fazenda=fazenda, nome='T1', codigo='T1', area_hac=1, empresa=self.empresa)
 
+        cultura = Cultura.objects.create(empresa=self.empresa, nome='C Teste 2')
         safra_existing = Safra.objects.create(fazenda=fazenda, ano=2025)
-        safra_existing.talhoes.add(talhao)
+        sc = SafraCultura.objects.create(safra=safra_existing, cultura=cultura)
+        sc.talhoes.add(talhao)
 
         # AJAX should mark talhao as in_use
         url = reverse('cadastros:ajax_talhoes_fazenda', args=[fazenda.pk])

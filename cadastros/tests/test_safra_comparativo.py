@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from empresas.models import Empresa, Plano
 from usuarios.models import Usuario
-from cadastros.models import Fazenda, Cultura, Area, Talhao, Safra, SafraPlan, SafraReal
+from cadastros.models import Fazenda, Cultura, Area, Talhao, Safra, SafraCultura, SafraPlan, SafraReal
 
 
 class SafraComparativoTest(TestCase):
@@ -24,8 +24,10 @@ class SafraComparativoTest(TestCase):
         talhao1 = Talhao.objects.create(area=area, fazenda=fazenda, nome='T1', codigo='T1', area_hac=Decimal('2.5'), empresa=empresa)
         talhao2 = Talhao.objects.create(area=area, fazenda=fazenda, nome='T2', codigo='T2', area_hac=Decimal('3.0'), empresa=empresa)
 
+        cultura = Cultura.objects.create(empresa=empresa, nome='Milho')
         safra = Safra.objects.create(nome='Safra 2025', fazenda=fazenda, ano=2025, cadastrado_por=user)
-        safra.talhoes.set([talhao1, talhao2])
+        sc = SafraCultura.objects.create(safra=safra, cultura=cultura)
+        sc.talhoes.set([talhao1, talhao2])
 
         # Planejado: 50 ton
         SafraPlan.objects.create(safra=safra, planned_production=Decimal('50.00'))

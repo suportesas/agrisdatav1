@@ -571,22 +571,21 @@ def ajax_safras_por_talhao(request, talhao_id):
             'fazenda_nome': talhao.fazenda.nome,
         }
         
-        # Busca APENAS safras vinculadas ao talhão (relação M2M)
-        safras = talhao.safras.prefetch_related('culturas__cultura').order_by('-ano', 'nome')
+        # Busca as culturas de safra às quais este talhão foi atribuído
+        culturas_safra = talhao.culturas_safra.select_related('safra', 'cultura').order_by('-safra__ano', 'safra__nome')
 
-        debug_info['total_safras_vinculadas'] = safras.count()
+        debug_info['total_safras_vinculadas'] = culturas_safra.count()
 
         result = []
-        for safra in safras:
-            culturas = ', '.join(sc.cultura.nome for sc in safra.culturas.all())
+        for sc in culturas_safra:
             result.append({
-                'id': safra.id,
-                'label': str(safra),
-                'nome': safra.nome,
-                'ano': safra.ano,
-                'cultura': culturas
+                'id': sc.safra_id,  # Requisicao.safra é FK para Safra, não SafraCultura
+                'label': str(sc),
+                'nome': sc.safra.nome,
+                'ano': sc.safra.ano,
+                'cultura': sc.cultura.nome,
             })
-        
+
         return JsonResponse({'safras': result, 'debug': debug_info})
     except Talhao.DoesNotExist:
         return JsonResponse({'safras': [], 'debug': f'Talhao {talhao_id} nao encontrado'})

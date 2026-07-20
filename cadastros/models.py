@@ -2573,6 +2573,7 @@ class Talhao(models.Model):
     
     STATUS_CHOICES = [
         ('DISPONIVEL', 'Disponível para Plantio'),
+        ('RESERVADO', 'Reservado para Safra'),
         ('PREPARACAO', 'Em Preparação'),
         ('PLANTADO', 'Plantado'),
         ('COLHEITA', 'Em Colheita'),
@@ -3003,7 +3004,6 @@ class Safra(models.Model):
     )
     fazenda = models.ForeignKey(Fazenda, on_delete=models.CASCADE, related_name='safras')
     ano = models.IntegerField('Ano', null=True, blank=True)
-    talhoes = models.ManyToManyField(Talhao, related_name='safras', blank=True)
     imagem = models.ImageField('Imagem da Safra', upload_to='safra/%Y/%m/', null=True, blank=True)
 
     cadastrado_por = models.ForeignKey(
@@ -3020,6 +3020,11 @@ class Safra(models.Model):
         base = self.nome or f"Safra {self.ano} - {self.fazenda.nome}"
         nomes = ', '.join(sc.cultura.nome for sc in self.culturas.all())
         return f"{base} - {nomes}" if nomes else base
+
+    @property
+    def talhoes(self):
+        """Talhões desta safra, agregados de todas as suas `SafraCultura`."""
+        return Talhao.objects.filter(culturas_safra__safra=self).distinct()
 
     def planned_production(self):
         try:
@@ -3052,6 +3057,7 @@ class SafraCultura(models.Model):
     periodo_inicio = models.DateField('Início', null=True, blank=True)
     periodo_fim = models.DateField('Fim', null=True, blank=True)
     status = models.CharField('Status', max_length=20, choices=STATUS, default='PLANEJADA')
+    talhoes = models.ManyToManyField(Talhao, related_name='culturas_safra', blank=True)
 
     class Meta:
         verbose_name = 'Cultura da Safra'

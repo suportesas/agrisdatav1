@@ -692,19 +692,16 @@ def ajax_buscar_talhoes(request):
 
     resultado = []
     for talhao in talhoes:
-        safras_ativas = talhao.safras.filter(
-            culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
-        ).prefetch_related('culturas__cultura').distinct().order_by('-ano')
-
-        safra_ativa = safras_ativas.first()
-        culturas_safra_ativa = list(safra_ativa.culturas.all()) if safra_ativa else []
+        # Um talhão pertence a no máximo 1 cultura ativa por safra (atribuição feita no cadastro da safra)
+        culturas_ativas = list(talhao.culturas_safra.filter(
+            status__in=['PLANEJADA', 'EM_ANDAMENTO']
+        ).select_related('safra', 'cultura').order_by('-safra__ano'))
 
         cultura_id = None
         cultura_nome = None
-
-        if len(culturas_safra_ativa) == 1:
-            cultura_id = culturas_safra_ativa[0].cultura.id
-            cultura_nome = culturas_safra_ativa[0].cultura.nome
+        if culturas_ativas:
+            cultura_id = culturas_ativas[0].cultura_id
+            cultura_nome = culturas_ativas[0].cultura.nome
         elif talhao.cultura_atual:
             cultura_id = talhao.cultura_atual.id
             cultura_nome = talhao.cultura_atual.nome
@@ -721,15 +718,13 @@ def ajax_buscar_talhoes(request):
             'cultura_nome': cultura_nome,
             'safras_ativas': [
                 {
-                    'id': safra.id,
-                    'nome': str(safra),
-                    'ano': safra.ano,
-                    'culturas': [
-                        {'id': sc.cultura_id, 'nome': sc.cultura.nome, 'status': sc.get_status_display()}
-                        for sc in safra.culturas.all()
-                    ],
+                    'id': sc.safra_id,
+                    'nome': str(sc),
+                    'ano': sc.safra.ano,
+                    'cultura_id': sc.cultura_id,
+                    'cultura_nome': sc.cultura.nome,
                 }
-                for safra in safras_ativas
+                for sc in culturas_ativas
             ]
         })
 
@@ -746,22 +741,19 @@ def ajax_talhao_info(request, talhao_id):
     except Talhao.DoesNotExist:
         return JsonResponse({'error': 'Talhão não encontrado'}, status=404)
 
-    safras_ativas = talhao.safras.filter(
-        culturas__status__in=['PLANEJADA', 'EM_ANDAMENTO']
-    ).prefetch_related('culturas__cultura').distinct().order_by('-ano')
+    culturas_ativas = list(talhao.culturas_safra.filter(
+        status__in=['PLANEJADA', 'EM_ANDAMENTO']
+    ).select_related('safra', 'cultura').order_by('-safra__ano'))
 
     cultura_id = None
     cultura_nome = None
     safra_id_auto = None
 
-    if safras_ativas.exists():
-        primeira_safra = safras_ativas.first()
-        culturas_primeira_safra = list(primeira_safra.culturas.all())
-        if len(culturas_primeira_safra) == 1:
-            cultura_id = culturas_primeira_safra[0].cultura.id
-            cultura_nome = culturas_primeira_safra[0].cultura.nome
-        if safras_ativas.count() == 1:
-            safra_id_auto = primeira_safra.id
+    if culturas_ativas:
+        cultura_id = culturas_ativas[0].cultura_id
+        cultura_nome = culturas_ativas[0].cultura.nome
+        if len(culturas_ativas) == 1:
+            safra_id_auto = culturas_ativas[0].safra_id
     elif talhao.cultura_atual:
         cultura_id = talhao.cultura_atual.id
         cultura_nome = talhao.cultura_atual.nome
@@ -774,13 +766,11 @@ def ajax_talhao_info(request, talhao_id):
         'safra_id_auto': safra_id_auto,
         'safras_ativas': [
             {
-                'id': s.id,
-                'nome': str(s),
-                'culturas': [
-                    {'id': sc.cultura_id, 'nome': sc.cultura.nome, 'status': sc.get_status_display()}
-                    for sc in s.culturas.all()
-                ],
+                'id': sc.safra_id,
+                'nome': str(sc),
+                'cultura_id': sc.cultura_id,
+                'cultura_nome': sc.cultura.nome,
             }
-            for s in safras_ativas
+            for sc in culturas_ativas
         ],
     })

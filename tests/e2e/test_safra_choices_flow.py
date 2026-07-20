@@ -71,9 +71,10 @@ def test_safra_create_talhoes_choices(page, live_server, e2e_safra_data):
     page.select_option('#id_fazenda', str(fazenda.pk))
     page.wait_for_selector('#loading-talhoes', state='hidden')
 
-    # Verifica que o select foi populado
-    options_count = page.locator('#id_talhoes option').count()
-    assert options_count >= 1
+    # Verifica que o grid de talhões foi populado
+    page.wait_for_function("() => document.querySelectorAll('.talhao-card').length > 0", timeout=5000)
+    cards_count = page.locator('.talhao-card').count()
+    assert cards_count >= 1
 
 
 def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, django_db_blocker):
@@ -87,8 +88,8 @@ def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, dja
         # Create an additional available talhão so the form has at least one option to select
         Talhao.objects.create(area=area, fazenda=fazenda, nome='T-e2e-available', codigo='E2E-AV', area_hac=2, empresa=fazenda.empresa)
         safra = Safra.objects.create(fazenda=fazenda, ano=2025)
-        SafraCultura.objects.create(safra=safra, cultura=cultura)
-        safra.talhoes.add(talhao)
+        sc = SafraCultura.objects.create(safra=safra, cultura=cultura)
+        sc.talhoes.add(talhao)
 
     parsed = urlparse(live_server.url)
     host = parsed.hostname or '127.0.0.1'
@@ -109,15 +110,21 @@ def test_talhao_in_use_hidden_in_dropdown(page, live_server, e2e_safra_data, dja
     # Talhão em uso deve aparecer bloqueado
     assert page.locator('.talhao-card.disabled', has_text='E2E2').count() == 1
 
-    # Seleciona talhão disponível (card)
-    page.locator('.talhao-card', has_text='E2E-AV').first.click()
-    page.wait_for_function("() => (document.getElementById('talhoes-input')?.value || '').length > 0", timeout=5000)
+    # O formset de culturas começa vazio — adiciona uma linha antes de atribuir talhões
+    page.click('#btn-add-cultura')
+    page.select_option('#id_culturas-0-cultura', str(cultura.pk))
 
-    # Preenche dados mínimos, incluindo a linha de cultura da safra (formset)
+    # Seleciona talhão disponível (card) — vai para a cultura ativa (linha 0, primeira aba)
+    page.locator('.talhao-card', has_text='E2E-AV').first.click()
+    page.wait_for_function(
+        "() => document.querySelector('#id_culturas-0-talhoes')?.selectedOptions.length > 0",
+        timeout=5000,
+    )
+
+    # Preenche dados mínimos
     today = date.today().isoformat()
     page.fill('#id_nome', 'Safra E2E UI')
     page.fill('#id_ano', str(date.today().year))
-    page.select_option('#id_culturas-0-cultura', str(cultura.pk))
     page.fill('#id_culturas-0-periodo_inicio', today)
     page.fill('#id_culturas-0-periodo_fim', today)
 

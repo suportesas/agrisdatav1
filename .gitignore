@@ -43,6 +43,8 @@ db.sqlite3-journal
 # SEGURANÇA - NUNCA COMMITAR!
 # ==============================================================================
 .env
+.env.dev
+.env.homolog
 .env.docker
 .env.local
 .env.*.local

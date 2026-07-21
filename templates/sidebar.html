@@ -34,6 +34,7 @@
         </a>
         <ul class="nav-submenu">
           <li><a href="{% url 'dashboard:index' %}"><i class="bi bi-speedometer2"></i> Geral</a></li>
+          {% if not user.is_superuser %}
           {% if user.is_admin_empresa or request|tem_acesso:'estoque:dashboard' %}
           <li><a href="{% url 'estoque:dashboard' %}"><i class="bi bi-box-seam"></i> Estoque</a></li>
           {% endif %}
@@ -47,6 +48,7 @@
           <li><a href="{% url 'estoque:relatorio_rastreamento_dashboard' %}"><i class="bi bi-activity"></i> Rastreamento</a></li>
           {% endif %}
           <li><a href="{% url 'produtos:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard de Produtos</a></li>
+          {% endif %}
         </ul>
       </li>
 

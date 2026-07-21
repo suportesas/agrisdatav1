@@ -808,7 +808,7 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'valor_desconto': forms.NumberInput(attrs=_sm_num),
             # Unidade Tributável (exportação)
             'quantidade_tributavel':     forms.NumberInput(attrs=_sm_num4),
-            'unidade_tributavel':        forms.TextInput(attrs={**_sm, 'placeholder': 'KG', 'style': 'width:55px'}),
+            'unidade_tributavel':        forms.TextInput(attrs={**_sm, 'placeholder': 'KG'}),
             'valor_unitario_tributavel': forms.NumberInput(attrs=_sm_num4),
             # ICMS
             # CST 00 (tributada integralmente), 20/70 (com redução de BC) e 51

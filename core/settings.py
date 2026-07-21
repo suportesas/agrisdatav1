@@ -13,8 +13,14 @@ from django.core.exceptions import ImproperlyConfigured
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Carrega variáveis de ambiente do arquivo .env
-load_dotenv(BASE_DIR / '.env')
+# Carrega variáveis de ambiente do arquivo .env correspondente ao ambiente ativo.
+# DJANGO_ENV=dev (padrão) -> .env.dev | DJANGO_ENV=homolog -> .env.homolog
+# Se o arquivo específico não existir, cai de volta para .env (compatibilidade).
+DJANGO_ENV = os.getenv('DJANGO_ENV', 'dev')
+_env_file = BASE_DIR / f'.env.{DJANGO_ENV}'
+if not _env_file.exists():
+    _env_file = BASE_DIR / '.env'
+load_dotenv(_env_file)
 
 
 def get_bool_env(name, default=False):

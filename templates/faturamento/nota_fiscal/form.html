@@ -6,7 +6,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
 <style>
-  #items-table .select2-container { width: 100% !important; min-width: 180px; }
+  #items-table .select2-container { width: 100% !important; min-width: 0; }
   #items-table .select2-selection--single { height: calc(1.5em + .5rem + 2px) !important; font-size: .8rem; }
   #items-table .select2-selection__rendered { line-height: calc(1.5em + .5rem + 2px) !important; }
   #items-table .select2-selection__arrow { height: calc(1.5em + .5rem + 2px) !important; }
@@ -15,8 +15,12 @@
 
 {% block content %}
 <style>
+  /* Dá mais espaço à tabela de itens reduzindo a coluna do Resumo de Valores
+     (só nesta página — .complex-layout é exclusivo deste template). */
+  .complex-layout { grid-template-columns: 1fr 270px; gap: 14px; }
+  #items-table { table-layout: fixed; min-width: 728px; }
   #items-table td, #items-table th { vertical-align: middle; padding: 5px 7px; }
-  #items-table input.form-control-sm, #items-table select.form-select-sm { font-size: .8rem; }
+  #items-table input.form-control-sm, #items-table select.form-select-sm { font-size: .8rem; padding: 4px 6px; }
   .item-fiscal-row td { background: #f8f9fa; border-top: none !important; }
   .item-fiscal-row .fiscal-section { border-left: 3px solid #dee2e6; padding: 6px 10px; margin-bottom: 6px; }
   .item-fiscal-row .fiscal-section.icms { border-color: #0d6efd; }
@@ -525,19 +529,15 @@
               <table class="table table-sm table-bordered mb-0 align-middle items-table" id="items-table">
                 <thead class="table-light">
                   <tr>
-                    <th style="width:40px" class="text-center">#</th>
-                    <th style="width:185px">Produto</th>
-                    <th style="width:130px" class="th-lote">Lote</th>
-                    <th>Descrição</th>
-                    <th style="width:75px">UN</th>
-                    <th style="width:110px">Qtd.</th>
-                    <th style="width:108px">Vl. Unit.</th>
-                    <th style="width:95px">Desconto</th>
-                    <th class="th-tributavel text-center" style="display:none;width:90px" title="Quantidade em unidade tributável (KG) — exportação CFOP 7xxx">Qtd. Trib.</th>
-                    <th class="th-tributavel" style="display:none;width:55px" title="Unidade tributável">Un. Trib.</th>
-                    <th class="th-tributavel text-end" style="display:none;width:100px" title="Valor unitário tributável (por KG)">Vl.Unit.Trib.</th>
-                    <th style="width:110px" class="text-end">Total Item</th>
-                    <th style="width:72px" class="text-center"><i class="bi bi-gear text-muted"></i></th>
+                    <th style="width:34px" class="text-center">#</th>
+                    <th style="width:190px">Produto</th>
+                    <th style="width:100px" class="th-lote">Lote</th>
+                    <th style="width:48px">UN</th>
+                    <th style="width:106px">Qtd.</th>
+                    <th style="width:106px">Vl. Unit.</th>
+                    <th style="width:90px">Desconto</th>
+                    <th style="width:96px" class="text-end">Total Item</th>
+                    <th style="width:58px" class="text-center"><i class="bi bi-gear text-muted"></i></th>
                   </tr>
                 </thead>
                 {% if formset.total_error_count %}
@@ -572,14 +572,10 @@
                       {{ item_form.lote }}
                       {% if item_form.lote.errors %}<div class="text-danger" style="font-size:.7rem">{{ item_form.lote.errors }}</div>{% endif %}
                     </td>
-                    <td>{{ item_form.descricao }}</td>
                     <td>{{ item_form.unidade }}</td>
                     <td>{{ item_form.quantidade }}</td>
                     <td>{{ item_form.valor_unitario }}</td>
                     <td>{{ item_form.valor_desconto }}</td>
-                    <td class="col-tributavel text-center" style="display:none">{{ item_form.quantidade_tributavel }}</td>
-                    <td class="col-tributavel" style="display:none">{{ item_form.unidade_tributavel }}</td>
-                    <td class="col-tributavel text-end" style="display:none">{{ item_form.valor_unitario_tributavel }}</td>
                     <td class="text-end">
                       <span class="item-total fw-semibold text-success">—</span>
                     </td>
@@ -625,6 +621,11 @@
 
                             <!-- ── Pane: Classificação Fiscal ── -->
                             <div class="tab-pane fade show active" id="pane-classif-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-classif-{{ forloop.counter0 }}">
+                              <div class="mb-2">
+                                <label class="fiscal-label">Descrição do Item</label>
+                                {{ item_form.descricao }}
+                                {% if item_form.descricao.errors %}<div class="text-danger" style="font-size:.7rem">{{ item_form.descricao.errors }}</div>{% endif %}
+                              </div>
                               <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
                                 <div>
                                   <label class="fiscal-label">NCM</label>
@@ -1204,36 +1205,60 @@
 
                             <!-- ── Pane: Pedido de Compra / Rateio por Item ── -->
                             <div class="tab-pane fade" id="pane-pedido-{{ forloop.counter0 }}" role="tabpanel" aria-labelledby="tab-pedido-{{ forloop.counter0 }}">
-                              <div class="row g-2 align-items-end">
-                                <div class="col-auto">
-                                  <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                              <div class="fiscal-tributavel-wrap" style="display:none;">
+                                <span class="fiscal-section-title text-secondary d-block mb-1" style="font-size:.72rem;">
+                                  <i class="bi bi-globe-americas me-1"></i>Unidade Tributável <small class="text-muted text-normal">(exportação)</small>
+                                </span>
+                                <div class="row g-2 align-items-end mb-2">
+                                  <div class="col-auto">
+                                    <label class="fiscal-label">Qtd. Tributável</label>
+                                    {{ item_form.quantidade_tributavel }}
+                                  </div>
+                                  <div class="col-auto">
+                                    <label class="fiscal-label">Un. Tributável</label>
+                                    {{ item_form.unidade_tributavel }}
+                                  </div>
+                                  <div class="col-auto">
+                                    <label class="fiscal-label">Vl. Unit. Tributável</label>
+                                    {{ item_form.valor_unitario_tributavel }}
+                                  </div>
+                                </div>
+                                <hr class="my-2">
+                              </div>
+                              <div class="d-flex flex-wrap gap-4">
+                                <div>
+                                  <span class="fiscal-section-title text-secondary d-block mb-1" style="font-size:.72rem;">
                                     <i class="bi bi-receipt me-1"></i>Valores por Item
                                   </span>
+                                  <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                      <label class="fiscal-label">Frete (R$)</label>
+                                      {{ item_form.valor_frete_item }}
+                                    </div>
+                                    <div class="col-auto">
+                                      <label class="fiscal-label">Seguro (R$)</label>
+                                      {{ item_form.valor_seguro_item }}
+                                    </div>
+                                    <div class="col-auto">
+                                      <label class="fiscal-label">Outras Despesas (R$)</label>
+                                      {{ item_form.valor_outras_despesas }}
+                                    </div>
+                                  </div>
                                 </div>
-                                <div class="col-auto">
-                                  <label class="fiscal-label">Frete (R$)</label>
-                                  {{ item_form.valor_frete_item }}
-                                </div>
-                                <div class="col-auto">
-                                  <label class="fiscal-label">Seguro (R$)</label>
-                                  {{ item_form.valor_seguro_item }}
-                                </div>
-                                <div class="col-auto">
-                                  <label class="fiscal-label">Outras Despesas (R$)</label>
-                                  {{ item_form.valor_outras_despesas }}
-                                </div>
-                                <div class="col-auto ms-3">
-                                  <span class="fiscal-section-title text-secondary" style="font-size:.72rem;">
+                                <div>
+                                  <span class="fiscal-section-title text-secondary d-block mb-1" style="font-size:.72rem;">
                                     <i class="bi bi-bag me-1"></i>Pedido de Compra
                                   </span>
-                                </div>
-                                <div class="col-auto">
-                                  <label class="fiscal-label">Nº Pedido</label>
-                                  {{ item_form.pedido_compra }}
-                                </div>
-                                <div class="col-auto">
-                                  <label class="fiscal-label">Item</label>
-                                  {{ item_form.item_pedido_compra }}
+                                  <div class="row g-2 align-items-end">
+                                    <div class="col-auto">
+                                      <label class="fiscal-label">Nº Pedido</label>
+                                      {{ item_form.pedido_compra }}
+                                    </div>
+                                    <div class="col-auto">
+                                      <label class="fiscal-label">Item</label>
+                                      {{ item_form.item_pedido_compra }}
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1825,23 +1850,25 @@ function calcIpi(mainRow, fiscalRow) {
                   ? mainRow._fatorConversao
                   : (mainRow._pesoLiq || 0);
     if (!fator || fator <= 1) return;
+    const fiscalRow = mainRow.nextElementSibling;
     const qtd = parseFloat(mainRow.querySelector('input[name$="-quantidade"]')?.value) || 0;
     const vu  = parseFloat(mainRow.querySelector('input[name$="-valor_unitario"]')?.value) || 0;
-    const qtEl = mainRow.querySelector('input[name$="-quantidade_tributavel"]');
-    const vuEl = mainRow.querySelector('input[name$="-valor_unitario_tributavel"]');
+    const qtEl = fiscalRow?.querySelector('input[name$="-quantidade_tributavel"]');
+    const vuEl = fiscalRow?.querySelector('input[name$="-valor_unitario_tributavel"]');
     if (qtEl) qtEl.value = (qtd * fator).toFixed(4);
     if (vuEl) vuEl.value = (fator > 0 ? vu / fator : 0).toFixed(4);
   }
 
   function toggleColTributavel() {
-    const temConversao = [...body.querySelectorAll('.item-row')].some(row => {
-      if (row.style.display === 'none') return false;
-      const cfop  = row.querySelector('input[name$="-cfop"]')?.value || '';
+    body.querySelectorAll('.item-row').forEach(row => {
+      const fiscalRow = row.nextElementSibling;
+      const wrap = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow.querySelector('.fiscal-tributavel-wrap') : null;
+      if (!wrap) return;
+      if (row.style.display === 'none') { wrap.style.display = 'none'; return; }
+      const cfop  = fiscalRow.querySelector('input[name$="-cfop"]')?.value || '';
       const fator = row._fatorConversao || row._pesoLiq || 1;
-      return cfop.startsWith('7') || fator > 1;
-    });
-    document.querySelectorAll('.col-tributavel,.th-tributavel').forEach(el => {
-      el.style.display = temConversao ? '' : 'none';
+      const temConversao = cfop.startsWith('7') || fator > 1;
+      wrap.style.display = temConversao ? '' : 'none';
     });
   }
 
@@ -2170,7 +2197,7 @@ function calcIpi(mainRow, fiscalRow) {
         .then(data => {
           if (data.erro) return;
 
-          const desc = mainRow.querySelector('input[name$="-descricao"]');
+          const desc = rowFiscal?.querySelector('input[name$="-descricao"]');
           if (desc) desc.value = data.nome || '';
           const un = mainRow.querySelector('input[name$="-unidade"]');
           if (un) un.value = data.unidade || '';
@@ -2183,7 +2210,7 @@ function calcIpi(mainRow, fiscalRow) {
           mainRow._unidadeTrib    = data.unidade_tributavel || '';
 
           // Preenche unidade tributável a partir do cadastro do produto
-          const utEl = mainRow.querySelector('input[name$="-unidade_tributavel"]');
+          const utEl = rowFiscal?.querySelector('input[name$="-unidade_tributavel"]');
           if (utEl && data.unidade_tributavel) utEl.value = data.unidade_tributavel;
 
           recalcularTotais();
@@ -2568,7 +2595,7 @@ function calcIpi(mainRow, fiscalRow) {
       const ncm  = (src?.querySelector('[name$="-ncm"]')      || mainRow.querySelector('[name$="-ncm"]'))?.value?.trim();
       const cfop = (src?.querySelector('[name$="-cfop"]')     || mainRow.querySelector('[name$="-cfop"]'))?.value?.trim();
       const cst  = (src?.querySelector('[name$="-cst_icms"]') || mainRow.querySelector('[name$="-cst_icms"]'))?.value?.trim();
-      const desc = mainRow.querySelector('[name$="-descricao"]')?.value?.trim() || `Item ${idx + 1}`;
+      const desc = (src?.querySelector('[name$="-descricao"]') || mainRow.querySelector('[name$="-descricao"]'))?.value?.trim() || `Item ${idx + 1}`;
       const faltando = [];
       if (!ncm)  faltando.push('NCM');
       if (!cfop) faltando.push('CFOP');
@@ -3152,8 +3179,13 @@ function calcIpi(mainRow, fiscalRow) {
     const mostrarLote = (val === 'REMESSA');
     if (thLote) thLote.style.display = mostrarLote ? '' : 'none';
     tdLotes().forEach(td => { td.style.display = mostrarLote ? '' : 'none'; });
+  }
 
-    // Preenche sugestão de Natureza da Operação automaticamente
+  // Preenche sugestão de Natureza da Operação automaticamente.
+  // Só roda na troca manual do Tipo de Operação — nunca na carga inicial,
+  // para não apagar o valor já salvo (ou o default do model) ao editar/criar.
+  function atualizarNaturezaOperacao() {
+    const val = tipoSel ? tipoSel.value : 'VENDA';
     const natInput = document.getElementById('id_natureza_operacao');
     if (natInput && !natInput.dataset.userEdited) {
       if (val === 'REMESSA')     natInput.value = 'REMESSA PARA FATURAMENTO POSTERIOR';
@@ -3162,7 +3194,7 @@ function calcIpi(mainRow, fiscalRow) {
   }
 
   if (tipoSel) {
-    tipoSel.addEventListener('change', atualizarTipoOp);
+    tipoSel.addEventListener('change', () => { atualizarTipoOp(); atualizarNaturezaOperacao(); });
     // Marca edição manual para não sobrescrever
     const natInput = document.getElementById('id_natureza_operacao');
     if (natInput) natInput.addEventListener('input', () => { natInput.dataset.userEdited = '1'; });

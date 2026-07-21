@@ -152,6 +152,23 @@
               </tr>
               {% endfor %}
             </tbody>
+            <tbody class="d-none" id="empty-form-container">
+              <tr class="item-row">
+                <td>{{ formset.empty_form.id }}{{ formset.empty_form.DELETE }}{{ formset.empty_form.produto }}</td>
+                <td>{{ formset.empty_form.descricao }}</td>
+                <td>{{ formset.empty_form.ncm }}</td>
+                <td>{{ formset.empty_form.cfop }}</td>
+                <td>{{ formset.empty_form.unidade }}</td>
+                <td>{{ formset.empty_form.quantidade }}</td>
+                <td>{{ formset.empty_form.preco_unitario }}</td>
+                <td>{{ formset.empty_form.desconto_item }}</td>
+                <td>
+                  <button type="button" class="row-action danger remove-item">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -218,15 +235,15 @@
 (function() {
   const TOTAL = document.getElementById('id_itens-TOTAL_FORMS');
   const body = document.getElementById('itens-body');
+  const emptyFormContainer = document.getElementById('empty-form-container');
 
   document.getElementById('add-item').addEventListener('click', function() {
     const idx = parseInt(TOTAL.value);
-    const tpl = body.querySelector('.item-row');
-    if (!tpl) return;
+    const tpl = emptyFormContainer.querySelector('.item-row');
     const clone = tpl.cloneNode(true);
     clone.querySelectorAll('input, select, textarea').forEach(el => {
-      el.name = el.name.replace(/-\d+-/, `-${idx}-`);
-      el.id = el.id ? el.id.replace(/-\d+-/, `-${idx}-`) : '';
+      if (el.name) el.name = el.name.replace('__prefix__', idx);
+      if (el.id) el.id = el.id.replace('__prefix__', idx);
       if (el.type !== 'checkbox') el.value = '';
       if (el.type === 'checkbox') el.checked = false;
     });

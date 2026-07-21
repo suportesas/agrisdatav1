@@ -17,6 +17,18 @@
     return (link || navLinks[0]).getAttribute('data-tab');
   }
 
+  // If the page reloaded after a failed submit, a validation error may have
+  // landed on a panel that isn't the first tab — e.g. a required field that
+  // only becomes invalid in the model's clean() rather than the HTML form.
+  // Since .tab-hidden is display:none, that error would otherwise be
+  // completely invisible to the user. Prefer the first tab with an error.
+  function firstErrorTabId() {
+    var panel = panels.find(function (p) {
+      return !!p.querySelector('.error-msg, .invalid-feedback, .is-invalid');
+    });
+    return panel ? panel.getAttribute('data-tab-panel') : null;
+  }
+
   function activateTab(tabId) {
     panels.forEach(function (p) {
       p.classList.toggle('tab-hidden', p.getAttribute('data-tab-panel') !== tabId);
@@ -34,7 +46,7 @@
     });
   });
 
-  activateTab(firstVisibleTabId());
+  activateTab(firstErrorTabId() || firstVisibleTabId());
 
   window.SectionNav = {
     activate: activateTab,

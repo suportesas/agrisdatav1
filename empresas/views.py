@@ -50,6 +50,23 @@ def is_owner(user):
     return user.is_superuser
 
 
+def _erro_formulario(form):
+    """Monta mensagem detalhada com todos os erros do form, campo a campo.
+
+    Necessário porque nem todo campo de empresa_form.html tem um bloco
+    {% if form.X.errors %} dedicado (ex: telefone, uf) — sem isso, um erro
+    nesses campos ficava completamente invisível para o usuário.
+    """
+    campos_com_erro = []
+    for field_name, errors in form.errors.items():
+        if field_name == '__all__':
+            campo_label = 'Geral'
+        else:
+            campo_label = form.fields[field_name].label if field_name in form.fields else field_name
+        campos_com_erro.append(f"{campo_label}: {', '.join(errors)}")
+    return '❌ Corrija os erros no formulário:<br>' + '<br>'.join(f'• {erro}' for erro in campos_com_erro)
+
+
 # ==================== VIEWS DE EMPRESAS ====================
 
 @login_required
@@ -131,7 +148,7 @@ def empresa_create(request):
             messages.success(request, f"✅ Empresa '{empresa.nome}' criada com sucesso.")
             return redirect('empresas:empresa_list')
         else:
-            messages.error(request, "❌ Corrija os erros no formulário.")
+            messages.error(request, _erro_formulario(form))
     else:
         form = EmpresaForm()
     
@@ -154,7 +171,7 @@ def empresa_update(request, pk):
             messages.success(request, f"✅ Empresa '{empresa.nome}' atualizada com sucesso.")
             return redirect('empresas:empresa_list')
         else:
-            messages.error(request, "❌ Corrija os erros no formulário.")
+            messages.error(request, _erro_formulario(form))
     else:
         form = EmpresaForm(instance=empresa)
     

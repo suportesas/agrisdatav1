@@ -76,8 +76,7 @@ ItemPedidoVendaFormSet = inlineformset_factory(
     PedidoVenda,
     ItemPedidoVenda,
     form=ItemPedidoVendaForm,
-    extra=1,
-    min_num=1,
+    extra=0,
     can_delete=True,
 )
 

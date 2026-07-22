@@ -358,6 +358,8 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'intermediador_id_cadastro',
             # Faturamento Agrupado
             'tipo_operacao',
+            # Nota Complementar
+            'tipo_complemento',
         ]
         _fc = {'class': 'form-control form-control-sm'}
         widgets = {
@@ -442,6 +444,8 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'chave_nfe_referenciada': forms.TextInput(attrs={**_fc, 'placeholder': '44 dígitos — chave da NF-e original devolvida', 'maxlength': '44'}),
             # Faturamento Agrupado
             'tipo_operacao': forms.Select(attrs={'class': 'form-select'}),
+            # Nota Complementar
+            'tipo_complemento': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -456,6 +460,7 @@ class NotaFiscalForm(FaturamentoBaseForm):
         # Cliente e Fornecedor são mutuamente exclusivos — nenhum é obrigatório individualmente
         self.fields['cliente'].required = False
         self.fields['fornecedor'].required = False
+        self.fields['tipo_complemento'].required = False
         # Campos de transporte e veículo são opcionais
         for f in ('transp_cnpj', 'transp_nome', 'transp_ie', 'transp_endereco',
                   'transp_municipio', 'transp_uf', 'transp_rntc', 'veic_placa', 'veic_uf'):
@@ -484,6 +489,17 @@ class NotaFiscalForm(FaturamentoBaseForm):
             )
         if cleaned.get('tipo_operacao') == 'REMESSA' and not cleaned.get('cliente'):
             self.add_error('cliente', 'Cliente é obrigatório para NF-e de Remessa.')
+        if cleaned.get('tipo_operacao') == 'COMPLEMENTAR':
+            if not cleaned.get('tipo_complemento'):
+                self.add_error(
+                    'tipo_complemento',
+                    'Selecione o Tipo de Complemento (Valor ou Quantidade) para NF-e Complementar.',
+                )
+            if cleaned.get('finalidade_nfe') != '2':
+                self.add_error(
+                    'finalidade_nfe',
+                    'NF-e com Tipo de Operação "Complementar" deve ter Finalidade "2 - NF-e Complementar".',
+                )
         return cleaned
 
 

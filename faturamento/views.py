@@ -192,6 +192,44 @@ def _sync_pedido_de_documento(nf=None, invoice=None):
         sincronizar_status_pedido(pedido)
 
 
+def _validar_itens_complementar(nf_cleaned_data, formset):
+    """Garante a regra de negócio da NF-e Complementar (finalidade_nfe='2'):
+
+    - Complemento de VALOR: mercadoria já saiu na nota original — todos os
+      itens devem ter quantidade 0 (senão duplicaria o estoque fiscal).
+    - Complemento de QUANTIDADE (típico de exportação): valor já foi acertado
+      comercialmente — todos os itens devem ter valor unitário 0 (senão
+      duplicaria a cobrança/faturamento).
+
+    Retorna uma mensagem de erro (str) se a regra for violada, ou None se OK.
+    """
+    from decimal import Decimal
+
+    if nf_cleaned_data.get('tipo_operacao') != 'COMPLEMENTAR':
+        return None
+    tipo_complemento = nf_cleaned_data.get('tipo_complemento')
+    if not tipo_complemento:
+        return None  # já reportado pelo NotaFiscalForm.clean()
+
+    zero = Decimal('0')
+    for item_data in formset.cleaned_data:
+        if not item_data or item_data.get('DELETE'):
+            continue
+        quantidade = item_data.get('quantidade') or zero
+        valor_unitario = item_data.get('valor_unitario') or zero
+        if tipo_complemento == 'VALOR' and quantidade != zero:
+            return (
+                'Nota Complementar de Valor: a quantidade de todos os itens deve ser 0 '
+                '(a mercadoria já saiu na nota original — aqui complementa-se apenas o valor).'
+            )
+        if tipo_complemento == 'QUANTIDADE' and valor_unitario != zero:
+            return (
+                'Nota Complementar de Quantidade: o valor unitário de todos os itens deve ser 0 '
+                '(o valor já foi acertado comercialmente — aqui regulariza-se apenas o estoque físico).'
+            )
+    return None
+
+
 def _get_empresa(request):
     return request.user.empresa
 
@@ -338,7 +376,12 @@ def nota_fiscal_create(request):
         dup_formset = DuplicataNFFormSet(request.POST, prefix='duplicatas')
         ref_formset = NFeReferenciadaFormSet(request.POST, prefix='referencias')
         _nf_log_validation('CREATE', form, formset, pag_formset, dup_formset)
+        erro_complemento = None
         if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid() and ref_formset.is_valid():
+            erro_complemento = _validar_itens_complementar(form.cleaned_data, formset)
+            if erro_complemento:
+                form.add_error(None, erro_complemento)
+        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid() and ref_formset.is_valid() and not erro_complemento:
             nf = form.save(user=request.user)
             if not nf.numero:
                 ultimo = NotaFiscal.objects.filter(empresa=empresa).exclude(numero__isnull=True).order_by('-numero').first()
@@ -551,7 +594,12 @@ def nota_fiscal_update(request, pk):
         dup_formset = DuplicataNFFormSet(request.POST, instance=nf, prefix='duplicatas')
         ref_formset = NFeReferenciadaFormSet(request.POST, instance=nf, prefix='referencias')
         _nf_log_validation('UPDATE', form, formset, pag_formset, dup_formset)
+        erro_complemento = None
         if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid() and ref_formset.is_valid():
+            erro_complemento = _validar_itens_complementar(form.cleaned_data, formset)
+            if erro_complemento:
+                form.add_error(None, erro_complemento)
+        if form.is_valid() and formset.is_valid() and pag_formset.is_valid() and dup_formset.is_valid() and ref_formset.is_valid() and not erro_complemento:
             form.save(user=request.user)
             # Atribuir numero_item sequencial antes de salvar para evitar conflito
             # de unique_together quando o JS submete valores incorretos.
@@ -1863,6 +1911,121 @@ def nota_fiscal_devolucao(request, pk):
         f'Preencha o Nº do Drawback na aba DI de cada item com CFOP 3xxx antes de emitir.'
     )
     return redirect('faturamento:nota_fiscal_update', pk=nf_dev.pk)
+
+
+@login_required
+def nota_fiscal_complementar(request, pk, tipo):
+    """Cria rascunho de NF-e Complementar (finalidade_nfe='2') a partir de uma
+    NF-e de saída autorizada.
+
+    `tipo` define a regra de negócio aplicada aos itens copiados:
+    - 'valor': complementa apenas o valor — zera a quantidade de todos os
+      itens (a mercadoria já saiu/entrou pela nota original).
+    - 'quantidade': complementa apenas a quantidade física (uso típico em
+      exportação) — zera o valor unitário de todos os itens (o valor
+      comercial já foi acertado/fechado no contrato original).
+    """
+    from datetime import date
+    from django.db import transaction
+
+    from .models import NFeReferenciada
+
+    if tipo not in ('valor', 'quantidade'):
+        messages.error(request, 'Tipo de complemento inválido.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    empresa = _get_empresa(request)
+    nf_orig = get_object_or_404(NotaFiscal, pk=pk, empresa=empresa)
+
+    if nf_orig.status != 'EMITIDA' or not nf_orig.chave_acesso:
+        messages.error(request, 'Nota Complementar só pode ser criada a partir de uma NF-e autorizada pela SEFAZ.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    if nf_orig.finalidade_nfe == '4':
+        messages.error(request, 'Não é possível criar nota complementar a partir de uma NF-e de devolução.')
+        return redirect('faturamento:nota_fiscal_detail', pk=pk)
+
+    tipo_complemento = 'VALOR' if tipo == 'valor' else 'QUANTIDADE'
+    itens = list(nf_orig.itens.all())
+    chave_orig = nf_orig.chave_acesso
+    numero_orig = nf_orig.numero
+    data_orig = nf_orig.data_emissao
+
+    with transaction.atomic():
+        nf_comp = NotaFiscal.objects.get(pk=pk)
+        nf_comp.pk                  = None
+        nf_comp.numero              = None
+        nf_comp.chave_acesso        = ''
+        nf_comp.protocolo_autorizacao = ''
+        nf_comp.xml_autorizacao     = ''
+        nf_comp.xml_autorizacao_url = ''
+        nf_comp.pdf_danfe           = ''
+        nf_comp.pdf_danfe_url       = ''
+        nf_comp.status              = 'RASCUNHO'
+        nf_comp.data_hora_emissao   = None
+        nf_comp.motivo_cancelamento = ''
+        nf_comp.data_cancelamento   = None
+        nf_comp.manifestacao_tipo      = ''
+        nf_comp.manifestacao_protocolo = ''
+        nf_comp.manifestacao_data      = None
+        nf_comp.data_emissao        = date.today()
+        nf_comp.data_saida          = None
+        nf_comp.chave_nfe_referenciada = ''
+        # Campos de nota complementar
+        nf_comp.finalidade_nfe    = '2'
+        nf_comp.tipo_operacao     = 'COMPLEMENTAR'
+        nf_comp.tipo_complemento  = tipo_complemento
+        nf_comp.nota_complementada = nf_orig
+        nf_comp.nota_mae           = None
+        nf_comp.status_faturamento = 'NAO_APLICA'
+        if tipo_complemento == 'VALOR':
+            nf_comp.natureza_operacao = 'COMPLEMENTAÇÃO DE VALOR'
+        else:
+            nf_comp.natureza_operacao = 'COMPLEMENTAÇÃO DE QUANTIDADE'
+        nf_comp.save()
+
+        # Grupo NFref de cabeçalho — permitido para finNFe=2 (só é proibido em
+        # devolução, finNFe=4, pela regra VC02-14).
+        NFeReferenciada.objects.create(
+            nota_fiscal=nf_comp,
+            chave_acesso_referenciada=chave_orig,
+            numero_referenciado=numero_orig,
+            data_emissao_referenciada=data_orig,
+        )
+
+        for item in itens:
+            item.pk          = None
+            item.nota_fiscal = nf_comp
+            if tipo_complemento == 'VALOR':
+                # A mercadoria já saiu/entrou pela nota original — quantidade
+                # zero evita duplicar o estoque fiscal. valor_unitario é
+                # mantido como referência para o usuário ajustar ao valor a
+                # complementar (ItemNotaFiscal.save() trata qtd=0 como vProd
+                # = valor_unitario - desconto).
+                item.quantidade = 0
+            else:
+                # Valor já foi acertado comercialmente — valor zero evita
+                # duplicar o faturamento/receita. Quantidade é mantida como
+                # referência para o usuário ajustar à quantidade física a
+                # regularizar no estoque/Siscomex.
+                item.valor_unitario = 0
+            item.valor_desconto = 0
+            item.save()
+
+    if tipo_complemento == 'VALOR':
+        msg = (
+            f'Rascunho de nota complementar de VALOR criado (NF #{nf_comp.pk}). '
+            'Quantidade dos itens zerada automaticamente — ajuste o valor unitário '
+            'de cada item para o valor a complementar antes de emitir.'
+        )
+    else:
+        msg = (
+            f'Rascunho de nota complementar de QUANTIDADE criado (NF #{nf_comp.pk}). '
+            'Valor unitário dos itens zerado automaticamente — ajuste a quantidade '
+            'de cada item para a quantidade física a regularizar antes de emitir.'
+        )
+    messages.info(request, msg)
+    return redirect('faturamento:nota_fiscal_update', pk=nf_comp.pk)
 
 
 @login_required

@@ -25,6 +25,7 @@ urlpatterns = [
     path('notas-fiscais/<int:pk>/xml/', views.nota_fiscal_xml, name='nota_fiscal_xml'),
     path('notas-fiscais/<int:pk>/clonar/', views.nota_fiscal_clone, name='nota_fiscal_clone'),
     path('notas-fiscais/<int:pk>/devolucao/', views.nota_fiscal_devolucao, name='nota_fiscal_devolucao'),
+    path('notas-fiscais/<int:pk>/complementar/<str:tipo>/', views.nota_fiscal_complementar, name='nota_fiscal_complementar'),
     path('notas-fiscais/<int:pk>/carta-correcao/', views.nota_fiscal_carta_correcao, name='nota_fiscal_carta_correcao'),
     path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/print/', views.nfe_cce_print, name='nfe_cce_print'),
     path('notas-fiscais/<int:nf_pk>/cce/<int:cc_pk>/xml/', views.nfe_cce_xml, name='nfe_cce_xml'),

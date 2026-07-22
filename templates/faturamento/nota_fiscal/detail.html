@@ -42,6 +42,18 @@
          onclick="return confirm('Criar rascunho de NF-e de devolução para esta nota?\n\nOs itens e CFOP serão ajustados automaticamente (5xxx→1xxx).')">
         <i class="bi bi-arrow-return-left me-1"></i>Criar Devolução
       </a>
+      <a href="{% url 'faturamento:nota_fiscal_complementar' nf.pk 'valor' %}"
+         class="btn btn-outline-info btn-sm"
+         title="Criar NF-e Complementar de Valor (quantidade zero)"
+         onclick="return confirm('Criar rascunho de nota complementar de VALOR?\n\nA quantidade de todos os itens será zerada automaticamente — ajuste apenas o valor unitário de cada item antes de emitir.')">
+        <i class="bi bi-cash-coin me-1"></i>Complementar Valor
+      </a>
+      <a href="{% url 'faturamento:nota_fiscal_complementar' nf.pk 'quantidade' %}"
+         class="btn btn-outline-info btn-sm"
+         title="Criar NF-e Complementar de Quantidade (valor zero) — uso típico em exportação"
+         onclick="return confirm('Criar rascunho de nota complementar de QUANTIDADE?\n\nO valor unitário de todos os itens será zerado automaticamente — ajuste apenas a quantidade de cada item antes de emitir.')">
+        <i class="bi bi-boxes me-1"></i>Complementar Quantidade
+      </a>
       {% endif %}
       {% if nf.xml_autorizacao or nf.xml_autorizacao_url %}
       <a href="{% url 'faturamento:nota_fiscal_xml' nf.pk %}" class="btn btn-outline-success btn-sm" title="Baixar XML autorizado pela SEFAZ">
@@ -244,6 +256,31 @@
       {% for filha in nf.notas_filhas.all %}
         <a href="{% url 'faturamento:nota_fiscal_detail' filha.pk %}" class="chip">
           Nº {{ filha.numero|stringformat:"06d" }}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# ── Vínculo Nota Complementar (finalidade_nfe='2') ── #}
+  {% if nf.nota_complementada %}
+  <div class="alert-soft blue">
+    <i class="bi bi-cash-coin icon"></i>
+    <div>Complementa ({{ nf.get_tipo_complemento_display }}) a
+      <a href="{% url 'faturamento:nota_fiscal_detail' nf.nota_complementada.pk %}" class="fw-semibold">
+        NF-e Nº {{ nf.nota_complementada.numero|stringformat:"09d" }}
+      </a>
+    </div>
+  </div>
+  {% endif %}
+  {% if nf.notas_complementares.exists %}
+  <div class="alert-soft blue">
+    <i class="bi bi-cash-coin icon"></i>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <strong>Notas Complementares ({{ nf.notas_complementares.count }}):</strong>
+      {% for comp in nf.notas_complementares.all %}
+        <a href="{% url 'faturamento:nota_fiscal_detail' comp.pk %}" class="chip" title="{{ comp.get_tipo_complemento_display }}">
+          Nº {{ comp.numero|default:"S/N" }} — {{ comp.get_tipo_complemento_display }}
         </a>
       {% endfor %}
     </div>

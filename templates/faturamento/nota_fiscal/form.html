@@ -137,7 +137,21 @@
                         <span id="hint-venda"><i class="bi bi-cart me-1"></i>NF-e de venda direta (fluxo padrão).</span>
                         <span id="hint-remessa" style="display:none"><i class="bi bi-box-arrow-right me-1 text-warning"></i><strong>Remessa:</strong> baixa o estoque físico agora. O faturamento (financeiro) ocorre depois, na Nota Mãe.</span>
                         <span id="hint-faturamento" style="display:none"><i class="bi bi-file-earmark-check me-1 text-success"></i><strong>Faturamento:</strong> consolida remessas anteriores. Não move estoque.</span>
+                        <span id="hint-complementar" style="display:none"><i class="bi bi-cash-coin me-1 text-info"></i><strong>Complementar:</strong> selecione abaixo se é complemento de Valor (quantidade zero) ou de Quantidade (valor zero) — nunca preencha os dois.</span>
                         <span id="hint-outro" style="display:none"><i class="bi bi-arrow-left-right me-1"></i>Operação especial — preencha CFOP manualmente.</span>
+                      </small>
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center mt-2" id="campo-tipo-complemento" style="display:none">
+                    <div class="col-md-4">
+                      <label class="form-label fw-semibold mb-1">Tipo de Complemento</label>
+                      {{ form.tipo_complemento }}
+                      {% if form.tipo_complemento.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_complemento.errors|striptags }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-8 d-flex align-items-center">
+                      <small class="text-muted">
+                        <span id="hint-complemento-valor" style="display:none">Todos os itens devem ter <strong>quantidade = 0</strong>. A mercadoria já saiu/entrou pela nota original.</span>
+                        <span id="hint-complemento-quantidade" style="display:none">Todos os itens devem ter <strong>valor unitário = 0</strong>. O valor comercial já foi acertado (uso típico em exportação).</span>
                       </small>
                     </div>
                   </div>
@@ -3160,12 +3174,24 @@ function calcIpi(mainRow, fiscalRow) {
   const tipoSel   = document.getElementById('id_tipo_operacao');
   const thLote    = document.querySelector('.th-lote');
   const tdLotes   = () => document.querySelectorAll('.td-lote');
+  const finalidadeSel2 = document.getElementById('id_finalidade_nfe');
+  const campoTipoComplemento = document.getElementById('campo-tipo-complemento');
+  const tipoComplementoSel   = document.getElementById('id_tipo_complemento');
 
   const hints = {
-    VENDA:       document.getElementById('hint-venda'),
-    REMESSA:     document.getElementById('hint-remessa'),
-    FATURAMENTO: document.getElementById('hint-faturamento'),
+    VENDA:        document.getElementById('hint-venda'),
+    REMESSA:      document.getElementById('hint-remessa'),
+    FATURAMENTO:  document.getElementById('hint-faturamento'),
+    COMPLEMENTAR: document.getElementById('hint-complementar'),
   };
+
+  function atualizarTipoComplementoHint() {
+    const val = tipoComplementoSel ? tipoComplementoSel.value : '';
+    const hv = document.getElementById('hint-complemento-valor');
+    const hq = document.getElementById('hint-complemento-quantidade');
+    if (hv) hv.style.display = (val === 'VALOR') ? '' : 'none';
+    if (hq) hq.style.display = (val === 'QUANTIDADE') ? '' : 'none';
+  }
 
   function atualizarTipoOp() {
     const val = tipoSel ? tipoSel.value : 'VENDA';
@@ -3179,7 +3205,17 @@ function calcIpi(mainRow, fiscalRow) {
     const mostrarLote = (val === 'REMESSA');
     if (thLote) thLote.style.display = mostrarLote ? '' : 'none';
     tdLotes().forEach(td => { td.style.display = mostrarLote ? '' : 'none'; });
+
+    // Tipo de Complemento: visível apenas para COMPLEMENTAR; força finalidade_nfe='2'
+    const isComplementar = (val === 'COMPLEMENTAR');
+    if (campoTipoComplemento) campoTipoComplemento.style.display = isComplementar ? '' : 'none';
+    if (isComplementar && finalidadeSel2 && finalidadeSel2.value !== '2') {
+      finalidadeSel2.value = '2';
+      finalidadeSel2.dispatchEvent(new Event('change'));
+    }
+    atualizarTipoComplementoHint();
   }
+  if (tipoComplementoSel) tipoComplementoSel.addEventListener('change', atualizarTipoComplementoHint);
 
   // Preenche sugestão de Natureza da Operação automaticamente.
   // Só roda na troca manual do Tipo de Operação — nunca na carga inicial,

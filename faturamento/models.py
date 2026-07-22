@@ -330,6 +330,35 @@ class NotaFiscal(FaturamentoBaseModel):
         help_text='Preenchido automaticamente ao fechar o lote de faturamento.',
     )
 
+    # ── Nota Complementar (finalidade_nfe='2') ──────────────────────────────
+    TIPO_COMPLEMENTO_CHOICES = [
+        ('', 'Não se aplica'),
+        ('VALOR', 'Complemento de Valor (quantidade zero)'),
+        ('QUANTIDADE', 'Complemento de Quantidade (valor zero)'),
+    ]
+    tipo_complemento = models.CharField(
+        'Tipo de Complemento',
+        max_length=10,
+        choices=TIPO_COMPLEMENTO_CHOICES,
+        blank=True,
+        default='',
+        help_text="Só aplicável quando Tipo de Operação = Complementar. 'Valor': a "
+                  'mercadoria já saiu na nota original — todos os itens devem ter '
+                  'quantidade 0 e apenas o valor é complementado. "Quantidade": o valor '
+                  'já foi acertado comercialmente (típico de exportação) — todos os '
+                  'itens devem ter valor unitário 0 e apenas o estoque físico é '
+                  'regularizado.',
+    )
+    nota_complementada = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notas_complementares',
+        verbose_name='Nota Complementada (Origem)',
+        help_text='Preenchido automaticamente ao criar esta nota a partir de "Complementar Valor/Quantidade".',
+    )
+
     # ── Manifestação do Destinatário (MD-e) ─────────────────────────────────────
     manifestacao_tipo = models.CharField('Tipo de Manifestação', max_length=40, blank=True)
     manifestacao_protocolo = models.CharField('Protocolo da Manifestação', max_length=50, blank=True)
@@ -842,7 +871,14 @@ class ItemNotaFiscal(models.Model):
                 return val
             return Decimal(str(val))
 
-        self.valor_total = (self.quantidade * self.valor_unitario) - self.valor_desconto
+        # Nota Complementar de Valor (quantidade=0): vProd não pode ser calculado
+        # como quantidade × valor_unitario (sempre daria 0). Nesse caso o valor
+        # unitário é o próprio valor a complementar — trata-se como se a
+        # quantidade fosse 1 para fins de total do item.
+        if self.quantidade == _0:
+            self.valor_total = self.valor_unitario - self.valor_desconto
+        else:
+            self.valor_total = (self.quantidade * self.valor_unitario) - self.valor_desconto
 
         # ICMS com redução de BC
         reducao = d(self.icms_reducao_base)

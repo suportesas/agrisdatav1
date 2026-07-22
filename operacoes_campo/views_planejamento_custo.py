@@ -108,11 +108,13 @@ def planejamento_custo_create(request):
                     pass
                 if not area_ha:
                     area_ha = safra_pre.talhoes.aggregate(total=Sum('area_hac'))['total']
+                safra_cultura = safra_pre.culturas.select_related('cultura').first()
+                cultura_pre = safra_cultura.cultura if safra_cultura else None
                 initial = {
-                    'cultura': safra_pre.cultura.pk if safra_pre.cultura else None,
+                    'cultura': cultura_pre.pk if cultura_pre else None,
                     'safra': safra_pre.pk,
                     'area_ha': area_ha,
-                    'nome': f"Planejamento {safra_pre.cultura.nome if safra_pre.cultura else ''} {safra_pre.ano or ''}".strip(),
+                    'nome': f"Planejamento {cultura_pre.nome if cultura_pre else ''} {safra_pre.ano or ''}".strip(),
                 }
             except Safra.DoesNotExist:
                 pass

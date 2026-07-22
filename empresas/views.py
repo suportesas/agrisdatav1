@@ -11,8 +11,8 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 
-from .models import APIKey, Empresa, Plano, Programa, Role, PermissionTemplate, RoleAudit
-from .forms import APIKeyForm, EmpresaForm, EmpresaPreferenciasForm, PlanoForm
+from .models import APIKey, ConfiguracaoPlataforma, Empresa, Plano, Programa, Role, PermissionTemplate, RoleAudit
+from .forms import APIKeyForm, ConfiguracaoPlataformaForm, EmpresaForm, EmpresaPreferenciasForm, PlanoForm
 
 # Nomes amigáveis dos apps do ERP (usados na matriz de permissões)
 APP_LABELS_PT = {
@@ -699,6 +699,30 @@ def role_clone(request, role_id):
     new_role.set_programas(programa_ids, actor=request.user)
 
     return JsonResponse({'ok': True, 'role_id': new_role.pk, 'role_name': new_role.name})
+
+
+# ==================== CONFIGURAÇÃO DA PLATAFORMA (Softhouse) ====================
+
+@login_required
+@user_passes_test(is_owner)
+def configuracao_softhouse(request):
+    """Token mestre de revenda (softhouse) da IntegraNotas — usado para criar
+    automaticamente o emitente de cada empresa na Configuração Fiscal."""
+    config, _ = ConfiguracaoPlataforma.objects.get_or_create(pk=1)
+
+    if request.method == 'POST':
+        form = ConfiguracaoPlataformaForm(request.POST, instance=config)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Configuração da plataforma salva com sucesso.')
+            return redirect('empresas:configuracao_softhouse')
+    else:
+        form = ConfiguracaoPlataformaForm(instance=config)
+
+    return render(request, 'empresas/configuracao_softhouse.html', {
+        'form': form,
+        'token_configurado': bool(config.get_token()),
+    })
 
 
 # ==================== VIEWS DE PLANOS ====================

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}IntegraNotas (Softhouse){% endblock %}
+{% block page_title %}IntegraNotas (Softhouse){% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'empresas:empresa_list' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">IntegraNotas (Softhouse)</h3>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Token Mestre de Revenda</div>
+        <div class="card-body">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-1"></i>
+            Este token é fornecido pela IntegraNotas quando a conta é configurada como parceiro/softhouse.
+            É diferente do token individual de cada empresa (configurado em Faturamento &rarr; Configuração Fiscal),
+            e é usado apenas para criar automaticamente o emitente de cada empresa cadastrada no sistema.
+          </div>
+
+          {% if token_configurado %}
+          <div class="alert alert-success d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill"></i>
+            Token da softhouse configurado.
+          </div>
+          {% else %}
+          <div class="alert alert-secondary d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-circle"></i>
+            Nenhum token configurado. A criação automática de emitentes não funcionará até que seja preenchido.
+          </div>
+          {% endif %}
+
+          <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <label class="form-label">Token Softhouse IntegraNotas</label>
+            {{ form.token_softhouse }}
+            {% if form.token_softhouse.errors %}
+            <div class="text-danger small mt-1">{{ form.token_softhouse.errors|join:", " }}</div>
+            {% endif %}
+            <small class="text-muted d-block mt-1">{{ form.token_softhouse.help_text }}</small>
+
+            <div class="mt-4">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>Salvar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

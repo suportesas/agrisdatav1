@@ -223,7 +223,7 @@
             {% endif %}
             <div class="row g-3">
               <div class="col-md-7">
-                <label class="form-label">Razão Social <span class="text-danger">*</span></label>
+                <label class="form-label">Nome Fantasia <span class="text-danger">*</span></label>
                 {{ empresa_form.nome }}
                 {% if empresa_form.nome.errors %}<div class="text-danger small">{{ empresa_form.nome.errors }}</div>{% endif %}
               </div>
@@ -231,6 +231,12 @@
                 <label class="form-label">CNPJ <span class="text-danger">*</span></label>
                 {{ empresa_form.cnpj }}
                 {% if empresa_form.cnpj.errors %}<div class="text-danger small">{{ empresa_form.cnpj.errors }}</div>{% endif %}
+              </div>
+              <div class="col-md-7">
+                <label class="form-label">Razão Social</label>
+                {{ empresa_form.razao_social }}
+                {% if empresa_form.razao_social.errors %}<div class="text-danger small">{{ empresa_form.razao_social.errors }}</div>{% endif %}
+                <small class="text-muted d-block mt-1">Se vazio, usa o Nome Fantasia. Necessário para criar o emitente na IntegraNotas.</small>
               </div>
               <div class="col-md-4">
                 <label class="form-label">Inscrição Estadual</label>
@@ -314,6 +320,32 @@
             </div>
           </form>
 
+          <!-- ── Emitente IntegraNotas ── -->
+          <hr class="my-4">
+          <h6 class="fw-semibold mb-3"><i class="bi bi-cloud-arrow-up me-2"></i>Emitente IntegraNotas</h6>
+
+          {% if emitente_configurado %}
+          <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
+            <i class="bi bi-check-circle-fill"></i>
+            Emitente configurado na IntegraNotas (token ativo).
+          </div>
+          {% else %}
+          <div class="alert alert-secondary d-flex align-items-start justify-content-between gap-3 mb-0">
+            <span>
+              <i class="bi bi-exclamation-circle me-2"></i>
+              Nenhum emitente criado na IntegraNotas ainda. É necessário criá-lo antes de importar o certificado
+              digital ou emitir NF-e/CT-e/MDF-e. Preencha e salve Nome Fantasia, Razão Social, CNPJ, endereço
+              completo (com Código IBGE do Município) e Regime Tributário acima antes de continuar.
+            </span>
+            <form method="post" action="{% url 'faturamento:criar_emitente_softhouse' %}" class="flex-shrink-0">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
+                <i class="bi bi-cloud-plus me-1"></i>Criar Emitente na IntegraNotas
+              </button>
+            </form>
+          </div>
+          {% endif %}
+
           <!-- ── Certificado Digital A1 ── -->
           <hr class="my-4">
           <h6 class="fw-semibold mb-3"><i class="bi bi-shield-lock me-2"></i>Certificado Digital A1</h6>
@@ -330,18 +362,31 @@
                 {% if cert_expira_breve %}<span class="fw-bold ms-1">— vence em breve</span>{% endif %}
               </span>
             </div>
-            <form method="post" action="{% url 'faturamento:certificado_delete' %}"
-                  onsubmit="return confirm('Confirma a remoção do certificado digital? Sem certificado a emissão de NF-e será bloqueada.')">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-danger" title="Remover certificado">
-                <i class="bi bi-trash me-1"></i>Excluir
-              </button>
-            </form>
+            <div class="d-flex flex-column gap-2">
+              <form method="post" action="{% url 'faturamento:certificado_consultar' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-secondary w-100" title="Buscar dados do certificado na IntegraNotas">
+                  <i class="bi bi-search me-1"></i>Buscar na IntegraNotas
+                </button>
+              </form>
+              <form method="post" action="{% url 'faturamento:certificado_delete' %}"
+                    onsubmit="return confirm('Confirma a remoção do certificado digital? Sem certificado a emissão de NF-e será bloqueada.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger w-100" title="Remover certificado">
+                  <i class="bi bi-trash me-1"></i>Excluir
+                </button>
+              </form>
+            </div>
           </div>
           {% else %}
-          <div class="alert alert-secondary d-flex align-items-center mb-3">
-            <i class="bi bi-shield-exclamation me-2"></i>
-            Nenhum certificado digital importado. Sem ele, a emissão de NF-e não é possível.
+          <div class="alert alert-secondary d-flex align-items-center justify-content-between mb-3">
+            <span><i class="bi bi-shield-exclamation me-2"></i>Nenhum certificado digital importado. Sem ele, a emissão de NF-e não é possível.</span>
+            <form method="post" action="{% url 'faturamento:certificado_consultar' %}" class="ms-2">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-secondary" title="Buscar dados do certificado na IntegraNotas">
+                <i class="bi bi-search me-1"></i>Buscar na IntegraNotas
+              </button>
+            </form>
           </div>
           {% endif %}
 
@@ -364,7 +409,7 @@
             </div>
             <small class="text-muted d-block mt-2">
               Use o certificado tipo <strong>A1</strong> (.pfx ou .p12) emitido pela sua Autoridade Certificadora (ex: Certisign, Serasa, Receita Federal).
-              O arquivo é armazenado de forma segura e utilizado para assinar as NF-e via IntegraNota.
+              Ao importar, o certificado é enviado automaticamente para a IntegraNotas e configurado no emitente para assinar as NF-e.
             </small>
           </form>
         </div>

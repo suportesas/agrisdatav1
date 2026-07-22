@@ -189,6 +189,70 @@ class IntegranNotasError(Exception):
             self.erros = []
 
 
+def build_emitente_softhouse_payload(empresa, config) -> dict:
+    """Monta o payload de POST /v1/soft/emitente a partir de Empresa + ConfiguracaoFiscal.
+    Docs: https://integranotas.com.br/doc/soft/emitente/cria
+
+    Levanta IntegranNotasError se algum campo obrigatório da API não estiver
+    preenchido no cadastro da empresa.
+    """
+    campos_obrigatorios = {
+        'Nome Fantasia':            empresa.nome,
+        'Razão Social':             empresa.razao_social or empresa.nome,
+        'Telefone':                 empresa.telefone,
+        'Endereço (rua)':           empresa.endereco,
+        'Número do endereço':       empresa.numero_endereco,
+        'Bairro':                   empresa.bairro,
+        'Código IBGE do Município': empresa.codigo_municipio,
+        'Cidade':                   empresa.cidade,
+        'UF':                       empresa.uf,
+        'CEP':                      empresa.cep,
+    }
+    faltando = [label for label, valor in campos_obrigatorios.items() if not (valor or '').strip()]
+    if faltando:
+        raise IntegranNotasError(
+            'Preencha os campos obrigatórios antes de criar o emitente na IntegraNotas: '
+            + ', '.join(faltando),
+            codigo=None,
+        )
+
+    crt = CRT_MAP.get(getattr(config, 'regime_tributario', 'SIMPLES_NACIONAL'), '1')
+
+    payload: dict = {
+        'nome':      empresa.nome,
+        'razao':     empresa.razao_social or empresa.nome,
+        'crt':       crt,
+        'telefone':  _digits(empresa.telefone or ''),
+        'rua':       empresa.endereco,
+        'numero':    empresa.numero_endereco,
+        'bairro':    empresa.bairro,
+        'cmun':      empresa.codigo_municipio,
+        'municipio': empresa.cidade,
+        'uf':        (empresa.uf or '').strip().upper(),
+        'cep':       _digits(empresa.cep or ''),
+        'documentos': {
+            'nfe':  True,
+            'cte':  True,
+            'mdfe': True,
+        },
+    }
+
+    if empresa.complemento_endereco:
+        payload['complemento'] = empresa.complemento_endereco
+    if empresa.email:
+        payload['email'] = empresa.email
+
+    cnpj = _digits(empresa.cnpj or '')
+    if len(cnpj) == 14:
+        payload['cnpj'] = cnpj
+
+    ie = _ie(empresa.inscricao_estadual or '')
+    if ie:
+        payload['ie'] = ie
+
+    return payload
+
+
 class IntegranNotasClient:
     PROD_URL = 'https://api.integranotas.com.br/v1'
     HOM_URL  = 'https://hom-api.integranotas.com.br/v1'
@@ -432,6 +496,58 @@ class IntegranNotasClient:
         if not data.get('sucesso'):
             raise IntegranNotasError(
                 data.get('mensagem', 'Erro ao registrar manifestação'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def enviar_certificado(self, certificado_b64: str, senha: str) -> dict:
+        """Envia o certificado digital A1 (base64) para ser configurado no emitente.
+        Docs: POST /v1/certificado — requer token do emitente."""
+        resp = requests.post(
+            f'{self.base_url}/certificado',
+            json={'certificado': certificado_b64, 'senha': senha},
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao enviar certificado'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
+    def consultar_certificado(self) -> dict:
+        """Busca os dados do certificado digital configurado no emitente.
+        Docs: GET /v1/certificado — requer token do emitente."""
+        resp = requests.get(
+            f'{self.base_url}/certificado',
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def criar_emitente_softhouse(self, dados: dict) -> dict:
+        """Cria um novo emitente (empresa) via API de Softhouse. A resposta
+        traz o token individual do emitente recém-criado — instanciar este
+        client com o token da softhouse (ConfiguracaoPlataforma), não o de
+        um emitente específico.
+        Docs: POST /v1/soft/emitente"""
+        resp = requests.post(
+            f'{self.base_url}/soft/emitente',
+            json=dados,
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao criar emitente'),
                 codigo=data.get('codigo'),
                 erros=data.get('erros', []),
             )

@@ -685,7 +685,9 @@ class PlanejamentoCustoSafraForm(forms.ModelForm):
                 cultura_id = None
 
             if cultura_id:
-                self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=emp, cultura_id=cultura_id).order_by('-ano', 'nome')
+                self.fields['safra'].queryset = Safra.objects.filter(
+                    fazenda__empresa=emp, culturas__cultura_id=cultura_id
+                ).distinct().order_by('-ano', 'nome')
             else:
                 self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=emp).order_by('-ano', 'nome')
 
@@ -697,9 +699,9 @@ class PlanejamentoCustoSafraForm(forms.ModelForm):
                 safra_id = None
 
             if safra_id:
-                self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True, safras__id=safra_id).distinct().order_by('nome')
+                self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True, culturas_safra__safra_id=safra_id).distinct().order_by('nome')
             elif cultura_id:
-                self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True, safras__cultura_id=cultura_id).distinct().order_by('nome')
+                self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True, culturas_safra__cultura_id=cultura_id).distinct().order_by('nome')
             else:
                 self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True).order_by('nome')
 

@@ -563,6 +563,13 @@ class Empresa(models.Model):
         null=True,
         help_text='Código IBGE do município (7 dígitos) — obrigatório para NF-e'
     )
+    razao_social = models.CharField(
+        'Razão Social',
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text='Nome jurídico da empresa, usado na NF-e e no cadastro do emitente na IntegraNotas. Se vazio, usa o campo Nome.'
+    )
 
     # NCM seeding and sync control
     auto_seed_ncm = models.BooleanField(
@@ -1099,6 +1106,39 @@ class APIKey(models.Model):
         self.usage_count = models.F('usage_count') + 1
         self.ultima_utilizacao_em = timezone.now()
         self.save(update_fields=['usage_count', 'ultima_utilizacao_em'])
+
+
+class ConfiguracaoPlataforma(models.Model):
+    """Configuração global da plataforma (singleton, gerenciada apenas pelo
+    superusuário). Guarda a credencial mestre de revenda (softhouse) da
+    IntegraNotas, usada para criar automaticamente o emitente de cada
+    empresa cadastrada — diferente do token por empresa em
+    faturamento.ConfiguracaoFiscal.token_integranotas."""
+
+    token_softhouse = models.CharField(
+        'Token Softhouse IntegraNotas',
+        max_length=500,
+        blank=True,
+        help_text='Token mestre de revenda (Bearer) usado para criar emitentes na IntegraNotas via API de Softhouse',
+    )
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração da Plataforma'
+        verbose_name_plural = 'Configurações da Plataforma'
+
+    def __str__(self):
+        return 'Configuração da Plataforma'
+
+    def set_token(self, raw_token: str) -> None:
+        """Criptografa e armazena o token. Chamar .save() separadamente."""
+        from faturamento.encryption import encrypt_field
+        self.token_softhouse = encrypt_field(raw_token)
+
+    def get_token(self) -> str:
+        """Retorna o token decriptografado, ou '' se não configurado."""
+        from faturamento.encryption import decrypt_field
+        return decrypt_field(self.token_softhouse)
 
 
 # ===== SIGNAL para popular categorias ao criar empresa =====

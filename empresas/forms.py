@@ -1,5 +1,5 @@
 from django import forms
-from .models import APIKey, Empresa, Plano, Role
+from .models import APIKey, ConfiguracaoPlataforma, Empresa, Plano, Role
 
 
 class EmpresaForm(forms.ModelForm):
@@ -54,6 +54,7 @@ class EmpresaFiscalForm(forms.ModelForm):
         model = Empresa
         fields = [
             'nome',
+            'razao_social',
             'cnpj',
             'inscricao_estadual',
             'endereco',
@@ -72,7 +73,8 @@ class EmpresaFiscalForm(forms.ModelForm):
             'banco_beneficiario_nome',
         ]
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Razão Social completa'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome Fantasia'}),
+            'razao_social': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Razão Social completa'}),
             'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
             'inscricao_estadual': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 123456789.01-23'}),
             'endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Rua / Avenida'}),
@@ -197,3 +199,43 @@ class APIKeyForm(forms.ModelForm):
                 'placeholder': 'Ex: Integração Sistema X',
             }),
         }
+
+
+class ConfiguracaoPlataformaForm(forms.ModelForm):
+    """Token mestre de revenda (softhouse) da IntegraNotas — usado para criar
+    automaticamente o emitente de cada empresa. Só acessível ao superusuário."""
+
+    token_softhouse = forms.CharField(
+        label='Token Softhouse IntegraNotas',
+        required=False,
+        widget=forms.PasswordInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Deixe em branco para manter o token atual',
+                'autocomplete': 'new-password',
+            },
+            render_value=False,
+        ),
+        help_text='Deixe em branco para não alterar o token existente.',
+    )
+
+    class Meta:
+        model = ConfiguracaoPlataforma
+        fields = ['token_softhouse']
+
+    def clean_token_softhouse(self):
+        return self.cleaned_data.get('token_softhouse', '').strip()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        raw_token = self.cleaned_data.get('token_softhouse', '').strip()
+        if raw_token:
+            instance.set_token(raw_token)
+        elif instance.pk:
+            current = ConfiguracaoPlataforma.objects.filter(pk=instance.pk).values_list(
+                'token_softhouse', flat=True
+            ).first()
+            instance.token_softhouse = current or ''
+        if commit:
+            instance.save()
+        return instance

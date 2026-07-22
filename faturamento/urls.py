@@ -50,7 +50,9 @@ urlpatterns = [
 
     # Configuração
     path('configuracao/', views.configuracao_fiscal, name='configuracao'),
+    path('configuracao/emitente/criar/', views.criar_emitente_softhouse, name='criar_emitente_softhouse'),
     path('configuracao/certificado/', views.certificado_upload, name='certificado_upload'),
+    path('configuracao/certificado/consultar/', views.certificado_consultar, name='certificado_consultar'),
     path('configuracao/certificado/excluir/', views.certificado_delete, name='certificado_delete'),
 
     # Webhook IntegraNota

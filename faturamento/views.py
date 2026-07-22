@@ -2620,13 +2620,60 @@ def configuracao_fiscal(request):
         'cert_form': CertificadoDigitalForm(),
         'cert_expirado': cert_expirado,
         'cert_expira_breve': cert_expira_breve,
+        'emitente_configurado': bool(config.get_token()),
     })
 
 
 @login_required
 @require_POST
+def criar_emitente_softhouse(request):
+    """Cria o emitente da empresa na IntegraNotas via API de Softhouse e salva
+    o token retornado como token_integranotas da empresa."""
+    from empresas.models import ConfiguracaoPlataforma
+    from .services.integranotas import (
+        IntegranNotasClient, IntegranNotasError, build_emitente_softhouse_payload,
+    )
+
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
+
+    plataforma = ConfiguracaoPlataforma.objects.first()
+    token_softhouse = plataforma.get_token() if plataforma else ''
+    if not token_softhouse:
+        messages.error(
+            request,
+            'Token da softhouse não configurado. Peça a um administrador da plataforma '
+            'para configurá-lo em "IntegraNotas (Softhouse)".'
+        )
+        return redirect('faturamento:configuracao')
+
+    try:
+        payload = build_emitente_softhouse_payload(empresa, config)
+        client = IntegranNotasClient(token=token_softhouse, ambiente=config.ambiente_nfe)
+        data = client.criar_emitente_softhouse(payload)
+        novo_token = data.get('token', '')
+        if novo_token:
+            config.set_token(novo_token)
+            config.save()
+            messages.success(request, 'Emitente criado na IntegraNotas com sucesso! Token configurado automaticamente.')
+        else:
+            messages.warning(request, 'Emitente criado na IntegraNotas, mas a resposta não trouxe um token.')
+    except IntegranNotasError as exc:
+        messages.error(request, f'Erro ao criar emitente na IntegraNotas [{exc.codigo}]: {exc}')
+    except Exception as exc:
+        messages.error(request, f'Erro de comunicação com a IntegraNotas: {exc}')
+
+    return redirect('faturamento:configuracao')
+
+
+@login_required
+@require_POST
 def certificado_upload(request):
-    from .services.integranotas import parse_pfx
+    import base64
+    from .services.integranotas import parse_pfx, IntegranNotasClient, IntegranNotasError
 
     empresa = _get_empresa(request)
     if not empresa:
@@ -2641,25 +2688,77 @@ def certificado_upload(request):
         pfx_bytes = arquivo.read()
         try:
             info = parse_pfx(pfx_bytes, senha)
-            config.certificado_pfx = pfx_bytes
-            config.senha_certificado = senha
-            config.certificado_validade = info['validade']
-            config.certificado_cnpj = info['cnpj']
-            config.certificado_arquivo_nome = arquivo.name
-            config.save()
-            messages.success(
-                request,
-                f'Certificado "{arquivo.name}" importado. '
-                f'Válido até {info["validade"].strftime("%d/%m/%Y")}.'
-            )
         except ValueError as exc:
             messages.error(request, str(exc))
+            return redirect('faturamento:configuracao')
         except Exception as exc:
             messages.error(request, f'Erro inesperado ao processar certificado: {exc}')
+            return redirect('faturamento:configuracao')
+
+        if not config.get_token():
+            messages.error(request, 'Configure o token IntegraNota antes de importar o certificado.')
+            return redirect('faturamento:configuracao')
+
+        try:
+            client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+            certificado_b64 = base64.b64encode(pfx_bytes).decode('ascii')
+            client.enviar_certificado(certificado_b64, senha)
+        except IntegranNotasError as exc:
+            messages.error(request, f'IntegraNotas recusou o certificado [{exc.codigo}]: {exc}')
+            return redirect('faturamento:configuracao')
+        except Exception as exc:
+            messages.error(request, f'Erro de comunicação com a IntegraNotas: {exc}')
+            return redirect('faturamento:configuracao')
+
+        config.certificado_pfx = pfx_bytes
+        config.senha_certificado = senha
+        config.certificado_validade = info['validade']
+        config.certificado_cnpj = info['cnpj']
+        config.certificado_arquivo_nome = arquivo.name
+        config.save()
+        messages.success(
+            request,
+            f'Certificado "{arquivo.name}" importado e enviado à IntegraNotas. '
+            f'Válido até {info["validade"].strftime("%d/%m/%Y")}.'
+        )
     else:
         for field_errors in form.errors.values():
             for error in field_errors:
                 messages.error(request, error)
+
+    return redirect('faturamento:configuracao')
+
+
+@login_required
+@require_POST
+def certificado_consultar(request):
+    """Consulta na IntegraNotas os dados do certificado configurado no emitente."""
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
+    if not config.get_token():
+        messages.error(request, 'Configure o token IntegraNota antes de consultar o certificado.')
+        return redirect('faturamento:configuracao')
+
+    try:
+        client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+        data = client.consultar_certificado()
+        if data.get('sucesso'):
+            messages.success(
+                request,
+                f"IntegraNotas: {data.get('mensagem', 'Certificado localizado.')} "
+                f"Válido até {data.get('validade', '—')}."
+            )
+        else:
+            messages.warning(request, f"IntegraNotas: {data.get('mensagem', 'Certificado não localizado no emitente.')}")
+    except IntegranNotasError as exc:
+        messages.error(request, f'Erro ao consultar certificado [{exc.codigo}]: {exc}')
+    except Exception as exc:
+        messages.error(request, f'Erro de comunicação com a IntegraNotas: {exc}')
 
     return redirect('faturamento:configuracao')
 

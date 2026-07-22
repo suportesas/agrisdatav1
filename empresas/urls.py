@@ -36,6 +36,9 @@ urlpatterns = [
     path('programas/<int:pk>/grupos/', views_programa.programa_set_roles, name='programa_set_roles'),
     path('programas/<int:pk>/acoes/nova/', views_programa.programa_acao_create, name='programa_acao_create'),
 
+    # Configuração da Plataforma (Softhouse IntegraNotas)
+    path('configuracao/softhouse/', views.configuracao_softhouse, name='configuracao_softhouse'),
+
     # Planos
     path('planos/', views.plano_list, name='plano_list'),
     path('planos/novo/', views.plano_create, name='plano_create'),

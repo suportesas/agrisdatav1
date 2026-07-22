@@ -241,26 +241,9 @@ class ManifestacaoNFeForm(forms.Form):
 
 
 class ConfiguracaoFiscalForm(forms.ModelForm):
-    # Campo sobrescrito: usa PasswordInput e nunca devolve o ciphertext ao browser
-    token_integranotas = forms.CharField(
-        label='Token IntegraNota',
-        required=False,
-        widget=forms.PasswordInput(
-            attrs={
-                'class': 'form-control',
-                'placeholder': 'Deixe em branco para manter o token atual',
-                'autocomplete': 'new-password',
-            },
-            render_value=False,
-        ),
-        help_text='Deixe em branco para não alterar o token existente.',
-
-        
-    )
-    def clean_token_integranotas(self):
-        token = self.cleaned_data.get('token_integranotas', '')
-        return token.strip()
-    
+    """Parâmetros fiscais que a própria empresa gerencia. O token/ambiente da
+    IntegraNotas e a criação do emitente são geridos apenas pelo admin da
+    plataforma (ver empresas.views.empresa_emitente_softhouse)."""
 
     class Meta:
         model = ConfiguracaoFiscal
@@ -277,8 +260,6 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'natureza_operacao_padrao',
             'observacoes_padrao_nfe',
             'observacoes_padrao_invoice',
-            'ambiente_nfe',
-            'token_integranotas',
         ]
         widgets = {
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
@@ -293,25 +274,7 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'natureza_operacao_padrao': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes_padrao_nfe': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'observacoes_padrao_invoice': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'ambiente_nfe': forms.Select(attrs={'class': 'form-select'}),
         }
-
-    def save(self, commit=True):
-        instance = super().save(commit=False)
-        raw_token = self.cleaned_data.get('token_integranotas', '').strip()
-        if raw_token:
-            instance.set_token(raw_token)
-        else:
-            # super().save(commit=False) já sobrescreveu token_integranotas com ''
-            # Restauramos o valor atual do banco para não apagar o token existente
-            if instance.pk:
-                current = ConfiguracaoFiscal.objects.filter(pk=instance.pk).values_list(
-                    'token_integranotas', flat=True
-                ).first()
-                instance.token_integranotas = current or ''
-        if commit:
-            instance.save()
-        return instance
 
 
 class NotaFiscalForm(FaturamentoBaseForm):

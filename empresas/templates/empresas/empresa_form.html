@@ -50,7 +50,7 @@
         <div class="form-section-body">
           <div class="form-grid">
             <div class="field col-6">
-              <label class="form-label">Nome<span class="req">*</span></label>
+              <label class="form-label">Nome Fantasia<span class="req">*</span></label>
               {{ form.nome }}
               {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|join:", " }}</div>{% endif %}
             </div>
@@ -66,6 +66,13 @@
               {% if form.cnpj.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cnpj.errors|join:", " }}</div>{% endif %}
             </div>
 
+            <div class="field col-12">
+              <label class="form-label">Razão Social</label>
+              {{ form.razao_social }}
+              <div class="helper-note">Se vazio, usa o Nome Fantasia. Necessário para criar o emitente na IntegraNotas.</div>
+              {% if form.razao_social.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.razao_social.errors|join:", " }}</div>{% endif %}
+            </div>
+
             <div class="field col-6">
               <label class="form-label">Telefone</label>
               {{ form.telefone }}
@@ -79,16 +86,27 @@
             <div class="field col-4">
               <label class="form-label">CEP</label>
               <div class="input-group">
-                <input type="text" id="cep" class="form-control" placeholder="00000-000" maxlength="9">
+                {{ form.cep }}
                 <button type="button" class="btn btn-outline-primary" id="buscarCEP" title="Buscar CEP no ViaCEP">
                   <i class="bi bi-search"></i> Buscar
                 </button>
               </div>
+              {% if form.cep.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cep.errors|join:", " }}</div>{% endif %}
             </div>
 
             <div class="field col-8">
               <label class="form-label">Endereço</label>
               {{ form.endereco }}
+            </div>
+
+            <div class="field col-3">
+              <label class="form-label">Número</label>
+              {{ form.numero_endereco }}
+            </div>
+
+            <div class="field col-9">
+              <label class="form-label">Complemento</label>
+              {{ form.complemento_endereco }}
             </div>
 
             <div class="field col-4">
@@ -104,6 +122,13 @@
             <div class="field col-2">
               <label class="form-label">UF</label>
               {{ form.uf }}
+            </div>
+
+            <div class="field col-4">
+              <label class="form-label">Código IBGE do Município</label>
+              {{ form.codigo_municipio }}
+              <div class="helper-note">7 dígitos — preenchido automaticamente ao buscar o CEP</div>
+              {% if form.codigo_municipio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_municipio.errors|join:", " }}</div>{% endif %}
             </div>
 
             <div class="field col-12">
@@ -259,7 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const btnBuscarCNPJ = document.getElementById('buscarCNPJ');
   const inputCNPJ = document.getElementById('id_cnpj');
   const btnBuscarCEP = document.getElementById('buscarCEP');
-  const inputCEP = document.getElementById('cep');
+  const inputCEP = document.getElementById('id_cep');
+
+  // Só sobrescreve o campo se a API retornou um valor — nunca apaga um dado
+  // já preenchido (ex: por outra busca) com uma resposta vazia.
+  function setIfPresent(id, value) {
+    if (value) {
+      document.getElementById(id).value = value;
+    }
+  }
 
   // ========== BUSCA POR CNPJ ==========
   if (btnBuscarCNPJ) {
@@ -292,14 +325,18 @@ document.addEventListener('DOMContentLoaded', function() {
         clearTimeout(timeoutId);
         if (data.sucesso) {
           const d = data.dados;
-          document.getElementById('id_nome').value = d.nome || '';
-          document.getElementById('id_telefone').value = d.telefone || '';
-          document.getElementById('id_email').value = d.email || '';
-          document.getElementById('id_endereco').value = d.logradouro || '';
-          document.getElementById('id_cidade').value = d.cidade || '';
-          document.getElementById('id_uf').value = (d.uf || '').toUpperCase();
+          setIfPresent('id_nome', d.nome_fantasia || d.nome);
+          setIfPresent('id_razao_social', d.nome);
+          setIfPresent('id_telefone', d.telefone);
+          setIfPresent('id_email', d.email);
+          setIfPresent('id_endereco', d.logradouro);
+          setIfPresent('id_numero_endereco', d.numero);
+          setIfPresent('id_complemento_endereco', d.complemento);
+          setIfPresent('id_bairro', d.bairro);
+          setIfPresent('id_cidade', d.cidade);
+          if (d.uf) { document.getElementById('id_uf').value = d.uf.toUpperCase(); }
           if (d.cep) {
-            document.getElementById('cep').value = d.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
+            document.getElementById('id_cep').value = d.cep.replace(/(\d{5})(\d{3})/, '$1-$2');
           }
           alert('✅ Dados preenchidos com sucesso!');
         } else {
@@ -336,10 +373,12 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(data => {
         if (data.sucesso) {
           const d = data.dados;
-          document.getElementById('id_endereco').value = d.logradouro || '';
-          document.getElementById('id_bairro').value = d.bairro || '';
-          document.getElementById('id_cidade').value = d.localidade || '';
-          document.getElementById('id_uf').value = (d.uf || '').toUpperCase();
+          setIfPresent('id_endereco', d.logradouro);
+          setIfPresent('id_complemento_endereco', d.complemento);
+          setIfPresent('id_bairro', d.bairro);
+          setIfPresent('id_cidade', d.cidade);
+          if (d.uf) { document.getElementById('id_uf').value = d.uf.toUpperCase(); }
+          setIfPresent('id_codigo_municipio', d.ibge);
 
           alert('✅ Dados de CEP preenchidos com sucesso!');
         } else {

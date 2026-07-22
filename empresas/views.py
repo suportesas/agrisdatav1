@@ -106,7 +106,7 @@ def empresa_list(request):
     """Lista empresas"""
     q = request.GET.get('q', '').strip()
     status = request.GET.get('status', 'ativas').strip()
-    empresas = Empresa.objects.select_related('plano').all()
+    empresas = Empresa.objects.select_related('plano', 'configuracao_fiscal').all()
 
     if not request.user.is_superuser:
         if request.user.empresa:
@@ -723,6 +723,100 @@ def configuracao_softhouse(request):
         'form': form,
         'token_configurado': bool(config.get_token()),
     })
+
+
+@login_required
+@user_passes_test(is_owner)
+def empresa_emitente_softhouse(request, pk):
+    """Tela de configuração/criação do emitente de uma empresa na IntegraNotas.
+    Ação exclusiva do admin da plataforma — quem tem a credencial da
+    IntegraNotas é a softhouse, não a empresa cliente. Antes de criar, o
+    admin escolhe o ambiente e quais tipos de documento (NF-e, CT-e, etc.)
+    o emitente vai usar."""
+    from faturamento.models import ConfiguracaoFiscal
+    from faturamento.services.integranotas import (
+        IntegranNotasClient, IntegranNotasError, build_emitente_softhouse_payload,
+        SOFTHOUSE_DOCUMENTOS_CHOICES, SOFTHOUSE_DOCUMENTOS_PADRAO,
+    )
+
+    empresa = get_object_or_404(Empresa, pk=pk)
+    config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
+    token_configurado = bool(config.get_token())
+
+    documentos_selecionados = SOFTHOUSE_DOCUMENTOS_PADRAO
+
+    if request.method == 'POST':
+        if token_configurado:
+            messages.info(request, 'Esta empresa já tem um emitente configurado na IntegraNotas.')
+            return redirect('empresas:empresa_emitente_softhouse', pk=empresa.pk)
+
+        ambiente = request.POST.get('ambiente', '2').strip()
+        if ambiente not in ('1', '2'):
+            ambiente = '2'
+        documentos_marcados = set(request.POST.getlist('documentos'))
+        documentos_selecionados = documentos_marcados
+        documentos_payload = {chave: (chave in documentos_marcados) for chave, _ in SOFTHOUSE_DOCUMENTOS_CHOICES}
+
+        if ambiente != config.ambiente_nfe:
+            config.ambiente_nfe = ambiente
+            config.save(update_fields=['ambiente_nfe'])
+
+        plataforma = ConfiguracaoPlataforma.objects.first()
+        token_softhouse = plataforma.get_token() if plataforma else ''
+        if not token_softhouse:
+            messages.error(request, 'Token da softhouse não configurado. Configure em "IntegraNotas (Softhouse)".')
+        else:
+            try:
+                payload = build_emitente_softhouse_payload(empresa, config, documentos=documentos_payload)
+                client = IntegranNotasClient(token=token_softhouse, ambiente=config.ambiente_nfe)
+                data = client.criar_emitente_softhouse(payload)
+                novo_token = data.get('token', '')
+                if novo_token:
+                    config.set_token(novo_token)
+                    config.save()
+                    messages.success(request, f'Emitente de "{empresa.nome}" criado na IntegraNotas com sucesso!')
+                    return redirect('empresas:empresa_emitente_softhouse', pk=empresa.pk)
+                else:
+                    messages.warning(request, f'Emitente de "{empresa.nome}" criado, mas a resposta não trouxe um token.')
+            except IntegranNotasError as exc:
+                messages.error(request, f'Erro ao criar emitente de "{empresa.nome}" [{exc.codigo}]: {exc}')
+            except Exception as exc:
+                messages.error(request, f'Erro de comunicação com a IntegraNotas: {exc}')
+
+    campos_faltando_msg = ''
+    if not token_configurado:
+        try:
+            build_emitente_softhouse_payload(empresa, config, documentos={})
+        except IntegranNotasError as exc:
+            campos_faltando_msg = str(exc)
+
+    return render(request, 'empresas/empresa_emitente_softhouse.html', {
+        'empresa': empresa,
+        'config': config,
+        'token_configurado': token_configurado,
+        'documentos_choices': SOFTHOUSE_DOCUMENTOS_CHOICES,
+        'documentos_selecionados': documentos_selecionados,
+        'campos_faltando_msg': campos_faltando_msg,
+    })
+
+
+@login_required
+@user_passes_test(is_owner)
+@require_POST
+def empresa_testar_conexao_integranotas(request, pk):
+    """AJAX: testa a conexão/token IntegraNotas de uma empresa específica."""
+    from faturamento.models import ConfiguracaoFiscal
+    from faturamento.services.integranotas import IntegranNotasClient
+
+    empresa = get_object_or_404(Empresa, pk=pk)
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.get_token():
+        return JsonResponse({'sucesso': False, 'mensagem': 'Nenhum token configurado para esta empresa.'})
+
+    client = IntegranNotasClient(token=config.get_token(), ambiente=config.ambiente_nfe)
+    result = client.test_connection()
+    result['ambiente_label'] = 'Produção' if config.ambiente_nfe == '1' else 'Homologação'
+    return JsonResponse(result)
 
 
 # ==================== VIEWS DE PLANOS ====================

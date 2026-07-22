@@ -189,9 +189,36 @@ class IntegranNotasError(Exception):
             self.erros = []
 
 
-def build_emitente_softhouse_payload(empresa, config) -> dict:
+# Tipos de documento aceitos pelo bloco "documentos" de POST /v1/soft/emitente
+# (chave, rótulo). Ordem conforme a documentação da IntegraNotas.
+SOFTHOUSE_DOCUMENTOS_CHOICES = [
+    ('nfe',       'NF-e'),
+    ('nfce',      'NFC-e'),
+    ('mdfe',      'MDF-e'),
+    ('cte',       'CT-e'),
+    ('cteos',     'CT-e OS'),
+    ('nfse',      'NFS-e'),
+    ('bpe',       'BP-e'),
+    ('gnre',      'GNR-e'),
+    ('averbacao', 'Averbação de seguros de carga'),
+    ('nfcom',     'NFCom'),
+    ('dce',       'DC-e'),
+    ('dfe_nfe',   'Captura de NF-e'),
+    ('dfe_nfse',  'Captura de NFS-e'),
+    ('dfe_cte',   'Captura de CT-e'),
+]
+
+# Tipos que este ERP efetivamente emite (faturamento/) — marcados por padrão
+# ao abrir a tela de criação do emitente.
+SOFTHOUSE_DOCUMENTOS_PADRAO = {'nfe', 'cte', 'mdfe'}
+
+
+def build_emitente_softhouse_payload(empresa, config, documentos: dict | None = None) -> dict:
     """Monta o payload de POST /v1/soft/emitente a partir de Empresa + ConfiguracaoFiscal.
     Docs: https://integranotas.com.br/doc/soft/emitente/cria
+
+    `documentos`: dict {chave: bool} conforme SOFTHOUSE_DOCUMENTOS_CHOICES.
+    Se None, usa SOFTHOUSE_DOCUMENTOS_PADRAO (nfe/cte/mdfe).
 
     Levanta IntegranNotasError se algum campo obrigatório da API não estiver
     preenchido no cadastro da empresa.
@@ -218,6 +245,9 @@ def build_emitente_softhouse_payload(empresa, config) -> dict:
 
     crt = CRT_MAP.get(getattr(config, 'regime_tributario', 'SIMPLES_NACIONAL'), '1')
 
+    if documentos is None:
+        documentos = {chave: (chave in SOFTHOUSE_DOCUMENTOS_PADRAO) for chave, _ in SOFTHOUSE_DOCUMENTOS_CHOICES}
+
     payload: dict = {
         'nome':      empresa.nome,
         'razao':     empresa.razao_social or empresa.nome,
@@ -230,11 +260,7 @@ def build_emitente_softhouse_payload(empresa, config) -> dict:
         'municipio': empresa.cidade,
         'uf':        (empresa.uf or '').strip().upper(),
         'cep':       _digits(empresa.cep or ''),
-        'documentos': {
-            'nfe':  True,
-            'cte':  True,
-            'mdfe': True,
-        },
+        'documentos': documentos,
     }
 
     if empresa.complemento_endereco:

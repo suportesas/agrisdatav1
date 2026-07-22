@@ -1087,7 +1087,7 @@ def nota_fiscal_emitir(request, pk):
 
     config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
     if not config or not config.has_token:
-        messages.error(request, 'Configure o token IntegraNota em Faturamento → Configuração Fiscal antes de emitir.')
+        messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
     # Validação prévia: CNPJ e Razão Social do emitente são obrigatórios
@@ -1243,7 +1243,7 @@ def nota_fiscal_cancelar(request, pk):
             if nf.chave_acesso:
                 config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
                 if not config or not config.has_token:
-                    messages.error(request, 'Configure o token IntegraNota para cancelar via SEFAZ.')
+                    messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
                     return render(request, 'faturamento/nota_fiscal/cancelar_form.html', {'form': form, 'nf': nf})
                 try:
                     client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
@@ -1290,7 +1290,7 @@ def nota_fiscal_consultar(request, pk):
 
     config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
     if not config or not config.has_token:
-        messages.error(request, 'Configure o token IntegraNota em Faturamento → Configuração Fiscal.')
+        messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
     try:
@@ -1535,7 +1535,7 @@ def nota_fiscal_recuperar(request, pk):
 
     config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
     if not config or not config.has_token:
-        messages.error(request, 'Configure o token IntegraNota em Faturamento → Configuração Fiscal.')
+        messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
         return redirect('faturamento:nota_fiscal_detail', pk=pk)
 
     try:
@@ -1880,7 +1880,7 @@ def nota_fiscal_carta_correcao(request, pk):
         if form.is_valid():
             config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
             if not config or not config.has_token:
-                messages.error(request, 'Configure o token IntegraNota para enviar CC-e.')
+                messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
                 return render(request, 'faturamento/nota_fiscal/carta_correcao_form.html',
                               {'form': form, 'nf': nf, 'cartas': cartas_anteriores, 'proxima_sequencia': proxima_sequencia})
             try:
@@ -1990,7 +1990,7 @@ def nota_fiscal_inutilizar(request):
         form = InutilizacaoNFeForm(request.POST)
         if form.is_valid():
             if not config or not config.has_token:
-                messages.error(request, 'Configure o token IntegraNota para inutilizar numeração.')
+                messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
                 return render(request, 'faturamento/nota_fiscal/inutilizacao_form.html', {'form': form})
             cnpj_emitente = ''
             if config.certificado_cnpj:
@@ -2626,51 +2626,6 @@ def configuracao_fiscal(request):
 
 @login_required
 @require_POST
-def criar_emitente_softhouse(request):
-    """Cria o emitente da empresa na IntegraNotas via API de Softhouse e salva
-    o token retornado como token_integranotas da empresa."""
-    from empresas.models import ConfiguracaoPlataforma
-    from .services.integranotas import (
-        IntegranNotasClient, IntegranNotasError, build_emitente_softhouse_payload,
-    )
-
-    empresa = _get_empresa(request)
-    if not empresa:
-        return redirect('dashboard:index')
-
-    config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
-
-    plataforma = ConfiguracaoPlataforma.objects.first()
-    token_softhouse = plataforma.get_token() if plataforma else ''
-    if not token_softhouse:
-        messages.error(
-            request,
-            'Token da softhouse não configurado. Peça a um administrador da plataforma '
-            'para configurá-lo em "IntegraNotas (Softhouse)".'
-        )
-        return redirect('faturamento:configuracao')
-
-    try:
-        payload = build_emitente_softhouse_payload(empresa, config)
-        client = IntegranNotasClient(token=token_softhouse, ambiente=config.ambiente_nfe)
-        data = client.criar_emitente_softhouse(payload)
-        novo_token = data.get('token', '')
-        if novo_token:
-            config.set_token(novo_token)
-            config.save()
-            messages.success(request, 'Emitente criado na IntegraNotas com sucesso! Token configurado automaticamente.')
-        else:
-            messages.warning(request, 'Emitente criado na IntegraNotas, mas a resposta não trouxe um token.')
-    except IntegranNotasError as exc:
-        messages.error(request, f'Erro ao criar emitente na IntegraNotas [{exc.codigo}]: {exc}')
-    except Exception as exc:
-        messages.error(request, f'Erro de comunicação com a IntegraNotas: {exc}')
-
-    return redirect('faturamento:configuracao')
-
-
-@login_required
-@require_POST
 def certificado_upload(request):
     import base64
     from .services.integranotas import parse_pfx, IntegranNotasClient, IntegranNotasError
@@ -2696,7 +2651,7 @@ def certificado_upload(request):
             return redirect('faturamento:configuracao')
 
         if not config.get_token():
-            messages.error(request, 'Configure o token IntegraNota antes de importar o certificado.')
+            messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar) antes de importar o certificado.')
             return redirect('faturamento:configuracao')
 
         try:
@@ -2741,7 +2696,7 @@ def certificado_consultar(request):
 
     config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
     if not config.get_token():
-        messages.error(request, 'Configure o token IntegraNota antes de consultar o certificado.')
+        messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar) antes de consultar o certificado.')
         return redirect('faturamento:configuracao')
 
     try:
@@ -3153,35 +3108,6 @@ def cotacoes_bcb_buscar_hoje(request):
 
 
 # ───────────────────────── Documentação IntegraNotas ──────────────────────
-
-@login_required
-@require_POST
-def integranotas_test_token(request):
-    """AJAX: testa um token IntegraNotas sem salvar. Aceita token e ambiente via POST."""
-    from .services.integranotas import IntegranNotasClient
-
-    empresa = _get_empresa(request)
-
-    token_input  = request.POST.get('token', '').strip()
-    ambiente_input = request.POST.get('ambiente', '2').strip()
-
-    # Se não passou token no POST, usa o já salvo
-    if not token_input:
-        config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
-        if not config:
-            return JsonResponse({'sucesso': False, 'mensagem': 'Configuração fiscal não encontrada.'})
-        token_input = config.get_token()
-        if not token_input:
-            return JsonResponse({'sucesso': False, 'mensagem': 'Nenhum token configurado. Cole o token no campo acima para testar.'})
-        ambiente_input = config.ambiente_nfe
-
-    token_prefix = token_input[:16] + '...' if len(token_input) > 16 else token_input
-    client = IntegranNotasClient(token=token_input, ambiente=ambiente_input)
-    result = client.test_connection()
-    result['token_prefix'] = token_prefix
-    result['ambiente_label'] = 'Produção' if ambiente_input == '1' else 'Homologação'
-    return JsonResponse(result)
-
 
 @login_required
 def docs_integranotas(request):
@@ -3709,7 +3635,7 @@ def cte_emitir(request, pk):
     try:
         config = empresa.configuracao_fiscal
     except Exception:
-        messages.error(request, 'Configure o token IntegraNotas em Faturamento > Configuracao Fiscal.')
+        messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
         return redirect('faturamento:cte_detail', pk=pk)
     if not ct.numero:
         ultimo = (
@@ -4784,7 +4710,7 @@ def mdfe_emitir(request, pk):
     try:
         config = empresa.configuracao_fiscal
     except Exception:
-        messages.error(request, 'Configure o token IntegraNotas em Faturamento > Configuracao Fiscal.')
+        messages.error(request, 'Emitente IntegraNotas não configurado. Peça ao administrador da plataforma para criá-lo (Empresas → Listar).')
         return redirect('faturamento:mdfe_detail', pk=pk)
     if not mdfe.numero:
         ultimo = ManifestoDocumentoFiscal.objects.filter(empresa=empresa, serie=mdfe.serie).exclude(pk=pk).order_by('-numero').values_list('numero', flat=True).first()

@@ -84,6 +84,7 @@
               <th>Email</th>
               <th class="text-center">Ativa</th>
               <th class="text-center">Bloqueada</th>
+              {% if user.is_superuser %}<th>IntegraNotas</th>{% endif %}
               <th class="text-center">Ações</th>
             </tr>
           </thead>
@@ -101,6 +102,20 @@
                   <span class="badge bg-success">Ativa</span>
                 {% endif %}
               </td>
+              {% if user.is_superuser %}
+              <td>
+                {% if empresa.configuracao_fiscal.token_integranotas %}
+                  <span class="badge bg-success mb-1"><i class="bi bi-check-circle"></i> Emitente OK</span>
+                {% else %}
+                  <span class="badge bg-secondary mb-1"><i class="bi bi-exclamation-circle"></i> Pendente</span>
+                {% endif %}
+                <div>
+                  <a class="btn btn-link btn-sm p-0" href="{% url 'empresas:empresa_emitente_softhouse' empresa.id %}">
+                    <i class="bi bi-eye"></i> Visualizar
+                  </a>
+                </div>
+              </td>
+              {% endif %}
               <td class="text-center">
                 <div class="d-flex gap-3 justify-content-center">
                     <a class="action-icon edit" href="{% url 'empresas:empresa_update' empresa.id %}" title="Editar">
@@ -114,7 +129,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="6" class="text-center text-muted py-5">
+              <td colspan="7" class="text-center text-muted py-5">
                 <i class="bi bi-inbox display-4 d-block mb-3"></i>
                 Nenhuma empresa encontrada
               </td>

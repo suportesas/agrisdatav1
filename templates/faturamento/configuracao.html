@@ -129,88 +129,6 @@
               </div>
             </div>
 
-            <!-- IntegraNota API -->
-            <hr class="my-4">
-            <h6 class="fw-semibold mb-3"><i class="bi bi-cloud-upload me-2"></i>Integração IntegraNota (Emissão NF-e)</h6>
-            <div class="row g-3">
-              <div class="col-md-4">
-                <label class="form-label">Ambiente</label>
-                {{ form.ambiente_nfe }}
-                <small class="text-muted">Use <strong>Homologação</strong> para testes antes de ir para produção.</small>
-              </div>
-              <div class="col-md-8">
-  <label class="form-label">Token IntegraNota</label>
-  <div class="input-group">
-    {{ form.token_integranotas }}
-    <button type="button" class="btn btn-outline-secondary" id="btnToggleToken" title="Mostrar/ocultar token">
-      <i class="bi bi-eye"></i>
-    </button>
-  </div>
-  <div class="form-check mt-1">
-    <input type="checkbox" class="form-check-input" id="cbShowToken"
-           onchange="document.getElementById('id_token_integranotas').type = this.checked ? 'text' : 'password'">
-    <label class="form-check-label small" for="cbShowToken">Mostrar token</label>
-  </div>
-  {% if config.has_token %}
-    <small class="text-success d-block mt-2"><i class="bi bi-check-circle"></i> Token configurado. Deixe em branco para manter o atual.</small>
-  {% else %}
-    <small class="text-muted d-block mt-2">Token Bearer obtido no painel IntegraNota → Configurações → API.</small>
-  {% endif %}
-</div>
-
-            <!-- ── Teste de Token IntegraNotas ── -->
-            <div class="card border-0 bg-light mt-3 mb-1">
-              <div class="card-body py-3">
-                <h6 class="fw-semibold mb-2">
-                  <i class="bi bi-plug-fill text-primary me-2"></i>Testar Conexão com IntegraNotas
-                </h6>
-                <p class="text-muted small mb-3">
-                  Cole um token abaixo para testar <strong>antes de salvar</strong>.
-                  Se deixar em branco, testa o token já configurado.
-                </p>
-                <div class="row g-2 align-items-end">
-                  <div class="col-md-5">
-                    <label class="form-label small mb-1">Token para teste <span class="text-muted">(opcional)</span></label>
-                    <input type="password" id="testTokenInput" class="form-control form-control-sm"
-                           placeholder="Cole o token aqui para testar antes de salvar…">
-                    <div class="form-check mt-1">
-                      <input type="checkbox" class="form-check-input" id="showTestToken"
-                             onchange="document.getElementById('testTokenInput').type=this.checked?'text':'password'">
-                      <label class="form-check-label small" for="showTestToken">Mostrar token</label>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label small mb-1">Ambiente</label>
-                    <select id="testAmbienteSelect" class="form-select form-select-sm">
-                      <option value="2" selected>Homologação (testes)</option>
-                      <option value="1">Produção</option>
-                    </select>
-                  </div>
-                  <div class="col-md-4">
-                    <button type="button" id="btnTestarToken" class="btn btn-primary btn-sm w-100">
-                      <i class="bi bi-plug me-1"></i>Testar Conexão
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Resultado do teste -->
-                <div id="testResult" class="mt-3 d-none">
-                  <div id="testResultCard" class="alert mb-0 py-2 px-3">
-                    <div class="d-flex align-items-start gap-2">
-                      <span id="testResultIcon" class="fs-5"></span>
-                      <div class="flex-1">
-                        <strong id="testResultTitle"></strong>
-                        <div id="testResultMsg" class="small mt-1"></div>
-                        <div id="testResultDetails" class="mt-2 small font-monospace text-muted d-none"></div>
-                      </div>
-                      <span id="testResultTempo" class="badge bg-secondary ms-auto text-nowrap"></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- ── / Teste de Token ── -->
-
             <!-- Dados Fiscais da Empresa (Emitente NF-e) -->
             <hr class="my-4">
             <h6 class="fw-semibold mb-3"><i class="bi bi-building me-2"></i>Dados do Emitente (Empresa)</h6>
@@ -320,29 +238,12 @@
             </div>
           </form>
 
-          <!-- ── Emitente IntegraNotas ── -->
-          <hr class="my-4">
-          <h6 class="fw-semibold mb-3"><i class="bi bi-cloud-arrow-up me-2"></i>Emitente IntegraNotas</h6>
-
-          {% if emitente_configurado %}
-          <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
-            <i class="bi bi-check-circle-fill"></i>
-            Emitente configurado na IntegraNotas (token ativo).
-          </div>
-          {% else %}
-          <div class="alert alert-secondary d-flex align-items-start justify-content-between gap-3 mb-0">
-            <span>
-              <i class="bi bi-exclamation-circle me-2"></i>
-              Nenhum emitente criado na IntegraNotas ainda. É necessário criá-lo antes de importar o certificado
-              digital ou emitir NF-e/CT-e/MDF-e. Preencha e salve Nome Fantasia, Razão Social, CNPJ, endereço
-              completo (com Código IBGE do Município) e Regime Tributário acima antes de continuar.
-            </span>
-            <form method="post" action="{% url 'faturamento:criar_emitente_softhouse' %}" class="flex-shrink-0">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm btn-outline-primary text-nowrap">
-                <i class="bi bi-cloud-plus me-1"></i>Criar Emitente na IntegraNotas
-              </button>
-            </form>
+          {% if not emitente_configurado %}
+          <div class="alert alert-warning mt-4 mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Esta empresa ainda não tem um emitente configurado na IntegraNotas — a emissão de NF-e/CT-e/MDF-e e o
+            envio do certificado digital não vão funcionar até isso ser feito. Esse cadastro é feito pelo
+            administrador da plataforma (Empresas → Listar), não por aqui.
           </div>
           {% endif %}
 
@@ -463,121 +364,6 @@ document.getElementById('btn-buscar-cep-empresa')?.addEventListener('click', fun
     })
     .catch(() => alert('Erro ao consultar ViaCEP.'));
 });
-
-// ── Teste de Token IntegraNotas ───────────────────────────────────────────
-(function () {
-  var btn = document.getElementById('btnTestarToken');
-  if (!btn) { console.warn('btnTestarToken não encontrado'); return; }
-
-  function getCsrf() {
-    var match = document.cookie.match(/csrftoken=([^;]+)/);
-    return match ? match[1] : '{{ csrf_token }}';
-  }
-
-  function showResult(ok, tituloTxt, msgHtml, tempoMs, detalhe) {
-    var wrap = document.getElementById('testResult');
-    if (!wrap) { alert(tituloTxt + '\n' + msgHtml.replace(/<[^>]+>/g, '')); return; }
-
-    var cor   = ok ? 'success' : 'danger';
-    var icone = ok ? '✅' : '❌';
-    var badge = tempoMs != null ? '<span class="badge bg-secondary ms-2">' + tempoMs + ' ms</span>' : '';
-    var detHtml = '';
-    if (detalhe) {
-      var detTxt = (typeof detalhe === 'object') ? JSON.stringify(detalhe, null, 2) : String(detalhe);
-      detHtml = '<pre class="mt-2 mb-0 small bg-light p-2 rounded" style="max-height:120px;overflow:auto;">' + detTxt + '</pre>';
-    }
-
-    wrap.innerHTML =
-      '<div class="alert alert-' + cor + ' py-2 px-3 mb-0">' +
-        '<div class="d-flex align-items-start gap-2">' +
-          '<span class="fs-5">' + icone + '</span>' +
-          '<div class="flex-1">' +
-            '<strong>' + tituloTxt + '</strong>' + badge +
-            '<div class="small mt-1">' + msgHtml + '</div>' +
-            detHtml +
-          '</div>' +
-        '</div>' +
-      '</div>';
-
-    wrap.classList.remove('d-none');
-  }
-
-  btn.addEventListener('click', function () {
-    var token    = (document.getElementById('testTokenInput') || {}).value || '';
-    token = token.trim();
-    var ambiente = (document.getElementById('testAmbienteSelect') || {}).value || '2';
-
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testando…';
-    var wrap = document.getElementById('testResult');
-    if (wrap) wrap.classList.add('d-none');
-
-    var fd = new FormData();
-    if (token) fd.append('token', token);
-    fd.append('ambiente', ambiente);
-
-    console.log('[TestarToken] Enviando para {% url "faturamento:integranotas_test_token" %}', {token: token ? token.slice(0,12)+'...' : '(salvo)', ambiente: ambiente});
-
-    fetch('{% url "faturamento:integranotas_test_token" %}', {
-      method: 'POST',
-      headers: { 'X-CSRFToken': getCsrf() },
-      body: fd,
-    })
-    .then(function(r) {
-      console.log('[TestarToken] HTTP', r.status, r.statusText);
-      if (!r.ok) {
-        return r.text().then(function(txt) {
-          throw new Error('HTTP ' + r.status + ' — ' + txt.slice(0, 200));
-        });
-      }
-      return r.json();
-    })
-    .then(function(data) {
-      console.log('[TestarToken] Resultado:', data);
-      var ok = data.sucesso === true;
-      var ambLabel = data.ambiente_label || (ambiente === '1' ? 'Produção' : 'Homologação');
-      var titulo   = ok ? ('✅ Token aceito — ' + ambLabel) : ('❌ Token rejeitado — ' + ambLabel);
-      var linhas   = [];
-      if (data.ambiente_api) linhas.push('<b>URL:</b> ' + data.ambiente_api);
-      if (data.codigo_http)  linhas.push('<b>HTTP:</b> ' + data.codigo_http);
-      if (data.token_prefix) linhas.push('<b>Token:</b> ' + data.token_prefix);
-      if (!ok && data.mensagem) linhas.push('<b>Erro:</b> ' + data.mensagem);
-      var msgHtml = linhas.join(' &nbsp;·&nbsp; ');
-      if (ok && token) {
-        msgHtml += '<br><small class="text-success mt-1 d-block"><i class="bi bi-arrow-down-circle me-1"></i>Token válido! Cole no campo "Token IntegraNota" acima e salve.</small>';
-      }
-      showResult(ok, titulo, msgHtml, data.tempo_ms, data.detalhe);
-    })
-    .catch(function(err) {
-      console.error('[TestarToken] Erro:', err);
-      showResult(false, '⚠️ Erro na comunicação', String(err), null, null);
-    })
-    .finally(function() {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="bi bi-plug me-1"></i>Testar Conexão';
-    });
-  });
-})();
-
-
-// ── Toggle Token Visibility ───────────────────────────────────────────
-(function () {
-  var btn = document.getElementById('btnToggleToken');
-  var inputToken = document.getElementById('id_token_integranotas');
-  
-  if (!btn || !inputToken) { return; }
-  
-  btn.addEventListener('click', function (e) {
-    e.preventDefault();
-    var isPassword = inputToken.type === 'password';
-    inputToken.type = isPassword ? 'text' : 'password';
-    
-    var icon = btn.querySelector('i');
-    icon.className = isPassword ? 'bi bi-eye-slash' : 'bi bi-eye';
-    btn.classList.toggle('active');
-  });
-})();
-
 
 </script>
 {% endblock %}

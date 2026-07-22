@@ -22,21 +22,27 @@ class EmpresaForm(forms.ModelForm):
     class Meta:
         model = Empresa
         fields = [
-            'nome', 'cnpj', 'telefone', 'email',
-            'endereco', 'bairro', 'cidade', 'uf', 'logo',
+            'nome', 'razao_social', 'cnpj', 'telefone', 'email',
+            'endereco', 'numero_endereco', 'complemento_endereco', 'bairro',
+            'cidade', 'uf', 'cep', 'codigo_municipio', 'logo',
             'plano',  # Campo de plano
             'valor_mensalidade', 'dia_vencimento', 'data_expiracao',
             'ativa', 'bloqueada', 'bloqueada_ate', 'motivo_bloqueio',
         ]
         widgets = {
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome Fantasia'}),
+            'razao_social': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Razão Social completa'}),
             'cnpj': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00.000.000/0000-00'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'endereco': forms.TextInput(attrs={'class': 'form-control'}),
+            'numero_endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número'}),
+            'complemento_endereco': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Sala, Bloco, etc.'}),
             'bairro': forms.TextInput(attrs={'class': 'form-control'}),
             'cidade': forms.TextInput(attrs={'class': 'form-control'}),
             'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 2}),
+            'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000', 'id': 'id_cep'}),
+            'codigo_municipio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '7 dígitos — ex: 3550308', 'maxlength': 7}),
             'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'plano': forms.Select(attrs={'class': 'form-select'}),
             'valor_mensalidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),

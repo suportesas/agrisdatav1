@@ -38,6 +38,8 @@ urlpatterns = [
 
     # Configuração da Plataforma (Softhouse IntegraNotas)
     path('configuracao/softhouse/', views.configuracao_softhouse, name='configuracao_softhouse'),
+    path('<int:pk>/integranotas/', views.empresa_emitente_softhouse, name='empresa_emitente_softhouse'),
+    path('<int:pk>/integranotas/testar-conexao/', views.empresa_testar_conexao_integranotas, name='empresa_testar_conexao_integranotas'),
 
     # Planos
     path('planos/', views.plano_list, name='plano_list'),

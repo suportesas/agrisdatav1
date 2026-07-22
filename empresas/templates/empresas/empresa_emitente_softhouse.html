@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}IntegraNotas — {{ empresa.nome }}{% endblock %}
+{% block page_title %}IntegraNotas — {{ empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex align-items-center mb-4">
+    <a href="{% url 'empresas:empresa_list' %}" class="btn btn-outline-secondary me-3">
+      <i class="bi bi-arrow-left"></i>
+    </a>
+    <h3 class="mb-0">Emitente IntegraNotas — {{ empresa.nome }}</h3>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-8">
+
+      <!-- ── Dados que serão enviados como emitente ── -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header fw-semibold">Dados do Emitente</div>
+        <div class="card-body">
+          {% if campos_faltando_msg %}
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            {{ campos_faltando_msg }}
+            <br><small>Edite a empresa (<a href="{% url 'empresas:empresa_update' empresa.id %}">Editar</a>) ou a Configuração Fiscal dela para completar esses dados antes de criar o emitente.</small>
+          </div>
+          {% endif %}
+          <div class="row g-2 small">
+            <div class="col-md-6"><strong>Nome Fantasia:</strong> {{ empresa.nome|default:"—" }}</div>
+            <div class="col-md-6"><strong>Razão Social:</strong> {{ empresa.razao_social|default:empresa.nome }}</div>
+            <div class="col-md-6"><strong>CNPJ:</strong> {{ empresa.cnpj|default:"—" }}</div>
+            <div class="col-md-6"><strong>Inscrição Estadual:</strong> {{ empresa.inscricao_estadual|default:"—" }}</div>
+            <div class="col-md-6"><strong>Telefone:</strong> {{ empresa.telefone|default:"—" }}</div>
+            <div class="col-md-6"><strong>Email:</strong> {{ empresa.email|default:"—" }}</div>
+            <div class="col-md-8"><strong>Endereço:</strong> {{ empresa.endereco|default:"—" }}, {{ empresa.numero_endereco|default:"—" }} {{ empresa.complemento_endereco }}</div>
+            <div class="col-md-4"><strong>Bairro:</strong> {{ empresa.bairro|default:"—" }}</div>
+            <div class="col-md-4"><strong>Cidade/UF:</strong> {{ empresa.cidade|default:"—" }}/{{ empresa.uf|default:"—" }}</div>
+            <div class="col-md-4"><strong>CEP:</strong> {{ empresa.cep|default:"—" }}</div>
+            <div class="col-md-4"><strong>Cód. IBGE Município:</strong> {{ empresa.codigo_municipio|default:"—" }}</div>
+            <div class="col-md-4"><strong>Regime Tributário:</strong> {{ config.get_regime_tributario_display|default:"—" }}</div>
+          </div>
+        </div>
+      </div>
+
+      {% if token_configurado %}
+      <!-- ── Já configurado ── -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Status</div>
+        <div class="card-body">
+          <div class="alert alert-success d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-check-circle-fill"></i>
+            Emitente configurado na IntegraNotas — ambiente:
+            <strong>{% if config.ambiente_nfe == '1' %}Produção{% else %}Homologação{% endif %}</strong>.
+          </div>
+          <button type="button" id="btnTestarConexao" class="btn btn-outline-primary">
+            <i class="bi bi-plug me-1"></i>Testar Conexão
+          </button>
+          <div id="testResult" class="mt-3"></div>
+        </div>
+      </div>
+      {% else %}
+      <!-- ── Formulário de criação ── -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Criar Emitente</div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <label class="form-label">Ambiente</label>
+            <select name="ambiente" class="form-select mb-3" style="max-width:300px;">
+              <option value="2" {% if config.ambiente_nfe != '1' %}selected{% endif %}>Homologação (testes)</option>
+              <option value="1" {% if config.ambiente_nfe == '1' %}selected{% endif %}>Produção</option>
+            </select>
+
+            <label class="form-label d-block">Documentos que este emitente irá utilizar</label>
+            <div class="row g-2 mb-3">
+              {% for chave, rotulo in documentos_choices %}
+              <div class="col-md-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="documentos" value="{{ chave }}"
+                         id="doc_{{ chave }}" {% if chave in documentos_selecionados %}checked{% endif %}>
+                  <label class="form-check-label" for="doc_{{ chave }}">{{ rotulo }}</label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-cloud-plus me-1"></i>Criar Emitente na IntegraNotas
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var btn = document.getElementById('btnTestarConexao');
+  if (!btn) { return; }
+
+  function getCsrf() {
+    var match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : '';
+  }
+
+  btn.addEventListener('click', function () {
+    var wrap = document.getElementById('testResult');
+    var original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Testando…';
+    wrap.innerHTML = '';
+
+    fetch("{% url 'empresas:empresa_testar_conexao_integranotas' empresa.id %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCsrf() },
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var cor = data.sucesso ? 'success' : 'danger';
+        var icone = data.sucesso ? '✅' : '❌';
+        wrap.innerHTML =
+          '<div class="alert alert-' + cor + ' py-2 px-3 mb-0">' +
+            icone + ' <strong>' + (data.ambiente_label || '') + '</strong>: ' + (data.mensagem || '') +
+          '</div>';
+      })
+      .catch(function (err) {
+        wrap.innerHTML = '<div class="alert alert-danger py-2 px-3 mb-0">Erro: ' + err + '</div>';
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = original;
+      });
+  });
+});
+</script>
+{% endblock %}

@@ -50,16 +50,12 @@ urlpatterns = [
 
     # Configuração
     path('configuracao/', views.configuracao_fiscal, name='configuracao'),
-    path('configuracao/emitente/criar/', views.criar_emitente_softhouse, name='criar_emitente_softhouse'),
     path('configuracao/certificado/', views.certificado_upload, name='certificado_upload'),
     path('configuracao/certificado/consultar/', views.certificado_consultar, name='certificado_consultar'),
     path('configuracao/certificado/excluir/', views.certificado_delete, name='certificado_delete'),
 
     # Webhook IntegraNota
     path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
-
-    # Teste de token IntegraNotas (AJAX)
-    path('configuracao/testar-token/', views.integranotas_test_token, name='integranotas_test_token'),
 
     # CT-e
     path('cte/', views.cte_list, name='cte_list'),

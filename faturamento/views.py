@@ -577,6 +577,12 @@ def nota_fiscal_update(request, pk):
             pag_formset.save()
             dup_formset.save()
             ref_formset.save()
+            # Se todas as referências foram removidas, limpa também o campo legado
+            # de chave singular — senão a migração automática (linha ~628) a recria
+            # sozinha na próxima vez que a página de edição for aberta.
+            if nf.chave_nfe_referenciada and not nf.nfes_referenciadas.exists():
+                NotaFiscal.objects.filter(pk=nf.pk).update(chave_nfe_referenciada='')
+                nf.chave_nfe_referenciada = ''
             # Preenche campos tributáveis (conversão CX→KG) ao salvar
             from decimal import Decimal as _Dec, ROUND_HALF_UP
             _ft = ['quantidade_tributavel', 'unidade_tributavel', 'valor_unitario_tributavel']
@@ -1771,6 +1777,7 @@ def _cfop_devolucao(cfop):
 @login_required
 def nota_fiscal_devolucao(request, pk):
     """Cria rascunho de NF-e de devolução a partir de uma NF de saída autorizada."""
+    import re as _re
     from datetime import date
     from django.db import transaction
 
@@ -1809,19 +1816,16 @@ def nota_fiscal_devolucao(request, pk):
         # Campos de devolução
         nf_dev.finalidade_nfe          = '4'
         nf_dev.tipo_operacao           = 'DEVOLUCAO'
-        nf_dev.chave_nfe_referenciada  = nf_orig.chave_acesso
         nf_dev.natureza_operacao       = 'DEVOLUÇÃO DE VENDA'
         nf_dev.nota_mae                = None
         nf_dev.status_faturamento      = 'NAO_APLICA'
         # CFOP cabeçalho: converte via tabela SEFAZ (7127→3211, 6101→2201, etc.)
         nf_dev.cfop = _cfop_devolucao(nf_dev.cfop)
+        # Não preenche chave_nfe_referenciada nem NFeReferenciada (NFref de
+        # cabeçalho): a regra VC02-14 (NT 2025.002-RTC v1.50) proíbe o NFref
+        # de cabeçalho em devolução de mercadoria — o referenciamento é feito
+        # exclusivamente por item (dfe_ref_chave_acesso/dfe_ref_nitem abaixo).
         nf_dev.save()
-        if nf_orig.chave_acesso:
-            from .models import NFeReferenciada
-            NFeReferenciada.objects.get_or_create(
-                nota_fiscal=nf_dev,
-                chave_acesso_referenciada=nf_orig.chave_acesso,
-            )
 
         cnpj_empresa = _re.sub(r'\D', '', nf_orig.empresa.cnpj or '')
         for item in itens:

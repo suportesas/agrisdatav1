@@ -3,6 +3,8 @@ Formulários para o módulo de Compras
 """
 from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
+from django.urls import reverse_lazy
+from core.widgets import Select2AjaxWidget
 from .models import (
     SolicitacaoCompra,
     ItemSolicitacaoCompra,
@@ -275,7 +277,11 @@ class FornecedorCotacaoForm(forms.ModelForm):
         if self.instance.pk:
             self.fields['fornecedor'].widget = forms.HiddenInput()
         else:
-            self.fields['fornecedor'].widget = forms.Select(attrs={'class': 'form-select fornecedor-select'})
+            self.fields['fornecedor'].widget = Select2AjaxWidget(
+                attrs={'class': 'fornecedor-select'},
+                ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'),
+                placeholder='Buscar fornecedor...',
+            )
 
     class Meta:
         model = FornecedorCotacao
@@ -408,7 +414,7 @@ class ItemPlanejamentoEmbalagemForm(forms.ModelForm):
             'unidade_medida': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'preco_estimado_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm preco-estimado', 'step': '0.0001', 'min': '0'}),
             'preco_atual_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm preco-atual', 'step': '0.0001', 'min': '0'}),
-            'fornecedor_preferencial': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'fornecedor_preferencial': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'observacoes': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'Obs...'}),
         }
 

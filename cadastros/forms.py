@@ -4,6 +4,8 @@ Com validações e integração com APIs externas
 """
 
 from django import forms
+from django.urls import reverse_lazy
+from core.widgets import Select2AjaxWidget
 from django.core.exceptions import ValidationError
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
@@ -1871,7 +1873,7 @@ class AreaForm(forms.ModelForm):
             'status', 'ativa', 'observacoes'
         ]
         widgets = {
-            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo_interno': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_area': forms.Select(attrs={'class': 'form-select'}),
@@ -2010,10 +2012,11 @@ class TalhaoForm(forms.ModelForm):
             'observacoes'
         ]
         widgets = {
-            'fazenda': forms.Select(attrs={
-                'class': 'form-select',
-                'onchange': 'carregarAreas(this.value)'
-            }),
+            'fazenda': Select2AjaxWidget(
+                attrs={'onchange': 'carregarAreas(this.value)'},
+                ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'),
+                placeholder='Buscar fazenda...',
+            ),
             'area': forms.Select(attrs={'class': 'form-select'}),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo': forms.TextInput(attrs={'class': 'form-control'}),
@@ -2125,7 +2128,7 @@ class SafraForm(forms.ModelForm):
                 'placeholder': 'Ex: 202526',
                 'maxlength': '10',
             }),
-            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
             'ano': forms.NumberInput(attrs={'class': 'form-control'}),
             'imagem': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*', 'type': 'file'}),
         }
@@ -2315,8 +2318,8 @@ class RequisicaoForm(forms.ModelForm):
             'numero': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
             'tipo': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo'}),
             'safra': forms.Select(attrs={'class': 'form-select', 'id': 'id_safra'}),
-            'fazenda': forms.Select(attrs={'class': 'form-select', 'id': 'id_fazenda'}),
-            'talhao': forms.Select(attrs={'class': 'form-select', 'id': 'id_talhao'}),
+            'fazenda': Select2AjaxWidget(attrs={'id': 'id_fazenda'}, ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
+            'talhao': Select2AjaxWidget(attrs={'id': 'id_talhao'}, ajax_url=reverse_lazy('cadastros:ajax_buscar_talhoes'), placeholder='Buscar talhão...'),
             'funcionario_destino': forms.Select(attrs={'class': 'form-select'}),
             'parceiro': forms.Select(attrs={'class': 'form-select'}),
             'produtor': forms.Select(attrs={'class': 'form-select'}),
@@ -2385,7 +2388,7 @@ class RequisicaoItemForm(forms.ModelForm):
             'custo_estimado', 'observacoes'
         ]
         widgets = {
-            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
             'quantidade_solicitada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'quantidade_atendida': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),

@@ -5,8 +5,9 @@ from datetime import timedelta
 
 from django import forms
 from django.forms.models import inlineformset_factory
+from django.urls import reverse_lazy
 from django.utils import timezone
-from core.widgets import MoneyBRInput
+from core.widgets import MoneyBRInput, Select2AjaxWidget
 from .models import (
     ConfiguracaoJurosMulta,
     ContaPagar,
@@ -83,7 +84,11 @@ class ContaPageForm(forms.ModelForm):
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
+            from cadastros.models import Fornecedor
             from plano_contas.models import ContaContabil, CentroCusto
+            self.fields['fornecedor'].queryset = Fornecedor.objects.filter(
+                empresa=empresa, ativa=True
+            ).order_by('nome')
             self.fields['conta_contabil'].queryset = ContaContabil.objects.filter(
                 empresa=empresa, analitica=True, ativo=True
             ).order_by('codigo')
@@ -118,7 +123,7 @@ class ContaPageForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Número da conta'
             }),
-            'fornecedor': forms.Select(attrs={'class': 'form-control'}),
+            'fornecedor': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'empresa': forms.Select(attrs={'class': 'form-control'}),
             'recebimento': forms.Select(attrs={
                 'class': 'form-control',
@@ -140,8 +145,8 @@ class ContaPageForm(forms.ModelForm):
                 'value': '0.00'
             }),
             'requer_aprovacao': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'conta_contabil': forms.Select(attrs={'class': 'form-select'}),
-            'centro_custo': forms.Select(attrs={'class': 'form-select'}),
+            'conta_contabil': Select2AjaxWidget(ajax_url=reverse_lazy('plano_contas:conta_autocomplete'), extra_params={'analitica': '1'}, placeholder='Buscar conta contábil...'),
+            'centro_custo': Select2AjaxWidget(ajax_url=reverse_lazy('plano_contas:centro_autocomplete'), placeholder='Buscar centro de custo...'),
             'observacoes': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
@@ -339,7 +344,7 @@ class ContaReceberForm(forms.ModelForm):
             'conta_contabil', 'centro_custo',
         ]
         widgets = {
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'moeda': forms.Select(attrs={'class': 'form-select', 'id': 'id_moeda'}),
@@ -348,8 +353,8 @@ class ContaReceberForm(forms.ModelForm):
             'valor_brl': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'conta_contabil': forms.Select(attrs={'class': 'form-select'}),
-            'centro_custo': forms.Select(attrs={'class': 'form-select'}),
+            'conta_contabil': Select2AjaxWidget(ajax_url=reverse_lazy('plano_contas:conta_autocomplete'), extra_params={'analitica': '1'}, placeholder='Buscar conta contábil...'),
+            'centro_custo': Select2AjaxWidget(ajax_url=reverse_lazy('plano_contas:centro_autocomplete'), placeholder='Buscar centro de custo...'),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):

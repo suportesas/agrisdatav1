@@ -830,34 +830,36 @@ def produtotributacao_delete(request, pk):
 
 @login_required
 def ajax_buscar_produtos(request):
-    """Autocomplete: busca produtos por nome ou código (max 15 resultados).
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro, para o dropdown já abrir com
+    registros; digitar refina a busca por nome ou código.
     Parâmetros opcionais:
     - apenas_base=1: retorna somente produtos base (produto_base__isnull=True)
     - excluir_variantes=1: sinônimo de apenas_base=1
     """
+    from core.select2 import select2_response
+
     q = request.GET.get('q', '').strip()
     empresa = request.user.empresa
-    if not q or len(q) < 2:
-        return JsonResponse({'results': []})
     qs = Produto.objects.filter(
         categoria__empresa=empresa, ativo=True
-    ).filter(
-        Q(nome__icontains=q) | Q(codigo__icontains=q)
     ).select_related('ncm', 'categoria')
+    if q:
+        qs = qs.filter(Q(nome__icontains=q) | Q(codigo__icontains=q))
     apenas_base = request.GET.get('apenas_base') == '1' or request.GET.get('excluir_variantes') == '1'
     if apenas_base:
         qs = qs.filter(produto_base__isnull=True)
-    qs = qs[:15]
-    results = [
-        {
+    qs = qs.order_by('nome')
+
+    def serialize(p):
+        return {
             'id': p.pk,
             'text': f'{p.codigo} — {p.nome}',
             'tem_variantes': p.variantes.exists() if not apenas_base else False,
             'categoria_nome': p.categoria.nome,
         }
-        for p in qs
-    ]
-    return JsonResponse({'results': results})
+
+    return select2_response(request, qs, serialize)
 
 
 @login_required

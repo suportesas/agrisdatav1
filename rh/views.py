@@ -2716,6 +2716,28 @@ def funcao_delete(request, pk):
 # ==================== FUNCIONÁRIOS ====================
 
 @login_required
+def ajax_buscar_funcionarios(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por nome, matrícula
+    ou função."""
+    from core.select2 import select2_response
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Funcionario.objects.filter(empresa=empresa, ativo=True).select_related('funcao')
+    if q:
+        qs = qs.filter(
+            Q(nome_completo__icontains=q) | Q(matricula__icontains=q) | Q(funcao__nome__icontains=q)
+        )
+    qs = qs.order_by('nome_completo')
+
+    def serialize(f):
+        return {'id': f.pk, 'text': str(f)}
+
+    return select2_response(request, qs, serialize)
+
+
+@login_required
 def funcionario_list(request):
     """Lista funcionários"""
     # Busca e filtros

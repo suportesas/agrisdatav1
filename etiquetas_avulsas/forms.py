@@ -1,5 +1,7 @@
 from django import forms
+from django.urls import reverse_lazy
 
+from core.widgets import Select2AjaxWidget
 from .models import EtiquetaAvulsa, LoteEtiquetaAvulsa
 
 
@@ -39,9 +41,9 @@ class LoteEtiquetaAvulsaForm(forms.ModelForm):
         widgets = {
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'safra_texto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 202526 (se não cadastrada)'}),
-            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
             'fazenda_texto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome da fazenda (se não cadastrada)'}),
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'cliente_texto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Importador (se não cadastrado)'}),
             'cliente_final_texto': forms.TextInput(attrs={'class': 'form-control'}),
             'porto_origem': forms.Select(attrs={'class': 'form-select'}),

@@ -4,8 +4,9 @@ Formulários do módulo Patrimônio
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy
 from decimal import Decimal
-from core.widgets import MoneyBRInput
+from core.widgets import MoneyBRInput, Select2AjaxWidget
 from .models import Patrimonio, PatrimonioMovimentacao, PatrimonioAuditoria, PatrimonioAuditoriaItem
 from frota.models import Vehicle
 from cadastros.models import Fazenda
@@ -30,7 +31,7 @@ class PatrimonioForm(forms.ModelForm):
             'data_aquisicao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'data_baixa': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'localizacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Galpão A, Campo 1, etc'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'estado': forms.Select(attrs={'class': 'form-select'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -139,12 +140,20 @@ class PatrimonioMovimentacaoForm(forms.ModelForm):
         fields = ['tipo', 'responsavel_anterior', 'responsavel_novo', 'localizacao_anterior', 'localizacao_nova', 'observacoes']
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'responsavel_anterior': forms.Select(attrs={'class': 'form-select'}),
-            'responsavel_novo': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel_anterior': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
+            'responsavel_novo': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'localizacao_anterior': forms.TextInput(attrs={'class': 'form-control'}),
             'localizacao_nova': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from rh.models import Funcionario
+            qs = Funcionario.objects.filter(empresa=empresa, ativo=True).order_by('nome_completo')
+            self.fields['responsavel_anterior'].queryset = qs
+            self.fields['responsavel_novo'].queryset = qs
 
 
 class PatrimonioAuditoriaForm(forms.ModelForm):

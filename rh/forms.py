@@ -4,9 +4,11 @@ Formulários do módulo de Recursos Humanos
 import re
 from django import forms
 from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.forms import inlineformset_factory
 
+from core.widgets import Select2AjaxWidget
 from .models import (
     FuncaoFuncionario, CategoriaRiscoAmbiental, RiscoAmbientalCatalogo,
     RiscoAmbientalFuncao, VinculoContrato, Funcionario, DocumentoFuncionario,
@@ -278,7 +280,7 @@ class FuncionarioForm(forms.ModelForm):
             'observacoes', 'foto', 'ativo'
         ]
         widgets = {
-            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
             'nome_completo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo do funcionário'}),
             'matricula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: MAT-0001'}),
             'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00', 'data-mask': 'cpf'}),
@@ -426,7 +428,7 @@ class FeriasFuncionarioForm(forms.ModelForm):
             'status', 'data_pagamento', 'observacoes', 'recibo_ferias'
         ]
         widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'periodo_aquisitivo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'periodo_aquisitivo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -463,7 +465,7 @@ class AfastamentoFuncionarioForm(forms.ModelForm):
             'arquivo_cat', 'requer_inss', 'numero_beneficio_inss', 'status', 'observacoes'
         ]
         widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'tipo_afastamento': forms.Select(attrs={'class': 'form-select'}),
             'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_prevista_retorno': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -503,7 +505,7 @@ class VinculoContratoForm(forms.ModelForm):
             'salario', 'observacoes'
         ]
         widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'funcao': forms.Select(attrs={'class': 'form-select'}),
             'matricula': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_contrato': forms.Select(attrs={'class': 'form-select'}),
@@ -633,7 +635,7 @@ class SolicitacaoASOForm(forms.ModelForm):
             'status', 'gerar_alerta_vencimento', 'dias_antecedencia_alerta', 'periodicidade_meses',
         ]
         widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'vinculo': forms.Select(attrs={'class': 'form-select'}),
             'tipo_aso': forms.Select(attrs={'class': 'form-select'}),
             'data_solicitacao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
@@ -716,7 +718,7 @@ class RescisaoContratoForm(forms.ModelForm):
             'status', 'observacoes'
         ]
         widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'vinculo': forms.Select(attrs={'class': 'form-select'}),
             'tipo_rescisao': forms.Select(attrs={'class': 'form-select'}),
             'data_aviso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),

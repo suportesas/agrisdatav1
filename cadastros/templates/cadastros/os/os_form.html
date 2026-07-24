@@ -4,6 +4,12 @@
 {% block title %}{{ titulo }} | Agrisdata{% endblock %}
 {% block page_title %}{{ titulo }}{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -499,6 +505,10 @@
 {% block extra_js %}
 {{ block.super }}
 <script src="{% static 'js/section-nav.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 <script>
 // ── Copia opções de um select (por seletor CSS) para um select de modal ──────
 function copyOptionsFromSelector(srcSelector, targetId) {
@@ -515,10 +525,21 @@ function copyOptionsFromSelector(srcSelector, targetId) {
 
 document.addEventListener('DOMContentLoaded', function () {
   // Copia opções dos forms reais do formset (enriquecidos por empresa no servidor)
-  copyOptionsFromSelector('#func-existing-data select[name$="-funcionario"]', 'modal-func-funcionario');
+  // — funcionario/operador não entram mais aqui: os <select> reais do formset
+  // agora são combobox AJAX (Select2AjaxWidget) e só trazem a opção já
+  // selecionada, não a lista inteira; os selects do modal buscam direto via AJAX.
   copyOptionsFromSelector('#maq-existing-data select[name$="-veiculo"]', 'modal-maq-veiculo');
-  copyOptionsFromSelector('#maq-existing-data select[name$="-operador"]', 'modal-maq-operador');
   copyOptionsFromSelector('#maq-existing-data select[name$="-custo_hora_config"]', 'modal-maq-config');
+  AgrisSelect2.init('#modal-func-funcionario', {
+    url: "{% url 'rh:ajax_buscar_funcionarios' %}",
+    placeholder: 'Buscar funcionário...',
+    dropdownParent: $('#modalFunc'),
+  });
+  AgrisSelect2.init('#modal-maq-operador', {
+    url: "{% url 'rh:ajax_buscar_funcionarios' %}",
+    placeholder: 'Buscar funcionário...',
+    dropdownParent: $('#modalMaq'),
+  });
   updateBadge('func');
   updateBadge('maq');
 });
@@ -605,7 +626,7 @@ document.getElementById('btn-func-add').addEventListener('click', function () {
   updateBadge('func');
 
   // Reset modal
-  sel.value = '';
+  $(sel).val(null).trigger('change');
   document.getElementById('modal-func-data').value = '';
   document.getElementById('modal-func-ini').value = '';
   document.getElementById('modal-func-fim').value = '';
@@ -685,7 +706,7 @@ document.getElementById('btn-maq-add').addEventListener('click', function () {
 
   // Reset
   sel.value = '';
-  opSel.value = '';
+  $(opSel).val(null).trigger('change');
   document.getElementById('modal-maq-data').value = '';
   document.getElementById('modal-maq-hini').value = '';
   document.getElementById('modal-maq-hfim').value = '';

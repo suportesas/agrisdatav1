@@ -236,7 +236,7 @@ def patrimonio_movimentacao_add(request, pk):
     patrimonio = get_object_or_404(Patrimonio, pk=pk, empresa=request.user.empresa)
     
     if request.method == 'POST':
-        form = PatrimonioMovimentacaoForm(request.POST)
+        form = PatrimonioMovimentacaoForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
             movimentacao = form.save(commit=False)
             movimentacao.patrimonio = patrimonio
@@ -244,7 +244,7 @@ def patrimonio_movimentacao_add(request, pk):
             messages.success(request, 'Movimentação registrada!')
             return redirect('patrimonio:patrimonio_detail', pk=patrimonio.pk)
     else:
-        form = PatrimonioMovimentacaoForm()
+        form = PatrimonioMovimentacaoForm(empresa=request.user.empresa)
     
     context = {
         'form': form,

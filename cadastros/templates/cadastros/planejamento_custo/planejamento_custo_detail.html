@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ title }} | Agrisdata{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
@@ -6,6 +7,7 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
@@ -914,30 +916,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // ── Select2: busca de produto por nome ao digitar ────────────────────────
+  // ── Combobox unificado: busca de produto ──────────────────────────────────
   if (window.jQuery) {
     const produtoAjaxUrl = "{% url 'produtos:ajax_buscar_produtos' %}";
     [produtoEl, document.getElementById('edit_produto')].forEach(el => {
       if (!el) return;
-      $(el).select2({
-        theme: 'bootstrap-5',
-        width: '100%',
-        placeholder: 'Buscar produto...',
-        allowClear: true,
-        minimumInputLength: 2,
-        language: {
-          inputTooShort: () => 'Digite ao menos 2 caracteres para buscar',
-          noResults: () => 'Nenhum produto encontrado'
-        },
-        ajax: {
-          url: produtoAjaxUrl,
-          dataType: 'json',
-          delay: 250,
-          data: params => ({ q: params.term }),
-          processResults: data => ({ results: data.results || [] }),
-          cache: true
-        }
-      });
+      AgrisSelect2.init(el, { url: produtoAjaxUrl, placeholder: 'Buscar produto...' });
     });
   }
 
@@ -1031,4 +1015,5 @@ document.addEventListener('DOMContentLoaded', function () {
 {{ block.super }}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
 {% endblock %}

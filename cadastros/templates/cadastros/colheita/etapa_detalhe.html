@@ -4,6 +4,12 @@
 {% block title %}{{ etapa.numero_etapa }}ª Colheita — {{ os.numero }} | Agrisdata{% endblock %}
 {% block page_title %}{{ etapa.numero_etapa }}ª Etapa de Colheita — {{ os.numero }}{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-3">
 
@@ -90,7 +96,7 @@
             {% endif %}
           </div>
           <div class="d-flex align-items-center gap-2">
-            <span class="fw-bold text-success" id="carrocao-total-{{ carrocao.pk }}">{{ carrocao._total_viagens|floatformat:"0g" }} kg</span>
+            <span class="fw-bold text-success" id="carrocao-total-{{ carrocao.pk }}">{{ carrocao.total_viagens|floatformat:"0g" }} kg</span>
             {% if etapa.status == 'ABERTA' %}
             <button class="btn btn-xs btn-outline-primary btn-nova-viagem"
                     data-carrocao-id="{{ carrocao.pk }}"
@@ -392,6 +398,10 @@
 <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer" style="z-index:1080;"></div>
 
 {# ===== JS ===== #}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 <script>
 const EM_USO_IDS = new Set({{ carrocoes_em_uso_ids|safe }});
 const CARROCOES_AJAX_URL = "{% url 'operacoes_campo:colheita_ajax_carrocoes' os_pk=os.pk etapa_pk=etapa.pk %}";

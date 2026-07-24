@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
-from core.widgets import MoneyBRInput, DecimalBRInput
+from django.urls import reverse_lazy
+from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget
 from .models import PedidoVenda, ItemPedidoVenda, TabelaPreco
 
 
@@ -16,7 +17,7 @@ class PedidoVendaForm(forms.ModelForm):
             'observacoes', 'observacoes_fiscais',
         ]
         widgets = {
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'vendedor': forms.Select(attrs={'class': 'form-select'}),
             'data_pedido': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_entrega_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -51,7 +52,7 @@ class ItemPedidoVendaForm(forms.ModelForm):
         model = ItemPedidoVenda
         fields = ['produto', 'descricao', 'ncm', 'cfop', 'unidade', 'quantidade', 'preco_unitario', 'desconto_item']
         widgets = {
-            'produto': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'produto': Select2AjaxWidget(attrs={'class': 'form-select-sm'}, ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
             'ncm': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '00000000'}),
             'cfop': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '5102'}),
@@ -89,8 +90,8 @@ class TabelaPrecoForm(forms.ModelForm):
             'vigencia_inicio', 'vigencia_fim', 'ativo', 'observacoes',
         ]
         widgets = {
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
-            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
+            'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
             'moeda': forms.Select(attrs={'class': 'form-select'}),
             'preco_unitario': DecimalBRInput(decimals=4),

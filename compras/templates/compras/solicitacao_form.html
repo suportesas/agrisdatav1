@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
 <style>
     #items-table th:nth-child(2),
     #items-table td:nth-child(2) {
@@ -283,6 +284,7 @@
 <script src="{% static 'js/section-nav.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Dados de unidades por produto (será preenchido quando necessário)
@@ -461,35 +463,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         console.log('Inicializando Select2 AJAX para produto:', element.name);
-        $(element).select2({
-            theme: 'bootstrap-5',
-            width: '100%',
+        AgrisSelect2.init(element, {
+            url: produtoAjaxUrl,
             placeholder: 'Buscar produto...',
-            allowClear: true,
-            minimumInputLength: 2,
-            ajax: {
-                url: produtoAjaxUrl,
-                dataType: 'json',
-                delay: 250,
-                data: function(params) {
-                    return { q: params.term };
-                },
-                processResults: function(data) {
-                    return { results: data.results || [] };
-                },
-                cache: true
-            },
-            language: {
-                inputTooShort: function() {
-                    return 'Digite ao menos 2 caracteres para buscar';
-                },
-                noResults: function() {
-                    return 'Nenhum produto encontrado';
-                }
-            },
-            escapeMarkup: function(markup) {
-                return markup;
-            }
         }).on('select2:select', function() {
             atualizarAoMudarProduto(this);
         });

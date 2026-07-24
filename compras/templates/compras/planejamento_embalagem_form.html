@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
 <style>
   #entry-produto-wrap .select2-container { width: 100% !important; }
   #summary-table td { vertical-align: middle; }
@@ -263,6 +264,7 @@
 <script src="{% static 'js/section-nav.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
 <script>
 (function () {
   const formsetBody = document.getElementById('formset-body');
@@ -411,7 +413,11 @@
     entryFields.unidade_medida.value = '';
     entryFields.preco_estimado_unitario.value = '';
     entryFields.preco_atual_unitario.value = '';
-    entryFields.fornecedor_preferencial.value = '';
+    if (window.jQuery && $(entryFields.fornecedor_preferencial).data('select2')) {
+      $(entryFields.fornecedor_preferencial).val(null).trigger('change');
+    } else {
+      entryFields.fornecedor_preferencial.value = '';
+    }
     entryFields.observacoes.value = '';
   }
 
@@ -443,6 +449,7 @@
 
   function copiarEntryParaLinha(row) {
     FIELD_ORDER.forEach(fieldName => {
+      if (fieldName === 'fornecedor_preferencial') return; // tratado à parte abaixo (Select2 precisa do par id+rótulo)
       const destino = fieldCellInput(row, fieldName);
       const origem = entryFields[fieldName];
       if (destino && origem) destino.value = origem.value;
@@ -453,11 +460,25 @@
       produtoCell.dataset.produtoNome = selecionado ? selecionado.text : '';
       produtoCell.dataset.categoriaNome = categoriaDisplay.textContent.trim() === '—' ? '' : categoriaDisplay.textContent.trim();
     }
+
+    // Fornecedor Preferencial: campo Select2 — o <select> oculto da linha
+    // precisa de uma <option> real com o mesmo par id+rótulo, senão o value
+    // não gruda (não existe <option> igual no DOM de um select vazio).
+    const fornecedorDestino = fieldCellInput(row, 'fornecedor_preferencial');
+    if (fornecedorDestino) {
+      const fornecedorId = entryFields.fornecedor_preferencial.value;
+      fornecedorDestino.innerHTML = '';
+      if (fornecedorId) {
+        const selecionado = $(entryFields.fornecedor_preferencial).select2('data')[0];
+        fornecedorDestino.appendChild(new Option(selecionado ? selecionado.text : fornecedorId, fornecedorId, true, true));
+      }
+    }
   }
 
   function copiarLinhaParaEntry(row) {
     FIELD_ORDER.forEach(fieldName => {
-      if (fieldName === 'produto') return; // tratado à parte abaixo (Select2 precisa do par id+rótulo)
+      // produto e fornecedor_preferencial tratados à parte abaixo (Select2 precisa do par id+rótulo)
+      if (fieldName === 'produto' || fieldName === 'fornecedor_preferencial') return;
       const origem = fieldCellInput(row, fieldName);
       const destino = entryFields[fieldName];
       if (destino && origem) destino.value = origem.value;
@@ -476,6 +497,16 @@
       $('#entry-produto').val(null).trigger('change');
     }
     categoriaDisplay.textContent = categoriaNome || '—';
+
+    const fornecedorOrigem = fieldCellInput(row, 'fornecedor_preferencial');
+    const fornecedorId = fornecedorOrigem?.value || '';
+    const fornecedorTexto = fornecedorId ? selectText(fornecedorOrigem) : '';
+    if (fornecedorId) {
+      const opt = new Option(fornecedorTexto || fornecedorId, fornecedorId, true, true);
+      $(entryFields.fornecedor_preferencial).empty().append(opt).trigger('change');
+    } else {
+      $(entryFields.fornecedor_preferencial).val(null).trigger('change');
+    }
   }
 
   document.getElementById('btn-add-item').addEventListener('click', function () {
@@ -608,7 +639,13 @@
       const data = await resp.json();
       if (data.success) {
         if (data.fornecedor_id) {
-          entryFields.fornecedor_preferencial.value = data.fornecedor_id;
+          const fornecedorSel = entryFields.fornecedor_preferencial;
+          if (window.jQuery && $(fornecedorSel).data('select2')) {
+            const opt = new Option(data.fornecedor_nome || '', data.fornecedor_id, true, true);
+            $(fornecedorSel).append(opt).trigger('change');
+          } else {
+            fornecedorSel.value = data.fornecedor_id;
+          }
         }
         if (data.preco_compra) {
           entryFields.preco_estimado_unitario.value = parseFloat(data.preco_compra).toFixed(4);
@@ -620,24 +657,10 @@
   }
 
   $(function () {
-    $('#entry-produto').select2({
-      theme: 'bootstrap-5',
-      width: '100%',
+    AgrisSelect2.initFromDataAttrs();
+    AgrisSelect2.init('#entry-produto', {
+      url: '{% url "produtos:ajax_buscar_produtos" %}',
       placeholder: 'Buscar produto...',
-      allowClear: true,
-      minimumInputLength: 2,
-      ajax: {
-        url: '{% url "produtos:ajax_buscar_produtos" %}',
-        dataType: 'json',
-        delay: 250,
-        data: function (params) { return { q: params.term }; },
-        processResults: function (data) { return { results: data.results || [] }; },
-        cache: true,
-      },
-      language: {
-        inputTooShort: function () { return 'Digite ao menos 2 caracteres para buscar'; },
-        noResults: function () { return 'Nenhum produto encontrado'; },
-      },
     }).on('select2:select', function (e) {
       onProdutoSelecionado(this.value, e.params.data);
     }).on('select2:clear', function () {

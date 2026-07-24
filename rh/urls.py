@@ -20,6 +20,7 @@ urlpatterns = [
 
     # ==================== FUNCIONÁRIOS ====================
     path('funcionarios/', views.funcionario_list, name='funcionario_list'),
+    path('api/funcionarios/buscar/', views.ajax_buscar_funcionarios, name='ajax_buscar_funcionarios'),
     path('funcionarios/novo/', views.funcionario_create, name='funcionario_create'),
     path('funcionarios/<int:pk>/', views.funcionario_detail, name='funcionario_detail'),
     path('funcionarios/<int:pk>/editar/', views.funcionario_update, name='funcionario_update'),

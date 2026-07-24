@@ -135,7 +135,7 @@ def etapa_detalhe(request, os_pk, etapa_pk):
     # Totais por frota para exibir no template
     for frota in frotas:
         for carrocao in frota.carrocoes.all():
-            carrocao._total_viagens = carrocao.viagens.aggregate(
+            carrocao.total_viagens = carrocao.viagens.aggregate(
                 t=Sum('peso_final_kg')
             )['t'] or Decimal('0')
 

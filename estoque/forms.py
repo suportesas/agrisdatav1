@@ -3,6 +3,8 @@ Forms do módulo Estoque
 """
 from django import forms
 from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy
+from core.widgets import Select2AjaxWidget
 from .models import Armazem, LocalEstocagem, Lote, MovimentacaoEstoque
 from produtos.models import Produto, UnidadeMedida
 
@@ -37,8 +39,8 @@ class ArmazemForm(forms.ModelForm):
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'localizacao': forms.TextInput(attrs={'class': 'form-control'}),
-            'fazenda': forms.Select(attrs={'class': 'form-select'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'comprimento': forms.NumberInput(attrs={
                 'class': 'form-control', 
                 'step': '0.01',
@@ -170,7 +172,7 @@ class LoteForm(forms.ModelForm):
             'valor_unitario': 'Custo unitário do produto neste lote',
         }
         widgets = {
-            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'armazem': forms.Select(attrs={'class': 'form-select'}),
             'local_estocagem': forms.Select(attrs={'class': 'form-select'}),
             'numero_lote': forms.TextInput(attrs={
@@ -191,7 +193,7 @@ class LoteForm(forms.ModelForm):
                 'placeholder': '0,00'
             }),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'nota_fiscal': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Ex: 12345'
@@ -259,7 +261,7 @@ class MovimentacaoEstoqueForm(forms.ModelForm):
     produto = forms.ModelChoiceField(
         queryset=None,
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
         label='Produto'
     )
     

@@ -92,7 +92,7 @@ def caderno_campo_create(request):
 @login_required
 def caderno_campo_detail(request, pk):
     obj = get_object_or_404(RegistroCadernoCampo, pk=pk, empresa=request.user.empresa)
-    insumo_form = RegistroCadernoCampoInsumoForm()
+    insumo_form = RegistroCadernoCampoInsumoForm(empresa=request.user.empresa)
     func_form = RegistroCadernoCampoFuncionarioForm(user=request.user)
     return render(request, 'cadastros/caderno_campo/caderno_campo_detail.html', {
         'obj': obj,
@@ -136,7 +136,7 @@ def caderno_campo_insumo_add(request, pk):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
     if request.method == 'POST':
-        form = RegistroCadernoCampoInsumoForm(request.POST)
+        form = RegistroCadernoCampoInsumoForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
             insumo = form.save(commit=False)
             insumo.registro = registro

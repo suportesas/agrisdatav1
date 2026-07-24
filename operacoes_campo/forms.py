@@ -4,8 +4,10 @@ Formulários do módulo Operações de Campo
 from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.urls import reverse_lazy
 from django.utils import timezone
 
+from core.widgets import Select2AjaxWidget
 from .models import (
     OrdemServico, OrdemServicoInsumo, OSFuncionario, OSMaquina, CustoHoraMaquina,
     EtapaColheita, FrotaColheita, CarrocaoFrota, ViagemColheita,
@@ -34,14 +36,14 @@ class OrdemServicoForm(forms.ModelForm):
             'tipo_servico': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_servico'}),
             'subtipo_servico': forms.Select(attrs={'class': 'form-select', 'id': 'id_subtipo_servico'}),
             'modalidade_execucao': forms.Select(attrs={'class': 'form-select', 'id': 'id_modalidade_execucao'}),
-            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'talhao': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_talhoes'), placeholder='Buscar talhão...'),
             'safra': forms.Select(attrs={'class': 'form-select', 'id': 'id_safra'}),
             'safra_cultura': forms.Select(attrs={'class': 'form-select', 'id': 'id_safra_cultura'}),
             'poco': forms.Select(attrs={'class': 'form-select', 'id': 'id_poco'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'data_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'area_executada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000'}),
-            'fornecedor_servico': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor_servico': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'valor_servico_externo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'unidade_cobranca': forms.Select(attrs={'class': 'form-select'}),
             'requisicao': forms.Select(attrs={'class': 'form-select'}),
@@ -141,7 +143,7 @@ class OrdemServicoInsumoForm(forms.ModelForm):
         model = OrdemServicoInsumo
         fields = ['produto', 'unidade_medida', 'quantidade_planejada', 'quantidade_aplicada', 'custo_unitario', 'observacoes']
         widgets = {
-            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
             'quantidade_planejada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'quantidade_aplicada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -245,7 +247,7 @@ class OSFuncionarioForm(forms.ModelForm):
         model = OSFuncionario
         fields = ['funcionario', 'data_execucao', 'hora_inicio', 'hora_fim', 'observacoes']
         widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'data_execucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'hora_fim': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
@@ -293,7 +295,7 @@ class OSMaquinaForm(forms.ModelForm):
         fields = ['veiculo', 'operador', 'data_execucao', 'horimetro_inicial', 'horimetro_final', 'custo_hora_config', 'observacoes']
         widgets = {
             'veiculo': forms.Select(attrs={'class': 'form-select'}),
-            'operador': forms.Select(attrs={'class': 'form-select'}),
+            'operador': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'data_execucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'horimetro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'h'}),
             'horimetro_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'h'}),
@@ -367,7 +369,7 @@ class EtapaColheitaForm(forms.ModelForm):
         model = EtapaColheita
         fields = ['supervisor', 'data_inicio', 'observacoes']
         widgets = {
-            'supervisor': forms.Select(attrs={'class': 'form-select'}),
+            'supervisor': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'data_inicio': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
@@ -390,7 +392,7 @@ class FrotaColheitaForm(forms.ModelForm):
         fields = ['trator', 'operador', 'horimetro_inicial', 'observacoes']
         widgets = {
             'trator': forms.Select(attrs={'class': 'form-select select-trator'}),
-            'operador': forms.Select(attrs={'class': 'form-select'}),
+            'operador': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'horimetro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'h'}),
             'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
         }
@@ -472,7 +474,7 @@ class RegistroPluviometriaForm(forms.ModelForm):
         model = RegistroPluviometria
         fields = ['fazenda', 'data', 'mm_chuva', 'tipo_registro', 'fonte', 'responsavel', 'observacoes']
         widgets = {
-            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
             'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'mm_chuva': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'Ex: 12.5 mm'}),
             'tipo_registro': forms.Select(attrs={'class': 'form-select'}),
@@ -514,7 +516,7 @@ class InspecaoQualidadeCampoForm(forms.ModelForm):
             'coloracao', 'resultado', 'previsao_colheita_dias', 'fotos', 'observacoes',
         ]
         widgets = {
-            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'talhao': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_talhoes'), placeholder='Buscar talhão...'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'os': forms.Select(attrs={'class': 'form-select'}),
             'data_inspecao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -567,7 +569,7 @@ class RegistroCadernoCampoForm(forms.ModelForm):
             'temperatura', 'umidade', 'condicao_tempo', 'responsavel', 'observacoes', 'fotos',
         ]
         widgets = {
-            'talhao': forms.Select(attrs={'class': 'form-select'}),
+            'talhao': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_talhoes'), placeholder='Buscar talhão...'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'os': forms.Select(attrs={'class': 'form-select'}),
             'data_atividade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -603,7 +605,7 @@ class RegistroCadernoCampoInsumoForm(forms.ModelForm):
         model = RegistroCadernoCampoInsumo
         fields = ['produto', 'quantidade', 'unidade_medida', 'receituario_numero', 'carencia_dias', 'observacoes']
         widgets = {
-            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
             'receituario_numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº Receituário Agronômico'}),
@@ -611,8 +613,11 @@ class RegistroCadernoCampoInsumoForm(forms.ModelForm):
             'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if empresa:
+            from produtos.models import Produto
+            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=empresa, ativo=True).order_by('nome')
         self.fields['receituario_numero'].required = False
         self.fields['carencia_dias'].required = False
         self.fields['observacoes'].required = False
@@ -623,7 +628,7 @@ class RegistroCadernoCampoFuncionarioForm(forms.ModelForm):
         model = RegistroCadernoCampoFuncionario
         fields = ['funcionario', 'horas_trabalhadas']
         widgets = {
-            'funcionario': forms.Select(attrs={'class': 'form-select'}),
+            'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'horas_trabalhadas': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.25', 'placeholder': 'Ex: 8.0'}),
         }
 
@@ -655,6 +660,10 @@ class PlanejamentoCustoSafraForm(forms.ModelForm):
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Planejamento Tomate 2026'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'safra': forms.Select(attrs={'class': 'form-select'}),
+            # 'talhao' fica nativo de propósito: a tela tem cascata JS própria
+            # cultura → safra → talhão (endpoint ajax_talhoes_planejamento_custo,
+            # que também traz a área do talhão pra auto-preencher area_ha) —
+            # o combobox genérico não filtra por safra e quebraria isso.
             'talhao': forms.Select(attrs={'class': 'form-select'}),
             'area_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000'}),
             'produtividade_esperada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 60'}),

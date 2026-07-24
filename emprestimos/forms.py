@@ -1,6 +1,8 @@
 from django import forms
+from django.urls import reverse_lazy
 from django.utils import timezone
 
+from core.widgets import Select2AjaxWidget
 from .models import EmprestimoProdutor
 from cadastros.models import Produtor
 from produtos.models import Produto
@@ -19,7 +21,7 @@ class EmprestimoExtratoFiltroForm(forms.Form):
         queryset=Produto.objects.none(),
         required=False,
         empty_label='Todos os produtos',
-        widget=forms.Select(attrs={'class': 'form-select'}),
+        widget=Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Todos os produtos'),
     )
     status = forms.ChoiceField(
         label='Status',

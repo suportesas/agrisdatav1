@@ -1,4 +1,6 @@
 from django import forms
+from django.urls import reverse_lazy
+from core.widgets import Select2AjaxWidget
 from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda
 
 
@@ -11,7 +13,7 @@ class TipoEmbalagemForm(forms.ModelForm):
             'trace_code', 'ativo',
         ]
         widgets = {
-            'produto': forms.Select(attrs={'class': 'form-select'}),
+            'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'subcategoria': forms.Select(attrs={'class': 'form-select'}),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
@@ -135,7 +137,7 @@ class RomaneioVendaForm(forms.ModelForm):
         fields = ['tipo', 'cliente', 'data', 'booking', 'container', 'observacoes']
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'booking': forms.Select(attrs={'class': 'form-select'}),
             'container': forms.Select(attrs={'class': 'form-select'}),
@@ -171,7 +173,7 @@ class TrocarClienteRomaneioForm(forms.ModelForm):
         model = RomaneioVenda
         fields = ['cliente', 'booking', 'container']
         widgets = {
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'booking': forms.Select(attrs={'class': 'form-select'}),
             'container': forms.Select(attrs={'class': 'form-select'}),
         }

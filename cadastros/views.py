@@ -943,7 +943,101 @@ def cfop_autocomplete(request):
     return JsonResponse({'items': items})
 
 
+@login_required
+def ajax_buscar_clientes(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por razão social,
+    nome comercial ou CNPJ/CPF."""
+    from core.select2 import select2_response
+    from .models import Cliente
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Cliente.objects.filter(empresa=empresa, status='ATIVO')
+    if q:
+        qs = qs.filter(
+            Q(razao_social__icontains=q) | Q(nome_comercial__icontains=q) | Q(cnpj_cpf__icontains=q)
+        )
+    qs = qs.order_by('razao_social')
+
+    def serialize(c):
+        return {'id': c.pk, 'text': str(c)}
+
+    return select2_response(request, qs, serialize)
+
+
+@login_required
+def ajax_buscar_fornecedores(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por nome, nome
+    fantasia ou CNPJ/CPF."""
+    from core.select2 import select2_response
+    from .models import Fornecedor
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Fornecedor.objects.filter(empresa=empresa, ativa=True)
+    if q:
+        qs = qs.filter(
+            Q(nome__icontains=q) | Q(nome_fantasia__icontains=q) | Q(cnpj_cpf__icontains=q)
+        )
+    qs = qs.order_by('nome')
+
+    def serialize(f):
+        return {'id': f.pk, 'text': f.get_nome_exibicao_com_documento()}
+
+    return select2_response(request, qs, serialize)
+
+
 # ==================== FAZENDAS ====================
+
+@login_required
+def ajax_buscar_fazendas(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por nome."""
+    from core.select2 import select2_response
+    from .models import Fazenda
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Fazenda.objects.filter(empresa=empresa, ativa=True)
+    if q:
+        qs = qs.filter(Q(nome__icontains=q) | Q(nome_fantasia__icontains=q))
+    qs = qs.order_by('nome')
+
+    def serialize(f):
+        return {'id': f.pk, 'text': f.nome}
+
+    return select2_response(request, qs, serialize)
+
+
+@login_required
+def ajax_buscar_talhoes(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por nome/código do
+    talhão, nome da área ou da fazenda. Aceita ?fazenda_id= para restringir."""
+    from core.select2 import select2_response
+    from .models import Talhao
+
+    q = request.GET.get('q', '').strip()
+    fazenda_id = request.GET.get('fazenda_id', '')
+    empresa = request.user.empresa
+    qs = Talhao.objects.filter(empresa=empresa, ativo=True).select_related('area', 'fazenda')
+    if fazenda_id:
+        qs = qs.filter(fazenda_id=fazenda_id)
+    if q:
+        qs = qs.filter(
+            Q(nome__icontains=q) | Q(codigo__icontains=q) |
+            Q(area__nome__icontains=q) | Q(fazenda__nome__icontains=q)
+        )
+    qs = qs.order_by('fazenda__nome', 'area__nome', 'codigo')
+
+    def serialize(t):
+        fazenda_nome = t.fazenda.nome if t.fazenda else '?'
+        return {'id': t.pk, 'text': f'{t.codigo} — {t.nome} ({fazenda_nome})'}
+
+    return select2_response(request, qs, serialize)
+
 
 @login_required
 def fazenda_list(request):

@@ -4,8 +4,9 @@ from decimal import Decimal
 from django import forms
 from django.core.validators import MinLengthValidator
 from django.forms import inlineformset_factory, BaseInlineFormSet
+from django.urls import reverse_lazy
 
-from core.widgets import MoneyBRInput, DecimalBRInput
+from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget
 
 from .models import (
     CartaCorrecaoNFe,
@@ -363,7 +364,7 @@ class NotaFiscalForm(FaturamentoBaseForm):
         ]
         _fc = {'class': 'form-control form-control-sm'}
         widgets = {
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
             'finalidade_nfe': forms.Select(attrs={'class': 'form-select'}),
@@ -1050,7 +1051,7 @@ class InvoiceExportacaoForm(FaturamentoBaseForm):
         ]
         widgets = {
             'booking': forms.Select(attrs={'class': 'form-select', 'id': 'id_booking'}),
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'data_embarque_previsto': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
             'incoterm': forms.Select(attrs={'class': 'form-select'}),
@@ -1278,12 +1279,12 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
         widgets = {
             'serie':             forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width:80px'}),
             'tipo_cte':          forms.Select(attrs={'class': 'form-select'}),
-            'remetente':         forms.Select(attrs={'class': 'form-select'}),
-            'destinatario':      forms.Select(attrs={'class': 'form-select'}),
-            'expedidor':         forms.Select(attrs={'class': 'form-select'}),
-            'recebedor':         forms.Select(attrs={'class': 'form-select'}),
+            'remetente':         Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
+            'destinatario':      Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
+            'expedidor':         Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
+            'recebedor':         Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'tipo_tomador':      forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_tomador'}),
-            'tomador':           forms.Select(attrs={'class': 'form-select'}),
+            'tomador':           Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'transportadora':    forms.Select(attrs={'class': 'form-select'}),
             'motorista':         forms.Select(attrs={'class': 'form-select'}),
             'veiculo':           forms.Select(attrs={'class': 'form-select'}),

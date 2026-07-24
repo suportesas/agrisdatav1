@@ -1,7 +1,8 @@
 from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
+from django.urls import reverse_lazy
 from django.utils import timezone
-from core.widgets import MoneyBRInput, DecimalBRInput
+from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget
 from .models import AtoConcessorio, DrawbackProdutoAC, EntradaDrawback, SaidaDrawback
 
 
@@ -105,7 +106,7 @@ class EntradaDrawbackForm(forms.ModelForm):
         widgets = {
             'drawback_produto': forms.Select(attrs={'class': 'form-select'}),
             'produto_variante': forms.Select(attrs={'class': 'form-select'}),
-            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'numero_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000000'}),
             'serie_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1'}),
             'data_nf': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -131,7 +132,7 @@ class EntradaDrawbackForm(forms.ModelForm):
             variantes_qs = variantes_qs.filter(categoria__empresa=empresa)
             from cadastros.models import Fornecedor
             self.fields['fornecedor'].queryset = Fornecedor.objects.filter(
-                empresa=empresa, ativo=True
+                empresa=empresa, ativa=True
             ).order_by('nome_fantasia')
         self.fields['produto_variante'].queryset = variantes_qs.order_by('produto_base__nome', 'nome')
 
@@ -166,7 +167,7 @@ class SaidaDrawbackForm(forms.ModelForm):
         widgets = {
             'drawback_produto': forms.Select(attrs={'class': 'form-select'}),
             'produto_variante': forms.Select(attrs={'class': 'form-select'}),
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'numero_nfe': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000000'}),
             'numero_re': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25BR000123456-7'}),
             'numero_due': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25BR0012345678901'}),
@@ -192,8 +193,8 @@ class SaidaDrawbackForm(forms.ModelForm):
             variantes_qs = variantes_qs.filter(categoria__empresa=empresa)
             from cadastros.models import Cliente
             self.fields['cliente'].queryset = Cliente.objects.filter(
-                empresa=empresa, ativo=True
-            ).order_by('nome_fantasia')
+                empresa=empresa, status='ATIVO'
+            ).order_by('razao_social')
         self.fields['produto_variante'].queryset = variantes_qs.order_by('produto_base__nome', 'nome')
 
         self.fields['data_embarque'].initial = timezone.now().date()

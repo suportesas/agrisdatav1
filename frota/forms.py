@@ -1,7 +1,9 @@
 """Forms do módulo Frota."""
 from django import forms
 from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy
 
+from core.widgets import Select2AjaxWidget
 from .models import (
     Vehicle, VehiclePlate, VehicleValueHistory, VehicleDocument,
     AbastecimentoVeiculo, ManutencaoVeiculo, ManutencaoItem,
@@ -175,7 +177,7 @@ class AbastecimentoVeiculoForm(forms.ModelForm):
             'horimetro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'tanque_cheio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'local_abastecimento': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome do posto / local'}),
-            'fornecedor': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
@@ -220,7 +222,7 @@ class ManutencaoVeiculoForm(forms.ModelForm):
             'proximo_km': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'eh_oficina_propria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'local_oficina': forms.Select(attrs={'class': 'form-select'}),
-            'fornecedor_externo': forms.Select(attrs={'class': 'form-select'}),
+            'fornecedor_externo': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'valor_servico': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

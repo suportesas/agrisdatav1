@@ -170,23 +170,30 @@ def conta_toggle_ativo(request, pk):
 
 @login_required
 def conta_autocomplete(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por código ou nome."""
+    from core.select2 import select2_response
+
     empresa = request.user.empresa
     q = request.GET.get('q', '').strip()
-    analitica_only = request.GET.get('analitica', '') == '1'
+    analitica_param = request.GET.get('analitica', '')
+    excluir_id = request.GET.get('excluir_id', '')
 
-    if len(q) < 2:
-        return JsonResponse({'results': []})
-
-    qs = ContaContabil.objects.filter(
-        empresa=empresa,
-        ativo=True,
-    ).filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
-
-    if analitica_only:
+    qs = ContaContabil.objects.filter(empresa=empresa, ativo=True)
+    if q:
+        qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    if analitica_param == '1':
         qs = qs.filter(analitica=True)
+    elif analitica_param == '0':
+        qs = qs.filter(analitica=False)
+    if excluir_id:
+        qs = qs.exclude(pk=excluir_id)
+    qs = qs.order_by('codigo')
 
-    results = [{'id': c.pk, 'text': str(c)} for c in qs[:15]]
-    return JsonResponse({'results': results})
+    def serialize(c):
+        return {'id': c.pk, 'text': str(c)}
+
+    return select2_response(request, qs, serialize)
 
 
 @login_required
@@ -317,16 +324,22 @@ def centro_toggle_ativo(request, pk):
 
 @login_required
 def centro_autocomplete(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por código ou nome."""
+    from core.select2 import select2_response
+
     empresa = request.user.empresa
     q = request.GET.get('q', '').strip()
+    excluir_id = request.GET.get('excluir_id', '')
 
-    if len(q) < 2:
-        return JsonResponse({'results': []})
+    qs = CentroCusto.objects.filter(empresa=empresa, ativo=True)
+    if q:
+        qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    if excluir_id:
+        qs = qs.exclude(pk=excluir_id)
+    qs = qs.order_by('codigo')
 
-    qs = CentroCusto.objects.filter(
-        empresa=empresa,
-        ativo=True,
-    ).filter(Q(codigo__icontains=q) | Q(nome__icontains=q))[:15]
+    def serialize(c):
+        return {'id': c.pk, 'text': str(c)}
 
-    results = [{'id': c.pk, 'text': str(c)} for c in qs]
-    return JsonResponse({'results': results})
+    return select2_response(request, qs, serialize)

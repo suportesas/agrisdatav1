@@ -1,7 +1,8 @@
 from django import forms
+from django.urls import reverse_lazy
 from django.utils import timezone
 
-from core.widgets import MoneyBRInput
+from core.widgets import MoneyBRInput, Select2AjaxWidget
 from .models import AdiantamentoInternacional, DescontoAdiantamento
 
 
@@ -17,7 +18,7 @@ class AdiantamentoInternacionalForm(forms.ModelForm):
         widgets = {
             'numero_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: AD-2026-001'}),
             'data_adiantamento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'cliente': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'safra_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 2025/2026'}),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'invoice_origem': forms.Select(attrs={'class': 'form-select'}),

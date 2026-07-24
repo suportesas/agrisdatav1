@@ -1,5 +1,7 @@
 from django import forms
+from django.urls import reverse_lazy
 
+from core.widgets import Select2AjaxWidget
 from .models import (
     AplicacaoEstufa,
     Estufa,
@@ -17,7 +19,7 @@ class EstufaForm(forms.ModelForm):
         model = Estufa
         fields = ['fazenda', 'nome', 'codigo', 'tipo', 'area_m2', 'capacidade_bandejas', 'ativo', 'observacoes']
         widgets = {
-            'fazenda': forms.Select(attrs={'class': 'form-select'}),
+            'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'codigo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: EST-01'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
@@ -53,7 +55,7 @@ class LoteMudaForm(forms.ModelForm):
             'quantidade_semeada': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Total de sementes'}),
             'data_prevista_pronto': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -77,7 +79,7 @@ class PerdaEstufaForm(forms.ModelForm):
             'quantidade_perdida': forms.NumberInput(attrs={'class': 'form-control'}),
             'motivo': forms.Select(attrs={'class': 'form-select'}),
             'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
         }
 
     def __init__(self, *args, **kwargs):
@@ -102,7 +104,7 @@ class AplicacaoEstufaForm(forms.ModelForm):
             'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
             'custo_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'R$'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'observacao': forms.TextInput(attrs={'class': 'form-control'}),
             'receituario': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº Receituário Agronômico'}),
         }
@@ -127,7 +129,7 @@ class MonitoramentoEstufaForm(forms.ModelForm):
             'praga': forms.Select(attrs={'class': 'form-select'}),
             'nivel_infestacao': forms.Select(attrs={'class': 'form-select'}),
             'acao_tomada': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
         }
 
     def __init__(self, *args, **kwargs):

@@ -1,6 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy
 
+from core.widgets import Select2AjaxWidget
 from .models import ContaContabil, CentroCusto
 
 _WIDGET_TEXT = {'class': 'form-control'}
@@ -14,6 +16,7 @@ class ContaContabilForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.empresa = empresa
         pai_qs = ContaContabil.objects.none()
+        extra_params = {'analitica': '0'}
         if empresa:
             pai_qs = ContaContabil.objects.filter(
                 empresa=empresa,
@@ -22,8 +25,17 @@ class ContaContabilForm(forms.ModelForm):
             ).order_by('codigo')
             if self.instance.pk:
                 pai_qs = pai_qs.exclude(pk=self.instance.pk)
+                extra_params['excluir_id'] = self.instance.pk
+        # Widget precisa ser trocado ANTES do queryset: ModelChoiceField.queryset
+        # (setter) propaga field.choices pro widget.choices vigente na hora —
+        # se trocássemos depois, o Select2AjaxWidget novo ficaria sem o
+        # ModelChoiceIterator e não conseguiria resolver a opção selecionada.
+        self.fields['conta_pai'].widget = Select2AjaxWidget(
+            ajax_url=reverse_lazy('plano_contas:conta_autocomplete'),
+            extra_params=extra_params,
+            placeholder='Sem conta pai (conta raiz)',
+        )
         self.fields['conta_pai'].queryset = pai_qs
-        self.fields['conta_pai'].empty_label = '— Sem conta pai (conta raiz) —'
 
     def clean(self):
         cleaned = super().clean()
@@ -44,7 +56,7 @@ class ContaContabilForm(forms.ModelForm):
             'nome': forms.TextInput(attrs=_WIDGET_TEXT),
             'tipo': forms.Select(attrs=_WIDGET_SELECT),
             'natureza': forms.Select(attrs=_WIDGET_SELECT),
-            'conta_pai': forms.Select(attrs=_WIDGET_SELECT),
+            # 'conta_pai' widget é montado em __init__ (Select2AjaxWidget — precisa de excluir_id dinâmico)
             'descricao': forms.Textarea(attrs=_WIDGET_TEXTAREA),
             'observacoes': forms.Textarea(attrs=_WIDGET_TEXTAREA),
             'analitica': forms.CheckboxInput(attrs=_WIDGET_CHECK),
@@ -58,12 +70,19 @@ class CentroCustoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.empresa = empresa
         pai_qs = CentroCusto.objects.none()
+        extra_params = {}
         if empresa:
             pai_qs = CentroCusto.objects.filter(empresa=empresa, ativo=True).order_by('codigo')
             if self.instance.pk:
                 pai_qs = pai_qs.exclude(pk=self.instance.pk)
+                extra_params['excluir_id'] = self.instance.pk
+        # Widget trocado antes do queryset — ver comentário em ContaContabilForm.
+        self.fields['centro_pai'].widget = Select2AjaxWidget(
+            ajax_url=reverse_lazy('plano_contas:centro_autocomplete'),
+            extra_params=extra_params,
+            placeholder='Sem centro pai (raiz)',
+        )
         self.fields['centro_pai'].queryset = pai_qs
-        self.fields['centro_pai'].empty_label = '— Sem centro pai (raiz) —'
 
     def clean(self):
         cleaned = super().clean()
@@ -83,6 +102,6 @@ class CentroCustoForm(forms.ModelForm):
             'codigo': forms.TextInput(attrs={**_WIDGET_TEXT, 'placeholder': 'Ex: CC-01'}),
             'nome': forms.TextInput(attrs=_WIDGET_TEXT),
             'descricao': forms.Textarea(attrs=_WIDGET_TEXTAREA),
-            'centro_pai': forms.Select(attrs=_WIDGET_SELECT),
+            # 'centro_pai' widget é montado em __init__ (Select2AjaxWidget — precisa de excluir_id dinâmico)
             'ativo': forms.CheckboxInput(attrs=_WIDGET_CHECK),
         }

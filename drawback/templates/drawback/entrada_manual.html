@@ -1,5 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}{{ titulo }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -121,6 +128,25 @@
   </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script>
+$(function () {
+  AgrisSelect2.initFromDataAttrs();
+  // "Produto do AC" — lista pequena e fixa (só os produtos cadastrados neste
+  // AC), então usa Select2 local (sem AJAX/paginação) só pra busca+visual
+  // consistente com os demais campos; dropdownPosition:'below' já vem do
+  // patch global registrado em select2-ajax.js.
+  $('#id_drawback_produto').select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    dropdownPosition: 'below',
+    allowClear: true,
+    placeholder: 'Buscar produto do AC...',
+  });
+});
+</script>
 <script>
 const saldoUrl     = "{% url 'drawback:ajax_saldo_produto' 0 %}".replace('/0/', '/');
 const produtoSelect = document.getElementById('id_drawback_produto');

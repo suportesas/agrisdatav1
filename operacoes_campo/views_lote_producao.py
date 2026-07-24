@@ -93,45 +93,96 @@ def lote_recepcao_packing(request, pk):
         messages.warning(request, f'Lote {lote.numero_lote} já está com status "{lote.get_status_display()}".')
         return redirect('operacoes_campo:lote_detail', pk=pk)
 
-    from embalagem.models import OrdemEmbalagem
-    from estoque.models import Armazem
+    from embalagem.models import OrdemEmbalagem, TipoEmbalagem
+    from estoque.models import Armazem, Lote, MovimentacaoEstoque
+    from produtos.models import Produto
 
     armazens = Armazem.objects.filter(empresa=empresa, ativo=True).order_by('nome')
+    produtos = Produto.objects.filter(categoria__empresa=empresa, ativo=True).order_by('nome')
+    tipos_embalagem = TipoEmbalagem.objects.filter(empresa=empresa, ativo=True).order_by('nome')
 
     if request.method == 'POST':
         armazem_id = request.POST.get('armazem_destino')
-        quantidade_kg = request.POST.get('quantidade_kg', lote.peso_total_colhido_kg)
+        produto_id = request.POST.get('produto')
+        tipo_embalagem_id = request.POST.get('tipo_embalagem')
         observacoes = request.POST.get('observacoes', '')
+
+        from decimal import Decimal, InvalidOperation
+        try:
+            quantidade_kg = Decimal(request.POST.get('quantidade_kg') or lote.peso_total_colhido_kg)
+        except InvalidOperation:
+            quantidade_kg = None
 
         if not armazem_id:
             messages.error(request, 'Selecione o armazém de destino.')
+        elif not produto_id:
+            messages.error(request, 'Selecione o produto a granel colhido.')
+        elif not tipo_embalagem_id:
+            messages.error(request, 'Selecione o tipo de embalagem que será usado nesta ordem.')
+        elif not quantidade_kg or quantidade_kg <= 0:
+            messages.error(request, 'Informe uma quantidade recebida (kg) válida.')
         else:
             from django.db import transaction
-            from estoque.models import Armazem
-            with transaction.atomic():
-                lote.status = 'RECEBIDO_PACKING'
-                lote.data_recepcao_packing = timezone.now()
-                lote.recebido_por = request.user
-                lote.save(update_fields=['status', 'data_recepcao_packing', 'recebido_por'])
-
-                try:
+            try:
+                with transaction.atomic():
                     armazem = Armazem.objects.get(pk=armazem_id, empresa=empresa)
+                    produto = Produto.objects.get(pk=produto_id, categoria__empresa=empresa)
+                    tipo_embalagem = TipoEmbalagem.objects.get(pk=tipo_embalagem_id, empresa=empresa)
+
+                    lote.status = 'RECEBIDO_PACKING'
+                    lote.data_recepcao_packing = timezone.now()
+                    lote.recebido_por = request.user
+                    lote.save(update_fields=['status', 'data_recepcao_packing', 'recebido_por'])
+
+                    lote_estoque = Lote.objects.create(
+                        empresa=empresa,
+                        produto=produto,
+                        armazem=armazem,
+                        numero_lote=f"COLHEITA-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                        data_fabricacao=lote.data_colheita_inicio or timezone.now().date(),
+                        quantidade_inicial=quantidade_kg,
+                        quantidade_atual=quantidade_kg,
+                        unidade_medida=produto.unidade_medida,
+                        status='DISPONIVEL',
+                        observacoes=f'Recepção do lote de colheita {lote.numero_lote} ({lote.codigo_rastreamento}).',
+                        cadastrado_por=request.user,
+                    )
+                    MovimentacaoEstoque.objects.create(
+                        empresa=empresa,
+                        produto=produto,
+                        lote=lote_estoque,
+                        tipo='ENTRADA',
+                        origem='PRODUCAO',
+                        quantidade=quantidade_kg,
+                        documento=lote_estoque.numero_lote,
+                        observacao=f'Colheita {lote.numero_lote} — talhão {lote.talhao.nome} — recebido no packing.',
+                        status='EXECUTADO',
+                        cadastrado_por=request.user,
+                        executado_por=request.user,
+                        data_execucao=timezone.now(),
+                    )
+
                     OrdemEmbalagem.objects.create(
                         empresa=empresa,
+                        numero=OrdemEmbalagem._gerar_numero(empresa),
                         armazem_destino=armazem,
+                        tipo_embalagem=tipo_embalagem,
                         safra=lote.safra,
                         lote_producao=lote,
+                        lote_origem=lote_estoque,
                         quantidade_entrada_kg=quantidade_kg,
                         status='ABERTA',
                         criado_por=request.user,
                     )
-                except Exception as e:
-                    messages.warning(request, f'Lote recebido, mas erro ao criar ordem de embalagem: {e}')
-
-            messages.success(request, f'Lote {lote.numero_lote} recebido no packing com sucesso!')
-            return redirect('operacoes_campo:lote_detail', pk=pk)
+            except Exception as e:
+                messages.error(request, f'Erro ao receber o lote no packing: {e}')
+            else:
+                messages.success(request, f'Lote {lote.numero_lote} recebido no packing com sucesso!')
+                return redirect('operacoes_campo:lote_detail', pk=pk)
 
     return render(request, 'operacoes_campo/lote_producao/lote_recepcao_form.html', {
         'lote': lote,
         'armazens': armazens,
+        'produtos': produtos,
+        'tipos_embalagem': tipos_embalagem,
     })

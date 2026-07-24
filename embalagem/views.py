@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.barcode_utils import barcode_b64 as _barcode_b64
-from estoque.models import Armazem
+from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
 from .forms import ItemPalletForm, OrdemEmbalagemForm, RomaneioVendaForm, TipoEmbalagemForm, TrocarClienteRomaneioForm
 from .models import (
@@ -185,6 +185,10 @@ def ordem_gerar_pallets(request, pk):
         messages.error(request, 'Tipo de embalagem inválido (peso zero).')
         return redirect('embalagem:ordem_detail', pk=pk)
 
+    if not te.produto_id:
+        messages.error(request, f'Tipo de embalagem "{te.nome}" não tem produto configurado — associe um produto antes de gerar pallets.')
+        return redirect('embalagem:ordem_detail', pk=pk)
+
     n_pallets = int(math.floor(float(ordem.quantidade_entrada_kg) / float(peso_liq_pallet)))
     if n_pallets < 1:
         messages.error(request, 'Quantidade insuficiente para gerar pelo menos 1 pallet.')
@@ -226,6 +230,37 @@ def ordem_gerar_pallets(request, pk):
                 lote=ordem.lote_origem,
                 documento=ordem.numero,
                 observacao=f'Baixa por embalagem — Ordem {ordem.numero} ({n_pallets} pallets).',
+            )
+
+            # Entrada em estoque do produto acabado (pallets gerados)
+            total_caixas = Decimal(n_pallets) * Decimal(te.caixas_por_pallet)
+            lote_embalado = Lote.objects.create(
+                empresa=empresa,
+                produto=te.produto,
+                armazem=ordem.armazem_destino,
+                local_estocagem=ordem.local_destino,
+                numero_lote=f"EMB-{ordem.numero}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                data_fabricacao=hoje,
+                quantidade_inicial=total_caixas,
+                quantidade_atual=total_caixas,
+                unidade_medida=te.produto.unidade_venda,
+                status='DISPONIVEL',
+                observacoes=f'Produto acabado da Ordem de Embalagem {ordem.numero} ({n_pallets} pallets).',
+                cadastrado_por=request.user,
+            )
+            MovimentacaoEstoque.objects.create(
+                empresa=empresa,
+                produto=te.produto,
+                lote=lote_embalado,
+                tipo='ENTRADA',
+                origem='PRODUCAO',
+                quantidade=total_caixas,
+                documento=ordem.numero,
+                observacao=f'Embalagem — Ordem {ordem.numero}: {n_pallets} pallets de {te.nome}.',
+                status='EXECUTADO',
+                cadastrado_por=request.user,
+                executado_por=request.user,
+                data_execucao=timezone.now(),
             )
 
             ordem.status = 'CONCLUIDA'

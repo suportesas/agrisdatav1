@@ -1,0 +1,166 @@
+{% load static %}
+<form method="post" novalidate id="insumo-form" {% if action_url %}action="{{ action_url }}"{% endif %}>
+  {% csrf_token %}
+
+  <div class="form-section {% if is_modal %}border-0 shadow-none{% endif %}">
+    <div class="form-section-body {% if is_modal %}px-0{% endif %}">
+      <div class="form-grid">
+
+        <div class="field col-12">
+          <label class="form-label">Produto<span class="req">*</span></label>
+          <div class="position-relative mb-1">
+            <span class="position-absolute top-50 translate-middle-y ms-3 text-muted" style="z-index:2; pointer-events:none;">
+              <i class="bi bi-search" style="font-size:.85rem;"></i>
+            </span>
+            <input type="text" id="produto-search" class="form-control ps-5"
+                   placeholder="Buscar produto pelo nome…" autocomplete="off">
+          </div>
+          {{ form.produto }}
+          <div class="helper-note" id="produto-count"></div>
+          {% if form.produto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produto.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Unidade</label>
+          <div class="input-group">
+            {{ form.unidade_medida }}
+            <span class="input-group-text bg-light px-2" id="unidade-sigla-badge"
+                  style="min-width:44px; justify-content:center; font-size:.8rem; color:#6c757d;"></span>
+          </div>
+          {% if form.unidade_medida.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_medida.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Custo Unitário (R$)</label>
+          <div class="input-group">
+            <span class="input-group-text">R$</span>
+            {{ form.custo_unitario }}
+          </div>
+          {% if form.custo_unitario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.custo_unitario.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Qtd. Aplicada</label>
+          {{ form.quantidade_aplicada }}
+          {% if form.quantidade_aplicada.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade_aplicada.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-6">
+          <label class="form-label">Qtd. Planejada <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.quantidade_planejada }}
+          {% if form.quantidade_planejada.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.quantidade_planejada.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-6">
+          <label class="form-label">Observações <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+        </div>
+
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger mt-3 mb-0 rounded-3">{{ form.non_field_errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="app-footer-bar {% if is_modal %}position-static border-0 bg-transparent p-0 mt-3{% endif %}">
+    {% if is_modal %}
+    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancelar</button>
+    {% else %}
+    <a href="{% url 'operacoes_campo:os_detail' pk=os.pk %}" class="btn btn-outline">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check2-circle"></i> {{ action }}
+    </button>
+  </div>
+</form>
+
+<script>
+(function() {
+  const searchInput = document.getElementById('produto-search');
+  const produtoSel  = document.getElementById('id_produto');
+  const unidadeSel  = document.getElementById('id_unidade_medida');
+  const custoInput  = document.getElementById('id_custo_unitario');
+  const siglaBadge  = document.getElementById('unidade-sigla-badge');
+  const countEl     = document.getElementById('produto-count');
+  if (!searchInput || !produtoSel) return;
+
+  const PRODUTO_INFO_URL = "{% url 'operacoes_campo:os_ajax_produto_info' %}";
+
+  // Converte select normal em listbox
+  produtoSel.setAttribute('size', '6');
+  produtoSel.style.minHeight = '130px';
+
+  // Guarda todas as opções para re-filtrar
+  const allOptions = Array.from(produtoSel.options).map(o => ({ value: o.value, text: o.text, selected: o.selected }));
+  updateCount();
+
+  // ── Filtro em tempo real ─────────────────────────────────────────────────────
+  searchInput.addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    const prevVal = produtoSel.value;
+    produtoSel.innerHTML = '';
+    allOptions.forEach(o => {
+      if (!o.value || !q || o.text.toLowerCase().includes(q)) {
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.text;
+        if (o.value === prevVal) opt.selected = true;
+        produtoSel.appendChild(opt);
+      }
+    });
+    // Se produto selecionado sumiu do filtro, seleciona o primeiro resultado
+    if (produtoSel.value !== prevVal && produtoSel.options.length > 0) {
+      produtoSel.value = '';
+    }
+    updateCount();
+  });
+
+  function updateCount() {
+    const visible = Array.from(produtoSel.options).filter(o => o.value).length;
+    const total   = allOptions.filter(o => o.value).length;
+    countEl.textContent = visible < total
+      ? `Mostrando ${visible} de ${total} produtos`
+      : `${total} produto${total !== 1 ? 's' : ''}`;
+  }
+
+  // ── Auto-fill ao selecionar produto ─────────────────────────────────────────
+  produtoSel.addEventListener('change', function () {
+    const pid = this.value;
+    if (!pid) return;
+    fetch(`${PRODUTO_INFO_URL}?produto_id=${pid}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        if (data.unidade_medida_id && unidadeSel) {
+          const opt = Array.from(unidadeSel.options).find(o => String(o.value) === String(data.unidade_medida_id));
+          if (opt) {
+            unidadeSel.value = data.unidade_medida_id;
+            siglaBadge.textContent = data.unidade_medida_sigla || '';
+          }
+        }
+        if (custoInput && (!custoInput.value || parseFloat(custoInput.value || 0) === 0)) {
+          const custo = parseFloat(data.preco_custo || 0);
+          if (custo > 0) custoInput.value = custo.toFixed(2);
+        }
+      })
+      .catch(() => {});
+  });
+
+  // ── Sigla ao mudar unidade manualmente ──────────────────────────────────────
+  if (unidadeSel) {
+    unidadeSel.addEventListener('change', function () {
+      const txt = this.options[this.selectedIndex]?.text || '';
+      siglaBadge.textContent = txt.split('—')[0].trim().split(' ')[0] || '';
+    });
+    if (unidadeSel.value) {
+      const txt = unidadeSel.options[unidadeSel.selectedIndex]?.text || '';
+      siglaBadge.textContent = txt.split('—')[0].trim().split(' ')[0] || '';
+    }
+  }
+})();
+</script>

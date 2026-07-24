@@ -204,6 +204,28 @@
                 {% endif %}
               </div>
             </div>
+            <!-- ICMS ST — mesmo grupo/mesmos CSTs (10/30/60/70/90) da aba ICMS do item de NF-e -->
+            <div class="form-grid icms-st-wrap" id="wrap-icms-st" style="display:none;">
+              <div class="field col-12">
+                <hr class="my-2">
+                <p class="text-muted small mb-2"><i class="bi bi-layers me-1"></i><strong>ICMS ST — Substituição Tributária</strong> (CST 10/30/70/90)</p>
+              </div>
+              <div class="field col-4">
+                <label for="id_icms_st_mva" class="form-label">{{ form.icms_st_mva.label }}</label>
+                {{ form.icms_st_mva }}
+                {% if form.icms_st_mva.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_st_mva.errors.0 }}</div>{% else %}<div class="helper-note">Percentual (0-100)</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label for="id_icms_st_reducao_base" class="form-label">{{ form.icms_st_reducao_base.label }}</label>
+                {{ form.icms_st_reducao_base }}
+                {% if form.icms_st_reducao_base.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_st_reducao_base.errors.0 }}</div>{% else %}<div class="helper-note">Percentual (0-100)</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label for="id_icms_st_aliquota" class="form-label">{{ form.icms_st_aliquota.label }}</label>
+                {{ form.icms_st_aliquota }}
+                {% if form.icms_st_aliquota.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.icms_st_aliquota.errors.0 }}</div>{% else %}<div class="helper-note">Percentual (0-100)</div>{% endif %}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -213,13 +235,8 @@
             <span class="title">IPI</span>
           </div>
           <div class="form-section-body">
-            <p class="text-muted small mb-3">
-              Fora do escopo desta fazenda: commodities agrícolas não são produtos
-              industrializados. CST 53/55 (únicos disponíveis) são sempre
-              não-tributada/suspensão, nunca com alíquota.
-            </p>
             <div class="form-grid">
-              <div class="field col-6">
+              <div class="field col-4">
                 <label for="id_ipi_situacao_tributaria" class="form-label">{{ form.ipi_situacao_tributaria.label }}</label>
                 {{ form.ipi_situacao_tributaria }}
                 {% if form.ipi_situacao_tributaria.errors %}
@@ -228,7 +245,16 @@
                   <div class="helper-note">CST do IPI</div>
                 {% endif %}
               </div>
-              <div class="field col-6">
+              <div class="field col-4 ipi-aliq-wrap" id="wrap-ipi-aliquota" style="display:none;">
+                <label for="id_ipi_aliquota" class="form-label">{{ form.ipi_aliquota.label }}</label>
+                {{ form.ipi_aliquota }}
+                {% if form.ipi_aliquota.errors %}
+                  <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ipi_aliquota.errors.0 }}</div>
+                {% else %}
+                  <div class="helper-note">Percentual (0-100)</div>
+                {% endif %}
+              </div>
+              <div class="field col-4">
                 <label for="id_ipi_codigo_enquadramento" class="form-label">{{ form.ipi_codigo_enquadramento.label }}</label>
                 {{ form.ipi_codigo_enquadramento }}
                 {% if form.ipi_codigo_enquadramento.errors %}
@@ -287,7 +313,12 @@
             <span class="title">PIS / COFINS</span>
           </div>
           <div class="form-section-body">
-            <div class="form-grid">
+            <!-- Bloco PIS — grid isolado do COFINS para que campos ocultos
+                 (Natureza da Receita, exibida só por CST) não "puxem" os
+                 campos do outro tributo pra mesma linha (mesma organização
+                 da aba fiscal do item de NF-e: bloco PIS, depois bloco COFINS). -->
+            <p class="text-muted small mb-2 fw-bold">PIS</p>
+            <div class="form-grid mb-3">
               <div class="field col-3">
                 <label for="id_pis_situacao_tributaria" class="form-label">{{ form.pis_situacao_tributaria.label }}<span class="req">*</span></label>
                 {{ form.pis_situacao_tributaria }}
@@ -323,7 +354,11 @@
                 {{ form.natureza_receita_pis }}
                 <div class="helper-note">Código 3 dígitos (ex: 116)</div>
               </div>
+            </div>
 
+            <hr class="my-2">
+            <p class="text-muted small mb-2 fw-bold">COFINS</p>
+            <div class="form-grid">
               <div class="field col-3">
                 <label for="id_cofins_situacao_tributaria" class="form-label">{{ form.cofins_situacao_tributaria.label }}<span class="req">*</span></label>
                 {{ form.cofins_situacao_tributaria }}
@@ -523,13 +558,6 @@
     </div>
   </form>
 </div>
-
-<!-- Alert de Debug -->
-<div id="debugAlert" class="alert alert-warning mt-3 d-none" role="alert">
-  <h5><i class="bi bi-bug me-2"></i>Informações de Debug</h5>
-  <hr>
-  <div id="debugContent" style="font-family: monospace; font-size: 0.9em;"></div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -549,29 +577,35 @@ document.addEventListener('DOMContentLoaded', function() {
   }
     const tributacaoForm = document.getElementById('tributacaoForm');
     const btnSalvar = document.getElementById('btnSalvarTributacao');
-    const debugAlert = document.getElementById('debugAlert');
-    const debugContent = document.getElementById('debugContent');
 
-    // Função para adicionar log de debug
-    function logDebug(message, type = 'info') {
-        const timestamp = new Date().toLocaleTimeString();
-        const icons = {
-            'info': 'ℹ️',
-            'success': '✅',
-            'warning': '⚠️',
-            'error': '❌'
-        };
-        const icon = icons[type] || 'ℹ️';
+    // ========================================
+    // Mostrar/ocultar grupos condicionados ao CST — mesmos grupos usados
+    // na aba fiscal do item de NF-e (faturamento/templates/.../nota_fiscal/form.html)
+    // ========================================
+    const CST_ICMS_ST  = new Set(['10', '30', '70', '90']);
+    const CST_IPI_ALIQ = new Set(['00', '49', '50', '51', '99']);
 
-        console.log(`[${timestamp}] ${icon} ${message}`);
-        debugContent.innerHTML += `<div class="mb-1"><strong>[${timestamp}]</strong> ${icon} ${message}</div>`;
-        debugAlert.classList.remove('d-none');
-    }
+    // Expostas em window para poderem ser chamadas também pelo script de
+    // PERFIS FISCAIS (IIFE separada, abaixo) após aplicar um preenchimento rápido.
+    window.toggleIcmsSt = function () {
+        const sel  = document.getElementById('id_icms_situacao_tributaria');
+        const wrap = document.getElementById('wrap-icms-st');
+        if (!sel || !wrap) return;
+        wrap.style.display = CST_ICMS_ST.has(sel.value) ? '' : 'none';
+    };
+    window.toggleIpiAliq = function () {
+        const sel  = document.getElementById('id_ipi_situacao_tributaria');
+        const wrap = document.getElementById('wrap-ipi-aliquota');
+        if (!sel || !wrap) return;
+        wrap.style.display = CST_IPI_ALIQ.has(sel.value) ? '' : 'none';
+    };
+    document.getElementById('id_icms_situacao_tributaria')?.addEventListener('change', window.toggleIcmsSt);
+    document.getElementById('id_ipi_situacao_tributaria')?.addEventListener('change', window.toggleIpiAliq);
+    window.toggleIcmsSt();
+    window.toggleIpiAliq();
 
     // Validar formulário antes de submeter
     tributacaoForm.addEventListener('submit', function(e) {
-        logDebug('Formulário sendo enviado...', 'info');
-
         const formData = new FormData(tributacaoForm);
 
         // Log dos campos obrigatórios
@@ -589,7 +623,6 @@ document.addEventListener('DOMContentLoaded', function() {
         camposObrigatorios.forEach(campo => {
             const valor = formData.get(campo.name);
             if (!valor || valor.trim() === '') {
-                logDebug(`❌ ${campo.label}: VAZIO`, 'error');
                 temErro = true;
 
                 // Destacar o campo com erro
@@ -597,8 +630,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (input) {
                     input.classList.add('is-invalid');
                 }
-            } else {
-                logDebug(`✓ ${campo.label}: ${valor}`, 'success');
             }
         });
 
@@ -614,7 +645,6 @@ document.addEventListener('DOMContentLoaded', function() {
         btnSalvar.disabled = true;
         btnSalvar.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Salvando...';
 
-        logDebug('✅ Validação OK - Enviando formulário...', 'success');
         // Deixar o formulário submeter normalmente
     });
 
@@ -657,7 +687,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Exibir descrição
                 cfopDescricaoTexto.textContent = `${data.codigo} - ${data.nome}`;
                 cfopDescricao.classList.remove('d-none');
-                logDebug(`CFOP encontrado: ${data.codigo} - ${data.nome}`);
 
                 // Preencher Natureza da Operação
                 const no = data.natureza_operacao;
@@ -690,13 +719,11 @@ document.addEventListener('DOMContentLoaded', function() {
               } else {
                 alert(`CFOP não encontrado: ${data.error}`);
                 cfopDescricao.classList.add('d-none');
-                logDebug(`CFOP não encontrado: ${codigo}`, 'error');
               }
             })
             .catch(error => {
               console.error('Erro na busca:', error);
               alert('Erro ao buscar CFOP. Verifique o console.');
-              logDebug(`Erro na busca: ${error}`, 'error');
             })
             .finally(() => {
               // Reabilitar botão
@@ -725,9 +752,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const REGIME = '{{ regime_tributario|default:"SIMPLES_NACIONAL" }}';
 
   // ── Definição dos perfis por regime ─────────────────────────────────────
-  // Restritos aos CSTs do escopo desta fazenda: ICMS 00/40/41/51,
-  // PIS/COFINS 01/06/08/09. Sem IPI (fora de escopo) nem CST 60/07 (fora
-  // do escopo de ICMS-ST / não usados na Reforma+regime antigo desta fazenda).
+  // Atalhos para os cenários mais comuns desta fazenda (ICMS 00/40/41/51,
+  // PIS/COFINS 01/06/08/09). O formulário aceita qualquer CST do mesmo
+  // conjunto usado no item de NF-e — estes botões são só um preenchimento
+  // rápido; CSTs fora daqui (ex: ICMS-ST) seguem preenchíveis manualmente.
   const PERFIS = {
     SIMPLES_NACIONAL: [
       { label: 'Isento de ICMS',          cor: 'success',
@@ -821,7 +849,11 @@ document.addEventListener('DOMContentLoaded', function() {
     set('id_icms_base_calculo',        p.icms_base);
     set('id_icms_reducao_base',        p.icms_red);
     set('id_icms_percentual_diferimento', p.icms_dif);
+    set('id_icms_st_mva',              p.icms_st_mva);
+    set('id_icms_st_reducao_base',     p.icms_st_red);
+    set('id_icms_st_aliquota',         p.icms_st_aliq);
     set('id_ipi_situacao_tributaria',  p.ipi_cst);
+    set('id_ipi_aliquota',             p.ipi_aliq);
     set('id_pis_situacao_tributaria',  p.pis_cst);
     set('id_pis_aliquota',             p.pis_aliq);
     set('id_pis_base_calculo',         p.pis_base);
@@ -839,7 +871,12 @@ document.addEventListener('DOMContentLoaded', function() {
     set('id_cbs_percentual_diferimento',       p.cbs_dif);
     set('id_ibs_cbs_credito_presumido_codigo',      p.ibscbs_credpres_cod);
     set('id_ibs_cbs_credito_presumido_percentual',  p.ibscbs_credpres_pct);
+    set('id_beneficio_fiscal',                      p.beneficio_fiscal);
     document.getElementById('id_ibs_cbs_situacao_tributaria')?.dispatchEvent(new Event('change'));
+    // Reexibe/oculta os grupos ICMS-ST e IPI-alíquota conforme o CST aplicado
+    // (setar .value diretamente não dispara 'change', então chamamos direto).
+    if (typeof toggleIcmsSt === 'function') toggleIcmsSt();
+    if (typeof toggleIpiAliq === 'function') toggleIpiAliq();
     // Scroll para os campos de tributos como confirmação visual
     document.getElementById('id_icms_situacao_tributaria')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -944,7 +981,8 @@ document.addEventListener('DOMContentLoaded', function() {
       icms_cst: t.icms_situacao_tributaria, icms_aliq: t.icms_aliquota,
       icms_base: t.icms_base_calculo, icms_red: t.icms_reducao_base, icms_mod: t.icms_modalidade_base,
       icms_dif: t.icms_percentual_diferimento,
-      ipi_cst: t.ipi_situacao_tributaria,
+      icms_st_mva: t.icms_st_mva, icms_st_red: t.icms_st_reducao_base, icms_st_aliq: t.icms_st_aliquota,
+      ipi_cst: t.ipi_situacao_tributaria, ipi_aliq: t.ipi_aliquota,
       pis_cst: t.pis_situacao_tributaria, pis_aliq: t.pis_aliquota, pis_base: t.pis_base_calculo,
       cof_cst: t.cofins_situacao_tributaria, cof_aliq: t.cofins_aliquota, cof_base: t.cofins_base_calculo,
       ibscbs_cst: t.ibs_cbs_situacao_tributaria, ibscbs_cclasstrib: t.ibs_cbs_classificacao_tributaria,
@@ -954,6 +992,7 @@ document.addEventListener('DOMContentLoaded', function() {
       cbs_red: t.cbs_percentual_reducao, cbs_dif: t.cbs_percentual_diferimento,
       ibscbs_credpres_cod: t.ibs_cbs_credito_presumido_codigo,
       ibscbs_credpres_pct: t.ibs_cbs_credito_presumido_percentual,
+      beneficio_fiscal: t.beneficio_fiscal,
     });
 
     // Preenche campos extras (IPI enquadramento, origem)

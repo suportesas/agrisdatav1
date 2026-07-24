@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from django.db.models.signals import post_save
 from django.test import TestCase
+from django.urls import reverse
 
 from cadastros.models import NCM
 from empresas.models import Empresa, Plano
@@ -160,3 +161,75 @@ class DrawbackServicesTestCase(TestCase):
         item_nfe = SimpleNamespace(produto_id=self.insumo.pk)
 
         self.assertIsNone(sugerir_vinculo_saida(item_nfe, self.empresa))
+
+
+class AcCreateViewTestCase(TestCase):
+    """Regressão: salvar um AC com um produto sem preencher o NCM manualmente
+    não pode quebrar o auto-preenchimento do NCM a partir do produto vinculado."""
+
+    def setUp(self):
+        receivers = [
+            empresa_signals.create_default_roles,
+            empresa_signals.seed_ncms_on_create,
+            empresa_signals.seed_cfops_on_create,
+            empresa_signals.seed_pragas_on_create,
+            empresa_signals.seed_defensivos_on_create,
+            empresa_signals.seed_categorias_on_create,
+        ]
+        for receiver in receivers:
+            post_save.disconnect(receiver, sender=Empresa)
+        try:
+            self.plano = Plano.objects.create(codigo='PEQ2', nome='Plano2', valor_mensal=Decimal('100'))
+            self.empresa = Empresa.objects.create(nome='Empresa Repro', cnpj='11.222.333/0001-44', plano=self.plano)
+        finally:
+            for receiver in receivers:
+                post_save.connect(receiver, sender=Empresa)
+
+        self.usuario = Usuario.objects.create(username='repro', empresa=self.empresa, is_superuser=True)
+        self.usuario.set_password('x')
+        self.usuario.save()
+
+        self.unidade = UnidadeMedida.objects.get_or_create(empresa=self.empresa, sigla='KG', defaults={'nome': 'Quilograma', 'tipo': 'PESO'})[0]
+        self.categoria = Categoria.objects.get_or_create(empresa=self.empresa, codigo='GER', defaults={'nome': 'Geral', 'condiciona_campos': False})[0]
+        self.tipo_produto = TipoProduto.objects.get_or_create(empresa=self.empresa, codigo='REV', defaults={'nome': 'Revenda'})[0]
+        self.ncm = NCM.objects.get_or_create(codigo='48191000', defaults={'nome': 'NCM teste com descricao longa'})[0]
+        self.produto = Produto.objects.create(
+            nome='Caixa de Papelao', categoria=self.categoria, tipo_produto=self.tipo_produto,
+            ncm=self.ncm, unidade_medida=self.unidade, unidade_compra=self.unidade,
+            unidade_venda=self.unidade, fator_conversao=Decimal('1'),
+        )
+
+        self.client.force_login(self.usuario)
+
+    def test_salva_ac_com_produto_sem_ncm_preenchido_manualmente(self):
+        data = {
+            'numero_ac': '23/0001234-0',
+            'tipo': 'SUSPENSAO',
+            'data_inicio': '2025-01-01',
+            'data_vencimento': '2026-01-01',
+            'data_prorrogacao': '',
+            'status': 'ATIVO',
+            'despachante': '',
+            'numero_processo_siscomex': '',
+            'observacoes': '',
+            'produtos-TOTAL_FORMS': '1',
+            'produtos-INITIAL_FORMS': '0',
+            'produtos-MIN_NUM_FORMS': '1',
+            'produtos-MAX_NUM_FORMS': '1000',
+            'produtos-0-id': '',
+            'produtos-0-tipo_produto': 'MERCADO_INTERNO',
+            'produtos-0-produto': str(self.produto.pk),
+            'produtos-0-ncm': '',
+            'produtos-0-descricao_mercadoria': 'Caixa de papelao ondulado',
+            'produtos-0-unidade_medida': str(self.unidade.pk),
+            'produtos-0-quantidade_autorizada': '1000.000',
+            'produtos-0-quantidade_minima_export': '',
+            'produtos-0-observacoes': '',
+            'produtos-0-DELETE': '',
+        }
+        url = reverse('drawback:ac_create')
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(AtoConcessorio.objects.count(), 1)
+        produto_ac = DrawbackProdutoAC.objects.get()
+        self.assertEqual(produto_ac.ncm, self.ncm.codigo)

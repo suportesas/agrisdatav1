@@ -13,6 +13,8 @@ def produto_fornecedor_json(request, pk):
         return JsonResponse({
             'success': True,
             'fornecedor_id': pf.fornecedor_id,
+            'fornecedor_nome': pf.fornecedor.nome,
+            'fornecedor_cnpj': pf.fornecedor.cnpj_cpf,
             'codigo_fornecedor': pf.codigo_fornecedor,
             'preco_compra': float(pf.preco_compra) if pf.preco_compra else 0,
             'prazo_entrega': pf.prazo_entrega,
@@ -656,8 +658,7 @@ def produto_update(request, pk):
     culturas = Cultura.objects.filter(empresa=request.user.empresa).order_by('nome')
     pragas = Praga.objects.filter(empresa=request.user.empresa, ativa=True).order_by('nome_comum')
     unidades = UnidadeMedida.objects.filter(empresa=request.user.empresa).order_by('sigla')
-    # Buscar fornecedores e fornecedores relacionados ao produto
-    fornecedores = Fornecedor.objects.filter(empresa=request.user.empresa, ativa=True).order_by('nome')
+    # Buscar fornecedores relacionados ao produto (busca do fornecedor é feita via AJAX no modal)
     fornecedores_produto = ProdutoFornecedor.objects.filter(produto=produto).select_related('fornecedor')
     # Adiciona o dicionário de categorias condicionais
     categorias = Categoria.objects.filter(empresa=request.user.empresa)
@@ -669,7 +670,6 @@ def produto_update(request, pk):
         'culturas': culturas,
         'pragas': pragas,
         'unidades_dosagem': unidades,
-        'fornecedores': fornecedores,
         'fornecedores_produto': fornecedores_produto,
         'categorias_condicionais': categorias_condicionais
     })
@@ -1053,7 +1053,11 @@ def ajax_produto_tributacoes(request, produto_id):
             'icms_aliquota': str(t.icms_aliquota),
             'icms_base_calculo': str(t.icms_base_calculo),
             'icms_reducao_base': str(t.icms_reducao_base),
+            'icms_st_mva': str(t.icms_st_mva),
+            'icms_st_reducao_base': str(t.icms_st_reducao_base),
+            'icms_st_aliquota': str(t.icms_st_aliquota),
             'ipi_situacao_tributaria': t.ipi_situacao_tributaria,
+            'ipi_aliquota': str(t.ipi_aliquota),
             'ipi_codigo_enquadramento': t.ipi_codigo_enquadramento,
             'pis_situacao_tributaria': t.pis_situacao_tributaria,
             'pis_aliquota': str(t.pis_aliquota),
@@ -1073,6 +1077,7 @@ def ajax_produto_tributacoes(request, produto_id):
             'cbs_percentual_diferimento': str(t.cbs_percentual_diferimento),
             'ibs_cbs_credito_presumido_codigo': t.ibs_cbs_credito_presumido_codigo,
             'ibs_cbs_credito_presumido_percentual': str(t.ibs_cbs_credito_presumido_percentual),
+            'beneficio_fiscal': t.beneficio_fiscal or '',
         })
     return JsonResponse({'success': True, 'produto_nome': produto.nome, 'tributacoes': tributacoes})
 
@@ -1540,14 +1545,32 @@ def documento_delete(request, pk):
 def fornecedores_listar(request):
     """Lista fornecedores ativos da empresa via AJAX"""
     fornecedores = Fornecedor.objects.filter(
-        empresa=request.user.empresa, 
+        empresa=request.user.empresa,
         ativa=True
     ).order_by('nome').values('id', 'nome', 'cnpj_cpf')
-    
+
     return JsonResponse({
         'success': True,
         'fornecedores': list(fornecedores)
     })
+
+
+@login_required
+def ajax_buscar_fornecedores(request):
+    """Autocomplete de fornecedores por nome/CNPJ para o Select2 do modal de fornecedor"""
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'results': []})
+    fornecedores = Fornecedor.objects.filter(
+        empresa=request.user.empresa, ativa=True
+    ).filter(
+        Q(nome__icontains=q) | Q(nome_fantasia__icontains=q) | Q(cnpj_cpf__icontains=q)
+    ).order_by('nome')[:20]
+    results = [
+        {'id': f.id, 'text': f'{f.nome} - {f.cnpj_cpf}' if f.cnpj_cpf else f.nome}
+        for f in fornecedores
+    ]
+    return JsonResponse({'results': results})
 
 
 @login_required

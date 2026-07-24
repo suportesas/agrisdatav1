@@ -1558,7 +1558,7 @@ function toggleDeson(container, cst) {
   container.querySelectorAll('.deson-wrap').forEach(wrap => { wrap.style.display = show ? '' : 'none'; });
   if (!show) {
     const el = container.querySelector('[name$="-icms_valor_desoneracao"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
 }
 
@@ -1605,19 +1605,19 @@ function togglePisCofinsAliq(container) {
   // indevidamente após o usuário trocar o CST sem apagar os campos antigos).
   if (!showPisAliq) {
     const el = container.querySelector('[name$="-aliquota_pis"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
   if (!showPisQtd) {
     const el = container.querySelector('[name$="-pis_aliquota_valor"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
   if (!showCofinsAliq) {
     const el = container.querySelector('[name$="-aliquota_cofins"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
   if (!showCofinsQtd) {
     const el = container.querySelector('[name$="-cofins_aliquota_valor"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
 }
 
@@ -1701,31 +1701,31 @@ function toggleIcmsGroups(container) {
   // Zera campos escondidos para não submeter valor residual de uma troca de CST.
   if (!showAliq) {
     const el = container.querySelector('[name$="-aliquota_icms"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
   if (!showRed) {
     const el = container.querySelector('[name$="-icms_reducao_base"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
   if (!showDif) {
     const difEl = container.querySelector('[name$="-icms_percentual_diferimento"]');
-    if (difEl) difEl.value = '0';
+    if (difEl) { if (window.MoneyMask) MoneyMask.setValue(difEl, 0); else difEl.value = '0'; }
   }
   if (!showSt) {
     ['icms_st_mva', 'icms_st_reducao_base', 'icms_st_aliquota', 'fcp_st_aliquota'].forEach(name => {
       const el = container.querySelector(`[name$="-${name}"]`);
-      if (el) el.value = '0';
+      if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
     });
   }
   if (!showFcp) {
     const el = container.querySelector('[name$="-fcp_aliquota"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
   if (!showStRet) {
     ['icms_st_base_calculo_retido', 'icms_st_aliquota_suportada', 'icms_st_valor_retido',
      'fcp_st_base_calculo_retido', 'fcp_st_aliquota_retido', 'fcp_st_valor_retido'].forEach(name => {
       const el = container.querySelector(`[name$="-${name}"]`);
-      if (el) el.value = '0';
+      if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
     });
   }
 }
@@ -1741,7 +1741,7 @@ function toggleIpiGroup(container) {
   container.querySelectorAll('.ipi-aliq-wrap').forEach(wrap => { wrap.style.display = showAliq ? '' : 'none'; });
   if (!showAliq) {
     const el = container.querySelector('[name$="-aliquota_ipi"]');
-    if (el) el.value = '0';
+    if (el) { if (window.MoneyMask) MoneyMask.setValue(el, 0); else el.value = '0'; }
   }
 }
 
@@ -1925,9 +1925,13 @@ function calcIpi(mainRow, fiscalRow) {
     if (!t) return;
     const setF = (sel, val) => {
       const el = (fiscalRow && fiscalRow.querySelector(sel)) || mainRow.querySelector(sel);
-      if (el && val !== undefined && val !== null) el.value = val;
+      if (el && val !== undefined && val !== null) {
+        if (window.MoneyMask && el.classList.contains('money-mask-input')) MoneyMask.setValue(el, val);
+        else el.value = val;
+      }
     };
     setF('input[name$="-cfop"]',                      t.cfop);
+    setF('select[name$="-origem_mercadoria"]',        t.origem_mercadoria);
     // cst_icms/cst_pis/cst_cofins agora são <select> (restritos ao escopo da
     // fazenda) — seletor sem qualificador de tag para casar com input OU select.
     setF('[name$="-cst_icms"]',                        t.cst_icms);
@@ -1935,7 +1939,11 @@ function calcIpi(mainRow, fiscalRow) {
     setF('input[name$="-icms_reducao_base"]',          t.icms_reducao_base);
     setF('input[name$="-aliquota_icms"]',              t.aliquota_icms);
     setF('input[name$="-icms_percentual_diferimento"]', t.icms_percentual_diferimento);
+    setF('input[name$="-icms_st_aliquota"]',           t.icms_st_aliquota);
+    setF('input[name$="-icms_st_mva"]',                t.icms_st_mva);
+    setF('input[name$="-icms_st_reducao_base"]',       t.icms_st_reducao_base);
     setF('select[name$="-cst_ipi"]',                   t.cst_ipi);
+    setF('input[name$="-aliquota_ipi"]',               t.aliquota_ipi);
     setF('input[name$="-ipi_codigo_enquadramento"]',   t.ipi_codigo_enquadramento);
     setF('[name$="-cst_pis"]',                          t.cst_pis);
     setF('input[name$="-aliquota_pis"]',               t.aliquota_pis);
@@ -2115,14 +2123,14 @@ function calcIpi(mainRow, fiscalRow) {
     if (qtdVolEl) qtdVolEl.value = totalQtd > 0 ? totalQtd : '';
     const plEl = document.getElementById('id_peso_liquido_kg');
     const pbEl = document.getElementById('id_peso_bruto_kg');
-    if (plEl && totalPesoLiq   > 0) plEl.value = totalPesoLiq.toFixed(3);
-    if (pbEl && totalPesoBruto > 0) pbEl.value = totalPesoBruto.toFixed(3);
+    if (plEl && totalPesoLiq   > 0) { if (window.MoneyMask) MoneyMask.setValue(plEl, totalPesoLiq.toFixed(3)); else plEl.value = totalPesoLiq.toFixed(3); }
+    if (pbEl && totalPesoBruto > 0) { if (window.MoneyMask) MoneyMask.setValue(pbEl, totalPesoBruto.toFixed(3)); else pbEl.value = totalPesoBruto.toFixed(3); }
 
     toggleColTributavel();
 
-    const frete  = parseFloat(document.getElementById('id_valor_frete')?.value)   || 0;
-    const seguro = parseFloat(document.getElementById('id_valor_seguro')?.value)   || 0;
-    const descNF = parseFloat(document.getElementById('id_valor_desconto')?.value) || 0;
+    const frete  = window.MoneyMask ? MoneyMask.getValue('id_valor_frete')   : (parseFloat(document.getElementById('id_valor_frete')?.value)   || 0);
+    const seguro = window.MoneyMask ? MoneyMask.getValue('id_valor_seguro')  : (parseFloat(document.getElementById('id_valor_seguro')?.value)   || 0);
+    const descNF = window.MoneyMask ? MoneyMask.getValue('id_valor_desconto') : (parseFloat(document.getElementById('id_valor_desconto')?.value) || 0);
     const total  = subtotal + totalIpi + totalSt + frete + seguro - descNF;
 
     document.getElementById('tfoot-subtotal').textContent        = fmt(subtotal);
@@ -2139,7 +2147,10 @@ function calcIpi(mainRow, fiscalRow) {
       const vis = [...tbody.querySelectorAll(cls)].filter(r => r.style.display !== 'none');
       if (vis.length === 1 && vis[0].dataset.auto) {
         const inp = vis[0].querySelector('input[name$="-valor"]');
-        if (inp) inp.value = total.toFixed(2);
+        if (inp) {
+          if (window.MoneyMask) MoneyMask.setValue(inp, total.toFixed(2));
+          else inp.value = total.toFixed(2);
+        }
       }
     });
   }
@@ -2396,6 +2407,11 @@ function calcIpi(mainRow, fiscalRow) {
     if (newFiscal) body.appendChild(newFiscal);
     TOTAL_ITENS.value = idx + 1;
 
+    if (window.MoneyMask) {
+      MoneyMask.init(newMain);
+      if (newFiscal) MoneyMask.init(newFiscal);
+    }
+
     // Limpa estado Select2 copiado do clone: remove container fantasma,
     // mostra o <select> oculto e apaga o flag para que initSelect2Produto funcione.
     const clonedSel = newMain.querySelector('select[name$="-produto"]');
@@ -2450,13 +2466,14 @@ function calcIpi(mainRow, fiscalRow) {
             <option value="99">Outros</option>
           </select>
         </td>
-        <td><input type="number" name="pagamentos-${idx}-valor" class="form-control form-control-sm" step="0.01" value="${saldo}"></td>
+        <td><input type="text" inputmode="decimal" autocomplete="off" name="pagamentos-${idx}-valor" data-decimals="2" class="form-control form-control-sm money-mask-input" value="${saldo}"></td>
         <td class="text-center">
           <button type="button" class="btn btn-outline-danger btn-sm remove-pag row-action danger" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
         </td>`;
       pagBody.appendChild(tr);
       attachRemovePag(tr);
       markAutoRow(tr);
+      if (window.MoneyMask) MoneyMask.init(tr);
     } else {
       const newRow = tmpl.cloneNode(true);
       newRow.querySelectorAll('input,select').forEach(el => {
@@ -2469,6 +2486,11 @@ function calcIpi(mainRow, fiscalRow) {
       pagBody.appendChild(newRow);
       attachRemovePag(newRow);
       markAutoRow(newRow);
+      if (window.MoneyMask) {
+        MoneyMask.init(newRow);
+        const valorInp = newRow.querySelector('input[name$="-valor"]');
+        if (valorInp) MoneyMask.setValue(valorInp, saldo);
+      }
     }
     TOTAL_PAG.value = idx + 1;
   });
@@ -2507,13 +2529,14 @@ function calcIpi(mainRow, fiscalRow) {
           <input type="text" name="duplicatas-${idx}-numero" class="form-control form-control-sm" value="${nextNum}">
         </td>
         <td><input type="date" name="duplicatas-${idx}-vencimento" class="form-control form-control-sm" value="${defaultVenc}"></td>
-        <td><input type="number" name="duplicatas-${idx}-valor" class="form-control form-control-sm" step="0.01" value="${saldo}"></td>
+        <td><input type="text" inputmode="decimal" autocomplete="off" name="duplicatas-${idx}-valor" data-decimals="2" class="form-control form-control-sm money-mask-input" value="${saldo}"></td>
         <td class="text-center">
           <button type="button" class="btn btn-outline-danger btn-sm remove-dup row-action danger" style="padding:1px 6px"><i class="bi bi-trash"></i></button>
         </td>`;
       dupBody.appendChild(tr);
       attachRemoveDup(tr);
       markAutoRow(tr);
+      if (window.MoneyMask) MoneyMask.init(tr);
     } else {
       const newRow = tmpl.cloneNode(true);
       newRow.querySelectorAll('input').forEach(el => {
@@ -2529,6 +2552,11 @@ function calcIpi(mainRow, fiscalRow) {
       dupBody.appendChild(newRow);
       attachRemoveDup(newRow);
       markAutoRow(newRow);
+      if (window.MoneyMask) {
+        MoneyMask.init(newRow);
+        const valorInp = newRow.querySelector('input[name$="-valor"]');
+        if (valorInp) MoneyMask.setValue(valorInp, saldo);
+      }
     }
     TOTAL_DUP.value = idx + 1;
   });

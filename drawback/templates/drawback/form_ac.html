@@ -156,11 +156,11 @@
               </div>
               <div class="col-md-2">
                 <label class="form-label fw-semibold small">Qtd Autorizada <span class="text-danger">*</span></label>
-                <input type="number" id="ui-qtd-aut" class="form-control" step="0.001" min="0.001" placeholder="0.000">
+                <input type="text" id="ui-qtd-aut" class="form-control money-mask-input" data-decimals="3" inputmode="decimal" placeholder="0,000">
               </div>
               <div class="col-md-3" id="grupo-qtd-min" style="display:none">
                 <label class="form-label fw-semibold small">Qtd Mínima a Exportar <span class="text-danger">*</span></label>
-                <input type="number" id="ui-qtd-min" class="form-control" step="0.001" min="0.001" placeholder="0.000">
+                <input type="text" id="ui-qtd-min" class="form-control money-mask-input" data-decimals="3" inputmode="decimal" placeholder="0,000">
               </div>
               <div class="col-md-3">
                 <label class="form-label fw-semibold small">Observações</label>
@@ -179,19 +179,19 @@
           <div class="px-4 pt-3 pb-0">
             <ul class="nav nav-tabs" id="produtosTabs">
               <li class="nav-item">
-                <button class="nav-link text-success fw-semibold active" data-bs-toggle="tab" data-bs-target="#tab-export">
+                <button type="button" class="nav-link text-success fw-semibold active" data-bs-toggle="tab" data-bs-target="#tab-export">
                   <i class="bi bi-box-arrow-up me-1"></i>Exportação
                   <span class="badge bg-success ms-1" id="badge-EXPORTACAO">{{ formset_rows|length }}</span>
                 </button>
               </li>
               <li class="nav-item">
-                <button class="nav-link text-primary fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-import">
+                <button type="button" class="nav-link text-primary fw-semibold" data-bs-toggle="tab" data-bs-target="#tab-import">
                   <i class="bi bi-box-arrow-in-down me-1"></i>Importação
                   <span class="badge bg-primary ms-1" id="badge-IMPORTACAO">0</span>
                 </button>
               </li>
               <li class="nav-item">
-                <button class="nav-link fw-semibold" style="color:#d97706" data-bs-toggle="tab" data-bs-target="#tab-mi">
+                <button type="button" class="nav-link fw-semibold" style="color:#d97706" data-bs-toggle="tab" data-bs-target="#tab-mi">
                   <i class="bi bi-shop me-1"></i>Mercado Interno
                   <span class="badge ms-1" style="background:#d97706" id="badge-MERCADO_INTERNO">0</span>
                 </button>
@@ -426,16 +426,20 @@ document.getElementById('btn-add').addEventListener('click', function() {
   const unSel       = document.getElementById('ui-unidade');
   const unidadeId   = unSel.value;
   const unidadeSigla = unSel.selectedIndex >= 0 ? (unSel.options[unSel.selectedIndex].dataset.sigla || '') : '';
-  const qtdAut      = document.getElementById('ui-qtd-aut').value;
-  const qtdMin      = document.getElementById('ui-qtd-min').value;
+  const qtdAutEl    = document.getElementById('ui-qtd-aut');
+  const qtdMinEl    = document.getElementById('ui-qtd-min');
+  const qtdAut      = MoneyMask.getValue(qtdAutEl);
+  const qtdMin      = MoneyMask.getValue(qtdMinEl);
+  const qtdAutRaw   = qtdAutEl._moneyMaskHidden ? qtdAutEl._moneyMaskHidden.value : '';
+  const qtdMinRaw   = qtdMinEl._moneyMaskHidden ? qtdMinEl._moneyMaskHidden.value : '';
   const obs         = document.getElementById('ui-obs').value.trim();
 
   const erros = [];
-  if (!produtoId)                          erros.push('Produto obrigatório.');
-  if (!descricao)                          erros.push('Descrição obrigatória.');
-  if (!unidadeId)                          erros.push('Unidade obrigatória.');
-  if (!qtdAut || parseFloat(qtdAut) <= 0) erros.push('Qtd Autorizada inválida.');
-  if (tipo === 'EXPORTACAO' && (!qtdMin || parseFloat(qtdMin) <= 0))
+  if (!produtoId)      erros.push('Produto obrigatório.');
+  if (!descricao)      erros.push('Descrição obrigatória.');
+  if (!unidadeId)      erros.push('Unidade obrigatória.');
+  if (qtdAut <= 0)     erros.push('Qtd Autorizada inválida.');
+  if (tipo === 'EXPORTACAO' && qtdMin <= 0)
     erros.push('Qtd Mínima a Exportar obrigatória para itens de exportação.');
   if (erros.length) { erroEl.textContent = erros.join(' '); return; }
 
@@ -450,8 +454,8 @@ document.getElementById('btn-add').addEventListener('click', function() {
     ['ncm',                      ncm],
     ['descricao_mercadoria',     descricao],
     ['unidade_medida',           unidadeId],
-    ['quantidade_autorizada',    qtdAut],
-    ['quantidade_minima_export', tipo === 'EXPORTACAO' ? qtdMin : ''],
+    ['quantidade_autorizada',    qtdAutRaw],
+    ['quantidade_minima_export', tipo === 'EXPORTACAO' ? qtdMinRaw : ''],
     ['observacoes',              obs],
     ['DELETE',                   ''],
   ];
@@ -472,13 +476,13 @@ document.getElementById('btn-add').addEventListener('click', function() {
   tr.className   = 'tr-remover';
   tr.dataset.idx = idx;
   const colQtdMin = tipo === 'EXPORTACAO'
-    ? `<td class="text-end">${parseFloat(qtdMin).toFixed(3)}</td>` : '';
+    ? `<td class="text-end">${qtdMin.toFixed(3)}</td>` : '';
   tr.innerHTML = `
     <td class="ps-3 fw-semibold">${esc(produtoNome)}</td>
     <td class="small">${esc(descricao)}</td>
     <td class="small text-muted">${esc(ncm) || '—'}</td>
     <td>${esc(unidadeSigla)}</td>
-    <td class="text-end">${parseFloat(qtdAut).toFixed(3)}</td>
+    <td class="text-end">${qtdAut.toFixed(3)}</td>
     ${colQtdMin}
     <td class="text-end pe-2">
       <button type="button" class="btn btn-sm btn-outline-danger btn-remover"
@@ -492,10 +496,12 @@ document.getElementById('btn-add').addEventListener('click', function() {
   sincronizarVazio(tipo);
 
   $('#ui-produto').val(null).trigger('change');
-  ['ui-descricao','ui-ncm','ui-qtd-aut','ui-qtd-min','ui-obs'].forEach(id => {
+  ['ui-descricao','ui-ncm','ui-obs'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  MoneyMask.setValue('ui-qtd-aut', '');
+  MoneyMask.setValue('ui-qtd-min', '');
   document.getElementById('ui-unidade').value = '';
   setTimeout(() => $('#ui-produto').select2('open'), 80);
 });

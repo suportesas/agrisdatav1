@@ -61,7 +61,7 @@
         {% csrf_token %}
         <div class="form-grid">
 
-          <div class="field col-4">
+          <div class="field col-3">
             <label class="form-label">Armazém de Destino<span class="req">*</span></label>
             <select name="armazem_destino" class="form-select" required>
               <option value="">Selecione o armazém...</option>
@@ -72,6 +72,28 @@
           </div>
 
           <div class="field col-3">
+            <label class="form-label">Produto (a granel)<span class="req">*</span></label>
+            <select name="produto" class="form-select" required>
+              <option value="">Selecione o produto...</option>
+              {% for produto in produtos %}
+                <option value="{{ produto.pk }}">{{ produto.nome }}</option>
+              {% endfor %}
+            </select>
+            <div class="helper-note">Produto in natura que entrará em estoque com este lote.</div>
+          </div>
+
+          <div class="field col-3">
+            <label class="form-label">Tipo de Embalagem<span class="req">*</span></label>
+            <select name="tipo_embalagem" class="form-select" required>
+              <option value="">Selecione o tipo de embalagem...</option>
+              {% for tipo in tipos_embalagem %}
+                <option value="{{ tipo.pk }}">{{ tipo.nome }}</option>
+              {% endfor %}
+            </select>
+            <div class="helper-note">Usado ao gerar os pallets desta ordem de embalagem.</div>
+          </div>
+
+          <div class="field col-2">
             <label class="form-label">Quantidade Recebida (kg)</label>
             <input type="number" name="quantidade_kg" class="form-control"
               step="0.001" min="0"
@@ -80,7 +102,7 @@
             <div class="helper-note">Pode diferir do colhido por perdas no transporte.</div>
           </div>
 
-          <div class="field col-5">
+          <div class="field col-1">
             <label class="form-label">Observações</label>
             <textarea name="observacoes" class="form-control" rows="2"
               placeholder="Condições de chegada, temperatura, observações..."></textarea>
@@ -90,7 +112,7 @@
 
         <div class="alert alert-info mt-4 mb-0">
           <i class="bi bi-info-circle me-2"></i>
-          Ao confirmar, será criada uma <strong>Ordem de Embalagem</strong> vinculada a este lote
+          Ao confirmar, será dada entrada em estoque do produto a granel selecionado e criada uma <strong>Ordem de Embalagem</strong> vinculada a este lote
           e o status será atualizado para <strong>Recebido no Packing</strong>.
         </div>
 

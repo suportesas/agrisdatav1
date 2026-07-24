@@ -25,6 +25,12 @@ urlpatterns = [
     path('ordens-servico/<int:pk>/insumos/novo/', views_os.os_insumo_add, name='os_insumo_add'),
     path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/editar/', views_os.os_insumo_edit, name='os_insumo_edit'),
     path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_os.os_insumo_delete, name='os_insumo_delete'),
+    path('ordens-servico/<int:pk>/funcionarios/novo/', views_os.os_funcionario_add, name='os_funcionario_add'),
+    path('ordens-servico/<int:pk>/funcionarios/<int:funcionario_pk>/editar/', views_os.os_funcionario_edit, name='os_funcionario_edit'),
+    path('ordens-servico/<int:pk>/funcionarios/<int:funcionario_pk>/excluir/', views_os.os_funcionario_delete, name='os_funcionario_delete'),
+    path('ordens-servico/<int:pk>/maquinas/novo/', views_os.os_maquina_add, name='os_maquina_add'),
+    path('ordens-servico/<int:pk>/maquinas/<int:maquina_pk>/editar/', views_os.os_maquina_edit, name='os_maquina_edit'),
+    path('ordens-servico/<int:pk>/maquinas/<int:maquina_pk>/excluir/', views_os.os_maquina_delete, name='os_maquina_delete'),
 
     # Custo/Hora de Máquinas
     path('custos-maquina/', views_os.custo_maquina_list, name='custo_maquina_list'),

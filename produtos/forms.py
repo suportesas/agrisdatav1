@@ -216,8 +216,8 @@ class ProdutoForm(forms.ModelForm):
             'unidade_compra': forms.Select(attrs={'class': 'form-select'}),
             'unidade_venda': forms.Select(attrs={'class': 'form-select'}),
             'fator_conversao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
-            'peso_liquido_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
-            'peso_bruto_unitario':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'peso_liquido_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'peso_bruto_unitario':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
 
             # Fiscal
             'ncm': forms.Select(attrs={'class': 'form-select'}),
@@ -333,26 +333,50 @@ class ProdutoForm(forms.ModelForm):
         return cleaned_data
 
 
-# CSTs restritos ao escopo de uma fazenda agrícola (commodities, insumos,
-# exportação direta e indireta) — regime tributário antigo. Mantidos como
+# Mesmo escopo de CST usado no lançamento de itens de NF-e
+# (faturamento.forms.ItemNotaFiscalForm) — para que qualquer CST configurável
+# numa NF-e também possa ser cadastrado aqui e sincronizado automaticamente
+# ao emitir a nota (ver faturamento.views.ajax_produto_detail). Mantidos como
 # constantes de FORM (não em ProdutoTributacao.CST_*_CHOICES) porque templates
 # de tributação já cadastrados podem ter CSTs fora desse escopo — restringir
 # no model quebraria a edição desses registros legados.
 CST_ICMS_CHOICES_FAZENDA = [
     ('00', '00 - Tributada integralmente'),
+    ('10', '10 - Tributada com cobrança do ICMS por ST'),
+    ('20', '20 - Com redução de BC'),
+    ('30', '30 - Isenta/não tributada com cobrança do ICMS por ST'),
     ('40', '40 - Isenta'),
     ('41', '41 - Não tributada'),
+    ('50', '50 - Suspensão'),
     ('51', '51 - Diferimento'),
+    ('60', '60 - ICMS cobrado anteriormente por ST'),
+    ('70', '70 - Com redução de BC e cobrança do ICMS por ST'),
+    ('90', '90 - Outras'),
 ]
 CST_PIS_COFINS_CHOICES_FAZENDA = [
-    ('01', '01 - Operação Tributável com Alíquota Básica'),
-    ('06', '06 - Operação Tributável a Alíquota Zero'),
-    ('08', '08 - Operação sem Incidência da Contribuição'),
-    ('09', '09 - Operação com Suspensão da Contribuição'),
+    ('01', '01 - Tributável (alíquota básica)'),
+    ('02', '02 - Tributável (alíquota diferenciada)'),
+    ('03', '03 - Tributável (alíquota por unidade)'),
+    ('04', '04 - Tributável (monofásica — alíquota zero na revenda)'),
+    ('05', '05 - Tributável (Substituição Tributária)'),
+    ('06', '06 - Alíquota zero'),
+    ('07', '07 - Isenta'),
+    ('08', '08 - Sem incidência (exportação direta)'),
+    ('09', '09 - Suspensão (exportação indireta via trading)'),
+    ('49', '49 - Outras operações de saída'),
+    ('98', '98 - Outras operações de entrada'),
+    ('99', '99 - Outras operações'),
 ]
 CST_IPI_CHOICES_FAZENDA = [
-    ('53', '53 - Saída Não-Tributada'),
-    ('55', '55 - Saída com Suspensão'),
+    ('00', '00 - Entrada com recuperação de crédito'),
+    ('49', '49 - Outras entradas'),
+    ('50', '50 - Saída tributada'),
+    ('51', '51 - Saída tributada com alíquota zero'),
+    ('52', '52 - Saída isenta'),
+    ('53', '53 - Saída não tributada'),
+    ('54', '54 - Saída imune'),
+    ('55', '55 - Saída com suspensão'),
+    ('99', '99 - Outras saídas'),
 ]
 
 
@@ -385,13 +409,13 @@ class ProdutoTributacaoForm(forms.ModelForm):
         model = ProdutoTributacao
         fields = [
             'produto', 'cfop', 'natureza_operacao', 'descricao', 'origem_mercadoria',
-            # ICMS (ICMS-ST fora de escopo: pertence aos CSTs 10/30/60/70, fora
-            # do escopo 00/40/41/51 desta fazenda)
+            # ICMS
             'icms_situacao_tributaria', 'icms_modalidade_base', 'icms_aliquota',
             'icms_reducao_base', 'icms_base_calculo', 'icms_percentual_diferimento',
-            # IPI (sem alíquota: CST 53/55, únicos no escopo, são sempre
-            # não-tributada/suspensão, nunca com alíquota)
-            'ipi_situacao_tributaria', 'ipi_codigo_enquadramento',
+            # ICMS ST — CST 10/30/60/70/90
+            'icms_st_mva', 'icms_st_reducao_base', 'icms_st_aliquota',
+            # IPI
+            'ipi_situacao_tributaria', 'ipi_aliquota', 'ipi_codigo_enquadramento',
             # PIS
             'pis_situacao_tributaria', 'pis_aliquota', 'pis_base_calculo', 'natureza_receita_pis',
             # COFINS
@@ -417,9 +441,13 @@ class ProdutoTributacaoForm(forms.ModelForm):
             'icms_reducao_base': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'icms_base_calculo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'icms_percentual_diferimento': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '100.00'}),
+            'icms_st_mva': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'icms_st_reducao_base': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
+            'icms_st_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
 
             # IPI
             'ipi_situacao_tributaria': forms.Select(attrs={'class': 'form-select'}),
+            'ipi_aliquota': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'ipi_codigo_enquadramento': forms.TextInput(attrs={'class': 'form-control', 'value': '999'}),
             
             # PIS

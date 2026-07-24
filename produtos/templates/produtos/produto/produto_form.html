@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -880,6 +885,9 @@
   <h5>Debug Info</h5>
   <div id="debugContent"></div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1990,18 +1998,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="row g-3">
           <div class="col-md-12">
             <label class="form-label fw-semibold">Fornecedor *</label>
-            <div class="input-group">
-              <select class="form-select" id="fornecedor_id" required>
-                <option value="">Selecione o fornecedor...</option>
-                {% for forn in fornecedores %}
-                  <option value="{{ forn.id }}">{{ forn.nome }} - {{ forn.cnpj_cpf }}</option>
-                {% endfor %}
-              </select>
-              <button type="button" class="btn btn-outline-secondary" onclick="recarregarFornecedores()" title="Recarregar lista de fornecedores">
-                <i class="bi bi-arrow-clockwise"></i>
-              </button>
-            </div>
-            <small class="text-muted">Se cadastrou um fornecedor agora, clique em <i class="bi bi-arrow-clockwise"></i> para atualizar a lista</small>
+            <select class="form-select" id="fornecedor_id" required style="width: 100%;">
+              <option value="">Selecione o fornecedor...</option>
+            </select>
+            <small class="text-muted">Digite ao menos 2 letras do nome para buscar o fornecedor</small>
           </div>
           
           <div class="col-md-6">
@@ -2596,42 +2596,48 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dosagemMaxima) dosagemMaxima.addEventListener('input', calcularDosagemReversa);
 });
 
-// Função para recarregar lista de fornecedores
-function recarregarFornecedores() {
-  fetch("{% url 'produtos:fornecedores_listar' %}")
-    .then(response => response.json())
-    .then(result => {
-      if (result.success) {
-        const select = document.getElementById('fornecedor_id');
-        // Guardar o valor atual
-        const currentValue = select.value;
-        // Limpar options (exceto o primeiro)
-        select.innerHTML = '<option value="">Selecione o fornecedor...</option>';
-        // Adicionar fornecedores
-        result.fornecedores.forEach(forn => {
-          const option = document.createElement('option');
-          option.value = forn.id;
-          option.textContent = `${forn.nome} - ${forn.cnpj_cpf}`;
-          select.appendChild(option);
-        });
-        // Restaurar valor se ainda existir
-        if (currentValue) {
-          select.value = currentValue;
-        }
-      }
-    })
-    .catch(error => {
-      console.error('Erro ao recarregar fornecedores:', error);
-    });
-}
-
-// Recarregar fornecedores quando o modal for aberto
+// Busca de fornecedor por nome (Select2 AJAX) no modal de fornecedor do produto
 {% if object.pk %}
 document.addEventListener('DOMContentLoaded', function() {
+  const $fornecedorSelect = $('#fornecedor_id');
+  $fornecedorSelect.select2({
+    theme: 'bootstrap-5',
+    width: '100%',
+    dropdownParent: $('#modalFornecedor'),
+    placeholder: 'Buscar fornecedor por nome...',
+    allowClear: true,
+    minimumInputLength: 2,
+    ajax: {
+      url: "{% url 'produtos:ajax_buscar_fornecedores' %}",
+      dataType: 'json',
+      delay: 250,
+      data: function(params) {
+        return { q: params.term };
+      },
+      processResults: function(data) {
+        return { results: data.results || [] };
+      },
+      cache: true
+    },
+    language: {
+      inputTooShort: function() {
+        return 'Digite ao menos 2 caracteres para buscar';
+      },
+      noResults: function() {
+        return 'Nenhum fornecedor encontrado';
+      },
+      searching: function() {
+        return 'Buscando...';
+      }
+    }
+  });
+
   const modalFornecedor = document.getElementById('modalFornecedor');
   if (modalFornecedor) {
     modalFornecedor.addEventListener('show.bs.modal', function() {
-      recarregarFornecedores();
+      if (!modalFornecedor.getAttribute('data-editar-id')) {
+        $fornecedorSelect.val(null).trigger('change');
+      }
     });
   }
 });
@@ -2738,7 +2744,12 @@ function editarFornecedor(id) {
         return;
       }
       // Preencher campos do modal
-      document.getElementById('fornecedor_id').value = data.fornecedor_id;
+      const fornecedorTexto = data.fornecedor_cnpj
+        ? `${data.fornecedor_nome} - ${data.fornecedor_cnpj}`
+        : data.fornecedor_nome;
+      const $fornecedorSelect = $('#fornecedor_id');
+      const opcaoExistente = new Option(fornecedorTexto, data.fornecedor_id, true, true);
+      $fornecedorSelect.empty().append(opcaoExistente).trigger('change');
       document.getElementById('codigo_fornecedor').value = data.codigo_fornecedor;
       document.getElementById('preco_compra').value = data.preco_compra;
       document.getElementById('prazo_entrega').value = data.prazo_entrega;

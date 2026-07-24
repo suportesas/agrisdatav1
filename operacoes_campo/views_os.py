@@ -20,13 +20,14 @@ from .models import (
     OrdemServico, OrdemServicoInsumo, CustoTalhao, CustoHoraMaquina,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
     EtapaColheita, PushSubscriptionCampo, OSIntervalo,
-    OSTransplantio, OSReplantio,
+    OSTransplantio, OSReplantio, OSFuncionario, OSMaquina,
 )
 from cadastros.models import Talhao, Safra, SafraCultura
 from .forms import (
     OrdemServicoForm, OSFuncionarioFormSet, OSMaquinaFormSet,
     OrdemServicoInsumoForm, CustoHoraMaquinaForm,
     OSTransplantioForm, OSReplantioForm,
+    OSFuncionarioForm, OSMaquinaForm,
 )
 
 SUBTIPO_LEGADO_TRANSPLANTE = 'TRANSPLANTE'
@@ -35,6 +36,12 @@ SUBTIPO_LEGADO_REPLANTIO = 'REPLANTIO'
 
 def _subtipo_legado(os_obj):
     return os_obj.subtipo_servico.subtipo_legado if os_obj.subtipo_servico_id else ''
+
+
+def _is_ajax(request):
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
 from estoque.models import MovimentacaoEstoque
 
 
@@ -1056,8 +1063,11 @@ def os_insumo_add(request, pk):
     """Adiciona um insumo diretamente na OS."""
     empresa = request.user.empresa
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    ajax = _is_ajax(request)
 
     if os_obj.status in ('CONCLUIDA', 'CANCELADA'):
+        if ajax:
+            return JsonResponse({'success': False, 'error': 'Não é possível adicionar insumos em uma OS concluída ou cancelada.'}, status=400)
         messages.error(request, 'Não é possível adicionar insumos em uma OS concluída ou cancelada.')
         return redirect('operacoes_campo:os_detail', pk=pk)
 
@@ -1068,16 +1078,21 @@ def os_insumo_add(request, pk):
             item.empresa = empresa
             item.os = os_obj
             item.save()
+            if ajax:
+                return JsonResponse({'success': True})
             messages.success(request, 'Insumo adicionado à OS com sucesso.')
             return redirect('operacoes_campo:os_detail', pk=pk)
     else:
         form = OrdemServicoInsumoForm(empresa=empresa, os=os_obj)
 
-    return render(request, 'cadastros/os/os_insumo_form.html', {
+    template = 'cadastros/os/os_insumo_form_fields.html' if ajax else 'cadastros/os/os_insumo_form.html'
+    return render(request, template, {
         'os': os_obj,
         'form': form,
         'titulo': f'Adicionar insumo - {os_obj.numero}',
         'action': 'Adicionar',
+        'is_modal': ajax,
+        'action_url': request.path if ajax else None,
     })
 
 
@@ -1129,6 +1144,190 @@ def os_insumo_delete(request, pk, insumo_pk):
     return render(request, 'cadastros/os/os_insumo_confirm_delete.html', {
         'os': os_obj,
         'insumo': insumo,
+    })
+
+
+@login_required
+def os_funcionario_add(request, pk):
+    """Aloca manualmente um funcionário na OS."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    ajax = _is_ajax(request)
+
+    if os_obj.status in ('CONCLUIDA', 'CANCELADA'):
+        if ajax:
+            return JsonResponse({'success': False, 'error': 'Não é possível adicionar mão de obra em uma OS concluída ou cancelada.'}, status=400)
+        messages.error(request, 'Não é possível adicionar mão de obra em uma OS concluída ou cancelada.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = OSFuncionarioForm(request.POST, empresa=empresa)
+        form.fields['funcionario'].required = True
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.os = os_obj
+            item.save()
+            if ajax:
+                return JsonResponse({'success': True})
+            messages.success(request, 'Funcionário adicionado à OS com sucesso.')
+            return redirect('operacoes_campo:os_detail', pk=pk)
+    else:
+        form = OSFuncionarioForm(empresa=empresa)
+        form.fields['funcionario'].required = True
+
+    template = 'cadastros/os/os_funcionario_form_fields.html' if ajax else 'cadastros/os/os_funcionario_form.html'
+    return render(request, template, {
+        'os': os_obj,
+        'form': form,
+        'titulo': f'Adicionar mão de obra - {os_obj.numero}',
+        'action': 'Adicionar',
+        'is_modal': ajax,
+        'action_url': request.path if ajax else None,
+    })
+
+
+@login_required
+def os_funcionario_edit(request, pk, funcionario_pk):
+    """Edita uma alocação manual de funcionário na OS."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    funcionario_os = get_object_or_404(OSFuncionario, pk=funcionario_pk, os=os_obj)
+
+    if os_obj.status in ('CONCLUIDA', 'CANCELADA'):
+        messages.error(request, 'Não é possível editar mão de obra em uma OS concluída ou cancelada.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = OSFuncionarioForm(request.POST, instance=funcionario_os, empresa=empresa)
+        form.fields['funcionario'].required = True
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Mão de obra da OS atualizada com sucesso.')
+            return redirect('operacoes_campo:os_detail', pk=pk)
+    else:
+        form = OSFuncionarioForm(instance=funcionario_os, empresa=empresa)
+        form.fields['funcionario'].required = True
+
+    return render(request, 'cadastros/os/os_funcionario_form.html', {
+        'os': os_obj,
+        'form': form,
+        'funcionario_os': funcionario_os,
+        'titulo': f'Editar mão de obra - {os_obj.numero}',
+        'action': 'Salvar',
+    })
+
+
+@login_required
+def os_funcionario_delete(request, pk, funcionario_pk):
+    """Remove uma alocação manual de funcionário da OS."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    funcionario_os = get_object_or_404(OSFuncionario, pk=funcionario_pk, os=os_obj)
+
+    if os_obj.status in ('CONCLUIDA', 'CANCELADA'):
+        messages.error(request, 'Não é possível remover mão de obra em uma OS concluída ou cancelada.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    if request.method == 'POST':
+        funcionario_os.delete()
+        messages.success(request, 'Funcionário removido da OS com sucesso.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    return render(request, 'cadastros/os/os_funcionario_confirm_delete.html', {
+        'os': os_obj,
+        'funcionario_os': funcionario_os,
+    })
+
+
+@login_required
+def os_maquina_add(request, pk):
+    """Aloca manualmente uma máquina/veículo na OS."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    ajax = _is_ajax(request)
+
+    if os_obj.status in ('CONCLUIDA', 'CANCELADA'):
+        if ajax:
+            return JsonResponse({'success': False, 'error': 'Não é possível adicionar maquinário em uma OS concluída ou cancelada.'}, status=400)
+        messages.error(request, 'Não é possível adicionar maquinário em uma OS concluída ou cancelada.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = OSMaquinaForm(request.POST, empresa=empresa)
+        form.fields['veiculo'].required = True
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.os = os_obj
+            item.save()
+            if ajax:
+                return JsonResponse({'success': True})
+            messages.success(request, 'Máquina adicionada à OS com sucesso.')
+            return redirect('operacoes_campo:os_detail', pk=pk)
+    else:
+        form = OSMaquinaForm(empresa=empresa)
+        form.fields['veiculo'].required = True
+
+    template = 'cadastros/os/os_maquina_form_fields.html' if ajax else 'cadastros/os/os_maquina_form.html'
+    return render(request, template, {
+        'os': os_obj,
+        'form': form,
+        'titulo': f'Adicionar maquinário - {os_obj.numero}',
+        'action': 'Adicionar',
+        'is_modal': ajax,
+        'action_url': request.path if ajax else None,
+    })
+
+
+@login_required
+def os_maquina_edit(request, pk, maquina_pk):
+    """Edita uma alocação manual de máquina na OS."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    maquina_os = get_object_or_404(OSMaquina, pk=maquina_pk, os=os_obj)
+
+    if os_obj.status in ('CONCLUIDA', 'CANCELADA'):
+        messages.error(request, 'Não é possível editar maquinário em uma OS concluída ou cancelada.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = OSMaquinaForm(request.POST, instance=maquina_os, empresa=empresa)
+        form.fields['veiculo'].required = True
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Maquinário da OS atualizado com sucesso.')
+            return redirect('operacoes_campo:os_detail', pk=pk)
+    else:
+        form = OSMaquinaForm(instance=maquina_os, empresa=empresa)
+        form.fields['veiculo'].required = True
+
+    return render(request, 'cadastros/os/os_maquina_form.html', {
+        'os': os_obj,
+        'form': form,
+        'maquina_os': maquina_os,
+        'titulo': f'Editar maquinário - {os_obj.numero}',
+        'action': 'Salvar',
+    })
+
+
+@login_required
+def os_maquina_delete(request, pk, maquina_pk):
+    """Remove uma alocação manual de máquina da OS."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    maquina_os = get_object_or_404(OSMaquina, pk=maquina_pk, os=os_obj)
+
+    if os_obj.status in ('CONCLUIDA', 'CANCELADA'):
+        messages.error(request, 'Não é possível remover maquinário em uma OS concluída ou cancelada.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    if request.method == 'POST':
+        maquina_os.delete()
+        messages.success(request, 'Máquina removida da OS com sucesso.')
+        return redirect('operacoes_campo:os_detail', pk=pk)
+
+    return render(request, 'cadastros/os/os_maquina_confirm_delete.html', {
+        'os': os_obj,
+        'maquina_os': maquina_os,
     })
 
 

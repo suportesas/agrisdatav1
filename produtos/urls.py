@@ -92,6 +92,7 @@ urlpatterns = [
     
     # Fornecedores do Produto
     path('fornecedores/listar/', views.fornecedores_listar, name='fornecedores_listar'),
+    path('fornecedores/ajax/buscar/', views.ajax_buscar_fornecedores, name='ajax_buscar_fornecedores'),
     path('<int:produto_pk>/fornecedor/criar/', views.produto_fornecedor_create, name='produto_fornecedor_create'),
     path('fornecedor/<int:pk>/excluir/', views.produto_fornecedor_delete, name='produto_fornecedor_delete'),
     path('fornecedor/<int:pk>/json/', views.produto_fornecedor_json, name='produto_fornecedor_json'),

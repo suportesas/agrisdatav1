@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Remover Maquinário | Agrisdata{% endblock %}
+{% block page_title %}Remover Maquinário{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h5 class="mb-3">Remover máquina da OS {{ os.numero }}?</h5>
+          <p class="text-muted mb-3">
+            Veículo: <strong>{{ maquina_os.veiculo }}</strong><br>
+            Data: <strong>{{ maquina_os.data_execucao|date:"d/m/Y"|default:"—" }}</strong>
+          </p>
+
+          <form method="post" class="d-flex justify-content-end gap-2">
+            {% csrf_token %}
+            <a href="{% url 'operacoes_campo:os_detail' pk=os.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-danger">Remover</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -238,11 +238,11 @@ class Produto(models.Model):
     unidade_venda = models.ForeignKey(UnidadeMedida, on_delete=models.PROTECT, related_name='produtos_venda', verbose_name='Unidade de Venda')
     fator_conversao = models.DecimalField(max_digits=10, decimal_places=4, default=1, verbose_name='Fator de Conversão')
     peso_liquido_unitario = models.DecimalField(
-        'Peso Líq./Unidade (kg)', max_digits=10, decimal_places=3, default=0,
-        help_text='Peso líquido por unidade/caixa em kg. Ex.: 10,000 para melão 10 kg')
+        'Peso Líq./Unidade (kg)', max_digits=10, decimal_places=2, default=0,
+        help_text='Peso líquido por unidade/caixa em kg. Ex.: 10,00 para melão 10 kg')
     peso_bruto_unitario = models.DecimalField(
-        'Peso Bruto/Unidade (kg)', max_digits=10, decimal_places=3, default=0,
-        help_text='Peso bruto por unidade/caixa em kg (inclui embalagem). Ex.: 11,500')
+        'Peso Bruto/Unidade (kg)', max_digits=10, decimal_places=2, default=0,
+        help_text='Peso bruto por unidade/caixa em kg (inclui embalagem). Ex.: 11,50')
 
     # Fiscal
     ncm = models.ForeignKey(NCM, on_delete=models.PROTECT, verbose_name='NCM')

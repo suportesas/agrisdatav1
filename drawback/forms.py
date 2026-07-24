@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.utils import timezone
+from core.widgets import MoneyBRInput, DecimalBRInput
 from .models import AtoConcessorio, DrawbackProdutoAC, EntradaDrawback, SaidaDrawback
 
 
@@ -38,8 +39,8 @@ class DrawbackProdutoACForm(forms.ModelForm):
             'ncm': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000000'}),
             'descricao_mercadoria': forms.TextInput(attrs={'class': 'form-control'}),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
-            'quantidade_autorizada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
-            'quantidade_minima_export': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'quantidade_autorizada': DecimalBRInput(decimals=3),
+            'quantidade_minima_export': DecimalBRInput(decimals=3),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
@@ -67,13 +68,29 @@ class DrawbackProdutoACBaseFormSet(BaseInlineFormSet):
         kwargs['empresa'] = self.empresa
         return kwargs
 
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        restantes = [
+            form for form in self.forms
+            if form.cleaned_data and not form.cleaned_data.get('DELETE', False)
+        ]
+        if not restantes:
+            raise forms.ValidationError('Adicione ao menos um produto ao Ato Concessório.')
 
+
+# extra=0: a UI de produtos é inteiramente construída via JS (botão "Adicionar
+# à lista" cria os hidden inputs "produtos-N-*" dinamicamente), então o
+# formset não deve pré-renderizar nenhum form vazio. min_num/validate_min do
+# Django forçariam ao menos 1 form com empty_permitted=False que a JS nunca
+# preenche (ela sempre começa os índices do zero) — daí a validação "ao menos
+# um produto" é feita manualmente em DrawbackProdutoACBaseFormSet.clean().
 DrawbackProdutoACFormSet = inlineformset_factory(
     AtoConcessorio, DrawbackProdutoAC,
     form=DrawbackProdutoACForm,
     formset=DrawbackProdutoACBaseFormSet,
-    extra=1, can_delete=True,
-    min_num=1, validate_min=True,
+    extra=0, can_delete=True,
 )
 
 
@@ -93,8 +110,8 @@ class EntradaDrawbackForm(forms.ModelForm):
             'serie_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1'}),
             'data_nf': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'data_recebimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
-            'valor_unitario': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': '0,0000'}),
+            'quantidade': DecimalBRInput(decimals=3),
+            'valor_unitario': DecimalBRInput(decimals=4),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
@@ -154,8 +171,8 @@ class SaidaDrawbackForm(forms.ModelForm):
             'numero_re': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25BR000123456-7'}),
             'numero_due': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25BR0012345678901'}),
             'data_embarque': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
-            'valor_fob_usd': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0,00'}),
+            'quantidade': DecimalBRInput(decimals=3),
+            'valor_fob_usd': MoneyBRInput(),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 

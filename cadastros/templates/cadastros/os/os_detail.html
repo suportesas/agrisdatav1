@@ -284,11 +284,18 @@
           <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="bi bi-people me-2 text-primary"></i>Mão de Obra</h6>
-              {% if intervalos_fechados %}
-              <span class="badge bg-info-subtle text-info border border-info-subtle small">
-                <i class="bi bi-phone me-1"></i>Via Portal do Campo
-              </span>
-              {% endif %}
+              <div class="d-flex align-items-center gap-2">
+                {% if intervalos_fechados %}
+                <span class="badge bg-info-subtle text-info border border-info-subtle small">
+                  <i class="bi bi-phone me-1"></i>Via Portal do Campo
+                </span>
+                {% endif %}
+                {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+                <button type="button" class="btn btn-sm btn-outline-primary" data-os-modal-url="{% url 'operacoes_campo:os_funcionario_add' pk=os.pk %}" data-os-modal-title="Adicionar Mão de Obra">
+                  <i class="bi bi-plus-circle me-1"></i>Adicionar
+                </button>
+                {% endif %}
+              </div>
             </div>
             <div class="card-body p-0">
               {% if intervalos_fechados or funcionarios %}
@@ -297,7 +304,7 @@
                   <thead class="table-light">
                     <tr>
                       <th>Funcionário</th><th>Origem</th><th>Data</th><th>Início</th><th>Fim</th>
-                      <th class="text-end">Horas</th><th class="text-end">Custo</th>
+                      <th class="text-end">Horas</th><th class="text-end">Custo</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -310,6 +317,7 @@
                       <td>{{ iv.fim|time:"H:i"|default:"—" }}</td>
                       <td class="text-end">{% if iv.duracao_horas %}{{ iv.duracao_horas|floatformat:"2g" }}h{% else %}—{% endif %}</td>
                       <td class="text-end fw-semibold text-primary">R$ {{ iv.custo_calculado|floatformat:"2g" }}</td>
+                      <td></td>
                     </tr>
                     {% endfor %}
                     {% for f in funcionarios %}
@@ -336,12 +344,19 @@
                       <td>{{ f.hora_fim|time:"H:i"|default:"—" }}</td>
                       <td class="text-end">{{ f.horas_trabalhadas|floatformat:"2g" }}h</td>
                       <td class="text-end fw-semibold text-primary">R$ {{ f.custo_calculado|floatformat:"2g" }}</td>
+                      <td>
+                        {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+                        <a href="{% url 'operacoes_campo:os_funcionario_edit' pk=os.pk funcionario_pk=f.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'operacoes_campo:os_funcionario_delete' pk=os.pk funcionario_pk=f.pk %}" class="btn btn-xs btn-outline-danger py-0 px-1" title="Excluir"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                      </td>
                     </tr>
                     {% endif %}
                     {% endfor %}
                     <tr class="table-light">
                       <td colspan="6" class="text-end fw-bold text-muted small">Total M.O.:</td>
                       <td class="text-end fw-bold text-primary">R$ {{ custo_mo|floatformat:"2g" }}</td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
@@ -350,6 +365,13 @@
               <div class="p-4 text-center text-muted">
                 <i class="bi bi-people opacity-25 fs-3 d-block mb-2"></i>
                 Nenhum funcionário alocado nesta OS.
+                {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+                <div class="mt-2">
+                  <button type="button" class="btn btn-sm btn-outline-primary" data-os-modal-url="{% url 'operacoes_campo:os_funcionario_add' pk=os.pk %}" data-os-modal-title="Adicionar Mão de Obra">
+                    <i class="bi bi-plus-circle me-1"></i>Adicionar Funcionário
+                  </button>
+                </div>
+                {% endif %}
               </div>
               {% endif %}
             </div>
@@ -359,8 +381,13 @@
         <!-- Maquinário -->
         <div class="col-12">
           <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent py-2">
+            <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="bi bi-truck me-2 text-info"></i>Maquinário</h6>
+              {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+              <button type="button" class="btn btn-sm btn-outline-info" data-os-modal-url="{% url 'operacoes_campo:os_maquina_add' pk=os.pk %}" data-os-modal-title="Adicionar Maquinário">
+                <i class="bi bi-plus-circle me-1"></i>Adicionar
+              </button>
+              {% endif %}
             </div>
             <div class="card-body p-0">
               {% if maquinas %}
@@ -369,7 +396,7 @@
                   <thead class="table-light">
                     <tr>
                       <th>Veículo</th><th>Operador</th><th>Data</th><th>Início</th>
-                      <th class="text-end">Horas</th><th class="text-end">Litros</th><th class="text-end">Custo</th>
+                      <th class="text-end">Horas</th><th class="text-end">Litros</th><th class="text-end">Custo</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -392,11 +419,18 @@
                       <td class="text-end">{{ m.horas_trabalhadas|floatformat:"2g" }}h</td>
                       <td class="text-end">{{ m.litros_consumidos|floatformat:"1g" }}L</td>
                       <td class="text-end fw-semibold text-info">R$ {{ m.custo_calculado|floatformat:"2g" }}</td>
+                      <td>
+                        {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+                        <a href="{% url 'operacoes_campo:os_maquina_edit' pk=os.pk maquina_pk=m.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
+                        <a href="{% url 'operacoes_campo:os_maquina_delete' pk=os.pk maquina_pk=m.pk %}" class="btn btn-xs btn-outline-danger py-0 px-1" title="Excluir"><i class="bi bi-trash"></i></a>
+                        {% endif %}
+                      </td>
                     </tr>
                     {% endfor %}
                     <tr class="table-light">
                       <td colspan="6" class="text-end fw-bold text-muted small">Total Maq.:</td>
                       <td class="text-end fw-bold text-info">R$ {{ custo_maq|floatformat:"2g" }}</td>
+                      <td></td>
                     </tr>
                   </tbody>
                 </table>
@@ -405,6 +439,13 @@
               <div class="p-4 text-center text-muted">
                 <i class="bi bi-truck opacity-25 fs-3 d-block mb-2"></i>
                 Nenhuma máquina alocada nesta OS.
+                {% if os.status not in 'CONCLUIDA,CANCELADA' %}
+                <div class="mt-2">
+                  <button type="button" class="btn btn-sm btn-outline-info" data-os-modal-url="{% url 'operacoes_campo:os_maquina_add' pk=os.pk %}" data-os-modal-title="Adicionar Maquinário">
+                    <i class="bi bi-plus-circle me-1"></i>Adicionar Máquina
+                  </button>
+                </div>
+                {% endif %}
               </div>
               {% endif %}
             </div>
@@ -417,9 +458,9 @@
             <div class="card-header bg-transparent py-2 d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="bi bi-box-seam me-2 text-warning"></i>Insumos</h6>
               {% if os.status not in 'CONCLUIDA,CANCELADA' %}
-              <a href="{% url 'operacoes_campo:os_insumo_add' pk=os.pk %}" class="btn btn-sm btn-outline-warning">
+              <button type="button" class="btn btn-sm btn-outline-warning" data-os-modal-url="{% url 'operacoes_campo:os_insumo_add' pk=os.pk %}" data-os-modal-title="Adicionar Insumo">
                 <i class="bi bi-plus-circle me-1"></i>Adicionar
-              </a>
+              </button>
               {% endif %}
             </div>
             <div class="card-body p-0">
@@ -466,9 +507,9 @@
                 Nenhum insumo lançado nesta OS.
                 {% if os.status not in 'CONCLUIDA,CANCELADA' %}
                 <div class="mt-2">
-                  <a href="{% url 'operacoes_campo:os_insumo_add' pk=os.pk %}" class="btn btn-sm btn-outline-warning">
+                  <button type="button" class="btn btn-sm btn-outline-warning" data-os-modal-url="{% url 'operacoes_campo:os_insumo_add' pk=os.pk %}" data-os-modal-title="Adicionar Insumo">
                     <i class="bi bi-plus-circle me-1"></i>Adicionar Insumo
-                  </a>
+                  </button>
                 </div>
                 {% endif %}
               </div>
@@ -953,6 +994,23 @@
   </div>
   {% endif %}
 
+  <!-- Modal compartilhado: Adicionar Mão de Obra / Maquinário / Insumo -->
+  <div class="modal fade" id="osAddModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="osAddModalTitle">Adicionar</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body" id="osAddModalBody">
+          <div class="text-center py-5">
+            <span class="spinner-border text-secondary" role="status"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <style>
@@ -993,4 +1051,90 @@
 
 .btn-xs { font-size: .75rem; padding: .1rem .4rem; border-radius: .25rem; }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modalEl = document.getElementById('osAddModal');
+  if (!modalEl) return;
+  const modalTitleEl = document.getElementById('osAddModalTitle');
+  const modalBodyEl = document.getElementById('osAddModalBody');
+  const modal = new bootstrap.Modal(modalEl);
+  let currentUrl = null;
+
+  function injectHTML(container, html) {
+    container.innerHTML = html;
+    container.querySelectorAll('script').forEach(oldScript => {
+      const newScript = document.createElement('script');
+      if (oldScript.src) {
+        newScript.src = oldScript.src;
+      } else {
+        newScript.textContent = oldScript.textContent;
+      }
+      oldScript.replaceWith(newScript);
+    });
+  }
+
+  function showSpinner() {
+    modalBodyEl.innerHTML = '<div class="text-center py-5"><span class="spinner-border text-secondary" role="status"></span></div>';
+  }
+
+  function showError(message) {
+    modalBodyEl.innerHTML = '<div class="alert alert-danger mb-0">' + message + '</div>';
+  }
+
+  function loadForm(url) {
+    currentUrl = url;
+    showSpinner();
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(r => r.text())
+      .then(html => {
+        injectHTML(modalBodyEl, html);
+        bindForm();
+      })
+      .catch(() => showError('Não foi possível carregar o formulário.'));
+  }
+
+  function bindForm() {
+    const form = modalBodyEl.querySelector('form');
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(form);
+      fetch(currentUrl, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+      })
+        .then(r => {
+          const contentType = r.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            return r.json().then(data => ({ isJson: true, data }));
+          }
+          return r.text().then(html => ({ isJson: false, html }));
+        })
+        .then(result => {
+          if (result.isJson) {
+            if (result.data.success) {
+              location.reload();
+            } else {
+              showError(result.data.error || 'Não foi possível salvar.');
+            }
+          } else {
+            injectHTML(modalBodyEl, result.html);
+            bindForm();
+          }
+        })
+        .catch(() => showError('Não foi possível salvar. Tente novamente.'));
+    });
+  }
+
+  document.querySelectorAll('[data-os-modal-url]').forEach(function(trigger) {
+    trigger.addEventListener('click', function() {
+      modalTitleEl.textContent = trigger.getAttribute('data-os-modal-title') || 'Adicionar';
+      loadForm(trigger.getAttribute('data-os-modal-url'));
+      modal.show();
+    });
+  });
+});
+</script>
 {% endblock %}

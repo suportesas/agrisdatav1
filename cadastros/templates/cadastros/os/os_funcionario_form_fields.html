@@ -1,0 +1,58 @@
+<form method="post" novalidate {% if action_url %}action="{{ action_url }}"{% endif %}>
+  {% csrf_token %}
+
+  <div class="form-section {% if is_modal %}border-0 shadow-none{% endif %}">
+    <div class="form-section-body {% if is_modal %}px-0{% endif %}">
+      <div class="form-grid">
+
+        <div class="field col-12">
+          <label class="form-label">Funcionário<span class="req">*</span></label>
+          {{ form.funcionario }}
+          {% if form.funcionario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.funcionario.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Data de Execução <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.data_execucao }}
+          {% if form.data_execucao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_execucao.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Hora de Início <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.hora_inicio }}
+          {% if form.hora_inicio.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.hora_inicio.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Hora de Término <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.hora_fim }}
+          {% if form.hora_fim.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.hora_fim.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-12">
+          <label class="form-label">Observações <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+        </div>
+
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger mt-3 mb-0 rounded-3">{{ form.non_field_errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="app-footer-bar {% if is_modal %}position-static border-0 bg-transparent p-0 mt-3{% endif %}">
+    {% if is_modal %}
+    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancelar</button>
+    {% else %}
+    <a href="{% url 'operacoes_campo:os_detail' pk=os.pk %}" class="btn btn-outline">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check2-circle"></i> {{ action }}
+    </button>
+  </div>
+</form>

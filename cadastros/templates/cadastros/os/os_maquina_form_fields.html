@@ -1,0 +1,70 @@
+<form method="post" novalidate {% if action_url %}action="{{ action_url }}"{% endif %}>
+  {% csrf_token %}
+
+  <div class="form-section {% if is_modal %}border-0 shadow-none{% endif %}">
+    <div class="form-section-body {% if is_modal %}px-0{% endif %}">
+      <div class="form-grid">
+
+        <div class="field col-6">
+          <label class="form-label">Veículo/Máquina<span class="req">*</span></label>
+          {{ form.veiculo }}
+          {% if form.veiculo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.veiculo.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-6">
+          <label class="form-label">Operador <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.operador }}
+          {% if form.operador.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.operador.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Data de Execução <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.data_execucao }}
+          {% if form.data_execucao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_execucao.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Horímetro Inicial (h) <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.horimetro_inicial }}
+          {% if form.horimetro_inicial.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.horimetro_inicial.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-4">
+          <label class="form-label">Horímetro Final (h) <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.horimetro_final }}
+          {% if form.horimetro_final.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.horimetro_final.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-12">
+          <label class="form-label">Configuração de Custo/Hora <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.custo_hora_config }}
+          {% if form.custo_hora_config.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.custo_hora_config.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="field col-12">
+          <label class="form-label">Observações <small class="fw-normal text-muted">(opcional)</small></label>
+          {{ form.observacoes }}
+          {% if form.observacoes.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.observacoes.errors|striptags }}</div>{% endif %}
+        </div>
+
+      </div>
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger mt-3 mb-0 rounded-3">{{ form.non_field_errors }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="app-footer-bar {% if is_modal %}position-static border-0 bg-transparent p-0 mt-3{% endif %}">
+    {% if is_modal %}
+    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancelar</button>
+    {% else %}
+    <a href="{% url 'operacoes_campo:os_detail' pk=os.pk %}" class="btn btn-outline">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-check2-circle"></i> {{ action }}
+    </button>
+  </div>
+</form>

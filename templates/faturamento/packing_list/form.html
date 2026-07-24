@@ -137,6 +137,7 @@
     body.appendChild(clone);
     TOTAL_FORMS.value = idx + 1;
     attachRemove(clone);
+    if (window.MoneyMask) MoneyMask.init(clone);
   });
 
   function attachRemove(row) {

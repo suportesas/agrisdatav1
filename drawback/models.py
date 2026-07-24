@@ -131,7 +131,7 @@ class DrawbackProdutoAC(models.Model):
         if not self.ncm and self.produto_id:
             ncm_produto = getattr(self.produto, 'ncm', None)
             if ncm_produto:
-                self.ncm = str(ncm_produto)
+                self.ncm = ncm_produto.codigo
         super().save(*args, **kwargs)
 
     # ── saldos calculados dinamicamente ──────────────────────────────────

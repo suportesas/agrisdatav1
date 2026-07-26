@@ -14,14 +14,22 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 
-def _create_logo_cell(logo_path, max_width, max_height):
+def _create_logo_cell(logo_field, max_width, max_height):
     try:
-        reader = ImageReader(logo_path)
+        try:
+            logo_source = logo_field.path
+        except NotImplementedError:
+            # Storage remoto (ex: Supabase) nao suporta path local: baixa via URL
+            import urllib.request
+            logo_source = io.BytesIO(urllib.request.urlopen(logo_field.url, timeout=5).read())
+        reader = ImageReader(logo_source)
         img_width, img_height = reader.getSize()
         if not img_width or not img_height:
             return ''
         scale = min(max_width / img_width, max_height / img_height)
-        return Image(logo_path, width=img_width * scale, height=img_height * scale)
+        if hasattr(logo_source, 'seek'):
+            logo_source.seek(0)
+        return Image(logo_source, width=img_width * scale, height=img_height * scale)
     except Exception:
         return ''
 
@@ -71,8 +79,8 @@ class RelatorioRankingFornecedoresPDF:
 
         logo_cell = ''
         try:
-            if getattr(self.empresa, 'logo', None) and getattr(self.empresa.logo, 'path', None):
-                logo_cell = _create_logo_cell(self.empresa.logo.path, 1.6 * inch, 1.0 * inch)
+            if getattr(self.empresa, 'logo', None) and self.empresa.logo.name:
+                logo_cell = _create_logo_cell(self.empresa.logo, 1.6 * inch, 1.0 * inch)
         except Exception:
             logo_cell = ''
 

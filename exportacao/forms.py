@@ -1,7 +1,9 @@
 from django import forms
+from django.urls import reverse_lazy
 from .models import Booking, BookingContainer, OrdemColeta, SolicitacaoBooking
 from cadastros.models import Armador, Cultura, Navio, Porto, Transportadora
 from frota.models import Motorista
+from core.widgets import Select2AjaxWidget
 
 
 class ExportacaoBaseForm(forms.ModelForm):
@@ -165,8 +167,8 @@ class BookingContainerForm(ExportacaoBaseForm):
             'data_coleta_realizada': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'hora_coleta_realizada': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'armador':         forms.Select(attrs={'class': 'form-select'}),
-            'transportadora':  forms.Select(attrs={'class': 'form-select'}),
-            'motorista':       forms.Select(attrs={'class': 'form-select'}),
+            'transportadora':  Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'),
+            'motorista':       Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'placa_principal': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'AAA-0000'}),
             'placa_reboque':   forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: AAA-0000, BBB-1111'}),
             'peso_bruto_kg':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -273,8 +275,8 @@ class OrdemColetaForm(ExportacaoBaseForm):
             'lacre_fiscal': forms.TextInput(attrs={'class': 'form-control'}),
             'lacre_terminal': forms.TextInput(attrs={'class': 'form-control'}),
             'lacre_g7': forms.TextInput(attrs={'class': 'form-control'}),
-            'transportadora': forms.Select(attrs={'class': 'form-select'}),
-            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'transportadora': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'),
+            'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'numero': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
             'data_prevista': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'data_realizada': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),

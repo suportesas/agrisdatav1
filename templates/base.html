@@ -27,7 +27,7 @@
   <link href="{% static 'vendor/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'vendor/bootstrap-icons.css' %}" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/base.css' %}?v=9">
-  <link rel="stylesheet" href="{% static 'css/sidebar-modern.css' %}?v=5">
+  <link rel="stylesheet" href="{% static 'css/sidebar-modern.css' %}?v=7">
 
   <!-- Máscara BR para campos de valor monetário (money-mask-input) — carregada cedo para
        registrar seu listener de DOMContentLoaded antes de qualquer script inline de página -->
@@ -246,6 +246,7 @@
             if (overlay) overlay.classList.toggle("active");
           } else {
             sidebar.classList.toggle("collapsed");
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
           }
           updateAria();
         });
@@ -382,27 +383,6 @@
     </div>
   </div>
 
-  <!-- Modal de Confirmação de Auto-preenchimento -->
-  <div class="modal fade" id="cnpjConfirmModal" data-bs-backdrop="static" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cnpjConfirmTitle" aria-describedby="cnpjConfirmNote" data-a11y="true" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="cnpjConfirmTitle">Confirmar dados importados</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-        </div>
-        <div class="modal-body">
-          <p>Foram importados os seguintes dados. Confirme se deseja manter estas alterações:</p>
-          <ul id="cnpjConfirmList" class="list-group mb-3"></ul>
-          <div id="cnpjConfirmNote" class="form-text text-muted">Você pode cancelar para restaurar os valores anteriores.</div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="cnpjConfirmCancel" aria-label="Cancelar importação">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="cnpjConfirmAccept" aria-label="Confirmar importação">Manter Alterações</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   {% block extra_js %}
   <script>
   // Global fix: cobre dropdowns em tabelas e outros containers com overflow
@@ -524,6 +504,6 @@
   </script>
   
   <!-- Sidebar Moderno JS -->
-  <script src="{% static 'js/sidebar-modern.js' %}?v=2"></script>
+  <script src="{% static 'js/sidebar-modern.js' %}?v=3"></script>
 </body>
 </html>

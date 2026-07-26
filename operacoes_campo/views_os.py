@@ -1851,6 +1851,32 @@ def ajax_opcoes_talhao(request):
 
 
 @login_required
+def ajax_culturas_por_safra(request):
+    """
+    Retorna as culturas (SafraCultura) atribuídas a uma safra, independente de talhão.
+    Usado na tela de OS quando o usuário escolhe a Safra diretamente (sem ter
+    selecionado um Talhão ainda) — mostra todas as culturas da safra, não só a
+    que porventura já esteja associada a algum talhão específico.
+    GET ?safra_id=<id>
+    """
+    empresa = request.user.empresa
+    safra_id = request.GET.get('safra_id')
+
+    if not safra_id:
+        return JsonResponse({'culturas': []})
+
+    culturas = list(
+        SafraCultura.objects.filter(
+            safra_id=safra_id, safra__fazenda__empresa=empresa,
+            status__in=['PLANEJADA', 'EM_ANDAMENTO'],
+        ).select_related('cultura').order_by('cultura__nome')
+    )
+    return JsonResponse({
+        'culturas': [{'id': sc.id, 'cultura_id': sc.cultura_id, 'nome': sc.cultura.nome} for sc in culturas]
+    })
+
+
+@login_required
 def ajax_talhoes_por_safra_cultura(request):
     """
     Retorna os talhões atribuídos a uma SafraCultura (definidos no cadastro da safra).

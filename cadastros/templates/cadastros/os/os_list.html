@@ -500,10 +500,25 @@
 
 <style>
 /* ---- Kanban ---- */
-.os-kanban { padding-bottom: 1rem; }
+.os-kanban { padding-bottom: 1rem; scrollbar-width: thin; scrollbar-color: #c1c9d0 transparent; }
 .kanban-column { display: flex; flex-direction: column; }
 .kanban-col-header { border-radius: .5rem .5rem 0 0; }
-.kanban-cards { background: #f8f9fa; border-radius: 0 0 .5rem .5rem; padding: .5rem .4rem; min-height: 200px; }
+.kanban-cards {
+  background: #f8f9fa; border-radius: 0 0 .5rem .5rem; padding: .5rem .4rem; min-height: 120px;
+  max-height: 62vh; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: #c1c9d0 transparent;
+}
+
+/* Barra de rolagem no estilo do menu lateral (fina, discreta, com destaque no hover) */
+.os-kanban::-webkit-scrollbar { height: 6px; }
+.os-kanban::-webkit-scrollbar-track { background: transparent; }
+.os-kanban::-webkit-scrollbar-thumb { background: #c1c9d0; border-radius: 10px; }
+.os-kanban::-webkit-scrollbar-thumb:hover { background: #9aa5ae; }
+
+.kanban-cards::-webkit-scrollbar { width: 6px; }
+.kanban-cards::-webkit-scrollbar-track { background: transparent; }
+.kanban-cards::-webkit-scrollbar-thumb { background: #c1c9d0; border-radius: 10px; }
+.kanban-cards::-webkit-scrollbar-thumb:hover { background: #9aa5ae; }
 .os-card { border-radius: .5rem !important; transition: transform .15s, box-shadow .15s; }
 .os-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12) !important; }
 .btn-xs { font-size: 0.75rem; padding: .1rem .4rem; border-radius: .25rem; }

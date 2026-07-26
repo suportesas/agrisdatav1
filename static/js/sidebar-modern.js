@@ -182,6 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.altKey && e.key === 'm') {
       e.preventDefault();
       sidebar.classList.toggle('collapsed');
+      localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
     }
     
     // Escape to close sidebar on mobile

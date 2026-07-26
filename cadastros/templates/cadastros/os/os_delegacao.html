@@ -67,7 +67,7 @@
           <i class="bi bi-hourglass me-1"></i>Sem Operador
           <span class="badge bg-white text-secondary ms-2">{{ grupos.nao_atribuidas|length }}</span>
         </div>
-        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+        <div class="card-body p-2 delegacao-col-body" style="max-height:70vh;overflow-y:auto;">
           {% for os in grupos.nao_atribuidas %}
           {% include 'cadastros/os/_delegacao_card.html' with os=os cor='secondary' %}
           {% empty %}
@@ -84,7 +84,7 @@
           <i class="bi bi-person-check me-1"></i>Atribuída / Aprovada
           <span class="badge bg-white ms-2" style="color:#0d6efd;">{{ grupos.aguardando|length }}</span>
         </div>
-        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+        <div class="card-body p-2 delegacao-col-body" style="max-height:70vh;overflow-y:auto;">
           {% for os in grupos.aguardando %}
           {% include 'cadastros/os/_delegacao_card.html' with os=os cor='primary' %}
           {% empty %}
@@ -101,7 +101,7 @@
           <i class="bi bi-play-circle me-1"></i>Em Andamento
           <span class="badge bg-white ms-2" style="color:#fd7e14;">{{ grupos.em_andamento|length }}</span>
         </div>
-        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+        <div class="card-body p-2 delegacao-col-body" style="max-height:70vh;overflow-y:auto;">
           {% for os in grupos.em_andamento %}
           {% include 'cadastros/os/_delegacao_card.html' with os=os cor='warning' %}
           {% empty %}
@@ -118,7 +118,7 @@
           <i class="bi bi-check-circle me-1"></i>Concluídas
           <span class="badge bg-white text-success ms-2">{{ grupos.concluidas|length }}</span>
         </div>
-        <div class="card-body p-2" style="max-height:70vh;overflow-y:auto;">
+        <div class="card-body p-2 delegacao-col-body" style="max-height:70vh;overflow-y:auto;">
           {% for os in grupos.concluidas %}
           {% include 'cadastros/os/_delegacao_card.html' with os=os cor='success' %}
           {% empty %}
@@ -130,6 +130,15 @@
 
   </div>
 </div>
+
+<style>
+/* Barra de rolagem no estilo do menu lateral (fina, discreta, com destaque no hover) */
+.delegacao-col-body { scrollbar-width: thin; scrollbar-color: #c1c9d0 transparent; }
+.delegacao-col-body::-webkit-scrollbar { width: 6px; }
+.delegacao-col-body::-webkit-scrollbar-track { background: transparent; }
+.delegacao-col-body::-webkit-scrollbar-thumb { background: #c1c9d0; border-radius: 10px; }
+.delegacao-col-body::-webkit-scrollbar-thumb:hover { background: #9aa5ae; }
+</style>
 
 <!-- Modal: Atribuir Operador -->
 <div class="modal fade" id="modalAtribuir" tabindex="-1">

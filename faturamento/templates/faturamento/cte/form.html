@@ -990,8 +990,13 @@ function adicionarLinhaFormset(chave, descricao) {
     if (transpId) {
       var selTransp = document.getElementById('id_transportadora');
       if (selTransp) {
-        selTransp.value = transpId;
-        selTransp.dispatchEvent(new Event('change'));
+        if (window.jQuery && window.jQuery(selTransp).data('select2')) {
+          var optTransp = new Option(primeira.transportadoraNome, transpId, true, true);
+          window.jQuery(selTransp).append(optTransp).trigger('change');
+        } else {
+          selTransp.value = transpId;
+          selTransp.dispatchEvent(new Event('change'));
+        }
       }
     }
 

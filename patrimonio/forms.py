@@ -22,7 +22,7 @@ class PatrimonioForm(forms.ModelForm):
             'numero_patrimonio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: PAT-001'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição do bem'}),
             'categoria': forms.Select(attrs={'class': 'form-select'}),
-            'veiculo': forms.Select(attrs={'class': 'form-select'}),
+            'veiculo': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'valor_inicial': MoneyBRInput(),
             'valor_residual': MoneyBRInput(),
             'tipo_depreciacao': forms.Select(attrs={'class': 'form-select'}),

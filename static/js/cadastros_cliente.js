@@ -250,6 +250,7 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
           const cnpjInput = form.querySelector('input[name="cnpj_cpf"]');
           if (!cnpjInput) { console.error('buscarCNPJ: cnpj_cpf input not found in form'); showClientAlert('Campo CNPJ/CPF não encontrado', 'danger'); return; }
           const cnpj = (cnpjInput.value || '').replace(/\D/g, '');
+          if (cnpj.length === 11) { showClientAlert('Busca automática disponível apenas para CNPJ. Não há API pública para consultar dados de CPF.', 'warning'); return; }
           if (cnpj.length !== 14) { showClientAlert('Digite um CNPJ válido (14 dígitos)', 'danger'); return; }
 
           const csrf = getCsrfToken();
@@ -351,71 +352,16 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
                 return;
               }
 
-              // Populate confirm modal list
-              const list = document.getElementById('cnpjConfirmList');
-              list.innerHTML = '';
-              changed.forEach(it => {
-                const li = document.createElement('li');
-                li.className = 'list-group-item';
-                li.innerHTML = `<strong>${it.label}:</strong> <div class="small text-muted">Antigo: ${it.old || '(vazio)'}</div><div>${it.new || '(vazio)'}</div>`;
-                list.appendChild(li);
+              // Apply changes directly (no confirmation popup) and mark fields as confirmed
+              map.forEach(item => {
+                const el = form.querySelector(item.sel);
+                if (el && el.getAttribute('data-autofilled') === '1') {
+                  el.setAttribute('data-confirmed','1');
+                  el.classList.remove('border-warning');
+                  el.classList.add('border-success');
+                }
               });
-
-              // Show modal and wire handlers
-              const confirmModalElem = document.getElementById('cnpjConfirmModal');
-              const confirmModal = confirmModalElem ? new bootstrap.Modal(confirmModalElem) : null;
-              const acceptBtn = document.getElementById('cnpjConfirmAccept');
-              const cancelBtn = document.getElementById('cnpjConfirmCancel');
-
-              const cleanup = ()=>{
-                // remove temporary highlight
-                map.forEach(item => { const el = form.querySelector(item.sel); if (el) el.classList.remove('border-warning'); });
-              };
-
-              let accepted = false;
-              let hiddenHandler = null;
-
-              const onAccept = ()=>{
-                accepted = true;
-                // mark fields as confirmed
-                map.forEach(item => { const el = form.querySelector(item.sel); if (el && el.getAttribute('data-autofilled') === '1') { el.setAttribute('data-confirmed','1'); el.classList.remove('border-warning'); el.classList.add('border-success'); } });
-                // blur focused element to avoid aria-hidden warnings when modal closes
-                try { if (document.activeElement && (document.activeElement === acceptBtn || document.activeElement === cancelBtn)) document.activeElement.blur(); } catch(e){}
-                if (confirmModal) confirmModal.hide();
-                showClientAlert('✅ Dados preenchidos com sucesso!', 'success');
-                cleanup();
-                // remove handlers
-                acceptBtn.removeEventListener('click', onAccept);
-                cancelBtn.removeEventListener('click', onCancel);
-                if (hiddenHandler && confirmModalElem) confirmModalElem.removeEventListener('hidden.bs.modal', hiddenHandler);
-              };
-
-              const onCancel = (fromHidden=false)=>{
-                // revert values
-                changed.forEach(it=>{
-                  const el = form.querySelector(it.sel);
-                  if (el) { el.value = it.old; el.removeAttribute('data-autofilled'); el.classList.remove('border-warning'); }
-                });
-                // blur focused element to avoid aria-hidden warnings when modal closes
-                try { if (document.activeElement && (document.activeElement === acceptBtn || document.activeElement === cancelBtn)) document.activeElement.blur(); } catch(e){}
-                if (!fromHidden && confirmModal) confirmModal.hide();
-                showClientAlert('Alterações revertidas', 'warning');
-                cleanup();
-                acceptBtn.removeEventListener('click', onAccept);
-                cancelBtn.removeEventListener('click', onCancel);
-                if (hiddenHandler && confirmModalElem) confirmModalElem.removeEventListener('hidden.bs.modal', hiddenHandler);
-              };
-
-              if (acceptBtn && cancelBtn) {
-                acceptBtn.addEventListener('click', onAccept);
-                cancelBtn.addEventListener('click', onCancel);
-              }
-
-              if (confirmModal) {
-                hiddenHandler = function(){ if (!accepted) onCancel(true); };
-                confirmModalElem.addEventListener('hidden.bs.modal', hiddenHandler);
-                confirmModal.show();
-              }
+              showClientAlert('✅ Dados preenchidos com sucesso!', 'success');
             } else {
               if (loadingModal) loadingModal.hide();
               showClientAlert(data.erro || 'CNPJ não encontrado', 'danger');

@@ -6,6 +6,10 @@ from . import views, views_motorista, views_vehicle
 app_name = 'frota'
 
 urlpatterns = [
+    # ==================== COMBOBOX UNIFICADO (Select2 AJAX) ====================
+    path('api/veiculos/buscar/', views.ajax_buscar_veiculos, name='ajax_buscar_veiculos'),
+    path('api/motoristas/buscar/', views.ajax_buscar_motoristas, name='ajax_buscar_motoristas'),
+
     # ==================== VEÍCULOS ====================
     path('veiculos/', views_vehicle.vehicle_list, name='vehicle_list'),
     path('veiculos/novo/', views_vehicle.vehicle_create, name='vehicle_create'),

@@ -4,6 +4,7 @@
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
@@ -212,21 +213,7 @@
         <div class="row">
           <div class="col-md-6 mb-3">
             <label class="form-label">NCM <span class="text-danger">*</span></label>
-            <div style="position: relative;">
-              <div class="input-group">
-                <input type="text" class="form-control" id="ncmCodigoInput"
-                       placeholder="Digite código ou parte da descrição…" maxlength="8"
-                       autocomplete="off" spellcheck="false">
-                <button type="button" class="btn btn-primary" id="btnBuscarNCM">
-                  <i class="bi bi-search"></i> Buscar
-                </button>
-              </div>
-              <!-- Dropdown de autocomplete -->
-              <div id="ncmDropdown"
-                   class="position-absolute w-100 bg-white border rounded shadow d-none"
-                   style="z-index:1050; max-height:260px; overflow-y:auto; top:calc(100% + 2px); left:0;">
-              </div>
-            </div>
+            {{ form.ncm }}
             <div id="ncmDescricaoDisplay" class="mt-2 p-2 bg-light border rounded d-none">
               <div class="d-flex justify-content-between align-items-start">
                 <div>
@@ -235,11 +222,6 @@
                 </div>
                 <span class="badge bg-success ms-2 d-none" id="ncmCestBadge" style="font-size:.7rem; white-space:nowrap;"></span>
               </div>
-            </div>
-            <div id="ncmError" class="text-danger small mt-1 d-none"></div>
-            <!-- Hidden field com o ID do NCM -->
-            <div style="position: absolute; left: -9999px;">
-              {{ form.ncm }}
             </div>
             {% if form.ncm.errors %}<div class="text-danger">{{ form.ncm.errors }}</div>{% endif %}
           </div>
@@ -888,6 +870,8 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -1612,14 +1596,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // ========== BUSCA DE NCM ==========
-    const ncmCodigoInput   = document.getElementById('ncmCodigoInput');
-    const btnBuscarNCM     = document.getElementById('btnBuscarNCM');
-    const ncmDropdown      = document.getElementById('ncmDropdown');
+    // ========== NCM (combobox AJAX) — auto-preenchimento do CEST ==========
     const ncmDescricaoDisplay = document.getElementById('ncmDescricaoDisplay');
     const ncmDescricaoTexto   = document.getElementById('ncmDescricaoTexto');
     const ncmCestBadge     = document.getElementById('ncmCestBadge');
-    const ncmError         = document.getElementById('ncmError');
     const ncmSelect        = document.getElementById('id_ncm');
     const cestInput        = document.getElementById('id_cest');
     const cestFormatadoTexto = document.getElementById('cestFormatadoTexto');
@@ -1646,7 +1626,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function aplicarCest(cestRaw, origem) {
+    function aplicarCest(cestRaw) {
         const digits = String(cestRaw || '').replace(/\D/g, '').substring(0, 7);
         cestInput.value = digits;
         atualizarCestDisplay(digits);
@@ -1670,51 +1650,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function executarBuscaNcm(codigo) {
-        if (!codigo) {
-            ncmError.textContent = 'Digite o código NCM';
-            ncmError.classList.remove('d-none');
-            return;
-        }
-        ncmError.classList.add('d-none');
-        ncmDescricaoDisplay.classList.add('d-none');
-        btnBuscarNCM.disabled = true;
-        btnBuscarNCM.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
-
-        fetch(`{% url "produtos:ncm_buscar_ajax" %}?codigo=${encodeURIComponent(codigo)}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                ncmSelect.value = data.id;
-                ncmCodigoInput.value = data.codigo;
-                ncmDescricaoTexto.textContent = data.nome;
-                ncmDescricaoDisplay.classList.remove('d-none');
-                aplicarCest(data.cest);
-            } else {
-                ncmError.textContent = data.error || 'NCM não encontrado';
-                ncmError.classList.remove('d-none');
-                ncmSelect.value = '';
-            }
-        })
-        .catch(err => {
-            ncmError.textContent = 'Erro ao buscar NCM: ' + err;
-            ncmError.classList.remove('d-none');
-        })
-        .finally(() => {
-            btnBuscarNCM.disabled = false;
-            btnBuscarNCM.innerHTML = '<i class="bi bi-search"></i> Buscar';
-        });
-    }
-
-    // --- Inicialização: carregar NCM existente (modo edição) ---
+    // --- Inicialização: exibir descrição do NCM já selecionado (modo edição) ---
     if (ncmSelect.value) {
         const selectedOption = ncmSelect.options[ncmSelect.selectedIndex];
         if (selectedOption && selectedOption.text) {
             const parts = selectedOption.text.split(' - ');
             if (parts.length >= 2) {
-                ncmCodigoInput.value = parts[0];
                 ncmDescricaoTexto.textContent = parts.slice(1).join(' - ');
                 ncmDescricaoDisplay.classList.remove('d-none');
             }
@@ -1727,98 +1668,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- Botão Buscar ---
-    btnBuscarNCM.addEventListener('click', function() {
-        ncmDropdown.classList.add('d-none');
-        executarBuscaNcm(ncmCodigoInput.value.trim());
-    });
-
-    // --- Enter no campo código ---
-    ncmCodigoInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            ncmDropdown.classList.add('d-none');
-            executarBuscaNcm(this.value.trim());
+    // --- Ao selecionar/limpar um NCM no combobox, atualiza descrição + CEST ---
+    $(ncmSelect).on('select2:select', function (e) {
+        const data = e.params.data || {};
+        if (data.text) {
+            const parts = data.text.split(' - ');
+            ncmDescricaoTexto.textContent = parts.length >= 2 ? parts.slice(1).join(' - ') : data.text;
+            ncmDescricaoDisplay.classList.remove('d-none');
         }
-        // Navegar no dropdown com teclado
-        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            const items = ncmDropdown.querySelectorAll('.ncm-ac-item');
-            if (!items.length) return;
-            e.preventDefault();
-            const focused = ncmDropdown.querySelector('.ncm-ac-item.active');
-            let idx = -1;
-            items.forEach((el, i) => { if (el === focused) idx = i; });
-            if (focused) focused.classList.remove('active', 'bg-primary', 'text-white');
-            const next = items[e.key === 'ArrowDown' ? Math.min(idx + 1, items.length - 1) : Math.max(idx - 1, 0)];
-            next.classList.add('active', 'bg-primary', 'text-white');
-            next.scrollIntoView({ block: 'nearest' });
-        }
-        if (e.key === 'Escape') {
-            ncmDropdown.classList.add('d-none');
-        }
-    });
-
-    // --- Autocomplete ao digitar ---
-    let ncmAcTimer = null;
-    ncmCodigoInput.addEventListener('input', function() {
-        const q = this.value.trim();
+        aplicarCest(data.cest);
+    }).on('select2:clear', function () {
         ncmDescricaoDisplay.classList.add('d-none');
-        ncmError.classList.add('d-none');
-        clearTimeout(ncmAcTimer);
-
-        if (q.length < 2) {
-            ncmDropdown.classList.add('d-none');
-            return;
-        }
-
-        ncmAcTimer = setTimeout(() => {
-            fetch(`{% url "cadastros:ncm_autocomplete" %}?q=${encodeURIComponent(q)}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(r => r.json())
-            .then(data => {
-                ncmDropdown.innerHTML = '';
-                if (!data.items || !data.items.length) {
-                    ncmDropdown.classList.add('d-none');
-                    return;
-                }
-                data.items.forEach(item => {
-                    const d = document.createElement('div');
-                    d.className = 'ncm-ac-item px-3 py-2';
-                    d.style.cssText = 'cursor:pointer; border-bottom:1px solid #f0f0f0; font-size:.85rem;';
-                    const cestTag = item.cest
-                        ? `<span class="badge bg-success ms-2" style="font-size:.68rem;">CEST ${formatCest(item.cest)}</span>`
-                        : '';
-                    d.innerHTML = `<span class="fw-bold text-primary">${item.codigo}</span> <span class="text-muted">—</span> ${item.nome}${cestTag}`;
-
-                    d.addEventListener('mouseenter', () => {
-                        ncmDropdown.querySelectorAll('.ncm-ac-item').forEach(el => el.classList.remove('active', 'bg-primary', 'text-white'));
-                        d.classList.add('active');
-                        d.style.background = '#f0f7ff';
-                    });
-                    d.addEventListener('mouseleave', () => {
-                        d.classList.remove('active');
-                        d.style.background = '';
-                    });
-                    d.addEventListener('mousedown', e => e.preventDefault()); // evita blur no input
-                    d.addEventListener('click', () => {
-                        ncmCodigoInput.value = item.codigo;
-                        ncmDropdown.classList.add('d-none');
-                        executarBuscaNcm(item.codigo);
-                    });
-                    ncmDropdown.appendChild(d);
-                });
-                ncmDropdown.classList.remove('d-none');
-            })
-            .catch(() => {});
-        }, 280);
-    });
-
-    // Fechar dropdown ao clicar fora
-    document.addEventListener('click', function(e) {
-        if (!ncmCodigoInput.contains(e.target) && !ncmDropdown.contains(e.target)) {
-            ncmDropdown.classList.add('d-none');
-        }
+        aplicarCest('');
     });
 
     // Atualizar display quando CEST editado manualmente

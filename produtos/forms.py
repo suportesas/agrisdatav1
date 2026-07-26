@@ -3,6 +3,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
+from django.urls import reverse_lazy
+from core.widgets import Select2AjaxWidget
 from .models import Marca, UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, TipoProduto
 from estoque.models import Armazem
 
@@ -142,6 +144,9 @@ class ProdutoForm(forms.ModelForm):
                 v.strip() for v in self.instance.classe_agronomica.split(',') if v.strip()
             ]
 
+        from cadastros.models import NCM
+        self.fields['ncm'].queryset = NCM.objects.filter(ativo=True).order_by('codigo')
+
         # Filtrar por empresa
         if empresa:
             self.fields['categoria'].queryset = Categoria.objects.filter(empresa=empresa)
@@ -220,7 +225,7 @@ class ProdutoForm(forms.ModelForm):
             'peso_bruto_unitario':   forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
 
             # Fiscal
-            'ncm': forms.Select(attrs={'class': 'form-select'}),
+            'ncm': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ncm_autocomplete'), placeholder='Buscar NCM...'),
             'cest': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0000000', 'maxlength': '7'}),
             'tipo_item': forms.Select(attrs={'class': 'form-select'}),
             
@@ -431,7 +436,7 @@ class ProdutoTributacaoForm(forms.ModelForm):
         ]
         widgets = {
             'produto': forms.Select(attrs={'class': 'form-select'}),
-            'cfop': forms.Select(attrs={'class': 'form-select'}),
+            'cfop': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_cfops_empresa'), placeholder='Buscar CFOP...'),
             'natureza_operacao': forms.Select(attrs={'class': 'form-select'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Será preenchido automaticamente'}),
             'origem_mercadoria': forms.Select(attrs={'class': 'form-select'}),

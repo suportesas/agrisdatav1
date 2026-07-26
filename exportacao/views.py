@@ -763,7 +763,9 @@ def ajax_booking_container_preview(request, pk):
         'armador':              str(s.armador) if s and s.armador else '',
         'navio':                str(s.navio) if s and s.navio else '',
         'transportadora_id':    b.transportadora_id,
+        'transportadora_nome':  str(b.transportadora) if b.transportadora else '',
         'motorista_id':         None,
+        'motorista_nome':       '',
         'placa_principal':      '',
         'placa_reboque':        '',
         'veiculo':              '',
@@ -780,7 +782,9 @@ def ajax_booking_container_preview(request, pk):
         # OrdemColeta pode ter transportadora diferente (sobrescreve a do Booking)
         if ordem.transportadora_id:
             data['transportadora_id'] = ordem.transportadora_id
+            data['transportadora_nome'] = str(ordem.transportadora) if ordem.transportadora else ''
         data['motorista_id'] = ordem.motorista_id
+        data['motorista_nome'] = str(ordem.motorista) if ordem.motorista else ''
         if ordem.motorista_id:
             hoje = _date.today()
             vinculo = (
@@ -914,7 +918,9 @@ def ajax_ordem_coleta_container_dados(request, pk):
         ),
         'armador_id':         s.armador_id if s else None,
         'transportadora_id':  ordem.transportadora_id or b.transportadora_id,
+        'transportadora_nome': str(ordem.transportadora) if ordem.transportadora else (str(b.transportadora) if b.transportadora else ''),
         'motorista_id':       ordem.motorista_id,
+        'motorista_nome':     str(ordem.motorista) if ordem.motorista else '',
         'placa_principal':    '',
         'placa_reboque':      '',
         'veiculo':            '',

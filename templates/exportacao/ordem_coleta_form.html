@@ -4,6 +4,12 @@
 {% block title %}{{ action }}{% endblock %}
 {% block page_title %}{{ action }}{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -353,7 +359,31 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script src="{% static 'js/section-nav.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script>
+$(function () {
+  // Motorista é filtrado pela transportadora selecionada — precisa de
+  // extraParams dinâmico (função), por isso é inicializado manualmente
+  // antes do initFromDataAttrs() genérico (que pula selects já inicializados).
+  var $motorista = $('#id_motorista');
+  var $transp = $('#id_transportadora');
+  if ($motorista.length) {
+    AgrisSelect2.init($motorista, {
+      url: $motorista.data('ajax-url'),
+      placeholder: $motorista.data('placeholder'),
+      extraParams: function () {
+        var tid = $transp.val();
+        return tid ? { transportadora_id: tid } : {};
+      },
+    });
+  }
+  AgrisSelect2.initFromDataAttrs();
+});
+</script>
 <script>
 /* ── BOOKING preview + containers ─────────────────────────────── */
 (function () {
@@ -456,23 +486,15 @@
         trCard.style.display = '';
       })
       .catch(() => limparTransp());
-    // Filtrar motoristas
-    fetch(`/exportacao/ajax/transportadora/${pk}/motoristas/`)
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => {
-        const current = motoristaSel.value;
-        while (motoristaSel.options.length > 1) motoristaSel.remove(1);
-        (data.motoristas || []).forEach(m => {
-          const opt = new Option(m.nome, m.id);
-          if (String(m.id) === current) opt.selected = true;
-          motoristaSel.add(opt);
-        });
-      })
-      .catch(() => {});
   }
 
   if (transpSel) {
-    transpSel.addEventListener('change', function () { carregarTransp(this.value); });
+    transpSel.addEventListener('change', function () {
+      carregarTransp(this.value);
+      // Motorista da transportadora anterior pode não pertencer à nova —
+      // limpa a seleção (não faz isso na carga inicial, só em troca manual).
+      if (motoristaSel) $(motoristaSel).val(null).trigger('change');
+    });
     if (transpSel.value) carregarTransp(transpSel.value);
   }
 })();

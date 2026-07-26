@@ -230,6 +230,7 @@ urlpatterns = [
     path('cfop/<int:pk>/editar/', views.cfop_update, name='cfop_update'),
     path('cfop/<int:pk>/excluir/', views.cfop_delete, name='cfop_delete'),
     path('api/cfop/autocomplete/', views.cfop_autocomplete, name='cfop_autocomplete'),
+    path('api/cfop/buscar/', views.ajax_buscar_cfops_empresa, name='ajax_buscar_cfops_empresa'),
 
     # Cliente: combobox unificado (Select2 AJAX paginado)
     path('api/clientes/buscar/', views.ajax_buscar_clientes, name='ajax_buscar_clientes'),
@@ -240,6 +241,9 @@ urlpatterns = [
     # Fazenda / Talhão: combobox unificado (Select2 AJAX paginado)
     path('api/fazendas/buscar/', views.ajax_buscar_fazendas, name='ajax_buscar_fazendas'),
     path('api/talhoes/buscar/', views.ajax_buscar_talhoes, name='ajax_buscar_talhoes'),
+
+    # Transportadora: combobox unificado (Select2 AJAX paginado)
+    path('api/transportadoras/buscar/', views.ajax_buscar_transportadoras, name='ajax_buscar_transportadoras'),
 
     # Cliente: endereços
     path('clientes/<int:cliente_pk>/enderecos/novo/', views.cliente_endereco_create, name='cliente_endereco_create'),

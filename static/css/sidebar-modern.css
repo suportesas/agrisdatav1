@@ -77,6 +77,26 @@
   transform: rotate(180deg);
 }
 
+/* Recolhida: cabeçalhos de seção viram um traço fino, como .nav-divider —
+   sem isso, o padding do título (que só existe para dar espaço ao texto)
+   permanece mesmo com o texto oculto, criando vãos grandes entre os ícones
+   e empurrando itens para fora da área visível sem indicação de scroll. */
+.sidebar-modern.collapsed .nav-section {
+  height: 1px;
+  padding: 0;
+  margin: 6px 14px;
+  background: var(--sb-border);
+  overflow: hidden;
+}
+
+/* O template sempre coloca um <li class="nav-divider"> logo antes de cada
+   <li class="nav-section"> (linha + rótulo, no modo expandido). Como a seção
+   já virou uma linha fina acima, o divisor anterior fica redundante e duplica
+   o traço no modo recolhido — some com ele. */
+.sidebar-modern.collapsed .nav-divider:has(+ .nav-section) {
+  display: none;
+}
+
 /* ── BRAND / LOGO ── */
 .sidebar-brand {
   padding: 14px 16px;

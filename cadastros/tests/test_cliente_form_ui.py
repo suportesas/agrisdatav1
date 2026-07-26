@@ -20,8 +20,8 @@ class ClienteFormUITests(TestCase):
         self.assertIn('id="buscarCNPJ"', content)
         self.assertIn('id="cnpjLoadingModal"', content)
         self.assertIn('id="cnpjFeedback"', content)
-        # Confirmation modal present
-        self.assertIn('id="cnpjConfirmModal"', content)
+        # Confirmation modal was removed: CNPJ lookup now applies data directly
+        self.assertNotIn('id="cnpjConfirmModal"', content)
         # Fields marked for auto-fill
         self.assertIn('data-auto="true"', content)
         # Vendedor select present
@@ -58,8 +58,6 @@ class ClienteFormUITests(TestCase):
         content = resp.content.decode('utf-8')
         # Global CNPJ modals (templates/base.html — presentes em toda página)
         self.assertIn('aria-labelledby="cnpjLoadingText"', content)
-        self.assertIn('aria-modal="true"', content)
-        self.assertIn('aria-describedby="cnpjConfirmNote"', content)
 
     def test_detail_proposal_modal_has_aria_attributes(self):
         # O modal de Proposta so existe no detalhe do cliente (cliente_detail.html), nao no form

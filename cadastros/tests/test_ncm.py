@@ -47,7 +47,8 @@ class TestNCMViews(TestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertTrue('items' in data and len(data['items'])>0)
+        self.assertTrue('results' in data and len(data['results']) > 0)
+        self.assertIn('pagination', data)
 
         # Delete
         url = reverse('cadastros:ncm_delete', args=[n.pk])
@@ -119,7 +120,7 @@ class TestNCMViews(TestCase):
 
     def test_import_ncm_view_dry_run(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
-        csv_content = b"codigo,Nome,descricao\n01012100,Trigo,Grão\n01,Animais,Top"  # includes invalid hierarchical code
+        csv_content = "codigo,Nome,descricao\n01012100,Trigo,Grão\n01,Animais,Top".encode('utf-8')  # includes invalid hierarchical code
         f = SimpleUploadedFile('ncm_sample.csv', csv_content, content_type='text/csv')
         admin = User.objects.create_superuser('admin_import', 'a@b', 'pass')
         self.client.force_login(admin)

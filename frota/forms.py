@@ -46,7 +46,11 @@ class VehicleForm(forms.ModelForm):
             'valor_atual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'percentual_variacao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'tipo_variacao': forms.Select(attrs={'class': 'form-select'}),
-            'transportadora': forms.Select(attrs={'class': 'form-select'}),
+            'transportadora': Select2AjaxWidget(
+                attrs={'data-toggle-transportadora-target': '1'},
+                ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'),
+                placeholder='Buscar transportadora...',
+            ),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
@@ -59,6 +63,12 @@ class VehicleForm(forms.ModelForm):
             self.fields['empresa'].required = False
         if self.empresa:
             self.initial['empresa'] = self.empresa
+            # 🔒 Bug de escopo corrigido: antes mostrava transportadoras de
+            # qualquer empresa (queryset nunca era filtrado).
+            from cadastros.models import Transportadora
+            self.fields['transportadora'].queryset = Transportadora.objects.filter(
+                empresa=self.empresa, ativa=True
+            ).order_by('razao_social')
         if self.instance and self.instance.pk:
             self.initial['origem'] = 'TERCEIRO' if self.instance.transportadora else 'PROPRIO'
 
@@ -167,8 +177,8 @@ class AbastecimentoVeiculoForm(forms.ModelForm):
             'tanque_cheio', 'local_abastecimento', 'fornecedor', 'observacoes',
         ]
         widgets = {
-            'vehicle': forms.Select(attrs={'class': 'form-select'}),
-            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
+            'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'tipo_combustivel': forms.Select(attrs={'class': 'form-select'}),
             'litros': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -210,7 +220,7 @@ class ManutencaoVeiculoForm(forms.ModelForm):
             'valor_servico', 'observacoes',
         ]
         widgets = {
-            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
@@ -309,9 +319,9 @@ class PedagioVeiculoForm(forms.ModelForm):
         model = PedagioVeiculo
         fields = ['vehicle', 'viagem', 'motorista', 'data', 'praca', 'valor', 'observacoes']
         widgets = {
-            'vehicle': forms.Select(attrs={'class': 'form-select'}),
+            'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'viagem': forms.Select(attrs={'class': 'form-select'}),
-            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'praca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Praça SP-270 km 45'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -338,8 +348,8 @@ class TelemetriaVeiculoForm(forms.ModelForm):
         fields = ['vehicle', 'motorista', 'viagem', 'data_hora', 'latitude', 'longitude',
                   'local_descricao', 'velocidade_kmh', 'km_odometro', 'fonte', 'observacoes']
         widgets = {
-            'vehicle': forms.Select(attrs={'class': 'form-select'}),
-            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
+            'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'viagem': forms.Select(attrs={'class': 'form-select'}),
             'data_hora': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0000001'}),
@@ -373,9 +383,9 @@ class ViagemFrotaForm(forms.ModelForm):
         fields = ['transportadora', 'vehicle', 'motorista', 'origem', 'destino',
                   'data', 'valor_frete', 'km_inicial', 'km_final', 'status', 'observacoes']
         widgets = {
-            'transportadora': forms.Select(attrs={'class': 'form-select'}),
-            'vehicle': forms.Select(attrs={'class': 'form-select'}),
-            'motorista': forms.Select(attrs={'class': 'form-select'}),
+            'transportadora': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'),
+            'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
+            'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'origem': forms.TextInput(attrs={'class': 'form-control'}),
             'destino': forms.TextInput(attrs={'class': 'form-control'}),
             'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),

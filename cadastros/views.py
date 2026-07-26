@@ -657,15 +657,20 @@ def ncm_delete(request, pk):
 
 @login_required
 def ncm_autocomplete(request):
+    """q vazio retorna a primeira página sem filtro; digitar busca por código
+    ou descrição. Fonte é sempre a tabela mestre NCM (não EmpresaNCM) porque é
+    ela que Produto.ncm referencia como FK — o resultado precisa validar."""
+    from core.select2 import select2_response
     q = request.GET.get('q', '').strip()
-    if request.user.is_authenticated and getattr(request.user, 'empresa', None):
-        qs = EmpresaNCM.objects.filter(empresa=request.user.empresa, ativo=True)
-    else:
-        qs = NCM.objects.filter(ativo=True)
+    qs = NCM.objects.filter(ativo=True)
     if q:
         qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
-    items = [{'id': n.pk, 'codigo': n.codigo, 'nome': n.nome, 'cest': n.cest or ''} for n in qs.order_by('codigo')[:20]]
-    return JsonResponse({'items': items})
+    qs = qs.order_by('codigo')
+
+    def serialize(n):
+        return {'id': n.pk, 'text': f'{n.codigo} - {n.nome}', 'cest': n.cest or ''}
+
+    return select2_response(request, qs, serialize)
 
 
 @login_required
@@ -1015,16 +1020,23 @@ def ajax_buscar_fazendas(request):
 def ajax_buscar_talhoes(request):
     """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
     retorna a primeira página sem filtro; digitar busca por nome/código do
-    talhão, nome da área ou da fazenda. Aceita ?fazenda_id= para restringir."""
+    talhão, nome da área ou da fazenda. Aceita ?fazenda_id= para restringir.
+    Aceita ?safra_cultura_id= para restringir aos talhões atribuídos àquela
+    SafraCultura (cadastro da safra) — usado na tela de OS, quando o usuário já
+    escolheu a Cultura da Safra e o campo Talhão deve oferecer só os
+    compatíveis."""
     from core.select2 import select2_response
     from .models import Talhao
 
     q = request.GET.get('q', '').strip()
     fazenda_id = request.GET.get('fazenda_id', '')
+    safra_cultura_id = request.GET.get('safra_cultura_id', '')
     empresa = request.user.empresa
     qs = Talhao.objects.filter(empresa=empresa, ativo=True).select_related('area', 'fazenda')
     if fazenda_id:
         qs = qs.filter(fazenda_id=fazenda_id)
+    if safra_cultura_id:
+        qs = qs.filter(culturas_safra__id=safra_cultura_id)
     if q:
         qs = qs.filter(
             Q(nome__icontains=q) | Q(codigo__icontains=q) |
@@ -1035,6 +1047,54 @@ def ajax_buscar_talhoes(request):
     def serialize(t):
         fazenda_nome = t.fazenda.nome if t.fazenda else '?'
         return {'id': t.pk, 'text': f'{t.codigo} — {t.nome} ({fazenda_nome})'}
+
+    return select2_response(request, qs, serialize)
+
+
+@login_required
+def ajax_buscar_transportadoras(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
+    retorna a primeira página sem filtro; digitar busca por razão social,
+    nome fantasia ou CNPJ."""
+    from core.select2 import select2_response
+    from .models import Transportadora
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Transportadora.objects.filter(empresa=empresa, ativa=True)
+    if q:
+        qs = qs.filter(
+            Q(razao_social__icontains=q) | Q(nome_fantasia__icontains=q) | Q(cnpj__icontains=q)
+        )
+    qs = qs.order_by('razao_social')
+
+    def serialize(t):
+        return {'id': t.pk, 'text': str(t)}
+
+    return select2_response(request, qs, serialize)
+
+
+@login_required
+def ajax_buscar_cfops_empresa(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página) para o campo
+    ProdutoTributacao.cfop: q vazio retorna a primeira página sem filtro;
+    digitar busca por código ou descrição. A FK aponta para o CFOP mestre
+    (global), então a busca é sempre nele, restrita aos códigos que a empresa
+    tem cadastrados em EmpresaCFOP — mesmo filtro já aplicado em
+    ProdutoTributacaoForm.__init__."""
+    from core.select2 import select2_response
+    from .models import EmpresaCFOP
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    codigos_empresa = EmpresaCFOP.objects.filter(empresa=empresa, ativo=True).values_list('codigo', flat=True)
+    qs = CFOP.objects.filter(codigo__in=codigos_empresa, ativo=True)
+    if q:
+        qs = qs.filter(Q(codigo__icontains=q) | Q(nome__icontains=q))
+    qs = qs.order_by('codigo')
+
+    def serialize(c):
+        return {'id': c.pk, 'text': f'{c.codigo} - {c.nome}', 'codigo': c.codigo}
 
     return select2_response(request, qs, serialize)
 

@@ -525,15 +525,19 @@ function copyOptionsFromSelector(srcSelector, targetId) {
 
 document.addEventListener('DOMContentLoaded', function () {
   // Copia opções dos forms reais do formset (enriquecidos por empresa no servidor)
-  // — funcionario/operador não entram mais aqui: os <select> reais do formset
-  // agora são combobox AJAX (Select2AjaxWidget) e só trazem a opção já
+  // — funcionario/operador/veiculo não entram mais aqui: os <select> reais do
+  // formset agora são combobox AJAX (Select2AjaxWidget) e só trazem a opção já
   // selecionada, não a lista inteira; os selects do modal buscam direto via AJAX.
-  copyOptionsFromSelector('#maq-existing-data select[name$="-veiculo"]', 'modal-maq-veiculo');
   copyOptionsFromSelector('#maq-existing-data select[name$="-custo_hora_config"]', 'modal-maq-config');
   AgrisSelect2.init('#modal-func-funcionario', {
     url: "{% url 'rh:ajax_buscar_funcionarios' %}",
     placeholder: 'Buscar funcionário...',
     dropdownParent: $('#modalFunc'),
+  });
+  AgrisSelect2.init('#modal-maq-veiculo', {
+    url: "{% url 'frota:ajax_buscar_veiculos' %}",
+    placeholder: 'Buscar veículo...',
+    dropdownParent: $('#modalMaq'),
   });
   AgrisSelect2.init('#modal-maq-operador', {
     url: "{% url 'rh:ajax_buscar_funcionarios' %}",
@@ -705,7 +709,7 @@ document.getElementById('btn-maq-add').addEventListener('click', function () {
   updateBadge('maq');
 
   // Reset
-  sel.value = '';
+  $(sel).val(null).trigger('change');
   $(opSel).val(null).trigger('change');
   document.getElementById('modal-maq-data').value = '';
   document.getElementById('modal-maq-hini').value = '';
@@ -842,36 +846,61 @@ if (tipoSelect) {
   }
 }
 
-// ── Auto-preenchimento de safra pelo talhão ──────────────────────────────────
+// ── Auto-preenchimento de safra pelo talhão / cultura pela safra ────────────
 const AJAX_TALHAO_URL = "{% url 'operacoes_campo:os_ajax_opcoes_talhao' %}";
+const AJAX_CULTURAS_SAFRA_URL = "{% url 'operacoes_campo:os_ajax_culturas_por_safra' %}";
+const AJAX_TALHOES_SAFRA_CULTURA_URL = "{% url 'operacoes_campo:os_ajax_talhoes_por_safra_cultura' %}";
 const talhaoSelect = document.getElementById('id_talhao');
 const safraSelect = document.getElementById('id_safra');
 const safraCulturaSelect = document.getElementById('id_safra_cultura');
 const culturaInput = document.getElementById('id_cultura_display');
+const talhaoHint = document.getElementById('talhao-sugestao-hint');
 
-let safrasCache = [];
+if (talhaoSelect && safraCulturaSelect) {
+  // Inicializa o combobox do Talhão aqui mesmo (em vez de deixar para o
+  // AgrisSelect2.initFromDataAttrs() genérico, que roda depois) para poder
+  // passar extraParams como função: assim, toda busca no combobox já filtra
+  // pela Cultura da Safra atualmente selecionada, sem precisar reconstruir o
+  // Select2 quando ela mudar. initFromDataAttrs() pula elementos já
+  // inicializados, então este init "ganha" da inicialização genérica.
+  AgrisSelect2.init(talhaoSelect, {
+    url: talhaoSelect.dataset.ajaxUrl,
+    placeholder: talhaoSelect.dataset.placeholder,
+    extraParams: function () {
+      return safraCulturaSelect.value ? { safra_cultura_id: safraCulturaSelect.value } : {};
+    },
+  });
+}
 
-function atualizarCulturasSafra(safraId, preservarCultura) {
+// Preenche a lista de Cultura da Safra com TODAS as culturas de uma safra
+// (não só a que já esteja vinculada a um talhão específico) — usado tanto ao
+// escolher a Safra diretamente quanto após o Talhão auto-selecionar a safra.
+function popularSelectCultura(culturas, preferId, fromTalhao) {
   if (!safraCulturaSelect) return;
-  const valorAtual = preservarCultura || safraCulturaSelect.value || '';
   safraCulturaSelect.innerHTML = '<option value="">---------</option>';
-  const safra = safrasCache.find(s => String(s.id) === String(safraId));
-  const culturas = safra ? safra.culturas : [];
   culturas.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.id; opt.textContent = c.nome;
-    if (String(c.id) === String(valorAtual)) opt.selected = true;
+    if (String(c.id) === String(preferId)) opt.selected = true;
     safraCulturaSelect.appendChild(opt);
   });
-  if (culturas.length === 1 && !valorAtual) safraCulturaSelect.value = culturas[0].id;
+  if (!preferId && culturas.length === 1) safraCulturaSelect.value = culturas[0].id;
+  onCulturaSafraChange(safraCulturaSelect.value, fromTalhao);
 }
 
-function carregarSafrasTalhao(talhaoId, preservarSafra) {
+function carregarCulturasPorSafra(safraId, preferId, fromTalhao) {
+  if (!safraId) { popularSelectCultura([], '', fromTalhao); return; }
+  fetch(AJAX_CULTURAS_SAFRA_URL + '?safra_id=' + safraId)
+    .then(r => r.json())
+    .then(data => popularSelectCultura(data.culturas || [], preferId, fromTalhao))
+    .catch(err => console.error('Erro ao carregar culturas da safra:', err));
+}
+
+function carregarSafrasTalhao(talhaoId, preservarSafra, preservarCultura) {
   if (!talhaoId) {
     if (safraSelect) safraSelect.innerHTML = '<option value="">---------</option>';
     if (culturaInput) { culturaInput.value = ''; culturaInput.placeholder = 'Selecione um Talhão'; }
-    safrasCache = [];
-    atualizarCulturasSafra('', '');
+    carregarCulturasPorSafra('', '', true);
     return;
   }
   fetch(AJAX_TALHAO_URL + '?talhao_id=' + talhaoId)
@@ -883,38 +912,60 @@ function carregarSafrasTalhao(talhaoId, preservarSafra) {
       }
       const areaInput = document.getElementById('id_area_executada_ha');
       if (areaInput && !areaInput.value && data.area_hac) areaInput.value = data.area_hac;
-      safrasCache = data.safras || [];
+
+      const safras = data.safras || [];
+      let safraId = '';
+      let preferCulturaId = preservarCultura || '';
       if (safraSelect) {
         const valorAtual = preservarSafra || safraSelect.value || '';
         safraSelect.innerHTML = '<option value="">---------</option>';
-        if (data.safras.length > 0) {
-          data.safras.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s.id; opt.textContent = s.nome;
-            if (String(s.id) === String(valorAtual)) opt.selected = true;
-            safraSelect.appendChild(opt);
-          });
-          if (data.safras.length === 1 && !valorAtual) safraSelect.value = data.safras[0].id;
+        safras.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id; opt.textContent = s.nome;
+          if (String(s.id) === String(valorAtual)) opt.selected = true;
+          safraSelect.appendChild(opt);
+        });
+        if (safras.length === 1 && !valorAtual) safraSelect.value = safras[0].id;
+        safraId = safraSelect.value;
+        if (!preferCulturaId) {
+          const safraInfo = safras.find(s => String(s.id) === String(safraId));
+          preferCulturaId = (safraInfo && safraInfo.culturas[0]) ? safraInfo.culturas[0].id : '';
         }
-        atualizarCulturasSafra(safraSelect.value, '');
       }
+      // fromTalhao=true: evita re-sugerir talhões (o talhão já está fixado pelo usuário).
+      carregarCulturasPorSafra(safraId, preferCulturaId, true);
     })
     .catch(err => console.error('Erro ao carregar safras:', err));
 }
 
 if (talhaoSelect) {
-  talhaoSelect.addEventListener('change', function () { carregarSafrasTalhao(this.value, ''); });
+  // Talhão usa Select2 (combobox AJAX): a seleção via UI dispara 'change' só no
+  // nível do jQuery, sem chegar a um addEventListener nativo — por isso o
+  // listener precisa ser registrado com $(...).on(), não addEventListener.
+  $(talhaoSelect).on('change', function () { carregarSafrasTalhao(this.value, '', ''); });
   const safraAtual = safraSelect ? safraSelect.value : '';
-  if (talhaoSelect.value) carregarSafrasTalhao(talhaoSelect.value, safraAtual);
+  const culturaAtual = safraCulturaSelect ? safraCulturaSelect.value : '';
+  if (talhaoSelect.value) carregarSafrasTalhao(talhaoSelect.value, safraAtual, culturaAtual);
 }
 
 if (safraSelect) {
-  safraSelect.addEventListener('change', function () { atualizarCulturasSafra(this.value, ''); });
+  // Troca manual da Safra (sem talhão definido ainda): mostra todas as
+  // culturas dessa safra, sem restringir a nenhum talhão específico.
+  safraSelect.addEventListener('change', function () { carregarCulturasPorSafra(this.value, '', false); });
 }
 
-// ── Sugestão de talhão a partir da cultura da safra escolhida ────────────────
-const AJAX_TALHOES_SAFRA_CULTURA_URL = "{% url 'operacoes_campo:os_ajax_talhoes_por_safra_cultura' %}";
-const talhaoHint = document.getElementById('talhao-sugestao-hint');
+// ── Ao escolher a Cultura da Safra: preenche Cultura Atual e sugere/filtra o Talhão ──
+function selecionarTalhao(id, texto) {
+  if (!talhaoSelect) return;
+  // Select2 AJAX: o <select> nativo só contém a opção já escolhida pelo
+  // usuário, então uma opção correspondente ao talhão sugerido precisa ser
+  // criada antes de definir o valor — só then, o combobox reflete a seleção
+  // e um simples .value = id (sem opção) seria ignorado silenciosamente.
+  if (!talhaoSelect.querySelector('option[value="' + CSS.escape(String(id)) + '"]')) {
+    talhaoSelect.appendChild(new Option(texto, id, false, false));
+  }
+  $(talhaoSelect).val(String(id)).trigger('change');
+}
 
 function sugerirTalhoesPorSafraCultura(safraCulturaId) {
   if (!talhaoHint) return;
@@ -928,8 +979,8 @@ function sugerirTalhoesPorSafraCultura(safraCulturaId) {
       if (talhoes.length === 0) return;
 
       if (talhoes.length === 1 && talhaoSelect && !talhaoSelect.value) {
-        talhaoSelect.value = talhoes[0].id;
-        talhaoSelect.dispatchEvent(new Event('change'));
+        const t = talhoes[0];
+        selecionarTalhao(t.id, t.codigo ? `${t.codigo} — ${t.nome}` : t.nome);
         return;
       }
 
@@ -940,10 +991,7 @@ function sugerirTalhoesPorSafraCultura(safraCulturaId) {
         link.textContent = `${t.codigo || t.nome}`;
         link.addEventListener('click', function (e) {
           e.preventDefault();
-          if (talhaoSelect) {
-            talhaoSelect.value = t.id;
-            talhaoSelect.dispatchEvent(new Event('change'));
-          }
+          selecionarTalhao(t.id, t.codigo ? `${t.codigo} — ${t.nome}` : t.nome);
         });
         talhaoHint.appendChild(link);
         if (idx < talhoes.length - 1) talhaoHint.appendChild(document.createTextNode(', '));
@@ -952,9 +1000,23 @@ function sugerirTalhoesPorSafraCultura(safraCulturaId) {
     .catch(err => console.error('Erro ao sugerir talhões:', err));
 }
 
+// fromTalhao=true (disparado pela cascata Talhão→Safra→Cultura): não re-sugere
+// talhões nem sobrescreve Cultura Atual, que já veio com o dado autoritativo
+// do próprio talhão. fromTalhao=false (usuário escolheu a cultura manualmente,
+// antes de ter um talhão definido): mostra a cultura como prévia e sugere/filtra
+// os talhões compatíveis.
+function onCulturaSafraChange(safraCulturaId, fromTalhao) {
+  if (fromTalhao) return;
+  if (culturaInput && safraCulturaSelect && (!talhaoSelect || !talhaoSelect.value)) {
+    const opt = safraCulturaSelect.options[safraCulturaSelect.selectedIndex];
+    culturaInput.value = (safraCulturaId && opt) ? opt.textContent : '';
+    culturaInput.placeholder = culturaInput.value ? '' : 'Selecione a cultura';
+  }
+  sugerirTalhoesPorSafraCultura(safraCulturaId);
+}
+
 if (safraCulturaSelect) {
-  safraCulturaSelect.addEventListener('change', function () { sugerirTalhoesPorSafraCultura(this.value); });
-  if (safraCulturaSelect.value) sugerirTalhoesPorSafraCultura(safraCulturaSelect.value);
+  safraCulturaSelect.addEventListener('change', function () { onCulturaSafraChange(this.value, false); });
 }
 </script>
 {% endblock %}

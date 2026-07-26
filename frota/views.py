@@ -37,6 +37,59 @@ from cadastros.models import Viagem
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# COMBOBOX UNIFICADO (Select2 AJAX paginado)
+# ──────────────────────────────────────────────────────────────────────────────
+
+@login_required
+def ajax_buscar_veiculos(request):
+    """q vazio retorna a primeira página sem filtro; digitar busca por placa,
+    marca, modelo ou descrição."""
+    from django.db.models import Q
+    from core.select2 import select2_response
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Vehicle.objects.filter(empresa=empresa, ativo=True).prefetch_related('plates')
+    tipos = [t for t in request.GET.get('tipo', '').split(',') if t]
+    if tipos:
+        qs = qs.filter(tipo__in=tipos)
+    if q:
+        qs = qs.filter(
+            Q(marca__icontains=q) | Q(modelo__icontains=q) | Q(descricao__icontains=q) |
+            Q(plates__placa__icontains=q)
+        ).distinct()
+    qs = qs.order_by('marca', 'modelo')
+
+    def serialize(v):
+        return {'id': v.pk, 'text': str(v)}
+
+    return select2_response(request, qs, serialize)
+
+
+@login_required
+def ajax_buscar_motoristas(request):
+    """q vazio retorna a primeira página sem filtro; digitar busca por nome,
+    CPF ou CNH."""
+    from django.db.models import Q
+    from core.select2 import select2_response
+
+    q = request.GET.get('q', '').strip()
+    empresa = request.user.empresa
+    qs = Motorista.objects.filter(empresa=empresa, ativo=True)
+    transportadora_id = request.GET.get('transportadora_id')
+    if transportadora_id:
+        qs = qs.filter(transportadora_id=transportadora_id)
+    if q:
+        qs = qs.filter(Q(nome__icontains=q) | Q(cpf__icontains=q) | Q(cnh__icontains=q))
+    qs = qs.order_by('nome')
+
+    def serialize(m):
+        return {'id': m.pk, 'text': str(m)}
+
+    return select2_response(request, qs, serialize)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # DASHBOARD DE FROTA
 # ──────────────────────────────────────────────────────────────────────────────
 

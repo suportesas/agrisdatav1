@@ -294,7 +294,7 @@ class OSMaquinaForm(forms.ModelForm):
         model = OSMaquina
         fields = ['veiculo', 'operador', 'data_execucao', 'horimetro_inicial', 'horimetro_final', 'custo_hora_config', 'observacoes']
         widgets = {
-            'veiculo': forms.Select(attrs={'class': 'form-select'}),
+            'veiculo': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'operador': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'data_execucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'horimetro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'h'}),
@@ -345,7 +345,7 @@ class CustoHoraMaquinaForm(forms.ModelForm):
         model = CustoHoraMaquina
         fields = ['veiculo', 'data_referencia', 'preco_combustivel', 'reserva_manutencao_hora', 'horas_anuais_trabalho', 'ativo']
         widgets = {
-            'veiculo': forms.Select(attrs={'class': 'form-select'}),
+            'veiculo': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'data_referencia': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'preco_combustivel': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': 'R$/litro'}),
             'reserva_manutencao_hora': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'R$/h'}),
@@ -391,7 +391,11 @@ class FrotaColheitaForm(forms.ModelForm):
         model = FrotaColheita
         fields = ['trator', 'operador', 'horimetro_inicial', 'observacoes']
         widgets = {
-            'trator': forms.Select(attrs={'class': 'form-select select-trator'}),
+            'trator': Select2AjaxWidget(
+                ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'),
+                placeholder='Buscar veículo...',
+                extra_params={'tipo': 'LEVE,MEDIO,PESADO'},
+            ),
             'operador': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'horimetro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'h'}),
             'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
@@ -415,6 +419,10 @@ class CarrocaoFrotaForm(forms.ModelForm):
         model = CarrocaoFrota
         fields = ['veiculo', 'numero_identificacao', 'capacidade_ton', 'tara_kg']
         widgets = {
+            # Mantido como <select> nativo (não Select2AjaxWidget): a tela de
+            # etapa_detalhe.html varre TODAS as <option> deste campo em JS pra
+            # marcar carroções já em uso em outra viagem (marcarCarrocoesEmUso);
+            # o widget AJAX só renderiza a opção selecionada, quebrando essa marcação.
             'veiculo': forms.Select(attrs={'class': 'form-select select-carrocao'}),
             'numero_identificacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Carroção 03'}),
             'capacidade_ton': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'ton'}),

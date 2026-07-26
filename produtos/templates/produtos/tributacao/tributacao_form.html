@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -64,35 +70,17 @@
             </div>
             <div class="form-grid">
               <div class="field col-4">
-                <label for="cfopCodigoInput" class="form-label">{{ form.cfop.label }}<span class="req">*</span></label>
-                <div class="input-group">
-                  <input type="text"
-                    id="cfopCodigoInput"
-                    class="form-control"
-                    placeholder="Digite o código CFOP"
-                    maxlength="4"
-                    value="{{ cfop_codigo }}">
-                  <button type="button"
-                     class="btn btn-outline-primary"
-                     id="btnBuscarCfop">
-                    <i class="bi bi-search"></i> Buscar
-                  </button>
-                </div>
-                <!-- Descrição do CFOP encontrado -->
+                <label class="form-label">{{ form.cfop.label }}<span class="req">*</span></label>
+                {{ form.cfop }}
+                <!-- Descrição do CFOP selecionado -->
                 <div id="cfopDescricao" class="mt-2 d-none">
                   <small class="text-success">
                     <i class="bi bi-check-circle-fill me-1"></i>
                     <strong id="cfopDescricaoTexto"></strong>
                   </small>
                 </div>
-                <!-- Select CFOP oculto (necessário para o formulário) -->
-                <div style="display: none;">
-                  {{ form.cfop }}
-                </div>
                 {% if form.cfop.errors %}
                   <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cfop.errors.0 }}</div>
-                {% else %}
-                  <div class="helper-note">Digite o código (ex: 5101)</div>
                 {% endif %}
               </div>
               <div class="field col-4">
@@ -563,6 +551,10 @@
 {% block extra_js %}
 {{ block.super }}
 <script src="{% static 'js/section-nav.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const naturezaSelect = document.querySelector('select[name="natureza_operacao"]');
@@ -657,87 +649,70 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ========================================
-    // BUSCA DE CFOP
+    // CFOP (combobox AJAX) — auto-preenchimento de Natureza da Operação / Descrição
     // ========================================
-    const cfopCodigoInput = document.getElementById('cfopCodigoInput');
-    const btnBuscarCfop = document.getElementById('btnBuscarCfop');
     const cfopSelect = document.getElementById('id_cfop');
     const cfopDescricao = document.getElementById('cfopDescricao');
     const cfopDescricaoTexto = document.getElementById('cfopDescricaoTexto');
 
-    // Buscar CFOP ao clicar no botão
-    if (btnBuscarCfop && cfopCodigoInput) {
-        btnBuscarCfop.addEventListener('click', function() {
-          const codigo = cfopCodigoInput.value.trim();
-          if (!codigo) {
-            alert('Digite o código CFOP.');
-            cfopCodigoInput.focus();
-            return;
-          }
-          btnBuscarCfop.disabled = true;
-          btnBuscarCfop.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Buscando...';
-          fetch(`/produtos/cfop/buscar/?codigo=${codigo}`)
-            .then(response => response.json())
-            .then(data => {
-              if (data.success) {
-                // Preencher select oculto do CFOP
-                if (cfopSelect) {
-                  cfopSelect.value = data.id;
-                }
-                // Exibir descrição
-                cfopDescricaoTexto.textContent = `${data.codigo} - ${data.nome}`;
-                cfopDescricao.classList.remove('d-none');
+    // Exposta em window para poder ser chamada também pelo script de
+    // PERFIS FISCAIS / COPIAR TRIBUTAÇÃO (IIFE separada, abaixo).
+    window.aplicarDadosCfop = function (codigo) {
+        if (!codigo) return;
+        fetch(`/produtos/cfop/buscar/?codigo=${codigo}`)
+          .then(response => response.json())
+          .then(data => {
+            if (!data.success) { cfopDescricao.classList.add('d-none'); return; }
 
-                // Preencher Natureza da Operação
-                const no = data.natureza_operacao;
-                if (naturezaInput && no && no.descricao) {
-                  naturezaInput.value = no.descricao;
-                }
-                if (naturezaSelect && no && no.id) {
-                  // Verificar se o ID existe entre as opções do select filtrado por empresa
-                  const optExists = Array.from(naturezaSelect.options).some(o => o.value == no.id);
-                  if (optExists) {
-                    naturezaSelect.value = no.id;
-                  } else {
-                    // Adicionar a opção dinamicamente para que o formulário possa ser salvo
-                    const opt = new Option(no.descricao, no.id, true, true);
-                    naturezaSelect.add(opt);
-                  }
-                }
+            cfopDescricaoTexto.textContent = `${data.codigo} - ${data.nome}`;
+            cfopDescricao.classList.remove('d-none');
 
-                // Preencher Descrição
-                const descricaoInput = document.getElementById('id_descricao');
-                if (descricaoInput && data.descricao) {
-                  descricaoInput.value = data.descricao;
-                }
-
-                // Preencher Tipo (se existir)
-                const tipoInput = document.getElementById('id_tipo');
-                if (tipoInput && data.tipo) {
-                  tipoInput.value = data.tipo;
-                }
-              } else {
-                alert(`CFOP não encontrado: ${data.error}`);
-                cfopDescricao.classList.add('d-none');
-              }
-            })
-            .catch(error => {
-              console.error('Erro na busca:', error);
-              alert('Erro ao buscar CFOP. Verifique o console.');
-            })
-            .finally(() => {
-              // Reabilitar botão
-              btnBuscarCfop.disabled = false;
-              btnBuscarCfop.innerHTML = '<i class="bi bi-search"></i> Buscar';
-            });
-        });
-
-        // Buscar ao pressionar Enter
-        cfopCodigoInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                btnBuscarCfop.click();
+            // Preencher Natureza da Operação
+            const no = data.natureza_operacao;
+            if (naturezaInput && no && no.descricao) {
+              naturezaInput.value = no.descricao;
             }
+            if (naturezaSelect && no && no.id) {
+              // Verificar se o ID existe entre as opções do select filtrado por empresa
+              const optExists = Array.from(naturezaSelect.options).some(o => o.value == no.id);
+              if (optExists) {
+                naturezaSelect.value = no.id;
+              } else {
+                // Adicionar a opção dinamicamente para que o formulário possa ser salvo
+                const opt = new Option(no.descricao, no.id, true, true);
+                naturezaSelect.add(opt);
+              }
+            }
+
+            // Preencher Descrição
+            const descricaoInput = document.getElementById('id_descricao');
+            if (descricaoInput && data.descricao) {
+              descricaoInput.value = data.descricao;
+            }
+
+            // Preencher Tipo (se existir)
+            const tipoInput = document.getElementById('id_tipo');
+            if (tipoInput && data.tipo) {
+              tipoInput.value = data.tipo;
+            }
+          })
+          .catch(error => console.error('Erro na busca do CFOP:', error));
+    }
+
+    if (cfopSelect) {
+        // Modo edição: já existe um CFOP selecionado ao carregar a página
+        if (cfopSelect.value) {
+            const selected = cfopSelect.options[cfopSelect.selectedIndex];
+            if (selected && selected.text) {
+                cfopDescricaoTexto.textContent = selected.text;
+                cfopDescricao.classList.remove('d-none');
+            }
+        }
+        $(cfopSelect).on('select2:select', function (e) {
+            const data = e.params.data || {};
+            aplicarDadosCfop(data.codigo || (data.text || '').split(' - ')[0]);
+        }).on('select2:clear', function () {
+            cfopDescricao.classList.add('d-none');
         });
     }
     // NATUREZA DA OPERAÇÃO
@@ -972,9 +947,14 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function aplicarTributacao(t) {
-    // Preenche CFOP
-    const cfopInput = document.getElementById('cfopCodigoInput');
-    if (cfopInput) { cfopInput.value = t.cfop_codigo; document.getElementById('btnBuscarCfop')?.click(); }
+    // Preenche CFOP (combobox AJAX) e reaproveita o mesmo fluxo de
+    // preenchimento de Natureza da Operação/Descrição da seleção manual
+    const cfopSelectEl = document.getElementById('id_cfop');
+    if (cfopSelectEl && t.cfop_id) {
+      const opt = new Option(`${t.cfop_codigo} - ${t.cfop_nome}`, t.cfop_id, true, true);
+      $(cfopSelectEl).empty().append(opt).trigger('change');
+      if (window.aplicarDadosCfop) window.aplicarDadosCfop(t.cfop_codigo);
+    }
 
     // Preenche todos os campos de tributos
     aplicarPerfil({

@@ -3,7 +3,7 @@ from django.urls import reverse_lazy
 from .models import Booking, BookingContainer, OrdemColeta, SolicitacaoBooking
 from cadastros.models import Armador, Cultura, Navio, Porto, Transportadora
 from frota.models import Motorista
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 
 
 class ExportacaoBaseForm(forms.ModelForm):
@@ -52,7 +52,7 @@ class SolicitacaoBookingForm(ExportacaoBaseForm):
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '202526 - SM19'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
-            'data_prevista_embarque': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_prevista_embarque': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '1'}),
             'porto_origem': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
@@ -108,8 +108,8 @@ class BookingForm(ExportacaoBaseForm):
             'porto_origem': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
             'rota_navio': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_embarque_previsto': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'data_embarque_realizado': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_embarque_previsto': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
+            'data_embarque_realizado': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
             'deadline_draft': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'deadline_carga': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'etd': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'class': 'form-control', 'type': 'datetime-local'}),
@@ -163,8 +163,8 @@ class BookingContainerForm(ExportacaoBaseForm):
             'cultura':         forms.Select(attrs={'class': 'form-select'}),
             'porto_origem':    forms.Select(attrs={'class': 'form-select'}),
             'porto_destino':   forms.Select(attrs={'class': 'form-select'}),
-            'data_coleta_prevista':  forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_coleta_realizada': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_coleta_prevista':  DateBRInput(attrs={'class': 'form-control'}),
+            'data_coleta_realizada': DateBRInput(attrs={'class': 'form-control'}),
             'hora_coleta_realizada': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'armador':         forms.Select(attrs={'class': 'form-select'}),
             'transportadora':  Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'),
@@ -278,8 +278,8 @@ class OrdemColetaForm(ExportacaoBaseForm):
             'transportadora': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'),
             'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'numero': forms.TextInput(attrs={'class': 'form-control', 'readonly': True}),
-            'data_prevista': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'data_realizada': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_prevista': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
+            'data_realizada': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'documento': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),

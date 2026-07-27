@@ -2,6 +2,7 @@
 Forms para relatório de pedidos pendentes
 """
 from django import forms
+from core.widgets import DateBRInput
 from cadastros.models import Fornecedor
 
 
@@ -32,13 +33,13 @@ class FiltroPedidosPendentesForm(forms.Form):
     data_inicio = forms.DateField(
         required=False,
         label='Data Início',
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=DateBRInput(attrs={})
     )
     
     data_fim = forms.DateField(
         required=False,
         label='Data Fim',
-        widget=forms.DateInput(attrs={'type': 'date'})
+        widget=DateBRInput(attrs={})
     )
     
     apenas_parciais = forms.BooleanField(

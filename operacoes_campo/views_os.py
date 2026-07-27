@@ -1879,7 +1879,7 @@ def ajax_opcoes_talhao(request):
     safras = [
         {
             'id': sc.safra_id,
-            'nome': str(sc),
+            'nome': sc.safra.nome_display,
             'ano': sc.safra.ano,
             'culturas': [{'id': sc.id, 'cultura_id': sc.cultura_id, 'nome': sc.cultura.nome}],
         }

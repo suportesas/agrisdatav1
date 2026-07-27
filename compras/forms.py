@@ -4,7 +4,7 @@ Formulários para o módulo de Compras
 from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.urls import reverse_lazy
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import (
     SolicitacaoCompra,
     ItemSolicitacaoCompra,
@@ -54,9 +54,8 @@ class SolicitacaoCompraForm(forms.ModelForm):
             'observacoes',
         ]
         widgets = {
-            'data_necessidade': forms.DateInput(
+            'data_necessidade': DateBRInput(
                 attrs={
-                    'type': 'date',
                     'class': 'form-control'
                 }
             ),
@@ -219,9 +218,8 @@ class CotacaoForm(forms.ModelForm):
             'observacoes',
         ]
         widgets = {
-            'data_limite_resposta': forms.DateInput(
+            'data_limite_resposta': DateBRInput(
                 attrs={
-                    'type': 'date',
                     'class': 'form-control'
                 }
             ),
@@ -375,8 +373,8 @@ class PlanejamentoComprasEmbalagemForm(forms.ModelForm):
         fields = ['safra', 'nome', 'data_inicio', 'data_fim', 'responsavel', 'observacoes']
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Planejamento Embalagens Manga Tommy 2025'}),
-            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_inicio': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_fim': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'responsavel': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -409,7 +407,7 @@ class ItemPlanejamentoEmbalagemForm(forms.ModelForm):
         widgets = {
             'produto': forms.HiddenInput(),
             'fase': forms.Select(attrs={'class': 'form-select form-select-sm'}),
-            'data_prevista': forms.DateInput(attrs={'class': 'form-control form-control-sm', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_prevista': DateBRInput(attrs={'class': 'form-control form-control-sm'}, format='%Y-%m-%d'),
             'quantidade_planejada': forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'step': '0.01', 'min': '0.01'}),
             'unidade_medida': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             'preco_estimado_unitario': forms.NumberInput(attrs={'class': 'form-control form-control-sm preco-estimado', 'step': '0.0001', 'min': '0'}),

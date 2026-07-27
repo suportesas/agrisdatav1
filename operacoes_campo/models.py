@@ -689,6 +689,10 @@ class EtapaColheita(models.Model):
     supervisor = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='etapas_supervisionadas', verbose_name='Supervisor de Campo')
     status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='ABERTA')
     total_liquido_kg = models.DecimalField('Total Líquido (kg)', max_digits=14, decimal_places=2, default=Decimal('0'))
+    ultimo_corte_ciclo = models.BooleanField(
+        'Último corte do ciclo', default=False,
+        help_text='Marcado ao concluir: indica que esta foi a última colheita do ciclo — libera o talhão e fecha o histórico/lote de produção.'
+    )
     observacoes = models.TextField('Observações', blank=True)
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
 

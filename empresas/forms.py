@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import DateBRInput
 from .models import APIKey, ConfiguracaoPlataforma, Empresa, Plano, Role
 
 
@@ -47,7 +48,7 @@ class EmpresaForm(forms.ModelForm):
             'plano': forms.Select(attrs={'class': 'form-select'}),
             'valor_mensalidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'dia_vencimento': forms.NumberInput(attrs={'class': 'form-control'}),
-            'data_expiracao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_expiracao': DateBRInput(attrs={'class': 'form-control'}),
             'bloqueada_ate': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'motivo_bloqueio': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

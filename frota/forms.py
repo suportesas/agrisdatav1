@@ -3,7 +3,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse_lazy
 
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import (
     Vehicle, VehiclePlate, VehicleValueHistory, VehicleDocument,
     AbastecimentoVeiculo, ManutencaoVeiculo, ManutencaoItem,
@@ -136,8 +136,8 @@ class VehiclePlateForm(forms.ModelForm):
         fields = ['placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
         widgets = {
             'placa': forms.TextInput(attrs={'class': 'form-control'}),
-            'vigencia_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'vigencia_fim': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'vigencia_inicio': DateBRInput(attrs={'class': 'form-control'}),
+            'vigencia_fim': DateBRInput(attrs={'class': 'form-control'}),
             'atual': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
         labels = {
@@ -179,7 +179,7 @@ class AbastecimentoVeiculoForm(forms.ModelForm):
         widgets = {
             'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'tipo_combustivel': forms.Select(attrs={'class': 'form-select'}),
             'litros': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'preco_por_litro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -224,11 +224,11 @@ class ManutencaoVeiculoForm(forms.ModelForm):
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_abertura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_conclusao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_abertura': DateBRInput(attrs={'class': 'form-control'}),
+            'data_conclusao': DateBRInput(attrs={'class': 'form-control'}),
             'km_odometro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'horimetro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
-            'proxima_data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'proxima_data': DateBRInput(attrs={'class': 'form-control'}),
             'proximo_km': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'eh_oficina_propria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'local_oficina': forms.Select(attrs={'class': 'form-select'}),
@@ -322,7 +322,7 @@ class PedagioVeiculoForm(forms.ModelForm):
             'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'viagem': forms.Select(attrs={'class': 'form-select'}),
             'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'praca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Praça SP-270 km 45'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -388,7 +388,7 @@ class ViagemFrotaForm(forms.ModelForm):
             'motorista': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'origem': forms.TextInput(attrs={'class': 'form-control'}),
             'destino': forms.TextInput(attrs={'class': 'form-control'}),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'valor_frete': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'km_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'km_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
@@ -447,7 +447,7 @@ class AbastecimentoPortalForm(forms.ModelForm):
                   'km_odometro', 'horimetro', 'tanque_cheio', 'local_abastecimento', 'observacoes']
         widgets = {
             'vehicle': forms.Select(attrs={'class': 'form-select form-select-lg'}),
-            'data': forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control form-control-lg'}),
             'tipo_combustivel': forms.Select(attrs={'class': 'form-select form-select-lg'}),
             'litros': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.001', 'min': '0'}),
             'preco_por_litro': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.001', 'min': '0'}),

@@ -4,6 +4,7 @@ Forms para autenticação e gerenciamento de usuários
 """
 
 from django import forms
+from core.widgets import DateBRInput
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
 from .models import TipoUsuario, Usuario, PerfilUsuario
@@ -335,18 +336,16 @@ class UsuarioUpdateForm(UserChangeForm):
     data_nascimento = forms.DateField(
         label='Data de Nascimento',
         required=False,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
+        widget=DateBRInput(attrs={
+            'class': 'form-control'
         })
     )
     
     data_admissao = forms.DateField(
         label='Data de Admissão',
         required=False,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
+        widget=DateBRInput(attrs={
+            'class': 'form-control'
         })
     )
     

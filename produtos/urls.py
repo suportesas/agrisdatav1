@@ -78,6 +78,7 @@ urlpatterns = [
     path('tributacao/<int:pk>/excluir/', views.produtotributacao_delete, name='tributacao_delete'),
     path('ajax/buscar/', views.ajax_buscar_produtos, name='ajax_buscar_produtos'),
     path('ajax/<int:produto_id>/tributacoes/', views.ajax_produto_tributacoes, name='ajax_produto_tributacoes'),
+    path('ajax/resolver-tributacao-venda/', views.ajax_resolver_tributacao_venda, name='ajax_resolver_tributacao_venda'),
     path('ajax/variante/dimensoes/', views.ajax_variante_dimensoes, name='ajax_variante_dimensoes'),
     path('ajax/variante/resolver/', views.ajax_variante_resolver, name='ajax_variante_resolver'),
     path('relatorio/atributos/', views.relatorio_por_atributo, name='relatorio_por_atributo'),

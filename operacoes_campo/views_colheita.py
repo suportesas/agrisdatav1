@@ -48,7 +48,8 @@ def _get_os_colheita(pk, empresa):
 
 @login_required
 def etapa_nova(request, os_pk):
-    """Cria uma nova etapa de colheita para a OS."""
+    """Cria a etapa de colheita da OS. Cada corte é uma OS própria (numero_corte),
+    então cada OS de Colheita comporta apenas uma etapa de execução."""
     empresa = request.user.empresa
     os_obj = get_object_or_404(OrdemServico, pk=os_pk, empresa=empresa)
 
@@ -60,25 +61,13 @@ def etapa_nova(request, os_pk):
         messages.error(request, 'A OS precisa estar aprovada ou em andamento para iniciar colheita.')
         return redirect('operacoes_campo:os_detail', pk=os_pk)
 
-    # Verifica limite de etapas da cultura
-    cultura = os_obj.safra_cultura.cultura if os_obj.safra_cultura_id else None
-    max_etapas = cultura.max_etapas_colheita if cultura else 1
-    num_existentes = EtapaColheita.objects.filter(os=os_obj).count()
-    if num_existentes >= max_etapas:
+    etapa_existente = EtapaColheita.objects.filter(os=os_obj).order_by('-numero_etapa').first()
+    if etapa_existente:
         messages.error(
             request,
-            f'Limite de {max_etapas} etapa(s) de colheita atingido para esta cultura.'
+            'Esta OS de Colheita já possui uma etapa registrada. Para um novo corte, abra uma nova Ordem de Serviço.'
         )
-        return redirect('operacoes_campo:os_detail', pk=os_pk)
-
-    # Garante que a etapa anterior está concluída
-    ultima = EtapaColheita.objects.filter(os=os_obj).order_by('-numero_etapa').first()
-    if ultima and ultima.status != 'CONCLUIDA':
-        messages.error(
-            request,
-            f'A {ultima.numero_etapa}ª etapa ainda está aberta. Conclua-a antes de iniciar a próxima.'
-        )
-        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=ultima.pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_existente.pk)
 
     if request.method == 'POST':
         form = EtapaColheitaForm(request.POST, empresa=empresa)
@@ -105,10 +94,7 @@ def etapa_nova(request, os_pk):
                 talhao.status = 'COLHEITA'
                 talhao.save(update_fields=['status'])
 
-            messages.success(
-                request,
-                f'{etapa.numero_etapa}ª Etapa de Colheita iniciada para {os_obj.talhao.nome}!'
-            )
+            messages.success(request, f'Etapa de Colheita iniciada para {os_obj.talhao.nome}!')
             return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa.pk)
     else:
         form = EtapaColheitaForm(empresa=empresa)
@@ -116,9 +102,7 @@ def etapa_nova(request, os_pk):
     context = {
         'form': form,
         'os': os_obj,
-        'titulo': f'Nova Etapa de Colheita — {os_obj.numero}',
-        'num_existentes': num_existentes,
-        'max_etapas': max_etapas,
+        'titulo': f'Etapa de Colheita — {os_obj.numero}',
     }
     return render(request, 'cadastros/colheita/etapa_form.html', context)
 
@@ -149,8 +133,8 @@ def etapa_detalhe(request, os_pk, etapa_pk):
         'etapa': etapa,
         'frotas': frotas,
         'carrocoes_em_uso_ids': carrocoes_em_uso,
-        'frota_form': FrotaColheitaForm(empresa=empresa),
-        'carrocao_form': CarrocaoFrotaForm(empresa=empresa),
+        'frota_form': FrotaColheitaForm(empresa=empresa, os_obj=os_obj),
+        'carrocao_form': CarrocaoFrotaForm(empresa=empresa, os_obj=os_obj),
         'viagem_form': ViagemColheitaForm(),
         'pode_concluir': etapa.status == 'ABERTA',
     }
@@ -159,7 +143,8 @@ def etapa_detalhe(request, os_pk, etapa_pk):
 
 @login_required
 def etapa_concluir(request, os_pk, etapa_pk):
-    """Conclui uma etapa de colheita e, se for a última, finaliza o cultivo do talhão."""
+    """Conclui a etapa de colheita (o corte/OS atual). Se marcada como último
+    corte do ciclo, finaliza o cultivo do talhão e fecha o histórico/lote."""
     empresa = request.user.empresa
     os_obj = get_object_or_404(OrdemServico, pk=os_pk, empresa=empresa)
     etapa = get_object_or_404(EtapaColheita, pk=etapa_pk, os=os_obj)
@@ -179,7 +164,10 @@ def etapa_concluir(request, os_pk, etapa_pk):
         messages.error(request, 'Não é possível concluir sem registrar ao menos uma pesagem.')
         return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
+    ultimo_corte = request.POST.get('ultimo_corte_ciclo') == 'on'
+
     etapa.recalcular_total()
+    etapa.ultimo_corte_ciclo = ultimo_corte
     etapa.status = 'CONCLUIDA'
     etapa.data_fim = timezone.now()
     etapa.save()
@@ -203,27 +191,17 @@ def etapa_concluir(request, os_pk, etapa_pk):
         except Exception:
             pass  # Não bloqueia conclusão da etapa por falha no lote
 
-    # Verifica se é a última etapa prevista
-    cultura = os_obj.safra_cultura.cultura if os_obj.safra_cultura_id else None
-    max_etapas = cultura.max_etapas_colheita if cultura else 1
-    num_concluidas = EtapaColheita.objects.filter(os=os_obj, status='CONCLUIDA').count()
-
-    if num_concluidas >= max_etapas:
-        # Calcula produção total de todas as etapas
-        producao_total = EtapaColheita.objects.filter(os=os_obj).aggregate(
-            t=Sum('total_liquido_kg')
-        )['t'] or Decimal('0')
+    if ultimo_corte:
+        # Soma a produção de todos os cortes (OS's) já concluídos deste talhão/safra
+        producao_total = EtapaColheita.objects.filter(
+            os__talhao=os_obj.talhao, os__safra=os_obj.safra, status='CONCLUIDA'
+        ).aggregate(t=Sum('total_liquido_kg'))['t'] or Decimal('0')
 
         # Atualiza HistoricoTalhao se existir
         from cadastros.models import HistoricoTalhao
         historico = HistoricoTalhao.objects.filter(
             talhao=os_obj.talhao,
-            safra=os_obj.safra if hasattr(HistoricoTalhao, 'safra') else None,
-        ).first()
-        if not historico:
-            historico = HistoricoTalhao.objects.filter(
-                talhao=os_obj.talhao,
-            ).order_by('-data_plantio').first()
+        ).order_by('-data_plantio').first()
 
         if historico:
             historico.producao_real = producao_total
@@ -235,14 +213,14 @@ def etapa_concluir(request, os_pk, etapa_pk):
 
         messages.success(
             request,
-            f'Colheita finalizada! Total colhido: {producao_total:,.0f} kg. '
+            f'Colheita finalizada! Total colhido no ciclo: {producao_total:,.0f} kg. '
             'Talhão liberado para próximo ciclo.'
         )
     else:
         messages.success(
             request,
-            f'{etapa.numero_etapa}ª etapa concluída — {etapa.total_liquido_kg:,.0f} kg. '
-            f'Restam {max_etapas - num_concluidas} etapa(s).'
+            f'Etapa concluída — {etapa.total_liquido_kg:,.0f} kg registrados. '
+            'Para o próximo corte, abra uma nova Ordem de Serviço de Colheita.'
         )
 
     return redirect('operacoes_campo:os_detail', pk=os_pk)
@@ -265,7 +243,7 @@ def frota_adicionar(request, os_pk, etapa_pk):
         messages.error(request, 'Etapa já concluída.')
         return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
-    form = FrotaColheitaForm(request.POST, empresa=empresa)
+    form = FrotaColheitaForm(request.POST, empresa=empresa, os_obj=os_obj)
     if form.is_valid():
         frota = form.save(commit=False)
         frota.etapa = etapa
@@ -329,7 +307,7 @@ def carrocao_adicionar(request, os_pk, etapa_pk, frota_pk):
         messages.error(request, 'Etapa já concluída.')
         return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
-    form = CarrocaoFrotaForm(request.POST, empresa=empresa)
+    form = CarrocaoFrotaForm(request.POST, empresa=empresa, os_obj=os_obj)
     if form.is_valid():
         carrocao = form.save(commit=False)
         carrocao.frota = frota

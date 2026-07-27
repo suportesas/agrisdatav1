@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import DateBRInput
 from .models import ContaBancaria, ImportacaoExtrato
 
 _CTRL = {'class': 'form-control'}
@@ -32,7 +33,7 @@ class ContaBancariaForm(forms.ModelForm):
             'tipo_chave_pix': forms.Select(attrs=_SEL),
             'chave_pix': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Informe a chave PIX'}),
             'saldo_inicial': forms.NumberInput(attrs={**_CTRL, 'step': '0.01'}),
-            'data_saldo_inicial': forms.DateInput(attrs={**_CTRL, 'type': 'date'}),
+            'data_saldo_inicial': DateBRInput(attrs={**_CTRL}),
             'conta_principal': forms.CheckboxInput(attrs=_CHK),
             'ativa': forms.CheckboxInput(attrs=_CHK),
             'observacoes': forms.Textarea(attrs=_TEXTAREA),

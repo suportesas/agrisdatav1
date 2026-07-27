@@ -2,6 +2,7 @@
 Formulários para Recebimento de Compras
 """
 from django import forms
+from core.widgets import DateBRInput
 from django.forms import inlineformset_factory
 from .models import RecebimentoCompra, ItemRecebimento, ItemPedidoCompra
 from estoque.models import LocalEstocagem
@@ -45,15 +46,13 @@ class RecebimentoCompraForm(forms.ModelForm):
                     'maxlength': '44'
                 }
             ),
-            'data_emissao_nf': forms.DateInput(
+            'data_emissao_nf': DateBRInput(
                 attrs={
-                    'type': 'date',
                     'class': 'form-control'
                 }
             ),
-            'data_recebimento': forms.DateInput(
+            'data_recebimento': DateBRInput(
                 attrs={
-                    'type': 'date',
                     'class': 'form-control'
                 }
             ),
@@ -206,15 +205,13 @@ class ItemRecebimentoForm(forms.ModelForm):
                     'class': 'form-select',
                 }
             ),
-            'data_fabricacao': forms.DateInput(
+            'data_fabricacao': DateBRInput(
                 attrs={
-                    'type': 'date',
                     'class': 'form-control'
                 }
             ),
-            'data_validade': forms.DateInput(
+            'data_validade': DateBRInput(
                 attrs={
-                    'type': 'date',
                     'class': 'form-control'
                 }
             ),

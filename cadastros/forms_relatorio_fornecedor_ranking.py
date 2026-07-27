@@ -2,6 +2,7 @@
 Form para relatorio de ranking de compras por fornecedor
 """
 from django import forms
+from core.widgets import DateBRInput
 
 
 class FiltroRelatorioFornecedorRankingForm(forms.Form):
@@ -21,13 +22,13 @@ class FiltroRelatorioFornecedorRankingForm(forms.Form):
     data_inicio = forms.DateField(
         required=False,
         label='Data Inicial (Emissao NF)',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+        widget=DateBRInput(attrs={'class': 'form-control'})
     )
 
     data_fim = forms.DateField(
         required=False,
         label='Data Final (Emissao NF)',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+        widget=DateBRInput(attrs={'class': 'form-control'})
     )
 
     formato = forms.ChoiceField(

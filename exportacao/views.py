@@ -567,12 +567,12 @@ def ordem_coleta_print(request, pk):
             placa_principal = vinculo.placa_principal.placa
             v = getattr(vinculo.placa_principal, 'vehicle', None)
             if v:
-                veiculo_principal = f'{v.marca} {v.modelo}'.strip()
+                veiculo_principal = v.display_name
             for rp in vinculo.reboques.select_related('vehicle').all():
                 rv = rp.vehicle
                 reboques.append({
                     'placa': rp.placa,
-                    'veiculo': f'{rv.marca} {rv.modelo}'.strip() if rv else '',
+                    'veiculo': rv.display_name if rv else '',
                 })
 
     return render(request, 'exportacao/ordem_coleta_print.html', {
@@ -800,7 +800,7 @@ def ajax_booking_container_preview(request, pk):
                 data['placa_principal'] = vinculo.placa_principal.placa
                 v = getattr(vinculo.placa_principal, 'vehicle', None)
                 if v:
-                    data['veiculo'] = f'{v.marca} {v.modelo}'.strip()
+                    data['veiculo'] = v.display_name
                 data['placa_reboque'] = ', '.join(rp.placa for rp in vinculo.reboques.all())
     return JsonResponse(data)
 
@@ -829,12 +829,12 @@ def ajax_motorista_preview(request, pk):
         placa = vinculo.placa_principal.placa
         v = getattr(vinculo.placa_principal, 'vehicle', None)
         if v:
-            veiculo = f'{v.marca} {v.modelo}'.strip()
+            veiculo = v.display_name
         for rp in vinculo.reboques.select_related('vehicle').all():
             rv = rp.vehicle
             reboques.append({
                 'placa': rp.placa,
-                'veiculo': f'{rv.marca} {rv.modelo}'.strip() if rv else '',
+                'veiculo': rv.display_name if rv else '',
             })
     return JsonResponse({
         'nome': m.nome,
@@ -940,6 +940,6 @@ def ajax_ordem_coleta_container_dados(request, pk):
             data['placa_principal'] = vinculo.placa_principal.placa
             v = getattr(vinculo.placa_principal, 'vehicle', None)
             if v:
-                data['veiculo'] = f'{v.marca} {v.modelo}'.strip()
+                data['veiculo'] = v.display_name
             data['placa_reboque'] = ', '.join(rp.placa for rp in vinculo.reboques.all())
     return JsonResponse(data)

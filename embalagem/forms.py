@@ -1,6 +1,6 @@
 from django import forms
 from django.urls import reverse_lazy
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda
 
 
@@ -74,7 +74,7 @@ class OrdemEmbalagemForm(forms.ModelForm):
             'capacidade_caixas_pallet', 'armazem_destino', 'local_destino', 'responsavel', 'observacoes',
         ]
         widgets = {
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'tipo_embalagem': forms.Select(attrs={'class': 'form-select'}),
             'lote_origem': forms.Select(attrs={'class': 'form-select'}),
@@ -138,7 +138,7 @@ class RomaneioVendaForm(forms.ModelForm):
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'booking': forms.Select(attrs={'class': 'form-select'}),
             'container': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),

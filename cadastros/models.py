@@ -1071,6 +1071,17 @@ class Cliente(models.Model):
     def __str__(self):
         return f"{self.codigo or ''} {self.razao_social}"
 
+    def uf_fiscal(self):
+        """UF a considerar para fins fiscais: 'EX' se o cliente é do exterior,
+        a UF do endereço padrão se houver, ou None se não há como determinar."""
+        if self.pais and self.pais.strip().lower() not in ['brasil', '', 'não informado']:
+            return 'EX'
+        try:
+            endereco_padrao = self.enderecos.filter(padrao=True).first() if hasattr(self, 'enderecos') else None
+            return endereco_padrao.uf if endereco_padrao else None
+        except Exception:
+            return None
+
     def clean(self):
         """Validações de negócio - mais tolerante para importadores e com avisos anexados."""
         # Normaliza documento
@@ -1124,18 +1135,7 @@ class Cliente(models.Model):
         # Validação de Inscrição Estadual por UF (ignora para exterior)
         # ============================================================
         from .validators import validate_inscricao_estadual
-        uf = None
-
-        # Se cliente for do exterior, força UF = 'EX' para pular validações estaduais
-        if self.pais and self.pais.strip().lower() not in ['brasil', '', 'não informado']:
-            uf = 'EX'
-        else:
-            try:
-                endereco_padrao = self.enderecos.filter(padrao=True).first() if hasattr(self, 'enderecos') else None
-                if endereco_padrao:
-                    uf = endereco_padrao.uf
-            except Exception:
-                uf = None
+        uf = self.uf_fiscal()
 
         if self.contribuinte_icms and uf != 'EX' and self.inscricao_estadual:
             try:
@@ -3020,6 +3020,11 @@ class Safra(models.Model):
         base = self.nome or f"Safra {self.ano} - {self.fazenda.nome}"
         nomes = ', '.join(sc.cultura.nome for sc in self.culturas.all())
         return f"{base} - {nomes}" if nomes else base
+
+    @property
+    def nome_display(self):
+        """Nome da safra sem a lista de culturas, para exibições resumidas (ex.: listagem)."""
+        return self.nome or f"Safra {self.ano} - {self.fazenda.nome}"
 
     @property
     def talhoes(self):

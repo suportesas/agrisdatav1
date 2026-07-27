@@ -143,7 +143,7 @@
             <tr>
               <td class="text-muted small">{{ v.pk|stringformat:"05d" }}</td>
               <td>
-                <strong>{{ v.marca }} {{ v.modelo }}</strong>
+                <strong>{{ v.display_name }}</strong>
                 <br>
                 <span class="text-muted small">
                   {% if v.codigo_patrimonio %}Patrimônio: {{ v.codigo_patrimonio }} · {% endif %}
@@ -181,7 +181,7 @@
                      data-bs-toggle="modal"
                      data-bs-target="#deleteModal"
                      data-delete-url="{% url 'frota:vehicle_delete' v.pk %}"
-                     data-nome="{{ v.marca }} {{ v.modelo }}"
+                     data-nome="{{ v.display_name }}"
                      title="Excluir">
                     <i class="bi bi-trash"></i>
                   </a>

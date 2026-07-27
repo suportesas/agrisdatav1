@@ -4,7 +4,7 @@ Forms do módulo Estoque
 from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse_lazy
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import Armazem, LocalEstocagem, Lote, MovimentacaoEstoque
 from produtos.models import Produto, UnidadeMedida
 
@@ -179,9 +179,9 @@ class LoteForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Ex: L20240115-A ou LOTE-001'
             }),
-            'data_fabricacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_validade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_entrada': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_fabricacao': DateBRInput(attrs={'class': 'form-control'}),
+            'data_validade': DateBRInput(attrs={'class': 'form-control'}),
+            'data_entrada': DateBRInput(attrs={'class': 'form-control'}),
             'quantidade_inicial': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01',

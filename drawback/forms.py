@@ -2,7 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.urls import reverse_lazy
 from django.utils import timezone
-from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget
+from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget, DateBRInput
 from .models import AtoConcessorio, DrawbackProdutoAC, EntradaDrawback, SaidaDrawback
 
 
@@ -17,9 +17,9 @@ class AtoConcessorioForm(forms.ModelForm):
         widgets = {
             'numero_ac': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 23/0001234-0'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
-            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_prorrogacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_inicio': DateBRInput(attrs={'class': 'form-control'}),
+            'data_vencimento': DateBRInput(attrs={'class': 'form-control'}),
+            'data_prorrogacao': DateBRInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'despachante': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_processo_siscomex': forms.TextInput(attrs={'class': 'form-control'}),
@@ -109,8 +109,8 @@ class EntradaDrawbackForm(forms.ModelForm):
             'fornecedor': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'numero_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000000'}),
             'serie_nf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '1'}),
-            'data_nf': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_recebimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_nf': DateBRInput(attrs={'class': 'form-control'}),
+            'data_recebimento': DateBRInput(attrs={'class': 'form-control'}),
             'quantidade': DecimalBRInput(decimals=3),
             'valor_unitario': DecimalBRInput(decimals=4),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -171,7 +171,7 @@ class SaidaDrawbackForm(forms.ModelForm):
             'numero_nfe': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000000'}),
             'numero_re': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25BR000123456-7'}),
             'numero_due': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 25BR0012345678901'}),
-            'data_embarque': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_embarque': DateBRInput(attrs={'class': 'form-control'}),
             'quantidade': DecimalBRInput(decimals=3),
             'valor_fob_usd': MoneyBRInput(),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),

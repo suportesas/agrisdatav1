@@ -77,6 +77,28 @@ class MoneyBRInput(forms.TextInput):
         super().__init__(attrs=merged)
 
 
+class DateBRInput(forms.DateInput):
+    """<input type="date"> que sempre grava/renderiza o value em ISO (YYYY-MM-DD).
+
+    Sem o format explícito, o Django localiza a data para pt-br (dd/mm/aaaa)
+    ao montar o atributo `value`. Um <input type="date"> só aceita ISO nesse
+    atributo, então o navegador rejeita o valor e mostra o campo em branco ao
+    editar um registro existente — e se o usuário salvar sem perceber, a data
+    já gravada é apagada.
+    """
+
+    input_type = 'date'
+
+    def __init__(self, attrs=None, format='%Y-%m-%d'):
+        base_attrs = {'class': 'form-control'}
+        if attrs:
+            base_attrs['class'] = (base_attrs['class'] + ' ' + attrs.get('class', '')).strip()
+            merged = {**base_attrs, **{k: v for k, v in attrs.items() if k != 'class'}}
+        else:
+            merged = base_attrs
+        super().__init__(attrs=merged, format=format)
+
+
 class DecimalBRInput(forms.TextInput):
     """Input de texto para valores decimais com máscara BR (1.234,5678) via static/js/money-mask.js.
 

@@ -6,7 +6,7 @@ from django.core.validators import MinLengthValidator
 from django.forms import inlineformset_factory, BaseInlineFormSet
 from django.urls import reverse_lazy
 
-from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget
+from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget, DateBRInput
 
 from .models import (
     CartaCorrecaoNFe,
@@ -368,8 +368,8 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'fornecedor': forms.Select(attrs={'class': 'form-select'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
             'finalidade_nfe': forms.Select(attrs={'class': 'form-select'}),
-            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'data_saida': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_emissao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_saida': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'cfop': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '5102'}),
             'presenca_comprador': forms.Select(attrs={'class': 'form-select'}),
             'modalidade_frete': forms.Select(attrs={'class': 'form-select'}),
@@ -861,11 +861,11 @@ class ItemNotaFiscalForm(forms.ModelForm):
             'di_numero':             forms.TextInput(attrs={**_sm, 'maxlength': '10',
                                                              'placeholder': '0000000000',
                                                              'title': 'Máx 10 dígitos. Drawback s/ DI real: use 0000000000'}),
-            'di_data_registro':      forms.DateInput(attrs={**_sm, 'type': 'date'}, format='%Y-%m-%d'),
+            'di_data_registro':      DateBRInput(attrs={**_sm}, format='%Y-%m-%d'),
             'di_local_desembaraco':  forms.TextInput(attrs={**_sm, 'placeholder': 'Ex: Porto de Fortaleza'}),
             'di_uf_desembaraco':     forms.TextInput(attrs={**_sm, 'maxlength': '2', 'placeholder': 'CE',
                                                             'style': 'width:55px; text-transform:uppercase;'}),
-            'di_data_desembaraco':   forms.DateInput(attrs={**_sm, 'type': 'date'}, format='%Y-%m-%d'),
+            'di_data_desembaraco':   DateBRInput(attrs={**_sm}, format='%Y-%m-%d'),
             'di_via_transporte':     forms.Select(attrs=_sm_sel),
             'di_valor_afrmm':        MoneyBRInput(attrs={'class': 'form-control-sm'}),
             'di_tipo_intermediario': forms.Select(attrs=_sm_sel),
@@ -978,7 +978,7 @@ class DuplicataNFForm(forms.ModelForm):
         fields = ['numero', 'vencimento', 'valor']
         widgets = {
             'numero': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '001'}),
-            'vencimento': forms.DateInput(attrs={'class': 'form-control form-control-sm', 'type': 'date'}, format='%Y-%m-%d'),
+            'vencimento': DateBRInput(attrs={'class': 'form-control form-control-sm'}, format='%Y-%m-%d'),
             'valor': MoneyBRInput(attrs={'class': 'form-control-sm'}),
         }
 
@@ -1004,9 +1004,8 @@ class NFeReferenciadaForm(forms.ModelForm):
                 'class': 'form-control form-control-sm',
                 'placeholder': 'Nº NF',
             }),
-            'data_emissao_referenciada': forms.DateInput(attrs={
+            'data_emissao_referenciada': DateBRInput(attrs={
                 'class': 'form-control form-control-sm',
-                'type': 'date',
             }, format='%Y-%m-%d'),
         }
 
@@ -1052,8 +1051,8 @@ class InvoiceExportacaoForm(FaturamentoBaseForm):
         widgets = {
             'booking': forms.Select(attrs={'class': 'form-select', 'id': 'id_booking'}),
             'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
-            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'data_embarque_previsto': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_emissao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_embarque_previsto': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'incoterm': forms.Select(attrs={'class': 'form-select'}),
             'moeda': forms.Select(attrs={'class': 'form-select'}),
             'taxa_cambio': DecimalBRInput(decimals=4),
@@ -1071,8 +1070,8 @@ class InvoiceExportacaoForm(FaturamentoBaseForm):
             'banco_correspondente_swift': forms.TextInput(attrs={'class': 'form-control'}),
             'regime_drawback': forms.Select(attrs={'class': 'form-select'}),
             'ato_concessorio_numero': forms.TextInput(attrs={'class': 'form-control'}),
-            'ato_concessorio_data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'ato_concessorio_validade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'ato_concessorio_data': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'ato_concessorio_validade': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'valor_frete': MoneyBRInput(),
             'valor_seguro': MoneyBRInput(),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -1169,7 +1168,7 @@ class PackingListForm(FaturamentoBaseForm):
         ]
         widgets = {
             'invoice': forms.Select(attrs={'class': 'form-select'}),
-            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_emissao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'numero_fitossanitario': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº do Certificado Fitossanitário (MAPA)'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -1288,7 +1287,7 @@ class ConhecimentoTransporteForm(FaturamentoBaseForm):
             'transportadora':    Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'),
             'motorista':         Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'veiculo':           Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
-            'data_emissao':      forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_emissao':      DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'cfop':              forms.TextInput(attrs={'class': 'form-control', 'placeholder': '6351'}),
             'natureza_operacao': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo_servico':      forms.Select(attrs={'class': 'form-select'}),
@@ -1466,7 +1465,7 @@ class ManifestoDocumentoFiscalForm(FaturamentoBaseForm):
             'serie':                     forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'style': 'width:80px'}),
             'motorista':                 Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_motoristas'), placeholder='Buscar motorista...'),
             'veiculo':                   Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...', attrs={'id': 'id_veiculo'}),
-            'data_emissao':              forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_emissao':              DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'booking':                   forms.Select(attrs={'class': 'form-select'}),
             'uf_inicio':                 forms.TextInput(attrs={'class': 'form-control', 'maxlength': '2', 'placeholder': 'SP'}),
             'municipio_carregamento':         forms.TextInput(attrs={'class': 'form-control'}),

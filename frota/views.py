@@ -53,6 +53,9 @@ def ajax_buscar_veiculos(request):
     tipos = [t for t in request.GET.get('tipo', '').split(',') if t]
     if tipos:
         qs = qs.filter(tipo__in=tipos)
+    ids = [i for i in request.GET.get('ids', '').split(',') if i]
+    if ids:
+        qs = qs.filter(pk__in=ids)
     if q:
         qs = qs.filter(
             Q(marca__icontains=q) | Q(modelo__icontains=q) | Q(descricao__icontains=q) |

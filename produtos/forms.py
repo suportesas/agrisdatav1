@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
 from django.urls import reverse_lazy
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import Marca, UnidadeMedida, Categoria, SubCategoria, Produto, ProdutoTributacao, NaturezaOperacao, ProdutoDefensivoCultura, TipoProduto
 from estoque.models import Armazem
 
@@ -262,7 +262,7 @@ class ProdutoForm(forms.ModelForm):
             'registro_mapa': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nº do MAPA'}),
             'possui_certificado': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_possui_certificado'}),
             'numero_certificado': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número do certificado'}),
-            'data_vencimento_certificado': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_vencimento_certificado': DateBRInput(attrs={'class': 'form-control'}),
             'arquivo_certificado': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'classe_toxicologica': forms.Select(attrs={'class': 'form-select'}),
             'classe_ambiental': forms.Select(attrs={'class': 'form-select'}),

@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.urls import reverse_lazy
 from django.utils import timezone
 
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import (
     OrdemServico, OrdemServicoInsumo, OSFuncionario, OSMaquina, CustoHoraMaquina,
     EtapaColheita, FrotaColheita, CarrocaoFrota, ViagemColheita,
@@ -41,7 +41,7 @@ class OrdemServicoForm(forms.ModelForm):
             'safra_cultura': forms.Select(attrs={'class': 'form-select', 'id': 'id_safra_cultura'}),
             'poco': forms.Select(attrs={'class': 'form-select', 'id': 'id_poco'}),
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
-            'data_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_prevista': DateBRInput(attrs={'class': 'form-control'}),
             'area_executada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000'}),
             'numero_corte': forms.NumberInput(attrs={'class': 'form-control', 'step': '1', 'min': '1', 'placeholder': 'Ex: 1'}),
             'fornecedor_servico': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
@@ -249,7 +249,7 @@ class OSFuncionarioForm(forms.ModelForm):
         fields = ['funcionario', 'data_execucao', 'hora_inicio', 'hora_fim', 'observacoes']
         widgets = {
             'funcionario': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
-            'data_execucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_execucao': DateBRInput(attrs={'class': 'form-control'}),
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'hora_fim': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
@@ -297,7 +297,7 @@ class OSMaquinaForm(forms.ModelForm):
         widgets = {
             'veiculo': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
             'operador': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
-            'data_execucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_execucao': DateBRInput(attrs={'class': 'form-control'}),
             'horimetro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'h'}),
             'horimetro_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'h'}),
             'custo_hora_config': forms.Select(attrs={'class': 'form-select'}),
@@ -347,7 +347,7 @@ class CustoHoraMaquinaForm(forms.ModelForm):
         fields = ['veiculo', 'data_referencia', 'preco_combustivel', 'reserva_manutencao_hora', 'horas_anuais_trabalho', 'ativo']
         widgets = {
             'veiculo': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
-            'data_referencia': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_referencia': DateBRInput(attrs={'class': 'form-control'}),
             'preco_combustivel': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': 'R$/litro'}),
             'reserva_manutencao_hora': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'R$/h'}),
             'horas_anuais_trabalho': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'horas/ano'}),
@@ -402,13 +402,37 @@ class FrotaColheitaForm(forms.ModelForm):
             'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
-    def __init__(self, *args, empresa=None, **kwargs):
+    def __init__(self, *args, empresa=None, os_obj=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
+            import json
             from frota.models import Vehicle
             from rh.models import Funcionario
-            self.fields['trator'].queryset = Vehicle.objects.filter(empresa=empresa, ativo=True, tipo__in=['LEVE', 'MEDIO', 'PESADO']).order_by('descricao')
-            self.fields['operador'].queryset = Funcionario.objects.filter(empresa=empresa, ativo=True).order_by('nome_completo')
+
+            tratores_qs = Vehicle.objects.filter(empresa=empresa, ativo=True, tipo__in=['LEVE', 'MEDIO', 'PESADO'])
+            operadores_qs = Funcionario.objects.filter(empresa=empresa, ativo=True)
+
+            # Restringe às máquinas/funcionários já alocados na OS (planejamento); se a OS
+            # não tiver nada planejado, mantém a busca livre em todo o cadastro da empresa.
+            if os_obj:
+                veiculo_ids_os = list(os_obj.maquinas_os.values_list('veiculo_id', flat=True))
+                tratores_planejados = tratores_qs.filter(id__in=veiculo_ids_os)
+                if tratores_planejados.exists():
+                    tratores_qs = tratores_planejados
+                    self.fields['trator'].widget.attrs['data-extra-params'] = json.dumps(
+                        {'tipo': 'LEVE,MEDIO,PESADO', 'ids': ','.join(str(i) for i in tratores_planejados.values_list('id', flat=True))}
+                    )
+
+                funcionario_ids_os = list(os_obj.funcionarios_os.values_list('funcionario_id', flat=True))
+                operadores_planejados = operadores_qs.filter(id__in=funcionario_ids_os)
+                if operadores_planejados.exists():
+                    operadores_qs = operadores_planejados
+                    self.fields['operador'].widget.attrs['data-extra-params'] = json.dumps(
+                        {'ids': ','.join(str(i) for i in operadores_planejados.values_list('id', flat=True))}
+                    )
+
+            self.fields['trator'].queryset = tratores_qs.order_by('descricao')
+            self.fields['operador'].queryset = operadores_qs.order_by('nome_completo')
             self.fields['operador'].label_from_instance = lambda obj: f"{obj.nome_completo} ({obj.funcao})"
         self.fields['operador'].required = False
         self.fields['horimetro_inicial'].required = False
@@ -430,11 +454,21 @@ class CarrocaoFrotaForm(forms.ModelForm):
             'tara_kg': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'kg'}),
         }
 
-    def __init__(self, *args, empresa=None, **kwargs):
+    def __init__(self, *args, empresa=None, os_obj=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
             from frota.models import Vehicle
-            self.fields['veiculo'].queryset = Vehicle.objects.filter(empresa=empresa, ativo=True, tipo='REBOQUE').order_by('descricao')
+            veiculos_qs = Vehicle.objects.filter(empresa=empresa, ativo=True, tipo='REBOQUE')
+
+            # Restringe aos carroções já alocados na OS (planejamento); se a OS não tiver
+            # nada planejado, mantém a busca livre em todo o cadastro da empresa.
+            if os_obj:
+                veiculo_ids_os = list(os_obj.maquinas_os.values_list('veiculo_id', flat=True))
+                veiculos_planejados = veiculos_qs.filter(id__in=veiculo_ids_os)
+                if veiculos_planejados.exists():
+                    veiculos_qs = veiculos_planejados
+
+            self.fields['veiculo'].queryset = veiculos_qs.order_by('descricao')
         self.fields['capacidade_ton'].required = False
         self.fields['tara_kg'].required = False
 
@@ -484,7 +518,7 @@ class RegistroPluviometriaForm(forms.ModelForm):
         fields = ['fazenda', 'data', 'mm_chuva', 'tipo_registro', 'fonte', 'responsavel', 'observacoes']
         widgets = {
             'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'mm_chuva': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'Ex: 12.5 mm'}),
             'tipo_registro': forms.Select(attrs={'class': 'form-select'}),
             'fonte': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Pluviômetro Campo Sul'}),
@@ -527,7 +561,7 @@ class InspecaoQualidadeCampoForm(forms.ModelForm):
         widgets = {
             'talhao': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_talhoes'), placeholder='Buscar talhão...'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
-            'data_inspecao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_inspecao': DateBRInput(attrs={'class': 'form-control'}),
             'tipo_inspecao': forms.Select(attrs={'class': 'form-select'}),
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'estagio_cultura': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Floração, Frutificação'}),
@@ -579,7 +613,7 @@ class RegistroCadernoCampoForm(forms.ModelForm):
             'talhao': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_talhoes'), placeholder='Buscar talhão...'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
             'os': forms.Select(attrs={'class': 'form-select'}),
-            'data_atividade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_atividade': DateBRInput(attrs={'class': 'form-control'}),
             'tipo_atividade': forms.Select(attrs={'class': 'form-select'}),
             'atividade': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Descrição da atividade realizada'}),
             'temperatura': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '°C'}),

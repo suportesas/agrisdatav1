@@ -6,7 +6,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse_lazy
 from decimal import Decimal
-from core.widgets import MoneyBRInput, Select2AjaxWidget
+from core.widgets import MoneyBRInput, Select2AjaxWidget, DateBRInput
 from .models import Patrimonio, PatrimonioMovimentacao, PatrimonioAuditoria, PatrimonioAuditoriaItem
 from frota.models import Vehicle
 from cadastros.models import Fazenda
@@ -28,8 +28,8 @@ class PatrimonioForm(forms.ModelForm):
             'tipo_depreciacao': forms.Select(attrs={'class': 'form-select'}),
             'vida_util_anos': forms.NumberInput(attrs={'class': 'form-control'}),
             'percentual_depreciacao_anual': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'data_aquisicao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'data_baixa': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_aquisicao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_baixa': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'localizacao': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Galpão A, Campo 1, etc'}),
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'estado': forms.Select(attrs={'class': 'form-select'}),
@@ -104,7 +104,7 @@ class PatrimonioVeiculoExportForm(forms.Form):
     )
     data_aquisicao = forms.DateField(
         label='Data de Aquisição',
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d')
+        widget=DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d')
     )
     vida_util_anos = forms.IntegerField(
         label='Vida Útil (anos)',

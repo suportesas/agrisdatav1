@@ -12,6 +12,28 @@ from decimal import Decimal
 
 from .models import PedidoVenda, ItemPedidoVenda, TabelaPreco
 from .forms import PedidoVendaForm, ItemPedidoVendaFormSet, TabelaPrecoForm
+from produtos.tributacao import resolver_tributacao_venda
+
+
+def _validar_e_aplicar_tributacoes(formset, empresa, cliente, tipo_venda):
+    """Resolve a tributação de cada item do formset a partir do produto, do
+    cliente e do tipo de venda — nunca confia em ncm/cfop vindos do POST,
+    sempre re-deriva. Retorna uma mensagem de erro (nada é salvo nesse caso)
+    ou None se todos os itens foram resolvidos com sucesso (já aplicados às
+    instances, prontos para formset.save())."""
+    for item_form in formset.forms:
+        if item_form.cleaned_data.get('DELETE'):
+            continue
+        produto = item_form.cleaned_data.get('produto')
+        if not produto:
+            continue
+        resultado = resolver_tributacao_venda(produto, empresa, cliente, tipo_venda)
+        if not resultado.ok:
+            return resultado.mensagem
+        item_form.instance.tributacao = resultado.tributacao
+        item_form.instance.ncm = resultado.ncm_codigo
+        item_form.instance.cfop = resultado.cfop_codigo
+    return None
 
 
 # ============================================
@@ -62,18 +84,24 @@ def pedido_create(request):
         form = PedidoVendaForm(request.POST, empresa=empresa)
         formset = ItemPedidoVendaFormSet(request.POST, prefix='itens')
         if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                pedido = form.save(commit=False)
-                pedido.empresa = empresa
-                pedido.numero = PedidoVenda._gerar_numero(empresa)
-                pedido.criado_por = request.user
-                pedido.save()
-                formset.instance = pedido
-                formset.save()
-                pedido.calcular_total()
-                pedido.save(update_fields=['valor_produtos', 'valor_total'])
-            messages.success(request, f'Pedido {pedido.numero} criado.')
-            return redirect('vendas:pedido_detail', pk=pedido.pk)
+            erro_tributacao = _validar_e_aplicar_tributacoes(
+                formset, empresa, form.cleaned_data['cliente'], form.cleaned_data['tipo_venda'],
+            )
+            if erro_tributacao:
+                messages.error(request, erro_tributacao)
+            else:
+                with transaction.atomic():
+                    pedido = form.save(commit=False)
+                    pedido.empresa = empresa
+                    pedido.numero = PedidoVenda._gerar_numero(empresa)
+                    pedido.criado_por = request.user
+                    pedido.save()
+                    formset.instance = pedido
+                    formset.save()
+                    pedido.calcular_total()
+                    pedido.save(update_fields=['valor_produtos', 'valor_total'])
+                messages.success(request, f'Pedido {pedido.numero} criado.')
+                return redirect('vendas:pedido_detail', pk=pedido.pk)
     else:
         form = PedidoVendaForm(empresa=empresa)
         formset = ItemPedidoVendaFormSet(prefix='itens')
@@ -110,13 +138,19 @@ def pedido_update(request, pk):
         form = PedidoVendaForm(request.POST, instance=pedido, empresa=empresa)
         formset = ItemPedidoVendaFormSet(request.POST, instance=pedido, prefix='itens')
         if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                p = form.save()
-                formset.save()
-                p.calcular_total()
-                p.save(update_fields=['valor_produtos', 'valor_total'])
-            messages.success(request, 'Pedido atualizado.')
-            return redirect('vendas:pedido_detail', pk=pedido.pk)
+            erro_tributacao = _validar_e_aplicar_tributacoes(
+                formset, empresa, form.cleaned_data['cliente'], form.cleaned_data['tipo_venda'],
+            )
+            if erro_tributacao:
+                messages.error(request, erro_tributacao)
+            else:
+                with transaction.atomic():
+                    p = form.save()
+                    formset.save()
+                    p.calcular_total()
+                    p.save(update_fields=['valor_produtos', 'valor_total'])
+                messages.success(request, 'Pedido atualizado.')
+                return redirect('vendas:pedido_detail', pk=pedido.pk)
     else:
         form = PedidoVendaForm(instance=pedido, empresa=empresa)
         formset = ItemPedidoVendaFormSet(instance=pedido, prefix='itens')
@@ -186,6 +220,23 @@ def pedido_emitir_documento(request, pk):
                 atualizado_por=request.user,
             )
             for item in pedido.itens.all():
+                trib = item.tributacao
+                if trib:
+                    # Itens legados (criados antes desta tributação automática) não têm
+                    # `tributacao` — caem no fallback zerado abaixo, como já era antes.
+                    base_icms = item.preco_total * (trib.icms_base_calculo / Decimal('100')) * (Decimal('1') - trib.icms_reducao_base / Decimal('100'))
+                    aliquota_icms, aliquota_ipi = trib.icms_aliquota, trib.ipi_aliquota
+                    aliquota_pis, aliquota_cofins = trib.pis_aliquota, trib.cofins_aliquota
+                    valor_icms = (base_icms * aliquota_icms / Decimal('100')).quantize(Decimal('0.01'))
+                    valor_ipi = (item.preco_total * aliquota_ipi / Decimal('100')).quantize(Decimal('0.01'))
+                    valor_pis = (item.preco_total * (trib.pis_base_calculo / Decimal('100')) * aliquota_pis / Decimal('100')).quantize(Decimal('0.01'))
+                    valor_cofins = (item.preco_total * (trib.cofins_base_calculo / Decimal('100')) * aliquota_cofins / Decimal('100')).quantize(Decimal('0.01'))
+                    cst_icms, cst_pis, cst_cofins = trib.icms_situacao_tributaria, trib.pis_situacao_tributaria, trib.cofins_situacao_tributaria
+                else:
+                    cst_icms, cst_pis, cst_cofins = '00', '01', '01'
+                    aliquota_icms = aliquota_ipi = aliquota_pis = aliquota_cofins = Decimal('0.00')
+                    valor_icms = valor_ipi = valor_pis = valor_cofins = Decimal('0.00')
+
                 ItemNotaFiscal.objects.create(
                     nota_fiscal=nf,
                     numero_item=item.pk,
@@ -193,16 +244,16 @@ def pedido_emitir_documento(request, pk):
                     produto=item.produto,
                     ncm=item.ncm or '00000000',
                     cfop=item.cfop or (cfg.cfop_venda_interna if cfg else '5102'),
-                    cst_icms='00', cst_pis='01', cst_cofins='01',
+                    cst_icms=cst_icms, cst_pis=cst_pis, cst_cofins=cst_cofins,
                     unidade=item.unidade,
                     quantidade=item.quantidade,
                     valor_unitario=item.preco_unitario,
                     valor_total=item.preco_total,
                     valor_desconto=item.desconto_item,
-                    aliquota_icms=Decimal('0.00'), valor_icms=Decimal('0.00'),
-                    aliquota_ipi=Decimal('0.00'), valor_ipi=Decimal('0.00'),
-                    aliquota_pis=Decimal('0.00'), valor_pis=Decimal('0.00'),
-                    aliquota_cofins=Decimal('0.00'), valor_cofins=Decimal('0.00'),
+                    aliquota_icms=aliquota_icms, valor_icms=valor_icms,
+                    aliquota_ipi=aliquota_ipi, valor_ipi=valor_ipi,
+                    aliquota_pis=aliquota_pis, valor_pis=valor_pis,
+                    aliquota_cofins=aliquota_cofins, valor_cofins=valor_cofins,
                 )
             nf.calcular_totais()
             nf.save()

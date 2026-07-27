@@ -7,7 +7,7 @@ from django import forms
 from django.forms.models import inlineformset_factory
 from django.urls import reverse_lazy
 from django.utils import timezone
-from core.widgets import MoneyBRInput, Select2AjaxWidget
+from core.widgets import MoneyBRInput, Select2AjaxWidget, DateBRInput
 from .models import (
     ConfiguracaoJurosMulta,
     ContaPagar,
@@ -75,9 +75,8 @@ class ContaPageForm(forms.ModelForm):
     primeira_data_vencimento = forms.DateField(
         label='Primeiro Vencimento',
         required=False,
-        widget=forms.DateInput(attrs={
-            'class': 'form-control',
-            'type': 'date'
+        widget=DateBRInput(attrs={
+            'class': 'form-control'
         })
     )
 
@@ -129,9 +128,8 @@ class ContaPageForm(forms.ModelForm):
                 'class': 'form-control',
                 'required': False
             }),
-            'data_emissao': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_emissao': DateBRInput(attrs={
+                'class': 'form-control'
             }),
             'valor_total': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -205,9 +203,8 @@ class ParcelaContaPageForm(forms.ModelForm):
                 'min': '1'
             }),
             'valor_parcela': MoneyBRInput(),
-            'data_vencimento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_vencimento': DateBRInput(attrs={
+                'class': 'form-control'
             }),
             'observacao': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -246,9 +243,8 @@ class PagamentoContaPageForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Banco/Instituição'
             }),
-            'data_pagamento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_pagamento': DateBRInput(attrs={
+                'class': 'form-control'
             }),
             'comprovante': forms.FileInput(attrs={
                 'class': 'form-control',
@@ -345,8 +341,8 @@ class ContaReceberForm(forms.ModelForm):
         ]
         widgets = {
             'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
-            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_emissao': DateBRInput(attrs={'class': 'form-control'}),
+            'data_vencimento': DateBRInput(attrs={'class': 'form-control'}),
             'moeda': forms.Select(attrs={'class': 'form-select', 'id': 'id_moeda'}),
             'valor_moeda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
             'taxa_cambio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'min': '0'}),
@@ -379,7 +375,7 @@ class ParcelaContaReceberForm(forms.ModelForm):
             'numero_parcela': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
             'valor_parcela_moeda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_parcela_brl': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'data_vencimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_vencimento': DateBRInput(attrs={'class': 'form-control'}),
             'observacoes': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
@@ -403,7 +399,7 @@ class RecebimentoContaReceberForm(forms.ModelForm):
             'banco', 'comprovante', 'observacoes',
         ]
         widgets = {
-            'data_pagamento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_pagamento': DateBRInput(attrs={'class': 'form-control'}),
             'valor_recebido_moeda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'valor_recebido_brl': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'taxa_cambio_realizada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),

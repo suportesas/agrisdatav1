@@ -2725,6 +2725,9 @@ def ajax_buscar_funcionarios(request):
     q = request.GET.get('q', '').strip()
     empresa = request.user.empresa
     qs = Funcionario.objects.filter(empresa=empresa, ativo=True).select_related('funcao')
+    ids = [i for i in request.GET.get('ids', '').split(',') if i]
+    if ids:
+        qs = qs.filter(pk__in=ids)
     if q:
         qs = qs.filter(
             Q(nome_completo__icontains=q) | Q(matricula__icontains=q) | Q(funcao__nome__icontains=q)

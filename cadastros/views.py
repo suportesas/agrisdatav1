@@ -996,6 +996,7 @@ def ajax_dados_cliente(request, cliente_id):
     return JsonResponse({
         'success': True,
         'tipo_cliente': cliente.tipo_cliente,
+        'uf': cliente.uf_fiscal(),
         'condicao_pagamento': condicao_pagamento,
         'forma_pagamento': cliente.get_forma_pagamento_padrao_display() if cliente.forma_pagamento_padrao else '',
         'moeda': cliente.moeda_padrao or '',

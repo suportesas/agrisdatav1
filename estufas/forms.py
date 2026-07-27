@@ -1,7 +1,7 @@
 from django import forms
 from django.urls import reverse_lazy
 
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import (
     AplicacaoEstufa,
     Estufa,
@@ -51,9 +51,9 @@ class LoteMudaForm(forms.ModelForm):
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'cultivar': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Híbrido BRS-12'}),
             'lote_semente': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Código do lote da semente'}),
-            'data_semeadura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_semeadura': DateBRInput(attrs={'class': 'form-control'}),
             'quantidade_semeada': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Total de sementes'}),
-            'data_prevista_pronto': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_prevista_pronto': DateBRInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -75,7 +75,7 @@ class PerdaEstufaForm(forms.ModelForm):
         model = PerdaEstufa
         fields = ['data', 'quantidade_perdida', 'motivo', 'observacao', 'responsavel']
         widgets = {
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'quantidade_perdida': forms.NumberInput(attrs={'class': 'form-control'}),
             'motivo': forms.Select(attrs={'class': 'form-select'}),
             'observacao': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -98,7 +98,7 @@ class AplicacaoEstufaForm(forms.ModelForm):
         model = AplicacaoEstufa
         fields = ['data', 'tipo', 'produto', 'quantidade', 'unidade_medida', 'custo_unitario', 'responsavel', 'observacao', 'receituario']
         widgets = {
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'produto': forms.Select(attrs={'class': 'form-select'}),
             'quantidade': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -125,7 +125,7 @@ class MonitoramentoEstufaForm(forms.ModelForm):
         model = MonitoramentoEstufa
         fields = ['data', 'praga', 'nivel_infestacao', 'acao_tomada', 'responsavel']
         widgets = {
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'praga': forms.Select(attrs={'class': 'form-select'}),
             'nivel_infestacao': forms.Select(attrs={'class': 'form-select'}),
             'acao_tomada': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),

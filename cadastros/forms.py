@@ -5,7 +5,7 @@ Com validações e integração com APIs externas
 
 from django import forms
 from django.urls import reverse_lazy
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from django.core.exceptions import ValidationError
 from .models import (
     Fazenda, EnderecoFazenda, ContatoFazenda,
@@ -961,8 +961,8 @@ class DocumentoClienteForm(forms.ModelForm):
             'titulo': forms.TextInput(attrs={'class': 'form-control'}),
             'numero_documento': forms.TextInput(attrs={'class': 'form-control'}),
             'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
-            'data_emissao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_emissao': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
+            'data_validade': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
             'gerar_alerta_vencimento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'dias_antecedencia_alerta': forms.NumberInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2})
@@ -1098,8 +1098,8 @@ class DocumentoFazendaForm(forms.ModelForm):
                 'class': 'form-control',
                 'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx'
             }),
-            'data_emissao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_emissao': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
+            'data_validade': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
             'gerar_alerta_vencimento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'dias_antecedencia_alerta': forms.NumberInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -1158,8 +1158,8 @@ class DocumentoFornecedorForm(forms.ModelForm):
                 'class': 'form-control',
                 'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx'
             }),
-            'data_emissao': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'data_emissao': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
+            'data_validade': DateBRInput(format='%Y-%m-%d', attrs={'class': 'form-control'}),
             'gerar_alerta_vencimento': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'dias_antecedencia_alerta': forms.NumberInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
@@ -1293,8 +1293,8 @@ class FornecedorForm(forms.ModelForm):
             'categorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'subcategorias': forms.SelectMultiple(attrs={'class': 'form-select'}),
             'classificacao_risco': forms.Select(attrs={'class': 'form-select'}),
-            'data_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'validade_homologacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_homologacao': DateBRInput(attrs={'class': 'form-control'}),
+            'validade_homologacao': DateBRInput(attrs={'class': 'form-control'}),
             'limite_credito': forms.TextInput(attrs={'class': 'form-control', 'inputmode': 'decimal', 'data-currency-mask': 'brl'}),
             'prazo_pagamento_padrao': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'prazo_entrega_medio': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
@@ -2181,8 +2181,8 @@ class SafraCulturaForm(forms.ModelForm):
         fields = ['cultura', 'periodo_inicio', 'periodo_fim', 'status', 'talhoes']
         widgets = {
             'cultura': forms.Select(attrs={'class': 'form-select'}),
-            'periodo_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'periodo_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'periodo_inicio': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'periodo_fim': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'talhoes': forms.SelectMultiple(attrs={'class': 'd-none'}),
         }
@@ -2269,8 +2269,8 @@ class SafraPlanForm(forms.ModelForm):
         widgets = {
             'planned_area': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001'}),
             'planned_production': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'planned_plantio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'planned_colheita': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'planned_plantio': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'planned_colheita': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'produtividade_esperada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'preco_meta_saca': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'custo_meta_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -2328,7 +2328,7 @@ class RequisicaoForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Nome completo e documento (CPF/RG)'
             }),
-            'data_promessa_devolucao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_promessa_devolucao': DateBRInput(attrs={'class': 'form-control'}),
             'veiculo': forms.Select(attrs={'class': 'form-select'}),
             'horimetro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'odometro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
@@ -2468,13 +2468,11 @@ class HistoricoTalhaoForm(forms.ModelForm):
             'talhao': forms.Select(attrs={'class': 'form-select'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'variedade': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_plantio': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_plantio': DateBRInput(attrs={
+                'class': 'form-control'
             }),
-            'data_colheita': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_colheita': DateBRInput(attrs={
+                'class': 'form-control'
             }),
             'producao_estimada': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -2637,9 +2635,8 @@ class VendedorForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'RG'
             }),
-            'data_nascimento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_nascimento': DateBRInput(attrs={
+                'class': 'form-control'
             }, format='%Y-%m-%d'),
             'foto': forms.FileInput(attrs={'class': 'form-control'}),
             
@@ -2759,9 +2756,8 @@ class VendedorForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'BR000000'
             }),
-            'passaporte_validade': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'passaporte_validade': DateBRInput(attrs={
+                'class': 'form-control'
             }, format='%Y-%m-%d'),
 
             'visto_trabalho': forms.TextInput(attrs={
@@ -2794,13 +2790,11 @@ class VendedorForm(forms.ModelForm):
             
             # Status
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'data_admissao': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_admissao': DateBRInput(attrs={
+                'class': 'form-control'
             }, format='%Y-%m-%d'),
-            'data_desligamento': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'data_desligamento': DateBRInput(attrs={
+                'class': 'form-control'
             }),
             'observacoes': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -2938,9 +2932,8 @@ class ComissaoVendedorForm(forms.ModelForm):
         ]
         widgets = {
             'vendedor': forms.Select(attrs={'class': 'form-select'}),
-            'referencia_mes': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+            'referencia_mes': DateBRInput(attrs={
+                'class': 'form-control'
             }),
             'valor_base': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -3217,8 +3210,8 @@ class VehiclePlateForm(forms.ModelForm):
         fields = ['placa', 'vigencia_inicio', 'vigencia_fim', 'atual']
         widgets = {
             'placa': forms.TextInput(attrs={'class': 'form-control'}),
-            'vigencia_inicio': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'vigencia_fim': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'vigencia_inicio': DateBRInput(attrs={'class': 'form-control'}),
+            'vigencia_fim': DateBRInput(attrs={'class': 'form-control'}),
             'atual': forms.CheckboxInput(attrs={'class': 'form-check-input'})
         }
         labels = {
@@ -3274,8 +3267,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
             'talhao': forms.Select(attrs={'class': 'form-control'}),
             'safra': forms.Select(attrs={'class': 'form-control'}),
             'cultura': forms.Select(attrs={'class': 'form-control'}),
-            'data_monitoramento': forms.DateInput(attrs={
-                'type': 'date',
+            'data_monitoramento': DateBRInput(attrs={
                 'class': 'form-control'
             }),
             'tipo_monitoramento': forms.Select(attrs={'class': 'form-control'}),
@@ -3695,7 +3687,7 @@ class AbastecimentoVeiculoForm(forms.ModelForm):
         widgets = {
             'vehicle': forms.Select(attrs={'class': 'form-select'}),
             'motorista': forms.Select(attrs={'class': 'form-select'}),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'tipo_combustivel': forms.Select(attrs={'class': 'form-select'}),
             'litros': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'preco_por_litro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -3739,11 +3731,11 @@ class ManutencaoVeiculoForm(forms.ModelForm):
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'descricao': forms.TextInput(attrs={'class': 'form-control'}),
-            'data_abertura': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_conclusao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_abertura': DateBRInput(attrs={'class': 'form-control'}),
+            'data_conclusao': DateBRInput(attrs={'class': 'form-control'}),
             'km_odometro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'horimetro': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
-            'proxima_data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'proxima_data': DateBRInput(attrs={'class': 'form-control'}),
             'proximo_km': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'eh_oficina_propria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'local_oficina': forms.Select(attrs={'class': 'form-select'}),
@@ -3838,7 +3830,7 @@ class PedagioVeiculoForm(forms.ModelForm):
             'vehicle': forms.Select(attrs={'class': 'form-select'}),
             'viagem': forms.Select(attrs={'class': 'form-select'}),
             'motorista': forms.Select(attrs={'class': 'form-select'}),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'praca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Praça SP-270 km 45'}),
             'valor': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
@@ -3901,7 +3893,7 @@ class ViagemFrotaForm(forms.ModelForm):
             'motorista': forms.Select(attrs={'class': 'form-select'}),
             'origem': forms.TextInput(attrs={'class': 'form-control'}),
             'destino': forms.TextInput(attrs={'class': 'form-control'}),
-            'data': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}),
             'valor_frete': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'km_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
             'km_final': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1'}),
@@ -3961,7 +3953,7 @@ class AbastecimentoPortalForm(forms.ModelForm):
                   'km_odometro', 'horimetro', 'tanque_cheio', 'local_abastecimento', 'observacoes']
         widgets = {
             'vehicle': forms.Select(attrs={'class': 'form-select form-select-lg'}),
-            'data': forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date'}),
+            'data': DateBRInput(attrs={'class': 'form-control form-control-lg'}),
             'tipo_combustivel': forms.Select(attrs={'class': 'form-select form-select-lg'}),
             'litros': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.001', 'min': '0'}),
             'preco_por_litro': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.001', 'min': '0'}),
@@ -4037,7 +4029,7 @@ class PocoForm(forms.ModelForm):
             'horaletro_inicial': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0000001'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0000001'}),
-            'data_instalacao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_instalacao': DateBRInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 

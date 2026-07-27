@@ -20,11 +20,11 @@
           <div class="form-header-title">
             <span class="icon-badge orange"><i class="bi bi-basket"></i></span>
             <div>
-              <h2>{{ num_existentes|add:1 }}ª Etapa de Colheita — {{ os.numero }}</h2>
+              <h2>Etapa de Colheita — {{ os.numero }}</h2>
               <p class="text-muted mb-0">
                 Talhão: {{ os.talhao.nome }}
                 {% if os.safra %} · Safra: {{ os.safra }}{% endif %}
-                · Máx. etapas desta cultura: {{ max_etapas }}
+                {% if os.numero_corte %} · Corte: {{ os.numero_corte }}º{% endif %}
               </p>
             </div>
           </div>

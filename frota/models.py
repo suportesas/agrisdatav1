@@ -157,9 +157,15 @@ class Vehicle(models.Model):
         except Exception:
             return None
 
+    @property
+    def display_name(self):
+        if self.descricao:
+            return self.descricao
+        return f"{self.marca} {self.modelo}".strip()
+
     def __str__(self):
         plate = self.get_current_plate() or ''
-        return f"{self.marca} {self.modelo} {plate}".strip()
+        return f"{self.display_name} {plate}".strip()
 
     def get_current_plate(self):
         p = self.plates.filter(atual=True).first()

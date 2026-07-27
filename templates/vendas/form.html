@@ -7,6 +7,22 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 <link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+<style>
+  /* Itens do pedido: Descrição/NCM/CFOP saem da linha principal e ficam num
+     painel fiscal recolhível por item (mesmo padrão da NF-e). A linha
+     principal fica só com Produto/Un/Qtd/Preço/Desconto, então cabe
+     confortavelmente sem espremer os campos. */
+  #itens-table { width: 100%; min-width: 700px; table-layout: fixed; }
+  #itens-table col.col-un { width: 70px; }
+  #itens-table col.col-qtd { width: 110px; }
+  #itens-table col.col-preco { width: 130px; }
+  #itens-table col.col-desconto { width: 110px; }
+  #itens-table col.col-acao { width: 76px; }
+  .item-fiscal-row td { background: #f7faf8; border-top: none !important; }
+  .item-fiscal-row .fiscal-section { border-left: 3px solid var(--color-border); padding: 8px 12px; }
+  .fiscal-label { font-size: .68rem; font-weight: 700; color: var(--color-text-secondary); margin-bottom: 2px; display: block; text-transform: uppercase; letter-spacing: .02em; }
+  .btn-toggle-fiscal.open { background: var(--pastel-blue-bg); color: var(--pastel-blue-text); border-color: var(--pastel-blue-bg); }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -38,6 +54,7 @@
       <a href="#sec-opcoes" data-tab="sec-opcoes">Opções de Geração</a>
     </nav>
 
+    <div class="complex-layout">
     <div class="complex-main">
 
       <div class="form-section" id="sec-pedido" data-tab-panel="sec-pedido">
@@ -105,15 +122,6 @@
               {{ form.taxa_cambio }}
               <div id="info-cotacao" class="helper-note text-success" style="display:none"></div>
             </div>
-            <div class="field col-4">
-              <label class="form-label">Desconto Total</label>
-              {{ form.valor_desconto }}
-              <div id="info-desconto-cliente" class="helper-note text-success" style="display:none"></div>
-            </div>
-            <div class="field col-6">
-              <label class="form-label">Frete</label>
-              {{ form.valor_frete }}
-            </div>
           </div>
         </div>
       </div>
@@ -125,14 +133,16 @@
             <i class="bi bi-plus"></i> Adicionar Item
           </button>
         </div>
+        <div id="info-tributacao" class="alert alert-danger py-2 px-3 mb-2" style="display:none"></div>
         <div class="items-table-wrap">
           <table class="items-table mb-0" id="itens-table">
+            <colgroup>
+              <col class="col-produto"><col class="col-un"><col class="col-qtd">
+              <col class="col-preco"><col class="col-desconto"><col class="col-acao">
+            </colgroup>
             <thead>
               <tr>
                 <th>Produto</th>
-                <th>Descrição *</th>
-                <th>NCM</th>
-                <th>CFOP</th>
                 <th>Un.</th>
                 <th>Qtd *</th>
                 <th>Preço Unit. *</th>
@@ -143,36 +153,73 @@
             <tbody id="itens-body">
               {% for item_form in formset %}
               <tr class="item-row">
-                <td>{{ item_form.id }}{{ item_form.DELETE }}{{ item_form.produto }}</td>
-                <td>{{ item_form.descricao }}</td>
-                <td>{{ item_form.ncm }}</td>
-                <td>{{ item_form.cfop }}</td>
+                <td>{{ item_form.id }}<div class="d-none">{{ item_form.DELETE }}</div>{{ item_form.produto }}</td>
                 <td>{{ item_form.unidade }}</td>
                 <td>{{ item_form.quantidade }}</td>
                 <td>{{ item_form.preco_unitario }}</td>
                 <td>{{ item_form.desconto_item }}</td>
-                <td>
-                  <button type="button" class="row-action danger remove-item">
+                <td class="text-center">
+                  <button type="button" class="row-action btn-toggle-fiscal" title="Descrição / NCM / CFOP">
+                    <i class="bi bi-chevron-down"></i>
+                  </button>
+                  <button type="button" class="row-action danger remove-item" title="Remover">
                     <i class="bi bi-trash"></i>
                   </button>
+                </td>
+              </tr>
+              <tr class="item-fiscal-row" {% if not item_form.descricao.errors and not item_form.ncm.errors and not item_form.cfop.errors %}style="display:none"{% endif %}>
+                <td colspan="6">
+                  <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
+                    <div class="flex-grow-1" style="min-width:220px">
+                      <label class="fiscal-label">Descrição *</label>
+                      {{ item_form.descricao }}
+                      {% if item_form.descricao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ item_form.descricao.errors }}</div>{% endif %}
+                    </div>
+                    <div>
+                      <label class="fiscal-label">NCM</label>
+                      {{ item_form.ncm }}
+                    </div>
+                    <div>
+                      <label class="fiscal-label">CFOP</label>
+                      {{ item_form.cfop }}
+                    </div>
+                  </div>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
             <tbody class="d-none" id="empty-form-container">
               <tr class="item-row">
-                <td>{{ formset.empty_form.id }}{{ formset.empty_form.DELETE }}{{ formset.empty_form.produto }}</td>
-                <td>{{ formset.empty_form.descricao }}</td>
-                <td>{{ formset.empty_form.ncm }}</td>
-                <td>{{ formset.empty_form.cfop }}</td>
+                <td>{{ formset.empty_form.id }}<div class="d-none">{{ formset.empty_form.DELETE }}</div>{{ formset.empty_form.produto }}</td>
                 <td>{{ formset.empty_form.unidade }}</td>
                 <td>{{ formset.empty_form.quantidade }}</td>
                 <td>{{ formset.empty_form.preco_unitario }}</td>
                 <td>{{ formset.empty_form.desconto_item }}</td>
-                <td>
-                  <button type="button" class="row-action danger remove-item">
+                <td class="text-center">
+                  <button type="button" class="row-action btn-toggle-fiscal" title="Descrição / NCM / CFOP">
+                    <i class="bi bi-chevron-down"></i>
+                  </button>
+                  <button type="button" class="row-action danger remove-item" title="Remover">
                     <i class="bi bi-trash"></i>
                   </button>
+                </td>
+              </tr>
+              <tr class="item-fiscal-row" style="display:none">
+                <td colspan="6">
+                  <div class="fiscal-section d-flex flex-wrap gap-2 align-items-end">
+                    <div class="flex-grow-1" style="min-width:220px">
+                      <label class="fiscal-label">Descrição *</label>
+                      {{ formset.empty_form.descricao }}
+                    </div>
+                    <div>
+                      <label class="fiscal-label">NCM</label>
+                      {{ formset.empty_form.ncm }}
+                    </div>
+                    <div>
+                      <label class="fiscal-label">CFOP</label>
+                      {{ formset.empty_form.cfop }}
+                    </div>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -228,7 +275,39 @@
         </div>
       </div>
 
+    </div><!-- /complex-main -->
+
+    <div class="complex-summary">
+      <div class="summary-card">
+        <h4>Resumo de Valores</h4>
+        <div class="field mb-2">
+          <label class="form-label mb-1">Frete</label>
+          {{ form.valor_frete }}
+        </div>
+        <div class="field mb-3">
+          <label class="form-label mb-1">Desconto Total</label>
+          {{ form.valor_desconto }}
+          <div id="info-desconto-cliente" class="helper-note text-success" style="display:none"></div>
+        </div>
+        <hr class="my-2">
+        <div class="summary-row">
+          <span>Subtotal Itens</span><span id="resumo-subtotal">R$ 0,00</span>
+        </div>
+        <div class="summary-row">
+          <span>+ Frete</span><span id="resumo-frete">R$ 0,00</span>
+        </div>
+        <div class="summary-row negative">
+          <span>- Desconto</span><span id="resumo-desconto">R$ 0,00</span>
+        </div>
+        <div class="summary-row" id="resumo-moeda-row" style="display:none">
+          <span id="resumo-moeda-label">Total (USD)</span><span id="resumo-moeda-value">0,00</span>
+        </div>
+        <div class="summary-total">
+          <span>Total do Pedido</span><span id="resumo-total">R$ 0,00</span>
+        </div>
+      </div>
     </div>
+    </div><!-- /complex-layout -->
 
     <div class="app-footer-bar">
       <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Salvar</button>
@@ -250,30 +329,136 @@
 
   document.getElementById('add-item').addEventListener('click', function() {
     const idx = parseInt(TOTAL.value);
-    const tpl = emptyFormContainer.querySelector('.item-row');
-    const clone = tpl.cloneNode(true);
-    clone.querySelectorAll('input, select, textarea').forEach(el => {
-      if (el.name) el.name = el.name.replace('__prefix__', idx);
-      if (el.id) el.id = el.id.replace('__prefix__', idx);
-      if (el.type !== 'checkbox') el.value = '';
-      if (el.type === 'checkbox') el.checked = false;
+    const tplMain = emptyFormContainer.querySelector('.item-row');
+    const tplFiscal = emptyFormContainer.querySelector('.item-fiscal-row');
+    const cloneMain = tplMain.cloneNode(true);
+    const cloneFiscal = tplFiscal.cloneNode(true);
+    [cloneMain, cloneFiscal].forEach(row => {
+      row.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.name) el.name = el.name.replace('__prefix__', idx);
+        if (el.id) el.id = el.id.replace('__prefix__', idx);
+        if (el.type !== 'checkbox') el.value = '';
+        if (el.type === 'checkbox') el.checked = false;
+      });
     });
-    body.appendChild(clone);
+    cloneFiscal.style.display = 'none';
+    body.appendChild(cloneMain);
+    body.appendChild(cloneFiscal);
     TOTAL.value = idx + 1;
-    attachRemove(clone);
-    if (window.MoneyMask) MoneyMask.init(clone);
-    if (window.AgrisSelect2) AgrisSelect2.initFromDataAttrs(clone);
+    attachRowHandlers(cloneMain);
+    if (window.MoneyMask) { MoneyMask.init(cloneMain); MoneyMask.init(cloneFiscal); }
+    if (window.AgrisSelect2) AgrisSelect2.initFromDataAttrs(cloneMain);
+    updateTotais();
   });
 
-  function attachRemove(row) {
-    const btn = row.querySelector('.remove-item');
-    if (btn) btn.addEventListener('click', function() {
-      const chk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
-      if (chk) { chk.checked = true; row.style.display = 'none'; }
-      else row.remove();
+  function attachRowHandlers(mainRow) {
+    const fiscalRow = mainRow.nextElementSibling;
+
+    const removeBtn = mainRow.querySelector('.remove-item');
+    if (removeBtn) removeBtn.addEventListener('click', function() {
+      const chk = mainRow.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (chk) {
+        chk.checked = true;
+        mainRow.style.display = 'none';
+        if (fiscalRow) fiscalRow.style.display = 'none';
+      } else {
+        mainRow.remove();
+        if (fiscalRow) fiscalRow.remove();
+      }
+      updateTotais();
+    });
+
+    const toggleBtn = mainRow.querySelector('.btn-toggle-fiscal');
+    if (toggleBtn) toggleBtn.addEventListener('click', function() {
+      if (!fiscalRow) return;
+      const collapsed = fiscalRow.style.display === 'none';
+      fiscalRow.style.display = collapsed ? '' : 'none';
+      toggleBtn.classList.toggle('open', collapsed);
+      const icon = toggleBtn.querySelector('i');
+      if (icon) icon.className = collapsed ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+    });
+    if (toggleBtn && fiscalRow && fiscalRow.style.display !== 'none') toggleBtn.classList.add('open');
+  }
+  body.querySelectorAll('.item-row').forEach(r => attachRowHandlers(r));
+
+  // Tributação automática (NCM/CFOP) — resolvida a partir do produto, do
+  // cliente e do tipo de venda; bloqueia o produto se não houver tributação
+  // cadastrada para a operação. O servidor sempre re-resolve no submit, isto
+  // aqui é só feedback imediato pro usuário.
+  const infoTributacao = document.getElementById('info-tributacao');
+
+  function expandFiscalRow(mainRow) {
+    const fiscalRow = mainRow.nextElementSibling;
+    const toggleBtn = mainRow.querySelector('.btn-toggle-fiscal');
+    if (fiscalRow) fiscalRow.style.display = '';
+    if (toggleBtn) {
+      toggleBtn.classList.add('open');
+      const icon = toggleBtn.querySelector('i');
+      if (icon) icon.className = 'bi bi-chevron-up';
+    }
+  }
+
+  function resolverTributacaoItem(mainRow, produtoId) {
+    const fiscalRow = mainRow.nextElementSibling;
+    const clienteId = document.getElementById('id_cliente')?.value;
+    const tipoVenda = document.getElementById('id_tipo_venda')?.value || 'MERCADO_INTERNO';
+    const ncmEl = fiscalRow?.querySelector('input[name$="-ncm"]');
+    const cfopEl = fiscalRow?.querySelector('input[name$="-cfop"]');
+    if (!produtoId) return;
+    if (!clienteId) {
+      if (infoTributacao) {
+        infoTributacao.className = 'alert alert-warning py-2 px-3 mb-2';
+        infoTributacao.style.display = 'block';
+        infoTributacao.innerHTML = '<i class="bi bi-info-circle me-1"></i>Selecione o cliente para calcular NCM/CFOP automaticamente.';
+      }
+      return;
+    }
+    fetch(`/produtos/ajax/resolver-tributacao-venda/?produto_id=${produtoId}&cliente_id=${clienteId}&tipo_venda=${tipoVenda}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          if (ncmEl) ncmEl.value = data.ncm;
+          if (cfopEl) cfopEl.value = data.cfop;
+          if (infoTributacao) infoTributacao.style.display = 'none';
+        } else {
+          if (ncmEl) ncmEl.value = '';
+          if (cfopEl) cfopEl.value = '';
+          const produtoSelect = mainRow.querySelector('select.select2-ajax');
+          if (produtoSelect) $(produtoSelect).val(null).trigger('change');
+          expandFiscalRow(mainRow);
+          if (infoTributacao) {
+            infoTributacao.className = 'alert alert-danger py-2 px-3 mb-2';
+            infoTributacao.style.display = 'block';
+            infoTributacao.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>${data.mensagem}` +
+              (data.link_cadastro ? ` <a href="${data.link_cadastro}" target="_blank">Cadastrar tributação ↗</a>` : '');
+          }
+        }
+      })
+      .catch(() => {});
+  }
+
+  function revalidarTodosItens() {
+    body.querySelectorAll('.item-row').forEach(function(row) {
+      if (row.style.display === 'none') return;
+      const select = row.querySelector('select.select2-ajax');
+      if (select && select.value) resolverTributacaoItem(row, select.value);
     });
   }
-  body.querySelectorAll('.item-row').forEach(r => attachRemove(r));
+
+  $(document).on('select2:select', '#itens-body select.select2-ajax', function(e) {
+    const row = this.closest('.item-row');
+    if (!row) return;
+    resolverTributacaoItem(row, e.params.data.id);
+    const fiscalRow = row.nextElementSibling;
+    const descEl = fiscalRow?.querySelector('input[name$="-descricao"]');
+    if (descEl && !descEl.value.trim()) {
+      const text = e.params.data.text || '';
+      descEl.value = text.replace(/^.*—\s*/, '').trim() || text;
+    }
+  });
+
+  const tipoVendaChangeEl = document.getElementById('id_tipo_venda');
+  if (tipoVendaChangeEl) tipoVendaChangeEl.addEventListener('change', revalidarTodosItens);
 
   // Condições comerciais do cliente — pré-preenche ao selecionar, editável depois
   const clienteEl = document.getElementById('id_cliente');
@@ -325,6 +510,9 @@
               infoDesconto.style.display = 'none';
             }
           }
+
+          revalidarTodosItens();
+          updateTotais();
         })
         .catch(() => {});
     });
@@ -333,6 +521,7 @@
   // Cotação BCB — busca PTAX do dia útil anterior
   const btnBCB = document.getElementById('btn-cotacao-bcb');
   const infoCotacao = document.getElementById('info-cotacao');
+
   if (btnBCB) {
     btnBCB.addEventListener('click', function() {
       const moeda = document.getElementById('id_moeda')?.value || 'USD';
@@ -356,6 +545,8 @@
             `Compra: <strong>R$ ${c.compra.toFixed(4)}</strong> &nbsp;|&nbsp; ` +
             `Venda: <strong>R$ ${c.venda.toFixed(4)}</strong> &nbsp;` +
             `<a href="https://www.bcb.gov.br/estabilidadefinanceira/historicocotacoes" target="_blank" class="text-muted small">BCB ↗</a>`;
+
+          updateTotais();
         })
         .catch(e => alert('Erro ao conectar ao BCB: ' + e))
         .finally(() => {
@@ -364,6 +555,86 @@
         });
     });
   }
+
+  // Totais do pedido — recalculados ao vivo na aba Itens. Lê os valores direto
+  // do atributo "name" (estável antes/depois da máscara de dinheiro aplicar,
+  // já que ela reaproveita o mesmo elemento trocando só o "type" para hidden).
+  function fieldValue(name) {
+    const el = document.querySelector(`[name="${name}"]`);
+    if (!el) return 0;
+    const parsed = parseFloat((el.value || '').replace(',', '.'));
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
+  function fmtNum(n) {
+    return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function updateTotais() {
+    let subtotal = 0;
+    body.querySelectorAll('.item-row').forEach(function(row) {
+      if (row.style.display === 'none') return;
+      const delChk = row.querySelector('input[type=checkbox][name$="-DELETE"]');
+      if (delChk && delChk.checked) return;
+      const qtdEl = row.querySelector('[name$="-quantidade"]');
+      const precoEl = row.querySelector('[name$="-preco_unitario"]');
+      const descEl = row.querySelector('[name$="-desconto_item"]');
+      const qtd = qtdEl ? parseFloat((qtdEl.value || '0').replace(',', '.')) || 0 : 0;
+      const preco = precoEl ? parseFloat((precoEl.value || '0').replace(',', '.')) || 0 : 0;
+      const desc = descEl ? parseFloat((descEl.value || '0').replace(',', '.')) || 0 : 0;
+      subtotal += (qtd * preco) - desc;
+    });
+
+    const frete = fieldValue('valor_frete');
+    const descontoTotal = fieldValue('valor_desconto');
+    const totalMoeda = subtotal + frete - descontoTotal;
+
+    const moeda = document.getElementById('id_moeda')?.value || 'BRL';
+    const tipoVenda = document.getElementById('id_tipo_venda')?.value || 'MERCADO_INTERNO';
+    const taxaCambio = fieldValue('taxa_cambio');
+
+    const elSubtotal = document.getElementById('resumo-subtotal');
+    const elFrete = document.getElementById('resumo-frete');
+    const elDesconto = document.getElementById('resumo-desconto');
+    const rowMoeda = document.getElementById('resumo-moeda-row');
+    const elMoedaLabel = document.getElementById('resumo-moeda-label');
+    const elMoedaValue = document.getElementById('resumo-moeda-value');
+    const elTotal = document.getElementById('resumo-total');
+
+    if (elSubtotal) elSubtotal.textContent = 'R$ ' + fmtNum(subtotal);
+    if (elFrete) elFrete.textContent = 'R$ ' + fmtNum(frete);
+    if (elDesconto) elDesconto.textContent = 'R$ ' + fmtNum(descontoTotal);
+
+    const exportacaoMoedaEstrangeira = tipoVenda === 'EXPORTACAO' && moeda !== 'BRL';
+
+    if (exportacaoMoedaEstrangeira) {
+      if (rowMoeda) rowMoeda.style.display = '';
+      if (elMoedaLabel) elMoedaLabel.textContent = `Total (${moeda})`;
+      if (elMoedaValue) elMoedaValue.textContent = fmtNum(totalMoeda);
+      if (elTotal) {
+        elTotal.textContent = taxaCambio > 0
+          ? 'R$ ' + fmtNum(totalMoeda * taxaCambio)
+          : 'Informe a taxa de câmbio';
+      }
+    } else {
+      if (rowMoeda) rowMoeda.style.display = 'none';
+      if (elTotal) elTotal.textContent = 'R$ ' + fmtNum(totalMoeda);
+    }
+  }
+
+  document.addEventListener('input', function(e) {
+    const name = e.target.name || '';
+    if (/-(quantidade|preco_unitario|desconto_item)$/.test(name) ||
+        name === 'valor_frete' || name === 'valor_desconto' || name === 'taxa_cambio') {
+      updateTotais();
+    }
+  });
+
+  const moedaChangeEl = document.getElementById('id_moeda');
+  if (moedaChangeEl) moedaChangeEl.addEventListener('change', updateTotais);
+  if (tipoVendaChangeEl) tipoVendaChangeEl.addEventListener('change', updateTotais);
+
+  updateTotais();
 })();
 </script>
 {% endblock %}

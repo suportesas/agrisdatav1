@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import DateBRInput
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
@@ -26,7 +27,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
             'safra': forms.Select(attrs={'class': 'form-control'}),
             'cultura': forms.Select(attrs={'class': 'form-control'}),
             'os': forms.Select(attrs={'class': 'form-control'}),
-            'data_monitoramento': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'data_monitoramento': DateBRInput(attrs={'class': 'form-control'}),
             'tipo_monitoramento': forms.Select(attrs={'class': 'form-control'}),
             'responsavel': forms.Select(attrs={'class': 'form-control'}),
             'quantidade_pontos': forms.NumberInput(attrs={'class': 'form-control', 'value': '20'}),

@@ -1,7 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 from django.urls import reverse_lazy
-from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget
+from core.widgets import MoneyBRInput, DecimalBRInput, Select2AjaxWidget, DateBRInput
 from .models import PedidoVenda, ItemPedidoVenda, TabelaPreco
 
 
@@ -19,8 +19,8 @@ class PedidoVendaForm(forms.ModelForm):
         widgets = {
             'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'vendedor': forms.Select(attrs={'class': 'form-select'}),
-            'data_pedido': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_entrega_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_pedido': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_entrega_prevista': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'tipo_venda': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_venda'}),
             'moeda': forms.Select(attrs={'class': 'form-select'}),
             'taxa_cambio': DecimalBRInput(decimals=4),
@@ -53,8 +53,8 @@ class ItemPedidoVendaForm(forms.ModelForm):
         widgets = {
             'produto': Select2AjaxWidget(attrs={'class': 'form-select-sm'}, ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'descricao': forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
-            'ncm': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '00000000'}),
-            'cfop': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '5102'}),
+            'ncm': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '00000000', 'readonly': 'readonly'}),
+            'cfop': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '5102', 'readonly': 'readonly'}),
             'unidade': forms.TextInput(attrs={'class': 'form-control form-control-sm', 'placeholder': 'UN'}),
             'quantidade': DecimalBRInput(attrs={'class': 'form-control-sm'}, decimals=3),
             'preco_unitario': DecimalBRInput(attrs={'class': 'form-control-sm'}, decimals=4),
@@ -94,8 +94,8 @@ class TabelaPrecoForm(forms.ModelForm):
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
             'moeda': forms.Select(attrs={'class': 'form-select'}),
             'preco_unitario': DecimalBRInput(decimals=4),
-            'vigencia_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'vigencia_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'vigencia_inicio': DateBRInput(attrs={'class': 'form-control'}),
+            'vigencia_fim': DateBRInput(attrs={'class': 'form-control'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

@@ -2,7 +2,7 @@ from django import forms
 from django.urls import reverse_lazy
 from django.utils import timezone
 
-from core.widgets import MoneyBRInput, Select2AjaxWidget
+from core.widgets import MoneyBRInput, Select2AjaxWidget, DateBRInput
 from .models import AdiantamentoInternacional, DescontoAdiantamento
 
 
@@ -17,7 +17,7 @@ class AdiantamentoInternacionalForm(forms.ModelForm):
         ]
         widgets = {
             'numero_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: AD-2026-001'}),
-            'data_adiantamento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_adiantamento': DateBRInput(attrs={'class': 'form-control'}),
             'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
             'safra_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 2025/2026'}),
             'safra': forms.Select(attrs={'class': 'form-select'}),
@@ -29,7 +29,7 @@ class AdiantamentoInternacionalForm(forms.ModelForm):
             'tipo_regra_desconto': forms.Select(attrs={'class': 'form-select', 'id': 'id_tipo_regra_desconto'}),
             'valor_desconto_padrao': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'percentual_desconto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'max': '100'}),
-            'data_prevista_reembolso': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_prevista_reembolso': DateBRInput(attrs={'class': 'form-control'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -84,7 +84,7 @@ class AplicarDescontoForm(forms.Form):
     data_desconto = forms.DateField(
         label='Data do Desconto',
         initial=timezone.now,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        widget=DateBRInput(attrs={'class': 'form-control'}),
     )
     observacoes = forms.CharField(
         label='Observações',
@@ -107,7 +107,7 @@ class PularDescontoForm(forms.Form):
     data_desconto = forms.DateField(
         label='Data de Referência',
         initial=timezone.now,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        widget=DateBRInput(attrs={'class': 'form-control'}),
     )
 
 
@@ -120,7 +120,7 @@ class MigrarAdiantamentoForm(forms.Form):
     data_migracao = forms.DateField(
         label='Data da Migração',
         initial=timezone.now,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        widget=DateBRInput(attrs={'class': 'form-control'}),
     )
     motivo = forms.CharField(
         label='Motivo da Migração',

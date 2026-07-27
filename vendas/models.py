@@ -226,6 +226,12 @@ class ItemPedidoVenda(models.Model):
     descricao = models.CharField('Descrição', max_length=200)
     ncm = models.CharField('NCM', max_length=10, blank=True)
     cfop = models.CharField('CFOP', max_length=10, blank=True)
+    tributacao = models.ForeignKey(
+        'produtos.ProdutoTributacao', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='itens_pedido_venda',
+        verbose_name='Tributação Aplicada',
+        help_text='Resolvida automaticamente a partir do produto, UF do cliente e tipo de venda.',
+    )
     unidade = models.CharField('Unidade', max_length=10, default='UN')
     quantidade = models.DecimalField(
         'Quantidade', max_digits=15, decimal_places=3,

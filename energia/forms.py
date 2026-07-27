@@ -1,10 +1,10 @@
 from django import forms
-from core.widgets import MoneyBRInput
+from core.widgets import MoneyBRInput, DateBRInput
 from .models import UsinaFotovoltaica, UnidadeConsumidora, LancamentoMensal, RelatorioMensalUsina, OcorrenciaUsina
 
 _CTRL = {'class': 'form-control'}
 _SEL = {'class': 'form-select'}
-_DATE = {'class': 'form-control', 'type': 'date'}
+_DATE = {'class': 'form-control'}
 _NUM = {'class': 'form-control', 'step': 'any'}
 _TEXTAREA = {'class': 'form-control', 'rows': '3'}
 
@@ -36,7 +36,7 @@ class UsinaFotovoltaicaForm(forms.ModelForm):
             'geracao_acordada_mensal_kwh': forms.NumberInput(attrs=_NUM),
             'geracao_acordada_anual_kwh': forms.NumberInput(attrs=_NUM),
             'prognostico_mensal_kwh': forms.NumberInput(attrs=_NUM),
-            'data_instalacao': forms.DateInput(attrs=_DATE),
+            'data_instalacao': DateBRInput(attrs=_DATE),
             'ativa': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -104,9 +104,9 @@ class LancamentoMensalForm(forms.ModelForm):
         ]
         widgets = {
             'unidade_consumidora': forms.Select(attrs=_SEL),
-            'mes_referencia': forms.DateInput(attrs=_DATE),
-            'data_leitura_anterior': forms.DateInput(attrs=_DATE),
-            'data_leitura_atual': forms.DateInput(attrs=_DATE),
+            'mes_referencia': DateBRInput(attrs=_DATE),
+            'data_leitura_anterior': DateBRInput(attrs=_DATE),
+            'data_leitura_atual': DateBRInput(attrs=_DATE),
             'num_dias': forms.NumberInput(attrs=_CTRL),
             'consumo_registrado_kwh': forms.NumberInput(attrs=_NUM),
             'energia_compensada_kwh': forms.NumberInput(attrs=_NUM),
@@ -150,7 +150,7 @@ class RelatorioMensalUsinaForm(forms.ModelForm):
         ]
         widgets = {
             'usina': forms.Select(attrs=_SEL),
-            'mes_referencia': forms.DateInput(attrs=_DATE),
+            'mes_referencia': DateBRInput(attrs=_DATE),
             'geracao_kwh': forms.NumberInput(attrs=_NUM),
             'desempenho_pct': forms.NumberInput(attrs=_NUM),
             'consumo_total_kwh': forms.NumberInput(attrs=_NUM),
@@ -204,8 +204,8 @@ class OcorrenciaUsinaForm(forms.ModelForm):
             'gravidade': forms.Select(attrs=_SEL),
             'titulo': forms.TextInput(attrs=_CTRL),
             'descricao': forms.Textarea(attrs={**_TEXTAREA, 'rows': '5'}),
-            'data_ocorrencia': forms.DateInput(attrs=_DATE),
-            'data_resolucao': forms.DateInput(attrs=_DATE),
+            'data_ocorrencia': DateBRInput(attrs=_DATE),
+            'data_resolucao': DateBRInput(attrs=_DATE),
             'impacto_kwh_estimado': forms.NumberInput(attrs=_NUM),
             'resolvido': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'responsavel': forms.TextInput(attrs=_CTRL),

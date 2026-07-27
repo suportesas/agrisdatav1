@@ -2,7 +2,7 @@ from django import forms
 from django.urls import reverse_lazy
 from django.utils import timezone
 
-from core.widgets import Select2AjaxWidget
+from core.widgets import Select2AjaxWidget, DateBRInput
 from .models import EmprestimoProdutor
 from cadastros.models import Produtor
 from produtos.models import Produto
@@ -32,12 +32,12 @@ class EmprestimoExtratoFiltroForm(forms.Form):
     data_inicio = forms.DateField(
         label='Data Inicial',
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        widget=DateBRInput(attrs={'class': 'form-control'}),
     )
     data_fim = forms.DateField(
         label='Data Final',
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        widget=DateBRInput(attrs={'class': 'form-control'}),
     )
     apenas_vencidos = forms.BooleanField(
         label='Apenas promessas vencidas',

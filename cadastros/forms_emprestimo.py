@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import DateBRInput
 from django.utils import timezone
 
 from emprestimos.models import EmprestimoProdutor
@@ -28,12 +29,12 @@ class EmprestimoExtratoFiltroForm(forms.Form):
     data_inicio = forms.DateField(
         label='Data Inicial',
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+        widget=DateBRInput(attrs={'class': 'form-control'})
     )
     data_fim = forms.DateField(
         label='Data Final',
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'})
+        widget=DateBRInput(attrs={'class': 'form-control'})
     )
     apenas_vencidos = forms.BooleanField(
         label='Apenas promessas vencidas',

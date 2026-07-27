@@ -1084,6 +1084,38 @@ def ajax_produto_tributacoes(request, produto_id):
     return JsonResponse({'success': True, 'produto_nome': produto.nome, 'tributacoes': tributacoes})
 
 
+@login_required
+def ajax_resolver_tributacao_venda(request):
+    """Resolve automaticamente qual ProdutoTributacao usar num item de venda,
+    a partir do produto, do cliente e do tipo de venda (dentro do estado /
+    fora do estado / exportação). Usado no Pedido de Venda para preencher
+    NCM/CFOP sozinho e bloquear quando não há tributação cadastrada."""
+    from .tributacao import resolver_tributacao_venda
+    from cadastros.models import Cliente
+
+    empresa = request.user.empresa
+    produto_id = request.GET.get('produto_id')
+    cliente_id = request.GET.get('cliente_id')
+    tipo_venda = request.GET.get('tipo_venda', 'MERCADO_INTERNO')
+
+    produto = get_object_or_404(Produto.objects.filter(categoria__empresa=empresa), pk=produto_id)
+    cliente = Cliente.objects.filter(pk=cliente_id, empresa=empresa).first() if cliente_id else None
+
+    resultado = resolver_tributacao_venda(produto, empresa, cliente, tipo_venda)
+    if resultado.ok:
+        return JsonResponse({
+            'ok': True,
+            'ncm': resultado.ncm_codigo,
+            'cfop': resultado.cfop_codigo,
+            'cfop_nome': resultado.tributacao.cfop.nome,
+        })
+    return JsonResponse({
+        'ok': False,
+        'mensagem': resultado.mensagem,
+        'link_cadastro': reverse('produtos:tributacao_create', args=[produto.pk]),
+    })
+
+
 # ============== CADASTRO RÁPIDO VIA AJAX ==============
 
 @login_required

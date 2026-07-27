@@ -87,12 +87,6 @@
               {% if form.modalidade_execucao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.modalidade_execucao.errors|striptags }}</div>{% endif %}
             </div>
             <div class="field col-4">
-              <label class="form-label">Talhão<span class="req">*</span></label>
-              {{ form.talhao }}
-              {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors|striptags }}</div>{% endif %}
-              <div class="helper-note" id="talhao-sugestao-hint"></div>
-            </div>
-            <div class="field col-4">
               <label class="form-label">Safra <small class="text-muted">(auto-preenchida)</small></label>
               {{ form.safra }}
             </div>
@@ -100,6 +94,12 @@
               <label class="form-label">Cultura da Safra</label>
               {{ form.safra_cultura }}
               <div class="helper-note" id="safra-cultura-hint">Selecione a safra primeiro</div>
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Talhão<span class="req">*</span></label>
+              {{ form.talhao }}
+              {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors|striptags }}</div>{% endif %}
+              <div class="helper-note" id="talhao-sugestao-hint"></div>
             </div>
             <div class="field col-4" id="div_poco" style="display:none;">
               <label class="form-label">

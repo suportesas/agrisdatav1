@@ -4,6 +4,7 @@ Com validações de CPF, CNH e integração com CEP
 """
 
 from django import forms
+from core.widgets import DateBRInput
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from datetime import date, datetime
@@ -35,12 +36,12 @@ class MotoristadoForm(forms.ModelForm):
             'transportadora': forms.Select(attrs={'class': 'form-select'}),
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome completo'}),
             'cpf': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '000.000.000-00', 'data-mask': 'cpf'}),
-            'data_nascimento': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_nascimento': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'foto': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'cnh': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número CNH'}),
             'categoria_cnh': forms.Select(attrs={'class': 'form-select'}),
-            'data_emissao_cnh': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'data_validade_cnh': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_emissao_cnh': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_validade_cnh': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'uf_cnh': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'SP', 'maxlength': '2', 'style': 'text-transform: uppercase;'}),
             'telefone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 0000-0000'}),
             'celular': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '(00) 00000-0000'}),
@@ -167,8 +168,8 @@ class MotoristadoDocumentoForm(forms.ModelForm):
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'numero': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número do documento'}),
-            'data_emissao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
-            'data_validade': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+            'data_emissao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'data_validade': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'arquivo': forms.FileInput(attrs={'class': 'form-control'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -191,8 +192,8 @@ class MotoristaVinculoPlacaForm(forms.ModelForm):
         widgets = {
             'motorista': forms.Select(attrs={'class': 'form-select'}),
             'placa_principal': forms.Select(attrs={'class': 'form-select'}),
-            'data_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'data_fim': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'data_inicio': DateBRInput(attrs={'class': 'form-control'}),
+            'data_fim': DateBRInput(attrs={'class': 'form-control'}),
             'ativo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -288,7 +289,7 @@ class MotoristaVinculoConsultaForm(forms.Form):
     
     data_referencia = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+        widget=DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
         label='Data de Referência',
         help_text='Data em que ocorreu a multa/evento'
     )
@@ -303,14 +304,14 @@ class MotoristaVinculoConsultaForm(forms.Form):
     
     data_inicio = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+        widget=DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
         label='Data Início',
         help_text='Início do período de consulta'
     )
     
     data_fim = forms.DateField(
         required=False,
-        widget=forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}, format='%Y-%m-%d'),
+        widget=DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
         label='Data Fim',
         help_text='Fim do período de consulta (deixe vazio para incluir vínculos ativos)'
     )

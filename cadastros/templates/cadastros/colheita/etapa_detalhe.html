@@ -221,8 +221,15 @@
           <i class="bi bi-arrow-left me-1"></i>Voltar à OS
         </a>
         {% if pode_concluir %}
-        <form method="post" action="{% url 'operacoes_campo:colheita_concluir' os_pk=os.pk etapa_pk=etapa.pk %}">
+        <form method="post" action="{% url 'operacoes_campo:colheita_concluir' os_pk=os.pk etapa_pk=etapa.pk %}"
+              class="d-flex align-items-center gap-3">
           {% csrf_token %}
+          <div class="form-check mb-0">
+            <input class="form-check-input" type="checkbox" name="ultimo_corte_ciclo" id="ultimoCorteCiclo">
+            <label class="form-check-label small" for="ultimoCorteCiclo">
+              Último corte do ciclo <span class="text-muted">(libera o talhão)</span>
+            </label>
+          </div>
           <button type="submit" class="btn btn-success"
                   onclick="return confirm('Concluir esta etapa? Esta ação não pode ser desfeita.')">
             <i class="bi bi-check-circle me-1"></i>Concluir Etapa

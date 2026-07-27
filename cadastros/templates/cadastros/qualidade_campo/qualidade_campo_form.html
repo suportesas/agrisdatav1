@@ -49,11 +49,6 @@
                 {% if form.safra.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra.errors|striptags }}</div>{% endif %}
               </div>
               <div class="field col-4">
-                <label class="form-label">Ordem de Serviço</label>
-                {{ form.os }}
-                {% if form.os.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.os.errors|striptags }}</div>{% endif %}
-              </div>
-              <div class="field col-4">
                 <label class="form-label">Data da Inspeção<span class="req">*</span></label>
                 {{ form.data_inspecao }}
                 {% if form.data_inspecao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_inspecao.errors|striptags }}</div>{% endif %}
@@ -161,6 +156,6 @@
 {{ block.super }}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=6"></script>
 <script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 {% endblock %}

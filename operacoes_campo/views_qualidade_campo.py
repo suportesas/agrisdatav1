@@ -7,8 +7,10 @@ from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from django.db.models import Q
+
 from operacoes_campo.forms import InspecaoQualidadeCampoForm
-from operacoes_campo.models import InspecaoQualidadeCampo
+from operacoes_campo.models import InspecaoQualidadeCampo, OrdemServico, TipoServicoOS
 
 
 @login_required
@@ -73,9 +75,23 @@ def qualidade_campo_create(request):
     if request.method == 'POST':
         form = InspecaoQualidadeCampoForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
+            empresa = request.user.empresa
             obj = form.save(commit=False)
-            obj.empresa = request.user.empresa
+            obj.empresa = empresa
             obj.cadastrado_por = request.user
+            tipo_outro = TipoServicoOS.objects.filter(
+                Q(empresa=empresa) | Q(empresa=None), tipo_legado='OUTRO', ativo=True
+            ).order_by('empresa').first()
+            obj.os = OrdemServico.objects.create(
+                empresa=empresa,
+                tipo_servico=tipo_outro,
+                talhao=obj.talhao,
+                safra=obj.safra,
+                responsavel=obj.responsavel,
+                data_prevista=obj.data_inspecao,
+                observacoes='OS gerada automaticamente pela inspeção de qualidade de campo.',
+                cadastrado_por=request.user,
+            )
             obj.save()
             messages.success(request, 'Inspeção de qualidade registrada com sucesso.')
             return redirect('operacoes_campo:qualidade_campo_detail', pk=obj.pk)
@@ -168,7 +184,7 @@ def qualidade_campo_pdf(request, pk):
     info = [
         ['Talhão', obj.talhao.nome, 'Data', obj.data_inspecao.strftime('%d/%m/%Y')],
         ['Safra', str(obj.safra) if obj.safra else '—', 'Tipo', obj.get_tipo_inspecao_display()],
-        ['Responsável', obj.responsavel.get_full_name() if obj.responsavel else '—',
+        ['Responsável', obj.responsavel.nome_completo if obj.responsavel else '—',
          'Resultado', obj.get_resultado_display()],
         ['Estágio', obj.estagio_cultura or '—', 'Coloração', obj.get_coloracao_display() if obj.coloracao else '—'],
     ]

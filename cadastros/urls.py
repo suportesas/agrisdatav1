@@ -234,6 +234,7 @@ urlpatterns = [
 
     # Cliente: combobox unificado (Select2 AJAX paginado)
     path('api/clientes/buscar/', views.ajax_buscar_clientes, name='ajax_buscar_clientes'),
+    path('api/clientes/<int:cliente_id>/dados/', views.ajax_dados_cliente, name='ajax_dados_cliente'),
 
     # Fornecedor: combobox unificado (Select2 AJAX paginado)
     path('api/fornecedores/buscar/', views.ajax_buscar_fornecedores, name='ajax_buscar_fornecedores'),

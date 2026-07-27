@@ -972,6 +972,39 @@ def ajax_buscar_clientes(request):
 
 
 @login_required
+def ajax_dados_cliente(request, cliente_id):
+    """AJAX: condições comerciais cadastradas para o cliente (prazo/forma de
+    pagamento padrão, moeda, desconto, vendedor responsável), usadas para
+    pré-preencher o Pedido de Venda — o usuário pode editar os valores sugeridos."""
+    from .models import Cliente
+
+    empresa = request.user.empresa
+    try:
+        cliente = Cliente.objects.select_related('prazo_pagamento_padrao', 'vendedor_responsavel').get(
+            pk=cliente_id, empresa=empresa,
+        )
+    except Cliente.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cliente não encontrado.'}, status=404)
+
+    if cliente.prazo_pagamento_padrao:
+        condicao_pagamento = f"{cliente.prazo_pagamento_padrao.termos} dias"
+    elif cliente.prazo_pagamento:
+        condicao_pagamento = f"{cliente.prazo_pagamento} dias"
+    else:
+        condicao_pagamento = ''
+
+    return JsonResponse({
+        'success': True,
+        'tipo_cliente': cliente.tipo_cliente,
+        'condicao_pagamento': condicao_pagamento,
+        'forma_pagamento': cliente.get_forma_pagamento_padrao_display() if cliente.forma_pagamento_padrao else '',
+        'moeda': cliente.moeda_padrao or '',
+        'desconto_padrao': float(cliente.desconto_padrao or 0),
+        'vendedor_id': cliente.vendedor_responsavel_id,
+    })
+
+
+@login_required
 def ajax_buscar_fornecedores(request):
     """Combobox unificado (Select2 AJAX paginado, 10 por página): q vazio
     retorna a primeira página sem filtro; digitar busca por nome, nome

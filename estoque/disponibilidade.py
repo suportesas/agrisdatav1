@@ -1,5 +1,7 @@
 """Calculo de reserva/empenho de estoque para insumos comprometidos em
-Ordens de Servico e Requisicoes que ainda nao foram baixados fisicamente."""
+Ordens de Servico e Requisicoes que ainda nao foram baixados fisicamente
+(inclui OS ja concluidas cuja baixa ainda depende de execucao manual pelo
+almoxarifado — ver `operacoes_campo.views_os.os_concluir`)."""
 from collections import defaultdict
 from decimal import Decimal
 
@@ -8,7 +10,8 @@ from django.db.models import Case, DecimalField, F, Sum, When
 
 def reservas_por_produto(empresa, excluir_os_id=None, excluir_requisicao_id=None):
     """Calcula, em duas queries (independente do numero de produtos), quanto
-    de cada produto esta comprometido em OS APROVADA/EM_ANDAMENTO ou em
+    de cada produto esta comprometido em OS APROVADA/EM_ANDAMENTO, em OS
+    CONCLUIDA cuja baixa ainda nao foi executada pelo almoxarifado, ou em
     Requisicao APROVADA mas ainda nao gerou MovimentacaoEstoque.
     Retorna {produto_id: Decimal}."""
     from operacoes_campo.models import OrdemServicoInsumo
@@ -18,8 +21,8 @@ def reservas_por_produto(empresa, excluir_os_id=None, excluir_requisicao_id=None
 
     os_qs = OrdemServicoInsumo.objects.filter(
         os__empresa=empresa,
-        os__status__in=['APROVADA', 'EM_ANDAMENTO'],
-    )
+        os__status__in=['APROVADA', 'EM_ANDAMENTO', 'CONCLUIDA'],
+    ).exclude(os__status='CONCLUIDA', movimentacao__status='EXECUTADO')
     if excluir_os_id:
         os_qs = os_qs.exclude(os_id=excluir_os_id)
     for row in os_qs.values('produto_id').annotate(total=Sum('quantidade_aplicada')):

@@ -1,0 +1,40 @@
+<form method="post" novalidate>
+  {% csrf_token %}
+  <p class="text-muted small mb-3">
+    <i class="bi bi-info-circle me-1"></i>
+    Informe o horímetro inicial e final dos veículos utilizados nesta OS antes de concluir.
+  </p>
+
+  {% for m in maquinas %}
+  <div class="row g-2 align-items-end mb-3 pb-3 border-bottom">
+    <div class="col-12">
+      <strong>{{ m.veiculo }}</strong>
+    </div>
+    <div class="col-6">
+      <label class="form-label small mb-1">Horímetro Inicial (h)</label>
+      <input type="number" step="0.01" min="0" class="form-control form-control-sm"
+             name="horimetro_inicial_{{ m.id }}" value="{{ m.horimetro_inicial|default_if_none:'' }}">
+    </div>
+    <div class="col-6">
+      <label class="form-label small mb-1">Horímetro Final (h)</label>
+      <input type="number" step="0.01" min="0" class="form-control form-control-sm"
+             name="horimetro_final_{{ m.id }}" value="{{ m.horimetro_final|default_if_none:'' }}">
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-muted">Nenhum veículo registrado nesta OS.</p>
+  {% endfor %}
+
+  {% if erro %}
+  <div class="alert alert-danger py-2 small mb-3 rounded-3">{{ erro }}</div>
+  {% endif %}
+
+  <div class="d-flex justify-content-between gap-2 mt-2">
+    <a href="{% url 'operacoes_campo:os_concluir' pk=os.pk %}" class="btn btn-outline-secondary btn-sm">
+      Pular e continuar
+    </a>
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="bi bi-check2-circle me-1"></i>Salvar e concluir
+    </button>
+  </div>
+</form>

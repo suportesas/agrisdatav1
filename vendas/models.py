@@ -37,7 +37,7 @@ class PedidoVenda(models.Model):
         related_name='pedidos_venda', verbose_name='Cliente',
     )
     vendedor = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        'cadastros.Vendedor', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='pedidos_venda_como_vendedor',
         verbose_name='Vendedor',
     )

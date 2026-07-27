@@ -175,6 +175,10 @@ class OrdemServico(models.Model):
     data_aprovacao = models.DateTimeField('Data de Aprovação', null=True, blank=True)
 
     area_executada_ha = models.DecimalField('Área Executada (ha)', max_digits=10, decimal_places=4, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
+    numero_corte = models.PositiveSmallIntegerField(
+        'Número do Corte', null=True, blank=True, validators=[MinValueValidator(1)],
+        help_text='Preencher apenas para OS de Colheita: 1º, 2º, 3º corte do ciclo (cana-de-açúcar, forragens etc.)',
+    )
 
     fornecedor_servico = models.ForeignKey('cadastros.Fornecedor', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_executadas', verbose_name='Fornecedor do Serviço')
     valor_servico_externo = models.DecimalField('Valor do Serviço Externo (R$)', max_digits=12, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
@@ -299,6 +303,11 @@ class OrdemServicoInsumo(models.Model):
     quantidade_aplicada = models.DecimalField('Quantidade Aplicada', max_digits=15, decimal_places=3, default=Decimal('0'), validators=[MinValueValidator(Decimal('0'))])
     custo_unitario = models.DecimalField('Custo Unitário (R$)', max_digits=15, decimal_places=4, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
     observacoes = models.CharField('Observações', max_length=255, blank=True)
+    movimentacao = models.ForeignKey(
+        'estoque.MovimentacaoEstoque', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='insumos_os_origem', verbose_name='Movimentação de Estoque',
+        help_text='Preenchida ao concluir a OS; a baixa efetiva do estoque é feita pelo almoxarifado.'
+    )
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
 
@@ -320,6 +329,12 @@ class OrdemServicoInsumo(models.Model):
         qtd = self.quantidade_aplicada or Decimal('0')
         custo = self.custo_unitario or Decimal('0')
         return (qtd * custo).quantize(Decimal('0.01'))
+
+    @property
+    def status_baixa(self):
+        """Status da baixa de estoque deste item: None (OS ainda não concluída),
+        'PENDENTE'/'APROVADO' (aguardando o almoxarifado) ou 'EXECUTADO'/'CANCELADO'."""
+        return self.movimentacao.status if self.movimentacao_id else None
 
     def clean(self):
         if self.quantidade_aplicada is not None and self.quantidade_aplicada < 0:
@@ -990,7 +1005,7 @@ class InspecaoQualidadeCampo(models.Model):
     safra = models.ForeignKey('cadastros.Safra', on_delete=models.SET_NULL, null=True, blank=True, related_name='inspecoes_qualidade')
     os = models.ForeignKey(OrdemServico, on_delete=models.SET_NULL, null=True, blank=True, related_name='inspecoes_qualidade', verbose_name='Ordem de Serviço')
     data_inspecao = models.DateField()
-    responsavel = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='inspecoes_qualidade_campo')
+    responsavel = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, related_name='inspecoes_qualidade_campo')
     tipo_inspecao = models.CharField(max_length=30, choices=TIPO_CHOICES)
     estagio_cultura = models.CharField(max_length=50, blank=True)
     brix = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, verbose_name='Brix (°Bx)')

@@ -68,7 +68,7 @@
             <dt class="col-sm-5">Tipo</dt><dd class="col-sm-7">{{ pedido.get_tipo_venda_display }}</dd>
             <dt class="col-sm-5">Data Pedido</dt><dd class="col-sm-7">{{ pedido.data_pedido|date:"d/m/Y" }}</dd>
             {% if pedido.data_entrega_prevista %}<dt class="col-sm-5">Entrega Prev.</dt><dd class="col-sm-7">{{ pedido.data_entrega_prevista|date:"d/m/Y" }}</dd>{% endif %}
-            {% if pedido.vendedor %}<dt class="col-sm-5">Vendedor</dt><dd class="col-sm-7">{{ pedido.vendedor.get_full_name|default:pedido.vendedor.username }}</dd>{% endif %}
+            {% if pedido.vendedor %}<dt class="col-sm-5">Vendedor</dt><dd class="col-sm-7">{{ pedido.vendedor.nome_completo }}</dd>{% endif %}
             {% if pedido.condicao_pagamento %}<dt class="col-sm-5">Cond. Pgto.</dt><dd class="col-sm-7">{{ pedido.condicao_pagamento }}</dd>{% endif %}
             {% if pedido.forma_pagamento %}<dt class="col-sm-5">Forma Pgto.</dt><dd class="col-sm-7">{{ pedido.forma_pagamento }}</dd>{% endif %}
           </dl>

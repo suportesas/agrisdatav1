@@ -1097,9 +1097,12 @@ class MovimentacaoEstoque(models.Model):
         if not self.lote:
             if self.tipo in ['ENTRADA', 'SAIDA'] and self.produto:
                 # Recalcula estoque do produto
+                # Considera apenas movimentações já executadas — mais a própria
+                # movimentação sendo executada agora (ainda PENDENTE/APROVADO em
+                # banco neste ponto, pois o status só é gravado após esta chamada).
                 movimentacoes = MovimentacaoEstoque.objects.filter(
                     Q(produto=self.produto) | Q(lote__produto=self.produto)
-                )
+                ).filter(Q(status='EXECUTADO') | Q(pk=self.pk))
                 entrada = movimentacoes.filter(tipo='ENTRADA').aggregate(
                     total=Sum('quantidade')
                 )['total'] or Decimal('0.000')

@@ -72,9 +72,15 @@
                   </button>
                 </form>
               {% endif %}
+              {% if maquinas_pendentes_horimetro %}
+              <button type="button" class="btn btn-success btn-sm" data-os-modal-url="{% url 'operacoes_campo:os_horimetro_pendente' os.pk %}" data-os-modal-title="Horímetro dos veículos">
+                <i class="bi bi-flag-fill me-1"></i>Concluir
+              </button>
+              {% else %}
               <a href="{% url 'operacoes_campo:os_concluir' os.pk %}" class="btn btn-success btn-sm">
                 <i class="bi bi-flag-fill me-1"></i>Concluir
               </a>
+              {% endif %}
             {% endif %}
             {% if os.status not in 'CONCLUIDA,CANCELADA' %}
               <a href="{% url 'operacoes_campo:os_update' os.pk %}" class="btn btn-outline-secondary btn-sm">
@@ -471,7 +477,7 @@
                     <tr>
                       <th>Produto</th><th class="text-end">Planejado</th>
                       <th class="text-end">Aplicado</th><th class="text-end">Custo Unit.</th>
-                      <th class="text-end">Total</th><th></th>
+                      <th class="text-end">Total</th><th>Baixa</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -486,6 +492,17 @@
                       <td class="text-end">R$ {{ item.custo_unitario|default:0|floatformat:"4g" }}</td>
                       <td class="text-end fw-semibold text-warning">R$ {{ item.custo_total|floatformat:"2g" }}</td>
                       <td>
+                        {% if item.status_baixa == 'EXECUTADO' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">Baixado</span>
+                        {% elif item.status_baixa == 'CANCELADO' %}
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Cancelado</span>
+                        {% elif item.status_baixa %}
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle">Aguardando almoxarifado</span>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
+                      </td>
+                      <td>
                         {% if os.status not in 'CONCLUIDA,CANCELADA' %}
                         <a href="{% url 'operacoes_campo:os_insumo_edit' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
                         <a href="{% url 'operacoes_campo:os_insumo_delete' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-danger py-0 px-1" title="Excluir"><i class="bi bi-trash"></i></a>
@@ -496,6 +513,7 @@
                     <tr class="table-light">
                       <td colspan="4" class="text-end fw-bold text-muted small">Total Insumos:</td>
                       <td class="text-end fw-bold text-warning">R$ {{ custo_ins|floatformat:"2g" }}</td>
+                      <td></td>
                       <td></td>
                     </tr>
                   </tbody>
@@ -578,9 +596,15 @@
           <div class="alert alert-warning border-0 mb-3">
             <i class="bi bi-camera-fill me-2"></i>
             <strong>RN-03:</strong> Uma foto de evidência é obrigatória para concluir esta OS.
+            {% if maquinas_pendentes_horimetro %}
+            <button type="button" class="btn btn-sm btn-success ms-2" data-os-modal-url="{% url 'operacoes_campo:os_horimetro_pendente' os.pk %}" data-os-modal-title="Horímetro dos veículos">
+              <i class="bi bi-flag-fill me-1"></i>Concluir e adicionar foto
+            </button>
+            {% else %}
             <a href="{% url 'operacoes_campo:os_concluir' os.pk %}" class="btn btn-sm btn-success ms-2">
               <i class="bi bi-flag-fill me-1"></i>Concluir e adicionar foto
             </a>
+            {% endif %}
           </div>
           {% endif %}
           {% if os.foto_evidencia %}
@@ -687,6 +711,10 @@
                 <dd class="col-7 small">{{ os.safra.nome|default:"—" }}</dd>
                 <dt class="col-5 text-muted small">Tipo de Serviço</dt>
                 <dd class="col-7 small">{{ os.descricao_servico }}</dd>
+                {% if os.numero_corte %}
+                <dt class="col-5 text-muted small">Número do Corte</dt>
+                <dd class="col-7 small">{{ os.numero_corte }}º Corte</dd>
+                {% endif %}
                 <dt class="col-5 text-muted small">Responsável</dt>
                 <dd class="col-7 small">{{ os.responsavel.nome_completo|default:"—" }}</dd>
                 <dt class="col-5 text-muted small">Data Prevista</dt>
@@ -1063,15 +1091,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function injectHTML(container, html) {
     container.innerHTML = html;
-    container.querySelectorAll('script').forEach(oldScript => {
-      const newScript = document.createElement('script');
-      if (oldScript.src) {
-        newScript.src = oldScript.src;
-      } else {
-        newScript.textContent = oldScript.textContent;
-      }
-      oldScript.replaceWith(newScript);
+    // Scripts must run in document order, each fully loaded before the next
+    // starts — jQuery, then Select2, then select2-ajax.js, then the inline
+    // init call all depend on the previous one being ready. A dynamically
+    // created <script src="..."> executes asynchronously by default, so
+    // running these via forEach (fire-and-forget) races: sometimes jQuery
+    // hadn't finished loading before select2.js ran, so Select2 never
+    // initialized and the funcionário/veículo/produto fields rendered as
+    // empty native <select> tags (they intentionally ship with no <option>s
+    // and rely on Select2's AJAX call to populate on open — see
+    // core/widgets.py Select2AjaxWidget).
+    const oldScripts = Array.from(container.querySelectorAll('script'));
+    let chain = Promise.resolve();
+    oldScripts.forEach(oldScript => {
+      chain = chain.then(() => new Promise((resolve, reject) => {
+        const newScript = document.createElement('script');
+        if (oldScript.src) {
+          newScript.onload = resolve;
+          newScript.onerror = reject;
+          newScript.src = oldScript.src;
+        } else {
+          newScript.textContent = oldScript.textContent;
+        }
+        oldScript.replaceWith(newScript);
+        if (!oldScript.src) resolve();
+      }));
     });
+    chain.catch(() => {});
   }
 
   function showSpinner() {
@@ -1115,7 +1161,11 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(result => {
           if (result.isJson) {
             if (result.data.success) {
-              location.reload();
+              if (result.data.redirect) {
+                window.location.href = result.data.redirect;
+              } else {
+                location.reload();
+              }
             } else {
               showError(result.data.error || 'Não foi possível salvar.');
             }

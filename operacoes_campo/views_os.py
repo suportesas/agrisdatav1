@@ -14,7 +14,9 @@ from django.db.models import Q, Sum, Count
 from django.db import transaction
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
-from decimal import Decimal
+from django.urls import reverse
+from django.core.exceptions import ValidationError
+from decimal import Decimal, InvalidOperation
 
 from .models import (
     OrdemServico, OrdemServicoInsumo, CustoTalhao, CustoHoraMaquina,
@@ -878,7 +880,7 @@ def os_detail(request, pk):
         + (replantio_obj.custo_adicional if replantio_obj else Decimal('0'))
     )
 
-    insumos_os = os_obj.insumos_os.select_related('produto', 'unidade_medida').all()
+    insumos_os = os_obj.insumos_os.select_related('produto', 'unidade_medida', 'movimentacao').all()
 
     # Custo de insumos (prioriza os itens diretos da OS)
     custo_ins = Decimal('0')
@@ -926,6 +928,10 @@ def os_detail(request, pk):
         m for m in maquinas
         if m.horimetro_inicial is not None and m.horimetro_final is None
     ]
+    maquinas_pendentes_horimetro = [
+        m for m in maquinas
+        if m.horimetro_inicial is None or m.horimetro_final is None
+    ]
 
     context = {
         'os': os_obj,
@@ -950,6 +956,7 @@ def os_detail(request, pk):
         'custo_intervalos': custo_intervalos,
         'workers_com_intervalo': workers_com_intervalo,
         'maquinas_sem_horimetro_final': maquinas_sem_horimetro_final,
+        'maquinas_pendentes_horimetro': maquinas_pendentes_horimetro,
         'transplantio_obj': transplantio_obj,
         'replantio_obj': replantio_obj,
     }
@@ -1515,6 +1522,45 @@ def os_iniciar(request, pk):
 
 
 @login_required
+def os_horimetro_pendente(request, pk):
+    """
+    Popup exibido ao encerrar a OS quando há veículos com horímetro
+    inicial e/ou final não preenchidos, permitindo completá-los antes
+    de seguir para a tela de conclusão.
+    """
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    maquinas = os_obj.maquinas_os.select_related('veiculo').all()
+    template = 'cadastros/os/os_horimetro_pendente_form.html'
+
+    if request.method == 'POST':
+        erro = None
+        try:
+            with transaction.atomic():
+                for maquina in maquinas:
+                    inicial_raw = request.POST.get(f'horimetro_inicial_{maquina.id}', '').strip()
+                    final_raw = request.POST.get(f'horimetro_final_{maquina.id}', '').strip()
+                    if not inicial_raw and not final_raw:
+                        continue
+                    if inicial_raw:
+                        maquina.horimetro_inicial = Decimal(inicial_raw.replace(',', '.'))
+                    if final_raw:
+                        maquina.horimetro_final = Decimal(final_raw.replace(',', '.'))
+                    maquina.full_clean()
+                    maquina.save()
+        except InvalidOperation:
+            erro = 'Informe valores numéricos válidos para o horímetro.'
+        except ValidationError as e:
+            erro = '; '.join(e.messages) if hasattr(e, 'messages') else str(e)
+
+        if erro:
+            return render(request, template, {'os': os_obj, 'maquinas': maquinas, 'erro': erro})
+        return JsonResponse({'success': True, 'redirect': reverse('operacoes_campo:os_concluir', args=[pk])})
+
+    return render(request, template, {'os': os_obj, 'maquinas': maquinas})
+
+
+@login_required
 def os_concluir(request, pk):
     """
     Conclui uma OS (EM_ANDAMENTO → CONCLUIDA)
@@ -1583,12 +1629,14 @@ def os_concluir(request, pk):
                 if foto:
                     os_obj.foto_evidencia = foto
 
-                # Baixa de estoque dos itens aplicados na OS.
+                # Gera a movimentação de saída dos itens aplicados na OS como PENDENTE.
+                # A baixa efetiva do estoque é feita manualmente pelo responsável do
+                # almoxarifado (tela de Movimentações de Estoque > Executar).
                 for item in insumos_os.filter(quantidade_aplicada__gt=0).select_related('produto', 'unidade_medida'):
-                    MovimentacaoEstoque.objects.create(
+                    movimentacao = MovimentacaoEstoque.objects.create(
                         tipo='SAIDA',
                         origem='OS_DIRETA',
-                        status='EXECUTADO',
+                        status='PENDENTE',
                         empresa=empresa,
                         produto=item.produto,
                         unidade_medida=item.unidade_medida,
@@ -1596,11 +1644,11 @@ def os_concluir(request, pk):
                         documento=os_obj.numero,
                         requisitante=os_obj.solicitante,
                         aprovador=os_obj.aprovador,
-                        executado_por=request.user,
                         data_movimentacao=timezone.now(),
-                        data_execucao=timezone.now(),
                         observacao=f'OS {os_obj.numero} - Item: {item.produto.nome}'
                     )
+                    item.movimentacao = movimentacao
+                    item.save(update_fields=['movimentacao'])
 
                 agora_conclusao = timezone.now()
                 agora_local = timezone.localtime(agora_conclusao)
@@ -1694,6 +1742,8 @@ def os_concluir(request, pk):
         _msg = f'OS {os_obj.numero} concluída! Custo total: R$ {custo_obj.custo_total:.2f}'
         if request.POST.get('criar_registro_caderno'):
             _msg += ' · Registro criado no Caderno de Campo.'
+        if insumos_os.filter(quantidade_aplicada__gt=0).exists():
+            _msg += ' · Insumos aguardando baixa pelo almoxarifado (Estoque > Movimentações).'
         messages.success(request, _msg)
         return redirect('operacoes_campo:os_detail', pk=pk)
 
@@ -1771,16 +1821,16 @@ def ajax_opcoes_servico(request):
     tipo_id = request.GET.get('tipo_id')
 
     if not tipo_id:
-        return JsonResponse({'subtipos': [], 'modalidades': []})
+        return JsonResponse({'subtipos': [], 'modalidades': [], 'tipo_legado': ''})
 
     try:
         tipo = TipoServicoOS.objects.get(pk=tipo_id)
     except TipoServicoOS.DoesNotExist:
-        return JsonResponse({'subtipos': [], 'modalidades': []})
+        return JsonResponse({'subtipos': [], 'modalidades': [], 'tipo_legado': ''})
 
     # Verifica que o tipo pertence à empresa ou é global
     if tipo.empresa_id and tipo.empresa_id != empresa.pk:
-        return JsonResponse({'subtipos': [], 'modalidades': []})
+        return JsonResponse({'subtipos': [], 'modalidades': [], 'tipo_legado': ''})
 
     subtipos = list(
         SubtipoServicoOS.objects.filter(
@@ -1798,7 +1848,7 @@ def ajax_opcoes_servico(request):
         ).order_by('ordem', 'nome').values('id', 'nome')
     )
 
-    return JsonResponse({'subtipos': subtipos, 'modalidades': modalidades})
+    return JsonResponse({'subtipos': subtipos, 'modalidades': modalidades, 'tipo_legado': tipo.tipo_legado or ''})
 
 
 @login_required

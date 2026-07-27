@@ -186,7 +186,19 @@
       "Bash(python manage.py test cadastros.tests.test_cliente_form_ui)",
       "Bash(python manage.py test cadastros.tests.test_cliente_form_ui --keepdb)",
       "Bash(python -c \"import py_compile; py_compile.compile\\('cadastros/relatorio_utils_cliente.py', doraise=True\\); py_compile.compile\\('cadastros/relatorio_utils_fornecedor.py', doraise=True\\); py_compile.compile\\('cadastros/relatorio_utils_fornecedor_ranking.py', doraise=True\\); print\\('OK'\\)\")",
-      "Bash(python -c \"import py_compile; [py_compile.compile\\(f, doraise=True\\) for f in ['cadastros/relatorio_utils_cliente.py','cadastros/relatorio_utils_fornecedor.py','cadastros/relatorio_utils_fornecedor_ranking.py']]; print\\('OK'\\)\")"
+      "Bash(python -c \"import py_compile; [py_compile.compile\\(f, doraise=True\\) for f in ['cadastros/relatorio_utils_cliente.py','cadastros/relatorio_utils_fornecedor.py','cadastros/relatorio_utils_fornecedor_ranking.py']]; print\\('OK'\\)\")",
+      "Bash(python manage.py makemigrations operacoes_campo --name qualidade_campo_responsavel_funcionario)",
+      "Bash(python manage.py makemigrations vendas --name vendedor_fk_cadastros_vendedor)",
+      "Bash(python manage.py migrate vendas)",
+      "Bash(grep -v \"cadastros\\\\\\\\\\\\\\\\models.py\\\\|cadastros\\\\\\\\\\\\\\\\forms.py\\\\|cadastros\\\\\\\\\\\\\\\\admin.py\\\\|cadastros\\\\\\\\\\\\\\\\tests\\\\|migrations\\\\|check_vendedores.py\\\\|create_external_vendor.py\\\\|fix_vendedor\")",
+      "Bash(powershell -Command \"Get-Process -Id 7556 | Select-Object Id,ProcessName,StartTime\")",
+      "Bash(taskkill //F //PID 7556)",
+      "Bash(nohup python manage.py runserver 8010)",
+      "Bash(taskkill //F //PID 6948)",
+      "Bash(nohup python manage.py runserver 8000)",
+      "Bash(python manage.py makemigrations operacoes_campo)",
+      "Bash(powershell -Command \"Get-Process python -ErrorAction SilentlyContinue | Select-Object Id,Path\")",
+      "Bash(xargs -I{} sed -i 's/select2-ajax\\\\.js%20%3F/XX/' \"{}\")"
     ],
     "additionalDirectories": [
       "\\tmp"

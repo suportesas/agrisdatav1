@@ -141,6 +141,12 @@
     scope.find('select.select2-ajax[data-ajax-url]').each(function () {
       var $el = $(this);
       if ($el.data('select2')) return;
+      // #empty-form-container holds the hidden formset row template that
+      // "Adicionar Item" clones via cloneNode(true). If it gets select2-ified
+      // here, that markup (the extra <span class="select2-container">) rides
+      // along in every clone, then gets select2-ified *again* on the clone —
+      // two stacked "Buscar produto" boxes per row instead of one.
+      if ($el.closest('#empty-form-container').length) return;
       var extra = {};
       try { extra = JSON.parse($el.attr('data-extra-params') || '{}'); } catch (e) {}
       // Select2 por padrão anexa o dropdown no <body>; dentro de um modal

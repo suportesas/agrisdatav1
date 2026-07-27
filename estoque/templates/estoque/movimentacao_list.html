@@ -127,12 +127,19 @@
                     {% endif %}
                   </td>
                   <td>
+                    {% if mov.lote %}
                     <div>{{ mov.lote.produto.nome }}</div>
                     <small class="text-muted">Lote: {{ mov.lote.numero_lote }}</small>
+                    {% elif mov.produto %}
+                    <div>{{ mov.produto.nome }}</div>
+                    <small class="text-muted">{{ mov.get_origem_display }}{% if mov.documento %} · {{ mov.documento }}{% endif %}</small>
+                    {% else %}
+                    <span class="text-muted">—</span>
+                    {% endif %}
                   </td>
                   <td class="text-mono">
                     <strong>{{ mov.quantidade|floatformat:"3g" }}</strong>
-                    <small class="text-muted">{{ mov.lote.unidade_medida.sigla }}</small>
+                    <small class="text-muted">{% if mov.lote %}{{ mov.lote.unidade_medida.sigla }}{% else %}{{ mov.unidade_medida.sigla }}{% endif %}</small>
                   </td>
                   <td>
                     {% if mov.armazem_origem %}

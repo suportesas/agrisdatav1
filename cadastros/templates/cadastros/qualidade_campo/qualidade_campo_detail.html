@@ -60,7 +60,7 @@
             </div>
             <div class="col-sm-6">
               <small class="text-muted d-block">Responsável</small>
-              <span>{{ obj.responsavel.get_full_name|default:obj.responsavel.username|default:"—" }}</span>
+              <span>{{ obj.responsavel.nome_completo|default:"—" }}</span>
             </div>
             <div class="col-sm-6">
               <small class="text-muted d-block">Ordem de Serviço</small>

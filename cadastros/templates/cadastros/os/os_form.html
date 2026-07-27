@@ -124,6 +124,14 @@
               <label class="form-label">Área Executada (ha)</label>
               {{ form.area_executada_ha }}
             </div>
+            <div class="field col-4" id="div_numero_corte" style="display:none;">
+              <label class="form-label">
+                <i class="bi bi-scissors text-primary me-1"></i>Número do Corte
+                <small class="text-muted">(Colheita)</small>
+              </label>
+              {{ form.numero_corte }}
+              {% if form.numero_corte.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_corte.errors|striptags }}</div>{% endif %}
+            </div>
             <div class="field col-6">
               <label class="form-label">Requisição de Insumos</label>
               {{ form.requisicao }}
@@ -507,7 +515,7 @@
 <script src="{% static 'js/section-nav.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=6"></script>
 <script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 <script>
 // ── Copia opções de um select (por seletor CSS) para um select de modal ──────
@@ -814,9 +822,11 @@ if (tipoSelect) {
   if (tipoSelect.value) loadOpcoes(tipoSelect.value, initSubtipo, initModalidade);
 }
 
-// ── Mostrar/ocultar campo Poço conforme tipo legado de OS ─────────────────────
+// ── Mostrar/ocultar campo Poço / Número do Corte conforme tipo legado de OS ──
 const TIPOS_COM_POCO = ['IRRIGACAO', 'ADUBACAO'];
+const TIPOS_COM_CORTE = ['COLHEITA'];
 const divPoco = document.getElementById('div_poco');
+const divNumeroCorte = document.getElementById('div_numero_corte');
 const AJAX_TIPO_LEGADO_URL = "{% url 'operacoes_campo:os_ajax_opcoes_servico' %}";
 
 function togglePoco(tipoLegado) {
@@ -827,21 +837,34 @@ function togglePoco(tipoLegado) {
   if (pocoSelect && !mostrar) pocoSelect.value = '';
 }
 
+function toggleNumeroCorte(tipoLegado) {
+  if (!divNumeroCorte) return;
+  const mostrar = TIPOS_COM_CORTE.includes(tipoLegado);
+  divNumeroCorte.style.display = mostrar ? '' : 'none';
+  const corteInput = document.getElementById('id_numero_corte');
+  if (corteInput && !mostrar) corteInput.value = '';
+}
+
+function aplicarTipoLegado(tipoLegado) {
+  togglePoco(tipoLegado);
+  toggleNumeroCorte(tipoLegado);
+}
+
 // Ao mudar tipo_servico, busca o tipo_legado para decidir exibição
 if (tipoSelect) {
   tipoSelect.addEventListener('change', function () {
     const tipoId = this.value;
-    if (!tipoId) { togglePoco(''); return; }
+    if (!tipoId) { aplicarTipoLegado(''); return; }
     fetch(AJAX_TIPO_LEGADO_URL + '?tipo_id=' + tipoId)
       .then(r => r.json())
-      .then(data => { togglePoco(data.tipo_legado || ''); })
+      .then(data => { aplicarTipoLegado(data.tipo_legado || ''); })
       .catch(() => {});
   });
-  // Inicialização: checa se já há tipo selecionado com poco
+  // Inicialização: checa se já há tipo selecionado com poco/corte
   if (tipoSelect.value) {
     fetch(AJAX_TIPO_LEGADO_URL + '?tipo_id=' + tipoSelect.value)
       .then(r => r.json())
-      .then(data => { togglePoco(data.tipo_legado || ''); })
+      .then(data => { aplicarTipoLegado(data.tipo_legado || ''); })
       .catch(() => {});
   }
 }

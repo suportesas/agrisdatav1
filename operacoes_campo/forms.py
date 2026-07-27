@@ -28,7 +28,7 @@ class OrdemServicoForm(forms.ModelForm):
         fields = [
             'tipo_servico', 'subtipo_servico', 'modalidade_execucao',
             'talhao', 'safra', 'safra_cultura', 'poco', 'responsavel', 'data_prevista',
-            'area_executada_ha', 'fornecedor_servico', 'valor_servico_externo',
+            'area_executada_ha', 'numero_corte', 'fornecedor_servico', 'valor_servico_externo',
             'unidade_cobranca', 'requisicao', 'observacoes', 'foto_evidencia',
             'custo_estimado_mao_obra', 'custo_estimado_maquinario', 'custo_estimado_insumos',
         ]
@@ -43,6 +43,7 @@ class OrdemServicoForm(forms.ModelForm):
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'data_prevista': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'area_executada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000'}),
+            'numero_corte': forms.NumberInput(attrs={'class': 'form-control', 'step': '1', 'min': '1', 'placeholder': 'Ex: 1'}),
             'fornecedor_servico': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'valor_servico_externo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'unidade_cobranca': forms.Select(attrs={'class': 'form-select'}),
@@ -116,7 +117,7 @@ class OrdemServicoForm(forms.ModelForm):
             self.fields['responsavel'].label_from_instance = lambda obj: f"{obj.nome_completo} — {obj.funcao}"
             self.fields['safra'].label_from_instance = lambda obj: f"{obj.nome} ({obj.fazenda.nome if obj.fazenda else '?'})"
 
-        for f in ['subtipo_servico', 'modalidade_execucao', 'safra', 'poco', 'responsavel',
+        for f in ['subtipo_servico', 'modalidade_execucao', 'safra', 'poco', 'numero_corte', 'responsavel',
                   'fornecedor_servico', 'valor_servico_externo', 'unidade_cobranca',
                   'requisicao', 'foto_evidencia',
                   'custo_estimado_mao_obra', 'custo_estimado_maquinario', 'custo_estimado_insumos']:
@@ -519,17 +520,16 @@ class InspecaoQualidadeCampoForm(forms.ModelForm):
     class Meta:
         model = InspecaoQualidadeCampo
         fields = [
-            'talhao', 'safra', 'os', 'data_inspecao', 'tipo_inspecao', 'responsavel',
+            'talhao', 'safra', 'data_inspecao', 'tipo_inspecao', 'responsavel',
             'estagio_cultura', 'brix', 'peso_medio_fruto_g', 'percentual_defeitos',
             'coloracao', 'resultado', 'previsao_colheita_dias', 'fotos', 'observacoes',
         ]
         widgets = {
             'talhao': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_talhoes'), placeholder='Buscar talhão...'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
-            'os': forms.Select(attrs={'class': 'form-select'}),
             'data_inspecao': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'tipo_inspecao': forms.Select(attrs={'class': 'form-select'}),
-            'responsavel': forms.Select(attrs={'class': 'form-select'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'estagio_cultura': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Floração, Frutificação'}),
             'brix': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '°Bx'}),
             'peso_medio_fruto_g': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'g'}),
@@ -544,19 +544,18 @@ class InspecaoQualidadeCampoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        for f in ['safra', 'os', 'estagio_cultura', 'brix', 'peso_medio_fruto_g',
+        for f in ['safra', 'estagio_cultura', 'brix', 'peso_medio_fruto_g',
                   'percentual_defeitos', 'coloracao', 'previsao_colheita_dias', 'fotos', 'observacoes']:
             self.fields[f].required = False
         if self.user and self.user.empresa:
             from cadastros.models import Talhao, Safra
-            from usuarios.models import Usuario
+            from rh.models import Funcionario
             emp = self.user.empresa
             self.fields['talhao'].queryset = Talhao.objects.filter(empresa=emp, ativo=True).order_by('nome')
             self.fields['safra'].queryset = Safra.objects.filter(fazenda__empresa=emp).order_by('-ano', 'nome')
-            self.fields['os'].queryset = OrdemServico.objects.filter(empresa=emp).order_by('-data_cadastro')
-            self.fields['responsavel'].queryset = Usuario.objects.filter(empresa=emp, is_active=True).order_by('first_name')
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=emp, ativo=True).order_by('nome_completo')
             self.fields['talhao'].label_from_instance = lambda obj: f"{obj.codigo} — {obj.nome}"
-            self.fields['os'].label_from_instance = lambda obj: f"{obj.numero} — {obj.descricao_servico}"
+            self.fields['responsavel'].label_from_instance = lambda obj: f"{obj.nome_completo} — {obj.funcao}"
 
     def clean_data_inspecao(self):
         data = self.cleaned_data.get('data_inspecao')

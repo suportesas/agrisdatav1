@@ -397,8 +397,8 @@ def movimentacao_list(request):
     movimentacoes = MovimentacaoEstoque.objects.filter(
         empresa=request.user.empresa
     ).select_related(
-        'lote__produto', 'lote__unidade_medida', 'armazem_origem', 'armazem_destino',
-        'cadastrado_por', 'aprovador', 'executado_por'
+        'lote__produto', 'lote__unidade_medida', 'produto', 'unidade_medida',
+        'armazem_origem', 'armazem_destino', 'cadastrado_por', 'aprovador', 'executado_por'
     ).order_by('-data_movimentacao')
     
     # Filtros

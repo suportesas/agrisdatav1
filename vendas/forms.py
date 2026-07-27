@@ -38,10 +38,9 @@ class PedidoVendaForm(forms.ModelForm):
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         if empresa:
-            from cadastros.models import Cliente
-            from usuarios.models import Usuario
+            from cadastros.models import Cliente, Vendedor
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO')
-            self.fields['vendedor'].queryset = Usuario.objects.filter(empresa=empresa, is_active=True)
+            self.fields['vendedor'].queryset = Vendedor.objects.filter(empresa=empresa, status='ATIVO')
         self.fields['vendedor'].required = False
         self.fields['taxa_cambio'].required = False
         self.fields['data_entrega_prevista'].required = False

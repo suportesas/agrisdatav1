@@ -169,7 +169,7 @@
                 <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Reprovado</span>
               {% endif %}
             </td>
-            <td class="small">{{ insp.responsavel.get_full_name|default:insp.responsavel.username|default:"—" }}</td>
+            <td class="small">{{ insp.responsavel.nome_completo|default:"—" }}</td>
             <td class="text-center">
               <div class="btn-group btn-group-sm">
                 <a href="{% url 'operacoes_campo:qualidade_campo_detail' insp.pk %}" class="btn btn-outline-info" title="Ver">

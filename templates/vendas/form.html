@@ -95,7 +95,7 @@
               <label class="form-label">Moeda <span class="req">*</span></label>
               {{ form.moeda }}
             </div>
-            <div class="field col-4">
+            <div class="field col-4 {% if not pedido or pedido.cliente.tipo_cliente != 'IMPORTADOR' %}d-none{% endif %}" id="field-taxa-cambio">
               <label class="form-label d-flex justify-content-between">
                 Taxa Câmbio (R$)
                 <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-cotacao-bcb" title="Buscar PTAX do BCB (dia útil anterior)">
@@ -108,6 +108,7 @@
             <div class="field col-4">
               <label class="form-label">Desconto Total</label>
               {{ form.valor_desconto }}
+              <div id="info-desconto-cliente" class="helper-note text-success" style="display:none"></div>
             </div>
             <div class="field col-6">
               <label class="form-label">Frete</label>
@@ -239,7 +240,7 @@
 <script src="{% static 'js/section-nav.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="{% static 'js/select2-ajax.js' %}?v=5"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=6"></script>
 <script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 <script>
 (function() {
@@ -273,6 +274,61 @@
     });
   }
   body.querySelectorAll('.item-row').forEach(r => attachRemove(r));
+
+  // Condições comerciais do cliente — pré-preenche ao selecionar, editável depois
+  const clienteEl = document.getElementById('id_cliente');
+  if (clienteEl) {
+    $(clienteEl).on('select2:select', function(e) {
+      const clienteId = e.params.data.id;
+      if (!clienteId) return;
+      fetch(`/cadastros/api/clientes/${clienteId}/dados/`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.success) return;
+          const condPag = document.getElementById('id_condicao_pagamento');
+          if (condPag && data.condicao_pagamento) condPag.value = data.condicao_pagamento;
+
+          const formaPag = document.getElementById('id_forma_pagamento');
+          if (formaPag && data.forma_pagamento) formaPag.value = data.forma_pagamento;
+
+          const moedaEl = document.getElementById('id_moeda');
+          if (moedaEl && data.moeda) {
+            const temOpcao = Array.from(moedaEl.options).some(o => o.value === data.moeda);
+            if (temOpcao) moedaEl.value = data.moeda;
+          }
+
+          const vendedorEl = document.getElementById('id_vendedor');
+          if (vendedorEl && data.vendedor_id) vendedorEl.value = data.vendedor_id;
+
+          const tipoVendaEl = document.getElementById('id_tipo_venda');
+          if (tipoVendaEl && data.tipo_cliente) {
+            tipoVendaEl.value = data.tipo_cliente === 'IMPORTADOR' ? 'EXPORTACAO' : 'MERCADO_INTERNO';
+          }
+
+          const fieldTaxaCambio = document.getElementById('field-taxa-cambio');
+          if (fieldTaxaCambio) {
+            if (data.tipo_cliente === 'IMPORTADOR') {
+              fieldTaxaCambio.classList.remove('d-none');
+            } else {
+              fieldTaxaCambio.classList.add('d-none');
+              const taxaCambioEl = document.getElementById('id_taxa_cambio');
+              if (taxaCambioEl) taxaCambioEl.value = '';
+            }
+          }
+
+          const infoDesconto = document.getElementById('info-desconto-cliente');
+          if (infoDesconto) {
+            if (data.desconto_padrao) {
+              infoDesconto.style.display = 'block';
+              infoDesconto.innerHTML = `<i class="bi bi-info-circle me-1"></i>Desconto padrão do cliente: ${data.desconto_padrao}%`;
+            } else {
+              infoDesconto.style.display = 'none';
+            }
+          }
+        })
+        .catch(() => {});
+    });
+  }
 
   // Cotação BCB — busca PTAX do dia útil anterior
   const btnBCB = document.getElementById('btn-cotacao-bcb');

@@ -78,7 +78,7 @@ def etapa_nova(request, os_pk):
             request,
             f'A {ultima.numero_etapa}ª etapa ainda está aberta. Conclua-a antes de iniciar a próxima.'
         )
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=ultima.pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=ultima.pk)
 
     if request.method == 'POST':
         form = EtapaColheitaForm(request.POST, empresa=empresa)
@@ -109,7 +109,7 @@ def etapa_nova(request, os_pk):
                 request,
                 f'{etapa.numero_etapa}ª Etapa de Colheita iniciada para {os_obj.talhao.nome}!'
             )
-            return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa.pk)
+            return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa.pk)
     else:
         form = EtapaColheitaForm(empresa=empresa)
 
@@ -165,11 +165,11 @@ def etapa_concluir(request, os_pk, etapa_pk):
     etapa = get_object_or_404(EtapaColheita, pk=etapa_pk, os=os_obj)
 
     if request.method != 'POST':
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
     if etapa.status == 'CONCLUIDA':
         messages.warning(request, 'Esta etapa já está concluída.')
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
     # Exige pelo menos 1 viagem com peso > 0
     total = ViagemColheita.objects.filter(
@@ -177,7 +177,7 @@ def etapa_concluir(request, os_pk, etapa_pk):
     ).count()
     if total == 0:
         messages.error(request, 'Não é possível concluir sem registrar ao menos uma pesagem.')
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
     etapa.recalcular_total()
     etapa.status = 'CONCLUIDA'
@@ -263,7 +263,7 @@ def frota_adicionar(request, os_pk, etapa_pk):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'ok': False, 'erro': 'Etapa já concluída.'}, status=400)
         messages.error(request, 'Etapa já concluída.')
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
     form = FrotaColheitaForm(request.POST, empresa=empresa)
     if form.is_valid():
@@ -283,7 +283,7 @@ def frota_adicionar(request, os_pk, etapa_pk):
             return JsonResponse({'ok': False, 'erros': form.errors}, status=400)
         messages.error(request, 'Erro ao adicionar trator. Verifique os dados.')
 
-    return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
 
 @login_required
@@ -308,7 +308,7 @@ def frota_horimetro_final(request, os_pk, etapa_pk, frota_pk):
                 return JsonResponse({'ok': False, 'erro': str(e)}, status=400)
             messages.error(request, f'Erro: {e}')
 
-    return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
 
 # ---------------------------------------------------------------------------
@@ -327,7 +327,7 @@ def carrocao_adicionar(request, os_pk, etapa_pk, frota_pk):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'ok': False, 'erro': 'Etapa já concluída.'}, status=400)
         messages.error(request, 'Etapa já concluída.')
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
     form = CarrocaoFrotaForm(request.POST, empresa=empresa)
     if form.is_valid():
@@ -348,7 +348,7 @@ def carrocao_adicionar(request, os_pk, etapa_pk, frota_pk):
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'ok': False, 'erro': str(e)}, status=400)
             messages.error(request, str(e))
-            return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+            return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({
@@ -366,7 +366,7 @@ def carrocao_adicionar(request, os_pk, etapa_pk, frota_pk):
             return JsonResponse({'ok': False, 'erros': form.errors}, status=400)
         messages.error(request, 'Erro ao adicionar carroção.')
 
-    return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
 
 @login_required
@@ -384,7 +384,7 @@ def carrocao_remover(request, os_pk, etapa_pk, carrocao_pk):
             carrocao.delete()
             messages.success(request, 'Carroção removido.')
 
-    return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
 
 # ---------------------------------------------------------------------------
@@ -401,7 +401,7 @@ def viagem_nova(request, os_pk, etapa_pk, carrocao_pk):
 
     if etapa.status == 'CONCLUIDA':
         messages.error(request, 'Etapa já concluída — não é possível adicionar viagens.')
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
     if request.method == 'POST':
         form = ViagemColheitaForm(request.POST, request.FILES)
@@ -441,7 +441,7 @@ def viagem_nova(request, os_pk, etapa_pk, carrocao_pk):
     else:
         form = ViagemColheitaForm(initial={'tara_usada_kg': carrocao.tara_kg or 0})
 
-    return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
 
 @login_required
@@ -454,14 +454,14 @@ def viagem_editar(request, os_pk, etapa_pk, viagem_pk):
 
     if etapa.status == 'CONCLUIDA':
         messages.error(request, 'Etapa concluída — não é possível editar viagens.')
-        return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
     if request.method == 'POST':
         form = ViagemColheitaForm(request.POST, request.FILES, instance=viagem)
         if form.is_valid():
             form.save()
             messages.success(request, f'Viagem {viagem.numero_viagem} atualizada.')
-            return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+            return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
     else:
         form = ViagemColheitaForm(instance=viagem)
 
@@ -490,7 +490,7 @@ def viagem_excluir(request, os_pk, etapa_pk, viagem_pk):
             etapa.recalcular_total()
             messages.success(request, 'Viagem excluída.')
 
-    return redirect('cadastros:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
 
 # ---------------------------------------------------------------------------

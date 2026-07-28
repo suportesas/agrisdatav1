@@ -10,15 +10,20 @@ from django.db import transaction
 from django.db.models import Case, Count, Q, Value, When
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.barcode_utils import barcode_b64 as _barcode_b64
 from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
-from .forms import ItemPalletForm, OrdemEmbalagemForm, RomaneioVendaForm, TipoEmbalagemForm, TrocarClienteRomaneioForm
+from .forms import (
+    CargaFreteForm, ItemPalletForm, OrdemEmbalagemForm, RomaneioVendaForm, TipoEmbalagemForm,
+    TrocarClienteRomaneioForm,
+)
 from .models import (
-    ItemPallet, ItemRomaneioVenda, OrdemEmbalagem, PalletEmbalado, RomaneioVenda, TipoEmbalagem,
+    CargaFrete, CargaFreteError, ItemPallet, ItemRomaneioVenda, OrdemEmbalagem, PalletEmbalado,
+    RomaneioVenda, TipoEmbalagem,
 )
 
 
@@ -420,6 +425,80 @@ def romaneio_etiquetas_pdf(request, pk):
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'inline; filename="etiquetas-romaneio-{romaneio.numero}.pdf"'
     return resp
+
+
+# ─────────────────────────── CargaFrete ─────────────────────────────────────
+
+@login_required
+def carga_frete_list(request):
+    empresa = _get_empresa(request)
+    qs = CargaFrete.objects.filter(empresa=empresa, ativo=True).select_related('transportadora')
+    paginator = Paginator(qs.order_by('-data_embarque'), 25)
+    return render(request, 'embalagem/carga_frete/list.html', {
+        'page_obj': paginator.get_page(request.GET.get('page')),
+    })
+
+
+@login_required
+def carga_frete_create(request):
+    empresa = _get_empresa(request)
+    if request.method == 'POST':
+        form = CargaFreteForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            carga = form.save(commit=False)
+            carga.empresa = empresa
+            carga.criado_por = request.user
+            carga.save()
+            messages.success(request, 'Carga de frete criada.')
+            return redirect('embalagem:carga_frete_detail', pk=carga.pk)
+    else:
+        form = CargaFreteForm(empresa=empresa)
+    return render(request, 'embalagem/carga_frete/form.html', {
+        'form': form, 'title': 'Nova Carga de Frete',
+    })
+
+
+@login_required
+def carga_frete_update(request, pk):
+    empresa = _get_empresa(request)
+    carga = get_object_or_404(CargaFrete, pk=pk, empresa=empresa)
+    if request.method == 'POST':
+        form = CargaFreteForm(request.POST, instance=carga, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Carga de frete atualizada.')
+            return redirect('embalagem:carga_frete_detail', pk=pk)
+    else:
+        form = CargaFreteForm(instance=carga, empresa=empresa)
+    return render(request, 'embalagem/carga_frete/form.html', {
+        'form': form, 'title': 'Editar Carga de Frete', 'obj': carga,
+    })
+
+
+@login_required
+def carga_frete_detail(request, pk):
+    empresa = _get_empresa(request)
+    carga = get_object_or_404(CargaFrete, pk=pk, empresa=empresa)
+    romaneios = carga.romaneios.select_related('cliente', 'pedido_venda').order_by('numero')
+    soma_caixas = sum(r.total_caixas for r in romaneios)
+    return render(request, 'embalagem/carga_frete/detail.html', {
+        'carga': carga,
+        'romaneios': romaneios,
+        'soma_caixas': soma_caixas,
+    })
+
+
+@login_required
+@require_POST
+def carga_frete_ratear(request, pk):
+    empresa = _get_empresa(request)
+    carga = get_object_or_404(CargaFrete, pk=pk, empresa=empresa)
+    try:
+        carga.ratear()
+        messages.success(request, 'Frete e pedágio rateados entre os romaneios vinculados.')
+    except CargaFreteError as e:
+        messages.error(request, str(e))
+    return redirect('embalagem:carga_frete_detail', pk=pk)
 
 
 # ─────────────────────────── RomaneioVenda ──────────────────────────────────
@@ -871,6 +950,19 @@ def romaneio_gerar_nota_fiscal(request, pk):
 
     messages.success(request, 'Pré-Nota Fiscal gerada em Rascunho. Informe os preços e emita.')
     return redirect('faturamento:nota_fiscal_detail', pk=nf.pk)
+
+
+@login_required
+def romaneio_gerar_cte(request, pk):
+    empresa = _get_empresa(request)
+    rom = get_object_or_404(RomaneioVenda, pk=pk, empresa=empresa)
+    if rom.tipo != 'MERCADO_INTERNO':
+        messages.error(request, 'Esta ação é apenas para romaneios de Mercado Interno.')
+        return redirect('embalagem:romaneio_detail', pk=pk)
+    if not rom.carga_frete_id or rom.valor_frete_rateado is None:
+        messages.error(request, 'Rateie o frete da carga antes de gerar o CT-e.')
+        return redirect('embalagem:romaneio_detail', pk=pk)
+    return redirect(f"{reverse('faturamento:cte_create')}?romaneio_venda={rom.pk}")
 
 
 # ─────────────────────────── Conferência ────────────────────────────────────

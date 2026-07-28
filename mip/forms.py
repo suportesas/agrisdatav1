@@ -1,6 +1,7 @@
 from django import forms
-from core.widgets import DateBRInput
+from core.widgets import DateBRInput, Select2AjaxWidget
 from django.core.exceptions import ValidationError
+from django.urls import reverse_lazy
 from django.utils import timezone
 from decimal import Decimal
 
@@ -9,6 +10,7 @@ from .models import (
     PragaNoMonitoramento, PontoMonitoramento,
 )
 from cadastros.models import Praga, Talhao, Safra, Cultura
+from rh.models import Funcionario
 
 
 class MonitoramentoMIPForm(forms.ModelForm):
@@ -16,7 +18,7 @@ class MonitoramentoMIPForm(forms.ModelForm):
     class Meta:
         model = MonitoramentoMIP
         fields = [
-            'talhao', 'safra', 'cultura', 'os', 'data_monitoramento', 'tipo_monitoramento',
+            'talhao', 'safra', 'cultura', 'data_monitoramento', 'tipo_monitoramento',
             'responsavel', 'quantidade_pontos',
             'condicoes_tempo', 'temperatura_media', 'umidade_media',
             'velocidade_vento_media', 'foto_area_geral',
@@ -26,10 +28,9 @@ class MonitoramentoMIPForm(forms.ModelForm):
             'talhao': forms.Select(attrs={'class': 'form-control'}),
             'safra': forms.Select(attrs={'class': 'form-control'}),
             'cultura': forms.Select(attrs={'class': 'form-control'}),
-            'os': forms.Select(attrs={'class': 'form-control'}),
             'data_monitoramento': DateBRInput(attrs={'class': 'form-control'}),
             'tipo_monitoramento': forms.Select(attrs={'class': 'form-control'}),
-            'responsavel': forms.Select(attrs={'class': 'form-control'}),
+            'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'quantidade_pontos': forms.NumberInput(attrs={'class': 'form-control', 'value': '20'}),
             'condicoes_tempo': forms.Select(attrs={'class': 'form-select'}),
             'temperatura_media': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '°C'}),
@@ -45,7 +46,6 @@ class MonitoramentoMIPForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.fields['condicoes_tempo'].required = False
-        self.fields['os'].required = False
 
         valor_legado = (getattr(self.instance, 'condicoes_tempo', '') or '').strip() if self.instance else ''
         choices = [('', 'Selecione...')] + list(getattr(MonitoramentoMIP, 'CONDICOES_TEMPO_CHOICES', []))
@@ -67,16 +67,14 @@ class MonitoramentoMIPForm(forms.ModelForm):
             ).select_related('fazenda').prefetch_related('culturas__cultura').distinct().order_by('-ano', 'nome')
 
             self.fields['safra'].required = True
+            self.fields['safra'].label_from_instance = lambda obj: obj.nome_display
 
             self.fields['cultura'].queryset = Cultura.objects.filter(empresa=self.empresa)
 
-            from operacoes_campo.models import OrdemServico
-            self.fields['os'].queryset = OrdemServico.objects.filter(empresa=self.empresa).order_by('-data_cadastro')
-            self.fields['os'].label_from_instance = lambda obj: f"{obj.numero} — {obj.descricao_servico}"
-
-        if self.user:
-            self.fields['responsavel'].initial = self.user.id
-            self.fields['responsavel'].widget = forms.HiddenInput()
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(
+                empresa=self.empresa, ativo=True
+            ).select_related('funcao').order_by('nome_completo')
+            self.fields['responsavel'].label_from_instance = lambda obj: f"{obj.nome_completo} — {obj.funcao}"
 
     def clean(self):
         cleaned = super().clean()

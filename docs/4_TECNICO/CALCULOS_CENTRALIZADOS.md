@@ -109,6 +109,22 @@ Para cada calculo, documentar obrigatoriamente:
 - Condicional exportacao: valor_moeda_estrangeira = valor_total / taxa_cambio
 - Codigo fonte: vendas/models.py (PedidoVenda.calcular_total)
 
+### 15. Fiscal: ICMS sobre frete rodoviario (rateio por carga, alimenta CT-e)
+- Rateio (por CargaFrete, metodo do maior resto — fecha exato com o total contratado):
+  - cota_exata_i = valor_frete_total x caixas_romaneio_i / caixas_total_carga (idem para pedagio)
+  - piso_i = parte inteira (em centavos) de cota_exata_i; resto_i = fracao restante
+  - falta = total_centavos - soma(piso_i); os `falta` romaneios com maior resto_i recebem +1 centavo
+  - valor_frete_rateado_i = (piso_i + eventual centavo extra) / 100
+- Formula ICMS (por romaneio, mesmo formato do item 1): BC = valor_frete_rateado x (100 - reducao_bc) / 100; valor_icms = BC x aliquota_icms / 100
+- Entradas: valor_frete_total, quantidade_caixas_total, valor_pedagio_total (CargaFrete); total_caixas, metodo_icms_frete, percentual_reducao_bc, aliquota_icms_frete (RomaneioVenda)
+- Condicional: so aplica reducao se metodo_icms_frete == 'REDUCAO' e percentual_reducao_bc > 0 (analogo ao item 1); rateio so executa se soma(caixas dos romaneios vinculados) == quantidade_caixas_total, senao a carga e considerada incompleta e o calculo e recusado
+- Arredondamento: sem quantize intermediario; quantize('0.01', ROUND_HALF_UP) apenas ao persistir valor_frete_rateado/valor_pedagio_rateado/valor_bc_icms_frete/valor_icms_frete
+- Exemplo numerico (2 pedidos na mesma carga): valor_frete_total=15000.00, quantidade_caixas_total=2016, pedido A=360 cx, pedido B=1656 cx
+  - frete_A = 15000 x 360/2016 = 2678.57 (piso 267857 centavos + eventual arredondamento pelo maior resto)
+  - frete_B = 15000 x 1656/2016 = 12321.43 — soma A+B fecha exatamente com 15000.00
+  - com metodo REDUCAO (40%) e aliquota 12% sobre frete_A: BC = 2678.57 x 0.60 = 1607.14; icms = 1607.14 x 0.12 = 192.86
+- Codigo fonte: embalagem/models.py (CargaFrete.ratear, CargaFrete._ratear_por_maior_resto, RomaneioVenda.calcular_icms_frete)
+
 ## Exemplo numerico de referencia
 Caso compras:
 - valor_total = 10000.00
@@ -125,7 +141,7 @@ Caso financeiro:
 ## Matriz de status
 | Dominio | Quantidade de calculos mapeados | Quantidade documentada | Cobertura |
 |---|---:|---:|---:|
-| Fiscal | 4 | 4 | 100% |
+| Fiscal | 5 | 5 | 100% |
 | Financeiro | 3 | 3 | 100% |
 | Compras | 3 | 3 | 100% |
 | Estoque | 2 | 2 | 100% |

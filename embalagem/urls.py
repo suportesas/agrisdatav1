@@ -43,6 +43,14 @@ urlpatterns = [
     path('romaneios/<int:pk>/trocar-cliente/', views.romaneio_trocar_cliente, name='romaneio_trocar_cliente'),
     path('romaneios/<int:pk>/gerar-invoice/', views.romaneio_gerar_invoice, name='romaneio_gerar_invoice'),
     path('romaneios/<int:pk>/gerar-nota-fiscal/', views.romaneio_gerar_nota_fiscal, name='romaneio_gerar_nota_fiscal'),
+    path('romaneios/<int:pk>/gerar-cte/', views.romaneio_gerar_cte, name='romaneio_gerar_cte'),
+
+    # Cargas de Frete
+    path('cargas-frete/', views.carga_frete_list, name='carga_frete_list'),
+    path('cargas-frete/nova/', views.carga_frete_create, name='carga_frete_create'),
+    path('cargas-frete/<int:pk>/', views.carga_frete_detail, name='carga_frete_detail'),
+    path('cargas-frete/<int:pk>/editar/', views.carga_frete_update, name='carga_frete_update'),
+    path('cargas-frete/<int:pk>/ratear/', views.carga_frete_ratear, name='carga_frete_ratear'),
 
     # AJAX
     path('ajax/pallets/', views.ajax_pallets_disponiveis, name='ajax_pallets_disponiveis'),

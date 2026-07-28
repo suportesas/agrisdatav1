@@ -817,10 +817,29 @@ def os_create(request):
             messages.success(request, f'Ordem de Serviço {os_obj.numero} criada com sucesso!')
             return redirect('operacoes_campo:os_detail', pk=os_obj.pk)
     else:
-        form = OrdemServicoForm(empresa=empresa)
+        form_initial = {}
+        transplantio_initial = {}
+
+        lote_muda_id = request.GET.get('lote_muda')
+        if lote_muda_id:
+            from estufas.models import LoteMuda
+            lote_muda = LoteMuda.objects.filter(
+                empresa=empresa, pk=lote_muda_id, status='PRONTO'
+            ).first()
+            if lote_muda:
+                subtipo_transplante = SubtipoServicoOS.objects.filter(
+                    subtipo_legado=SUBTIPO_LEGADO_TRANSPLANTE, ativo=True
+                ).filter(Q(empresa=empresa) | Q(empresa=None)).select_related('tipo_servico').first()
+                if subtipo_transplante:
+                    form_initial['tipo_servico'] = subtipo_transplante.tipo_servico_id
+                    form_initial['subtipo_servico'] = subtipo_transplante.pk
+                transplantio_initial['lote_muda'] = lote_muda.pk
+                transplantio_initial['quantidade_transplantada'] = lote_muda.quantidade_disponivel
+
+        form = OrdemServicoForm(empresa=empresa, initial=form_initial)
         func_formset = OSFuncionarioFormSet(prefix='func')
         maq_formset = OSMaquinaFormSet(prefix='maq')
-        transplantio_form = OSTransplantioForm(prefix='transplantio', empresa=empresa)
+        transplantio_form = OSTransplantioForm(prefix='transplantio', empresa=empresa, initial=transplantio_initial)
         replantio_form = OSReplantioForm(prefix='replantio', empresa=empresa)
 
     # Enrich formsets with empresa context for querysets

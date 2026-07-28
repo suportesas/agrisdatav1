@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}{{ carga }}{% endblock %}
+{% block page_title %}Cargas de Frete{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex align-items-center">
+      <a href="{% url 'embalagem:carga_frete_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+      <div>
+        <h3 class="mb-0">{{ carga }}</h3>
+        <small class="text-muted">{{ carga.transportadora.razao_social }} — {{ carga.data_embarque|date:"d/m/Y" }}</small>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{% url 'embalagem:carga_frete_update' carga.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </a>
+      <form method="post" action="{% url 'embalagem:carga_frete_ratear' carga.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary"
+          onclick="return confirm('Recalcular o rateio de frete/pedágio/ICMS para todos os romaneios vinculados a esta carga?')">
+          <i class="bi bi-calculator me-1"></i>Ratear
+        </button>
+      </form>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if soma_caixas != carga.quantidade_caixas_total %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    A soma das caixas dos romaneios vinculados (<strong>{{ soma_caixas }}</strong>) ainda não bate com a
+    quantidade total da carga (<strong>{{ carga.quantidade_caixas_total }}</strong>). Vincule os romaneios
+    restantes (editando cada romaneio e selecionando esta carga) antes de ratear.
+  </div>
+  {% endif %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Contratado</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-6">Valor do Frete Total</dt><dd class="col-sm-6 fw-bold">R$ {{ carga.valor_frete_total|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Quantidade de Caixas</dt><dd class="col-sm-6 fw-bold">{{ carga.quantidade_caixas_total }}</dd>
+            {% if carga.valor_pedagio_total %}
+            <dt class="col-sm-6">Valor do Pedágio Total</dt><dd class="col-sm-6 fw-bold">R$ {{ carga.valor_pedagio_total|floatformat:2 }}</dd>
+            {% endif %}
+          </dl>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Padrões de ICMS</div>
+        <div class="card-body">
+          <dl class="row mb-0 small">
+            <dt class="col-sm-6">Redução de Base Padrão</dt><dd class="col-sm-6">{{ carga.percentual_reducao_bc_padrao }}%</dd>
+            <dt class="col-sm-6">Alíquota ICMS Padrão</dt><dd class="col-sm-6">{{ carga.aliquota_icms_padrao }}%</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header fw-semibold"><i class="bi bi-list-ul me-1"></i>Romaneios Vinculados ({{ romaneios.count }})</div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Romaneio</th>
+              <th>Cliente</th>
+              <th class="text-end">Caixas</th>
+              <th>Método ICMS</th>
+              <th class="text-end">Valor Frete</th>
+              <th class="text-end">BC ICMS</th>
+              <th class="text-end">Vlr. ICMS</th>
+              <th class="text-end">Pedágio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in romaneios %}
+            <tr>
+              <td><a href="{% url 'embalagem:romaneio_detail' r.pk %}">{{ r.numero }}</a></td>
+              <td>{{ r.cliente.razao_social }}</td>
+              <td class="text-end">{{ r.total_caixas }}</td>
+              <td>{{ r.get_metodo_icms_frete_display }}</td>
+              <td class="text-end">{% if r.valor_frete_rateado is not None %}R$ {{ r.valor_frete_rateado|floatformat:2 }}{% else %}—{% endif %}</td>
+              <td class="text-end">{% if r.valor_bc_icms_frete is not None %}R$ {{ r.valor_bc_icms_frete|floatformat:2 }}{% else %}—{% endif %}</td>
+              <td class="text-end">{% if r.valor_icms_frete is not None %}R$ {{ r.valor_icms_frete|floatformat:2 }}{% else %}—{% endif %}</td>
+              <td class="text-end">{% if r.valor_pedagio_rateado is not None %}R$ {{ r.valor_pedagio_rateado|floatformat:2 }}{% else %}—{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">Nenhum romaneio vinculado a esta carga ainda.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if romaneios %}
+          <tfoot class="table-light fw-bold">
+            <tr>
+              <td colspan="2">Total</td>
+              <td class="text-end">{{ soma_caixas }}</td>
+              <td></td>
+              <td class="text-end">R$ {{ carga.valor_frete_total|floatformat:2 }}</td>
+              <td></td>
+              <td></td>
+              <td class="text-end">{% if carga.valor_pedagio_total %}R$ {{ carga.valor_pedagio_total|floatformat:2 }}{% endif %}</td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

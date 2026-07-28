@@ -155,7 +155,7 @@
               </td>
               <td>{{ mon.talhao.nome }}</td>
               <td>{{ mon.data_monitoramento|date:"d/m/Y" }}</td>
-              <td>{{ mon.responsavel.username|default:"N/A" }}</td>
+              <td>{{ mon.responsavel.nome_completo|default:"N/A" }}</td>
               <td>
                 <span class="badge bg-info">{{ mon.pragas_detectadas.count }}</span>
               </td>
@@ -183,11 +183,15 @@
               </td>
               <td class="text-center">
                 <div class="btn-group btn-group-sm" role="group">
-                  <a href="{% url 'mip:monitoramento_mip_detail' mon.pk %}" 
+                  <a href="{% url 'mip:monitoramento_mip_detail' mon.pk %}"
                      class="btn btn-outline-primary" title="Visualizar">
                     <i class="bi bi-eye"></i>
                   </a>
-                  <a href="{% url 'mip:monitoramento_mip_add_praga' mon.pk %}" 
+                  <a href="{% url 'mip:monitoramento_mip_update' mon.pk %}"
+                     class="btn btn-outline-warning" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'mip:monitoramento_mip_add_praga' mon.pk %}"
                      class="btn btn-outline-success" title="Adicionar Praga">
                     <i class="bi bi-plus"></i>
                   </a>

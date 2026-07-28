@@ -3350,9 +3350,42 @@ def cte_create(request):
     else:
         _cfg_cte = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
         _serie_cte_ini = _cfg_cte.serie_cte if _cfg_cte else 1
-        form = ConhecimentoTransporteForm(empresa=empresa, initial={'serie': _serie_cte_ini})
+        initial = {'serie': _serie_cte_ini}
+        comp_initial = []
+
+        rom_id = request.GET.get('romaneio_venda')
+        if rom_id:
+            from decimal import Decimal
+            from embalagem.models import RomaneioVenda
+            rom = (RomaneioVenda.objects
+                   .filter(pk=rom_id, empresa=empresa)
+                   .select_related('carga_frete', 'cliente')
+                   .first())
+            if rom and rom.valor_frete_rateado is not None:
+                initial.update({
+                    'romaneio_venda': rom.pk,
+                    'destinatario': rom.cliente_id,
+                    'peso_bruto_kg': rom.peso_bruto_total,
+                    'valor_servico': rom.valor_frete_rateado,
+                    'base_calculo_icms': rom.valor_bc_icms_frete,
+                    'reducao_base_icms': (
+                        rom.percentual_reducao_bc if rom.metodo_icms_frete == 'REDUCAO' else Decimal('0')
+                    ),
+                    'aliquota_icms': rom.aliquota_icms_frete,
+                    'valor_icms': rom.valor_icms_frete,
+                    'cst_icms': '20' if rom.metodo_icms_frete == 'REDUCAO' else '00',
+                })
+                if rom.carga_frete_id:
+                    initial['transportadora'] = rom.carga_frete.transportadora_id
+                comp_initial.append({'nome': 'FRETE VALOR', 'valor': rom.valor_frete_rateado, 'ordem': 1})
+                if rom.valor_pedagio_rateado:
+                    comp_initial.append({'nome': 'PEDÁGIO', 'valor': rom.valor_pedagio_rateado, 'ordem': 2})
+            else:
+                messages.warning(request, 'Rateie o frete do romaneio antes de gerar o CT-e — valores não pré-preenchidos.')
+
+        form = ConhecimentoTransporteForm(empresa=empresa, initial=initial)
         docs_formset = DocumentoVinculadoCTeFormSet(prefix='docs')
-        comp_formset = ComponenteValorCTeFormSet(prefix='comp')
+        comp_formset = ComponenteValorCTeFormSet(prefix='comp', initial=comp_initial)
     return render(request, 'faturamento/cte/form.html', {
         'form': form, 'docs_formset': docs_formset, 'comp_formset': comp_formset, 'action': 'Novo',
     })

@@ -211,7 +211,7 @@ class MonitoramentoMIP(models.Model):
     )
 
     responsavel = models.ForeignKey(
-        'usuarios.Usuario',
+        'rh.Funcionario',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

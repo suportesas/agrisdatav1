@@ -42,9 +42,16 @@
 
     var dropdown = { height: this.$dropdown.outerHeight(false) };
 
+    // Barras fixas tipo .app-footer-bar (Salvar/Cancelar, sticky no rodapé) ficam
+    // por cima do conteúdo mas não reduzem $window.height() — sem descontar a
+    // altura dela aqui, o cálculo de "cabe embaixo?" dá certo mesmo quando o
+    // dropdown vai ficar coberto por ela.
+    var $footerBar = $('.app-footer-bar:visible').last();
+    var reservedBottom = $footerBar.length ? $footerBar.outerHeight(true) : 0;
+
     var viewport = {
       top: $window.scrollTop(),
-      bottom: $window.scrollTop() + $window.height(),
+      bottom: $window.scrollTop() + $window.height() - reservedBottom,
     };
 
     var enoughRoomAbove = viewport.top < (offset.top - dropdown.height);
@@ -108,7 +115,7 @@
       allowClear: true,
       placeholder: options.placeholder || 'Selecione...',
       minimumInputLength: 0,
-      dropdownPosition: 'below',
+      dropdownPosition: 'auto',
       language: DEFAULT_LANGUAGE,
       dropdownParent: options.dropdownParent || undefined,
       ajax: {

@@ -3,6 +3,12 @@
 
 {% block title %}{% if form.instance.pk %}Editar Monitoramento{% else %}Novo Monitoramento MIP{% endif %} | Agrisdata{% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
 
@@ -48,35 +54,23 @@
       </div>
       <div class="form-section-body">
         <div class="form-grid">
-          <div class="field col-6">
-            <label for="id_talhao_search" class="form-label"><i class="bi bi-search"></i> Buscar Talhão (Código)</label>
-            <input type="text" id="id_talhao_search" class="form-control" placeholder="Ex: 0101" autocomplete="off">
-            <div class="helper-note">Digite o código ou nome do talhão</div>
-            <div id="talhao_results" class="mt-2" style="max-height: 250px; overflow-y: auto; display: none;"></div>
-          </div>
-          <div class="field col-6{% if form.talhao.errors %} has-error{% endif %}">
-            <label for="{{ form.talhao.id_for_label }}" class="form-label"><i class="bi bi-grid-3x3-gap"></i> Talhão Selecionado<span class="req">*</span></label>
-            {{ form.talhao }}
-            {% if form.instance.pk %}<div class="helper-note">Talhão atual: {{ form.instance.talhao.nome }}</div>{% endif %}
-            {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors.0 }}</div>{% endif %}
-          </div>
-          <div class="field col-6{% if form.cultura.errors %} has-error{% endif %}">
-            <label for="{{ form.cultura.id_for_label }}" class="form-label"><i class="bi bi-leaf"></i> Cultura<span class="req">*</span></label>
-            {{ form.cultura }}
-            {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors.0 }}</div>{% endif %}
-            <div class="helper-note">Preenchida automaticamente do talhão</div>
-          </div>
           <div class="field col-6{% if form.safra.errors %} has-error{% endif %}">
             <label for="{{ form.safra.id_for_label }}" class="form-label"><i class="bi bi-calendar-check"></i> Safra Ativa<span class="req">*</span></label>
             {{ form.safra }}
             {% if form.safra.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.safra.errors.0 }}</div>{% endif %}
             <div class="helper-note">Selecione a safra em andamento</div>
           </div>
-          <div class="field col-6">
-            <label for="{{ form.os.id_for_label }}" class="form-label"><i class="bi bi-clipboard-check"></i> Ordem de Serviço <small class="fw-normal text-muted">(opcional)</small></label>
-            {{ form.os }}
-            {% if form.os.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.os.errors.0 }}</div>{% endif %}
-            <div class="helper-note">Vincule a uma OS relacionada (ex: pulverização gerada por este monitoramento)</div>
+          <div class="field col-6{% if form.cultura.errors %} has-error{% endif %}">
+            <label for="{{ form.cultura.id_for_label }}" class="form-label"><i class="bi bi-leaf"></i> Cultura<span class="req">*</span></label>
+            {{ form.cultura }}
+            {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors.0 }}</div>{% endif %}
+            <div class="helper-note" id="cultura-helper-note">Selecione a safra primeiro</div>
+          </div>
+          <div class="field col-6{% if form.talhao.errors %} has-error{% endif %}">
+            <label for="{{ form.talhao.id_for_label }}" class="form-label"><i class="bi bi-grid-3x3-gap"></i> Talhão<span class="req">*</span></label>
+            {{ form.talhao }}
+            {% if form.talhao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.talhao.errors.0 }}</div>{% endif %}
+            <div class="helper-note" id="talhao-helper-note">Selecione a cultura primeiro</div>
           </div>
           <div class="field col-6{% if form.data_monitoramento.errors %} has-error{% endif %}">
             <label for="{{ form.data_monitoramento.id_for_label }}" class="form-label"><i class="bi bi-calendar"></i> Data do Monitoramento<span class="req">*</span></label>
@@ -172,253 +166,110 @@
 
 {% include 'cadastros/monitoramento_mip/_help_modals.html' %}
 
-<style>
-  .talhao-result-item {
-    padding: 12px;
-    border-bottom: 1px solid #ddd;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .talhao-result-item:hover {
-    background-color: #f0f0f0;
-  }
-
-  .talhao-codigo {
-    font-weight: bold;
-    color: #0066cc;
-    margin-right: 10px;
-  }
-
-  .talhao-nome {
-    color: #333;
-  }
-</style>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=8"></script>
+<script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
 <script src="{% static 'js/section-nav.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🔍 Iniciando script de monitoramento MIP...');
-
-  const searchInput = document.getElementById('id_talhao_search');
-  const talhaoSelect = document.getElementById('id_talhao');
-  const culturaSelect = document.getElementById('id_cultura');
   const safraSelect = document.getElementById('id_safra');
-  const resultsDiv = document.getElementById('talhao_results');
+  const culturaSelect = document.getElementById('id_cultura');
+  const talhaoSelect = document.getElementById('id_talhao');
+  const culturaHint = document.getElementById('cultura-helper-note');
+  const talhaoHint = document.getElementById('talhao-helper-note');
 
-  console.log('🔹 Elementos encontrados:', {
-    searchInput: !!searchInput,
-    talhaoSelect: !!talhaoSelect,
-    culturaSelect: !!culturaSelect,
-    safraSelect: !!safraSelect,
-    resultsDiv: !!resultsDiv
-  });
+  if (!safraSelect || !culturaSelect || !talhaoSelect) return;
 
-  if (!searchInput || !talhaoSelect) {
-    console.error('❌ Elementos críticos do formulário não encontrados!');
-    return;
-  }
+  const AJAX_CULTURAS_POR_SAFRA_URL = "{% url 'mip:ajax_culturas_por_safra' %}";
+  const AJAX_TALHOES_POR_SAFRA_CULTURA_URL = "{% url 'mip:ajax_talhoes_por_safra_cultura' %}";
 
-  // ================================================================
-  // PREENCHER CULTURA E SAFRA AUTOMATICAMENTE
-  // ================================================================
-  function preencherCulturaESafra(talhao) {
-    console.log('📝 Preenchendo dados do talhão:', talhao);
+  // Culturas e talhão já selecionados ao abrir a tela (edição) — preservados
+  // na primeira carga de cada select para não perder a seleção do registro.
+  let culturaInicial = culturaSelect.value;
+  let talhaoInicial = talhaoSelect.value;
 
-    // Preencher cultura
-    if (culturaSelect && talhao.cultura_id) {
-      console.log(`Tentando preencher cultura com ID: ${talhao.cultura_id}`);
-      culturaSelect.value = talhao.cultura_id;
-      culturaSelect.dispatchEvent(new Event('change'));
-      console.log(`✅ Cultura preenchida: ${talhao.cultura_nome}`);
-    } else {
-      console.warn('⚠️ Não foi possível preencher cultura', {
-        culturaSelectExists: !!culturaSelect,
-        cultureId: talhao.cultura_id
-      });
-    }
+  function popularSelect(select, opcoes, valorPreferido) {
+    select.innerHTML = '<option value="">---------</option>';
+    opcoes.forEach(function(opcao) {
+      const option = document.createElement('option');
+      option.value = opcao.id;
+      option.textContent = opcao.nome;
+      select.appendChild(option);
+    });
 
-    // Preencher safra automaticamente
-    if (safraSelect && talhao.safras_ativas) {
-      console.log(`Safras ativas encontradas: ${talhao.safras_ativas.length}`);
-      if (talhao.safras_ativas.length === 1) {
-        // Se houver apenas uma safra ativa, preencher automaticamente
-        const safra = talhao.safras_ativas[0];
-        safraSelect.value = safra.id;
-        safraSelect.dispatchEvent(new Event('change'));
-        console.log(`✅ Safra preenchida automaticamente: ${safra.nome}`);
-        mostraNotificacaoSafra(`Safra selecionada: ${safra.nome}`, 'success');
-      } else if (talhao.safras_ativas.length > 1) {
-        console.warn('⚠️ Múltiplas safras ativas encontradas');
-        mostraNotificacaoSafra(
-          `Aviso: Este talhão possui ${talhao.safras_ativas.length} safras ativas. Selecione a correta.`,
-          'warning'
-        );
-      } else {
-        console.warn('⚠️ Nenhuma safra ativa encontrada para este talhão');
-        mostraNotificacaoSafra('Aviso: Este talhão não possui safras ativas', 'warning');
-      }
+    if (valorPreferido && select.querySelector('option[value="' + valorPreferido + '"]')) {
+      select.value = valorPreferido;
+    } else if (opcoes.length === 1) {
+      select.value = opcoes[0].id;
     }
   }
 
-  // Função helper para mostrar notificação de safra
-  function mostraNotificacaoSafra(mensagem, tipo) {
-    const alertClass = tipo === 'success' ? 'alert-success' : 'alert-warning';
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert ${alertClass} alert-dismissible fade show mt-2`;
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
-      <i class="bi bi-info-circle"></i> ${mensagem}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-
-    const form = document.querySelector('form');
-    if (form) {
-      form.insertAdjacentElement('afterbegin', alertDiv);
-      setTimeout(() => alertDiv.remove(), 5000);
-    }
-  }
-
-  // ================================================================
-  // BUSCA DE TALHÕES COM DEBOUNCE
-  // ================================================================
-  let timeoutId;
-
-  searchInput.addEventListener('keyup', function() {
-    clearTimeout(timeoutId);
-    const termo = this.value.trim();
-
-    if (termo.length < 1) {
-      resultsDiv.style.display = 'none';
-      resultsDiv.innerHTML = '';
+  function carregarCulturasPorSafra(safraId, preferirCulturaId) {
+    if (!safraId) {
+      popularSelect(culturaSelect, [], '');
+      carregarTalhoesPorSafraCultura(null, null, null);
+      if (culturaHint) culturaHint.textContent = 'Selecione a safra primeiro';
       return;
     }
 
-    console.log(`🔎 Buscando talhões com termo: "${termo}"`);
-
-    timeoutId = setTimeout(() => {
-      fetch(`/cadastros/ajax/buscar-talhoes/?q=${encodeURIComponent(termo)}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log('📦 Resposta AJAX recebida:', data);
-          resultsDiv.innerHTML = '';
-
-          if (!data.talhoes || data.talhoes.length === 0) {
-            resultsDiv.innerHTML = '<div class="p-3 text-muted">Nenhum talhão encontrado</div>';
-            resultsDiv.style.display = 'block';
-            return;
-          }
-
-          console.log(`✅ ${data.talhoes.length} talhão(ões) encontrado(s)`);
-
-          data.talhoes.forEach(talhao => {
-            const item = document.createElement('div');
-            item.className = 'talhao-result-item border bg-white';
-
-            const culturaBadge = talhao.cultura_nome
-              ? `<span class="badge bg-info ms-2"><i class="bi bi-leaf"></i> ${talhao.cultura_nome}</span>`
-              : '<span class="badge bg-secondary ms-2">Sem cultura</span>';
-
-            // Mostrar status de safra
-            let safraInfo = '';
-            if (talhao.safras_ativas && talhao.safras_ativas.length > 0) {
-              safraInfo = `<span class="badge bg-success ms-1"><i class="bi bi-calendar-check"></i> ${talhao.safras_ativas.length} safra(s) ativa(s)</span>`;
-            } else {
-              safraInfo = '<span class="badge bg-danger ms-1"><i class="bi bi-exclamation-circle"></i> Sem safra ativa</span>';
-            }
-
-            item.innerHTML = `
-              <span class="talhao-codigo">${talhao.codigo}</span>
-              <span class="talhao-nome">${talhao.simples}</span>
-              ${culturaBadge}
-              ${safraInfo}
-            `;
-
-            item.addEventListener('click', function() {
-              console.log('🖱️ Talhão clicado:', talhao);
-              talhaoSelect.value = talhao.id;
-              searchInput.value = `${talhao.codigo} - ${talhao.simples}`;
-
-              resultsDiv.style.display = 'none';
-              resultsDiv.innerHTML = '';
-
-              // Preencher cultura e safra usando o endpoint por ID
-              carregarInfoTalhao(talhao.id);
-            });
-
-            resultsDiv.appendChild(item);
-          });
-
-          resultsDiv.style.display = 'block';
-        })
-        .catch(error => {
-          console.error('❌ Erro ao buscar talhões:', error);
-          resultsDiv.innerHTML = '<div class="p-3 text-danger">Erro ao buscar talhões</div>';
-          resultsDiv.style.display = 'block';
-        });
-    }, 300);
-  });
-
-  // Fechar resultados ao clicar fora
-  document.addEventListener('click', function(event) {
-    if (!event.target.closest('#id_talhao_search') && !event.target.closest('#talhao_results')) {
-      resultsDiv.style.display = 'none';
-    }
-  });
-
-  // ================================================================
-  // SELEÇÃO DIRETA DO DROPDOWN
-  // ================================================================
-  function carregarInfoTalhao(talhaoId) {
-    if (!talhaoId) return;
-    fetch(`/cadastros/ajax/talhao-info/${talhaoId}/`)
-      .then(response => {
-        if (!response.ok) throw new Error('Talhão não encontrado');
-        return response.json();
-      })
-      .then(data => {
-        console.log('📦 Info do talhão:', data);
-
-        // Preencher Cultura
-        if (culturaSelect && data.cultura_id) {
-          culturaSelect.value = data.cultura_id;
-          culturaSelect.dispatchEvent(new Event('change'));
-          console.log(`✅ Cultura preenchida: ${data.cultura_nome}`);
+    fetch(AJAX_CULTURAS_POR_SAFRA_URL + '?safra_id=' + safraId)
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        const culturas = data.culturas || [];
+        popularSelect(culturaSelect, culturas, preferirCulturaId);
+        if (culturaHint) {
+          culturaHint.textContent = culturas.length
+            ? 'Culturas plantadas nesta safra'
+            : 'Nenhuma cultura cadastrada para esta safra';
         }
-
-        // Preencher Safra
-        if (safraSelect) {
-          if (data.safra_id_auto) {
-            // Uma única safra ativa — preencher automaticamente
-            safraSelect.value = data.safra_id_auto;
-            safraSelect.dispatchEvent(new Event('change'));
-            console.log(`✅ Safra preenchida automaticamente (ID ${data.safra_id_auto})`);
-            mostraNotificacaoSafra('Safra selecionada automaticamente.', 'success');
-          } else if (data.safras_ativas && data.safras_ativas.length > 1) {
-            mostraNotificacaoSafra(
-              `Este talhão possui ${data.safras_ativas.length} safras ativas. Selecione a correta.`,
-              'warning'
-            );
-          } else if (!data.safras_ativas || data.safras_ativas.length === 0) {
-            mostraNotificacaoSafra('Este talhão não possui safras ativas.', 'warning');
-          }
-        }
+        carregarTalhoesPorSafraCultura(safraId, culturaSelect.value, talhaoInicial);
+        talhaoInicial = null;
       })
-      .catch(error => console.error('❌ Erro ao buscar info do talhão:', error));
+      .catch(function(error) { console.error('Erro ao carregar culturas da safra:', error); });
   }
 
-  talhaoSelect.addEventListener('change', function() {
-    const talhaoId = this.value;
-    console.log('📋 Dropdown de talhão alterado:', talhaoId);
-    if (talhaoId) {
-      carregarInfoTalhao(talhaoId);
+  function carregarTalhoesPorSafraCultura(safraId, culturaId, preferirTalhaoId) {
+    if (!safraId || !culturaId) {
+      popularSelect(talhaoSelect, [], '');
+      if (talhaoHint) talhaoHint.textContent = 'Selecione a cultura primeiro';
+      return;
     }
+
+    fetch(AJAX_TALHOES_POR_SAFRA_CULTURA_URL + '?safra_id=' + safraId + '&cultura_id=' + culturaId)
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        const talhoes = (data.talhoes || []).map(function(t) {
+          return { id: t.id, nome: t.codigo ? (t.codigo + ' - ' + t.nome) : t.nome };
+        });
+        popularSelect(talhaoSelect, talhoes, preferirTalhaoId);
+        if (talhaoHint) {
+          talhaoHint.textContent = talhoes.length
+            ? 'Talhões desta cultura/safra'
+            : 'Nenhum talhão vinculado a esta cultura/safra';
+        }
+      })
+      .catch(function(error) { console.error('Erro ao carregar talhões da safra/cultura:', error); });
+  }
+
+  safraSelect.addEventListener('change', function() {
+    carregarCulturasPorSafra(this.value, culturaInicial);
+    culturaInicial = null;
   });
 
-  console.log('✅ Script de monitoramento MIP carregado com sucesso!');
+  culturaSelect.addEventListener('change', function() {
+    carregarTalhoesPorSafraCultura(safraSelect.value, this.value, talhaoInicial);
+    talhaoInicial = null;
+  });
+
+  if (safraSelect.value) {
+    carregarCulturasPorSafra(safraSelect.value, culturaInicial);
+    culturaInicial = null;
+  }
 });
 </script>
 {% endblock %}

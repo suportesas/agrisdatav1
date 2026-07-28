@@ -15,7 +15,9 @@ urlpatterns = [
     path('monitoramento/', views.monitoramento_mip_list, name='monitoramento_mip_list'),
     path('monitoramento/novo/', views.monitoramento_mip_create, name='monitoramento_mip_create'),
     path('monitoramento/<int:pk>/', views.monitoramento_mip_detail, name='monitoramento_mip_detail'),
+    path('monitoramento/<int:pk>/editar/', views.monitoramento_mip_update, name='monitoramento_mip_update'),
     path('monitoramento/<int:pk>/pdf/', views.monitoramento_mip_pdf, name='monitoramento_mip_pdf'),
+    path('monitoramento/<int:pk>/gerar-os/', views.monitoramento_mip_gerar_os, name='monitoramento_mip_gerar_os'),
     path('monitoramento/<int:pk>/adicionar-praga/', views.monitoramento_mip_add_praga, name='monitoramento_mip_add_praga'),
     path('monitoramento/praga/<int:pk>/', views.monitoramento_mip_praga_detail, name='monitoramento_mip_praga_detail'),
     path('monitoramento/praga/<int:pk>/editar/', views.monitoramento_mip_praga_edit, name='monitoramento_mip_praga_edit'),
@@ -31,4 +33,6 @@ urlpatterns = [
     path('ajax/deletar-estagio/<int:pk>/', views.ajax_deletar_estagio, name='ajax_deletar_estagio'),
     path('ajax/buscar-talhoes/', views.ajax_buscar_talhoes, name='ajax_buscar_talhoes'),
     path('ajax/talhao-info/<int:talhao_id>/', views.ajax_talhao_info, name='ajax_talhao_info'),
+    path('ajax/culturas-por-safra/', views.ajax_culturas_por_safra, name='ajax_culturas_por_safra'),
+    path('ajax/talhoes-por-safra-cultura/', views.ajax_talhoes_por_safra_cultura, name='ajax_talhoes_por_safra_cultura'),
 ]

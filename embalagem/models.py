@@ -1,8 +1,12 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Count, Sum, Q
 from django.utils import timezone
+
+
+class CargaFreteError(Exception):
+    """Erro de validação ao ratear uma CargaFrete."""
 
 
 # ──────────────────────────── TipoEmbalagem ────────────────────────────────
@@ -417,6 +421,138 @@ class ItemPallet(models.Model):
         pallet.recalcular_totais()
 
 
+# ──────────────────────────── CargaFrete ───────────────────────────────────
+
+class CargaFrete(models.Model):
+    """
+    Frete físico de um caminhão/carga (mercado interno), compartilhado por
+    vários RomaneioVenda. Guarda os totais contratados com a transportadora
+    (valor do frete, caixas, pedágio) para rateio por caixa entre os romaneios.
+    """
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='cargas_frete',
+        verbose_name='Empresa',
+    )
+    transportadora = models.ForeignKey(
+        'cadastros.Transportadora',
+        on_delete=models.PROTECT,
+        related_name='cargas_frete',
+        verbose_name='Transportadora',
+    )
+    identificador = models.CharField('Identificador', max_length=100, blank=True)
+    data_embarque = models.DateField('Data do Embarque', default=timezone.now)
+    valor_frete_total = models.DecimalField('Valor do Frete Total (R$)', max_digits=12, decimal_places=2)
+    quantidade_caixas_total = models.PositiveIntegerField('Quantidade de Caixas Total')
+    valor_pedagio_total = models.DecimalField(
+        'Valor do Pedágio Total (R$)', max_digits=12, decimal_places=2, blank=True, null=True,
+    )
+    percentual_reducao_bc_padrao = models.DecimalField(
+        'Redução de Base ICMS Padrão (%)', max_digits=5, decimal_places=2, default=Decimal('40.00'),
+    )
+    aliquota_icms_padrao = models.DecimalField(
+        'Alíquota ICMS Padrão (%)', max_digits=5, decimal_places=2, default=Decimal('12.00'),
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='cargas_frete_criadas',
+        verbose_name='Criado por',
+        blank=True,
+        null=True,
+    )
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+    atualizado_em = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Carga de Frete'
+        verbose_name_plural = 'Cargas de Frete'
+        ordering = ['-data_embarque', '-criado_em']
+        indexes = [
+            models.Index(fields=['empresa', 'ativo']),
+        ]
+
+    def __str__(self):
+        if self.identificador:
+            return self.identificador
+        data = self.data_embarque.strftime('%d/%m/%Y') if self.data_embarque else '-'
+        return f'Carga {data} - {self.transportadora}'
+
+    @staticmethod
+    def _ratear_por_maior_resto(valor_total, pesos):
+        """
+        Rateia valor_total (Decimal, 2 casas) entre itens proporcionalmente a
+        `pesos` (ex.: caixas por romaneio), fechando exatamente o total pelo
+        método do maior resto (sem sobra/falta de centavos).
+        Retorna uma lista de Decimal (2 casas) na mesma ordem de `pesos`.
+        """
+        total_pesos = sum(pesos)
+        if not total_pesos:
+            return [Decimal('0.00')] * len(pesos)
+
+        total_centavos = int((valor_total * 100).to_integral_value(rounding=ROUND_HALF_UP))
+
+        pisos = []
+        restos = []
+        for peso in pesos:
+            cota_centavos = (valor_total * 100) * Decimal(peso) / Decimal(total_pesos)
+            piso = int(cota_centavos.to_integral_value(rounding=ROUND_DOWN))
+            pisos.append(piso)
+            restos.append(cota_centavos - piso)
+
+        falta = total_centavos - sum(pisos)
+        maiores_restos = sorted(range(len(pesos)), key=lambda i: restos[i], reverse=True)
+        indices_com_extra = set(maiores_restos[:falta])
+
+        return [
+            (Decimal(piso + (1 if i in indices_com_extra else 0)) / 100).quantize(Decimal('0.01'))
+            for i, piso in enumerate(pisos)
+        ]
+
+    def ratear(self):
+        """
+        Recalcula o rateio de frete/pedágio entre todos os romaneios vinculados
+        (proporcional às caixas de cada um), fechando exatamente com
+        valor_frete_total/valor_pedagio_total, e recalcula o ICMS de frete de
+        cada romaneio. Levanta CargaFreteError se a carga estiver incompleta.
+        """
+        romaneios = list(self.romaneios.select_related('pedido_venda').all())
+        if not romaneios:
+            raise CargaFreteError('Nenhum romaneio vinculado a esta carga de frete.')
+
+        caixas_por_romaneio = [r.total_caixas for r in romaneios]
+        soma_caixas = sum(caixas_por_romaneio)
+        if soma_caixas != self.quantidade_caixas_total:
+            raise CargaFreteError(
+                f'A soma das caixas dos romaneios vinculados ({soma_caixas}) não bate com '
+                f'a quantidade total da carga ({self.quantidade_caixas_total}).'
+            )
+
+        fretes_rateados = self._ratear_por_maior_resto(self.valor_frete_total, caixas_por_romaneio)
+        pedagios_rateados = (
+            self._ratear_por_maior_resto(self.valor_pedagio_total, caixas_por_romaneio)
+            if self.valor_pedagio_total else [Decimal('0.00')] * len(romaneios)
+        )
+
+        with transaction.atomic():
+            for romaneio, frete, pedagio in zip(romaneios, fretes_rateados, pedagios_rateados):
+                romaneio.valor_frete_rateado = frete
+                romaneio.valor_pedagio_rateado = pedagio
+                romaneio.calcular_icms_frete()
+                romaneio.save(update_fields=[
+                    'valor_frete_rateado', 'valor_pedagio_rateado',
+                    'valor_bc_icms_frete', 'valor_icms_frete',
+                    'percentual_reducao_bc', 'aliquota_icms_frete',
+                ])
+                if romaneio.pedido_venda_id:
+                    pedido = romaneio.pedido_venda
+                    pedido.valor_frete = frete
+                    pedido.calcular_total()
+                    pedido.save(update_fields=['valor_frete', 'valor_produtos', 'valor_total'])
+
+
 # ──────────────────────────── RomaneioVenda ────────────────────────────────
 
 class RomaneioVenda(models.Model):
@@ -430,6 +566,10 @@ class RomaneioVenda(models.Model):
         ('CARREGANDO', 'Carregando'),
         ('CONCLUIDO', 'Concluído'),
         ('CANCELADO', 'Cancelado'),
+    ]
+    METODO_ICMS_FRETE = [
+        ('REDUCAO', 'Com redução de base de cálculo'),
+        ('CHEIO', 'Alíquota cheia sobre o frete'),
     ]
 
     empresa = models.ForeignKey(
@@ -471,6 +611,37 @@ class RomaneioVenda(models.Model):
         verbose_name='Container',
         blank=True,
         null=True,
+    )
+    # Frete/ICMS de frete (mercado interno)
+    carga_frete = models.ForeignKey(
+        CargaFrete,
+        on_delete=models.SET_NULL,
+        related_name='romaneios',
+        verbose_name='Carga de Frete',
+        blank=True,
+        null=True,
+    )
+    metodo_icms_frete = models.CharField(
+        'Método de Cálculo do ICMS de Frete', max_length=10,
+        choices=METODO_ICMS_FRETE, default='REDUCAO', blank=True,
+    )
+    percentual_reducao_bc = models.DecimalField(
+        'Redução de Base ICMS Frete (%)', max_digits=5, decimal_places=2, blank=True, null=True,
+    )
+    aliquota_icms_frete = models.DecimalField(
+        'Alíquota ICMS Frete (%)', max_digits=5, decimal_places=2, blank=True, null=True,
+    )
+    valor_frete_rateado = models.DecimalField(
+        'Valor do Frete Rateado (R$)', max_digits=12, decimal_places=2, blank=True, null=True,
+    )
+    valor_pedagio_rateado = models.DecimalField(
+        'Valor do Pedágio Rateado (R$)', max_digits=12, decimal_places=2, blank=True, null=True,
+    )
+    valor_bc_icms_frete = models.DecimalField(
+        'Base de Cálculo ICMS Frete (R$)', max_digits=12, decimal_places=2, blank=True, null=True,
+    )
+    valor_icms_frete = models.DecimalField(
+        'Valor ICMS Frete (R$)', max_digits=12, decimal_places=2, blank=True, null=True,
     )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     observacoes = models.TextField('Observações', blank=True)
@@ -560,6 +731,33 @@ class RomaneioVenda(models.Model):
     @property
     def pallets_conferidos(self):
         return self.itens.filter(status_conferencia='CONFERIDO').count()
+
+    def save(self, *args, **kwargs):
+        if self.carga_frete_id:
+            if self.percentual_reducao_bc is None:
+                self.percentual_reducao_bc = self.carga_frete.percentual_reducao_bc_padrao
+            if self.aliquota_icms_frete is None:
+                self.aliquota_icms_frete = self.carga_frete.aliquota_icms_padrao
+        super().save(*args, **kwargs)
+
+    def calcular_icms_frete(self):
+        """
+        Calcula a base e o valor do ICMS sobre o frete rateado deste romaneio.
+        Segue o mesmo formato de cálculo usado em ProdutoTributacao.calcular_icms:
+        BC = valor * (100 - reducao) / 100; icms = BC * aliquota / 100
+        (arredondamento só no ponto de persistência).
+        """
+        if self.valor_frete_rateado is None:
+            return
+        base = self.valor_frete_rateado
+        reducao = self.percentual_reducao_bc or Decimal('0')
+        if self.metodo_icms_frete == 'REDUCAO' and reducao > 0:
+            base = base * (Decimal('100') - reducao) / Decimal('100')
+        self.valor_bc_icms_frete = base.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        aliquota = self.aliquota_icms_frete or Decimal('0')
+        self.valor_icms_frete = (
+            self.valor_bc_icms_frete * aliquota / Decimal('100')
+        ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
 # ──────────────────────────── ItemRomaneioVenda ────────────────────────────

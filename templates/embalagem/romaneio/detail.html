@@ -97,6 +97,11 @@
         </form>
         {% endif %}
       {% endif %}
+      {% if romaneio.tipo == 'MERCADO_INTERNO' and romaneio.carga_frete and romaneio.valor_frete_rateado is not None %}
+        <a href="{% url 'embalagem:romaneio_gerar_cte' romaneio.pk %}" class="btn btn-outline-info">
+          <i class="bi bi-file-earmark-plus me-1"></i>Gerar CT-e
+        </a>
+      {% endif %}
       {% if romaneio.itens.count > 0 %}
       <a href="{% url 'embalagem:romaneio_etiquetas_pdf' romaneio.pk %}" class="btn btn-outline-primary" target="_blank">
         <i class="bi bi-printer me-1"></i>Etiquetas PDF
@@ -195,6 +200,38 @@
             {% if romaneio.booking.navio %}<dt class="col-sm-5">Navio</dt><dd class="col-sm-7">{{ romaneio.booking.navio.nome }}</dd>{% endif %}
             {% if romaneio.booking.porto_destino %}<dt class="col-sm-5">Destino</dt><dd class="col-sm-7">{{ romaneio.booking.porto_destino.nome }}</dd>{% endif %}
           </dl>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Frete (mercado interno) -->
+    {% if romaneio.tipo == 'MERCADO_INTERNO' %}
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Resumo do Frete</div>
+        <div class="card-body">
+          {% if romaneio.carga_frete %}
+          <dl class="row mb-0 small">
+            <dt class="col-sm-6">Carga de Frete</dt>
+            <dd class="col-sm-6"><a href="{% url 'embalagem:carga_frete_detail' romaneio.carga_frete.pk %}">{{ romaneio.carga_frete }}</a></dd>
+            {% if romaneio.valor_frete_rateado is not None %}
+            <dt class="col-sm-6">Valor do Frete</dt><dd class="col-sm-6 fw-bold">R$ {{ romaneio.valor_frete_rateado|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Valor BC ICMS</dt><dd class="col-sm-6">R$ {{ romaneio.valor_bc_icms_frete|floatformat:2 }}</dd>
+            <dt class="col-sm-6">Vlr. ICMS</dt><dd class="col-sm-6">R$ {{ romaneio.valor_icms_frete|floatformat:2 }}</dd>
+            {% if romaneio.valor_pedagio_rateado %}
+            <dt class="col-sm-6">Pedágio</dt><dd class="col-sm-6">R$ {{ romaneio.valor_pedagio_rateado|floatformat:2 }}</dd>
+            {% endif %}
+            {% else %}
+            <p class="text-muted mb-0">Vinculado à carga, aguardando rateio. <a href="{% url 'embalagem:carga_frete_detail' romaneio.carga_frete.pk %}">Ratear agora</a>.</p>
+            {% endif %}
+          </dl>
+          {% else %}
+          <p class="text-muted mb-0">
+            Nenhuma carga de frete vinculada.
+            {% if romaneio.status == 'RASCUNHO' %}<a href="{% url 'embalagem:romaneio_update' romaneio.pk %}">Vincular</a>.{% endif %}
+          </p>
+          {% endif %}
         </div>
       </div>
     </div>

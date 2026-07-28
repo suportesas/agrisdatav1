@@ -1,7 +1,7 @@
 from django import forms
 from django.urls import reverse_lazy
-from core.widgets import Select2AjaxWidget, DateBRInput
-from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda
+from core.widgets import Select2AjaxWidget, DateBRInput, MoneyBRInput, DecimalBRInput
+from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda, CargaFrete
 
 
 class TipoEmbalagemForm(forms.ModelForm):
@@ -134,7 +134,10 @@ class OrdemEmbalagemForm(forms.ModelForm):
 class RomaneioVendaForm(forms.ModelForm):
     class Meta:
         model = RomaneioVenda
-        fields = ['tipo', 'cliente', 'data', 'booking', 'container', 'observacoes']
+        fields = [
+            'tipo', 'cliente', 'data', 'booking', 'container', 'observacoes',
+            'carga_frete', 'metodo_icms_frete', 'percentual_reducao_bc', 'aliquota_icms_frete',
+        ]
         widgets = {
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'cliente': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...'),
@@ -142,6 +145,10 @@ class RomaneioVendaForm(forms.ModelForm):
             'booking': forms.Select(attrs={'class': 'form-select'}),
             'container': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'carga_frete': forms.Select(attrs={'class': 'form-select'}),
+            'metodo_icms_frete': forms.Select(attrs={'class': 'form-select'}),
+            'percentual_reducao_bc': DecimalBRInput(decimals=2),
+            'aliquota_icms_frete': DecimalBRInput(decimals=2),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -156,8 +163,14 @@ class RomaneioVendaForm(forms.ModelForm):
                 empresa=empresa, status__in=['ABERTO', 'CONFIRMADO']).order_by('-data_embarque_previsto')
             self.fields['container'].queryset = BookingContainer.objects.filter(
                 booking__empresa=empresa).order_by('numero_container')
+            self.fields['carga_frete'].queryset = CargaFrete.objects.filter(
+                empresa=empresa, ativo=True).order_by('-data_embarque')
         self.fields['booking'].required = False
         self.fields['container'].required = False
+        self.fields['carga_frete'].required = False
+        self.fields['metodo_icms_frete'].required = False
+        self.fields['percentual_reducao_bc'].required = False
+        self.fields['aliquota_icms_frete'].required = False
 
     def clean(self):
         cleaned = super().clean()
@@ -166,6 +179,44 @@ class RomaneioVendaForm(forms.ModelForm):
         if tipo == 'EXPORTACAO' and not booking:
             self.add_error('booking', 'Booking é obrigatório para romaneios de Exportação.')
         return cleaned
+
+
+class CargaFreteForm(forms.ModelForm):
+    class Meta:
+        model = CargaFrete
+        fields = [
+            'transportadora', 'identificador', 'data_embarque',
+            'valor_frete_total', 'quantidade_caixas_total', 'valor_pedagio_total',
+            'percentual_reducao_bc_padrao', 'aliquota_icms_padrao',
+        ]
+        widgets = {
+            'transportadora': Select2AjaxWidget(
+                ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'
+            ),
+            'identificador': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Carga 28/07 - Transp. X'}),
+            'data_embarque': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'valor_frete_total': MoneyBRInput(),
+            'quantidade_caixas_total': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'valor_pedagio_total': MoneyBRInput(),
+            'percentual_reducao_bc_padrao': DecimalBRInput(decimals=2),
+            'aliquota_icms_padrao': DecimalBRInput(decimals=2),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        if empresa:
+            from cadastros.models import Transportadora
+            self.fields['transportadora'].queryset = Transportadora.objects.filter(
+                empresa=empresa, ativa=True).order_by('razao_social')
+        self.fields['identificador'].required = False
+        self.fields['valor_pedagio_total'].required = False
+
+    def clean_quantidade_caixas_total(self):
+        qtd = self.cleaned_data.get('quantidade_caixas_total')
+        if qtd is not None and qtd <= 0:
+            raise forms.ValidationError('A quantidade de caixas deve ser maior que zero.')
+        return qtd
 
 
 class TrocarClienteRomaneioForm(forms.ModelForm):

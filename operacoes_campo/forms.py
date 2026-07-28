@@ -74,6 +74,8 @@ class OrdemServicoForm(forms.ModelForm):
                     tipo_id = int(self.data.get('tipo_servico'))
                 except (TypeError, ValueError):
                     tipo_id = None
+            elif self.initial.get('tipo_servico'):
+                tipo_id = self.initial.get('tipo_servico')
 
             if tipo_id:
                 self.fields['subtipo_servico'].queryset = SubtipoServicoOS.objects.filter(

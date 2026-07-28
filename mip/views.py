@@ -22,7 +22,7 @@ from .forms import (
     MonitoramentoMIPForm, PragaNoMonitoramentoForm,
     PontoMonitoramentoForm, EstagioDesenvolvimentoForm
 )
-from cadastros.models import Praga, Talhao, Safra
+from cadastros.models import Praga, Talhao, Safra, SafraCultura
 
 
 # ============================================================================
@@ -214,6 +214,47 @@ def monitoramento_mip_create(request):
 
 
 @login_required
+def monitoramento_mip_update(request, pk):
+    empresa = request.user.empresa
+    monitoramento = get_object_or_404(MonitoramentoMIP, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = MonitoramentoMIPForm(
+            request.POST, request.FILES,
+            instance=monitoramento, user=request.user, empresa=empresa
+        )
+        if form.is_valid():
+            try:
+                monitoramento = form.save(commit=False)
+
+                if monitoramento.talhao and not monitoramento.cultura:
+                    culturas_safra = list(monitoramento.safra.culturas.all()) if monitoramento.safra else []
+                    if len(culturas_safra) == 1:
+                        monitoramento.cultura = culturas_safra[0].cultura
+                    elif monitoramento.talhao.cultura_atual:
+                        monitoramento.cultura = monitoramento.talhao.cultura_atual
+
+                monitoramento.save()
+
+                messages.success(request, f'✅ Monitoramento {monitoramento.numero} atualizado com sucesso!')
+                return redirect('mip:monitoramento_mip_detail', pk=monitoramento.pk)
+            except Exception as e:
+                messages.error(request, f'❌ Erro ao atualizar monitoramento: {str(e)}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'❌ {field}: {error}')
+    else:
+        form = MonitoramentoMIPForm(instance=monitoramento, user=request.user, empresa=empresa)
+
+    return render(request, 'cadastros/monitoramento_mip/monitoramento_mip_form.html', {
+        'form': form,
+        'monitoramento': monitoramento,
+        'titulo': f'Editar Monitoramento {monitoramento.numero}',
+    })
+
+
+@login_required
 def monitoramento_mip_detail(request, pk):
     empresa = request.user.empresa
     monitoramento = get_object_or_404(MonitoramentoMIP, pk=pk, empresa=empresa)
@@ -233,6 +274,64 @@ def monitoramento_mip_detail(request, pk):
         'total_pragas': total_pragas,
         'pragas_recomenda_defensivo': pragas_recomenda_defensivo,
     })
+
+
+@login_required
+def monitoramento_mip_gerar_os(request, pk):
+    """
+    Cria uma OS pré-preenchida (talhão, safra, cultura da safra, responsável)
+    a partir deste monitoramento e encaminha para a edição da OS, onde o
+    usuário completa o tipo de serviço/operação (ex: Pulverização) antes de
+    salvar definitivamente.
+    """
+    empresa = request.user.empresa
+    monitoramento = get_object_or_404(MonitoramentoMIP, pk=pk, empresa=empresa)
+
+    if request.method != 'POST':
+        return redirect('mip:monitoramento_mip_detail', pk=pk)
+
+    if monitoramento.os_id:
+        messages.info(request, f'Este monitoramento já possui a OS {monitoramento.os.numero} vinculada.')
+        return redirect('mip:monitoramento_mip_detail', pk=pk)
+
+    from operacoes_campo.models import OrdemServico
+
+    safra_cultura = None
+    if monitoramento.safra_id and monitoramento.cultura_id:
+        safra_cultura = SafraCultura.objects.filter(
+            safra_id=monitoramento.safra_id, cultura_id=monitoramento.cultura_id
+        ).first()
+
+    pragas_recomendadas = monitoramento.pragas_detectadas.filter(
+        resultado_acao='RECOMENDA_DEFENSIVO'
+    ).select_related('praga')
+
+    observacoes = f'OS gerada a partir do Monitoramento MIP {monitoramento.numero}.'
+    if pragas_recomendadas.exists():
+        nomes = ', '.join(p.praga.nome_comum for p in pragas_recomendadas)
+        observacoes += f' Pragas com recomendação de defensivo: {nomes}.'
+
+    nova_os = OrdemServico.objects.create(
+        empresa=empresa,
+        talhao=monitoramento.talhao,
+        safra=monitoramento.safra,
+        safra_cultura=safra_cultura,
+        responsavel=monitoramento.responsavel,
+        solicitante=request.user,
+        data_prevista=timezone.now().date(),
+        observacoes=observacoes,
+        cadastrado_por=request.user,
+    )
+
+    monitoramento.os = nova_os
+    monitoramento.save(update_fields=['os'])
+
+    messages.success(
+        request,
+        f'OS {nova_os.numero} criada a partir do monitoramento {monitoramento.numero}. '
+        'Complete o tipo de serviço e demais dados antes de salvar.'
+    )
+    return redirect('operacoes_campo:os_update', pk=nova_os.pk)
 
 
 @login_required
@@ -469,7 +568,7 @@ def monitoramento_mip_pdf(request, pk):
     info_data = [
         ['Talhão:', monitoramento.talhao.nome if monitoramento.talhao else '-'],
         ['Cultura:', str(monitoramento.cultura) if monitoramento.cultura else '-'],
-        ['Responsável:', monitoramento.responsavel.get_full_name() if monitoramento.responsavel else '-'],
+        ['Responsável:', monitoramento.responsavel.nome_completo if monitoramento.responsavel else '-'],
         ['Data:', monitoramento.data_monitoramento.strftime('%d/%m/%Y')],
         ['Status:', monitoramento.get_status_display()],
     ]
@@ -729,6 +828,55 @@ def ajax_buscar_talhoes(request):
         })
 
     return JsonResponse({'talhoes': resultado})
+
+
+@login_required
+def ajax_culturas_por_safra(request):
+    """
+    Retorna as culturas (SafraCultura) atribuídas a uma safra, para preencher
+    o campo Cultura ao escolher a Safra no formulário de Monitoramento MIP.
+    GET ?safra_id=<id>
+    """
+    empresa = request.user.empresa
+    safra_id = request.GET.get('safra_id')
+
+    if not safra_id:
+        return JsonResponse({'culturas': []})
+
+    culturas = list(
+        SafraCultura.objects.filter(
+            safra_id=safra_id, safra__fazenda__empresa=empresa,
+            status__in=['PLANEJADA', 'EM_ANDAMENTO'],
+        ).select_related('cultura').order_by('cultura__nome')
+    )
+    return JsonResponse({
+        'culturas': [{'id': sc.cultura_id, 'nome': sc.cultura.nome} for sc in culturas]
+    })
+
+
+@login_required
+def ajax_talhoes_por_safra_cultura(request):
+    """
+    Retorna os talhões atribuídos à combinação Safra + Cultura (definidos no
+    cadastro da safra), para preencher o campo Talhão do Monitoramento MIP.
+    GET ?safra_id=<id>&cultura_id=<id>
+    """
+    empresa = request.user.empresa
+    safra_id = request.GET.get('safra_id')
+    cultura_id = request.GET.get('cultura_id')
+
+    if not safra_id or not cultura_id:
+        return JsonResponse({'talhoes': []})
+
+    try:
+        sc = SafraCultura.objects.get(
+            safra_id=safra_id, cultura_id=cultura_id, safra__fazenda__empresa=empresa
+        )
+    except SafraCultura.DoesNotExist:
+        return JsonResponse({'talhoes': []})
+
+    talhoes = list(sc.talhoes.filter(ativo=True).values('id', 'nome', 'codigo').order_by('codigo'))
+    return JsonResponse({'talhoes': talhoes})
 
 
 @login_required

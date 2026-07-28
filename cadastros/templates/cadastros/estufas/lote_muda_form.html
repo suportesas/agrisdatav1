@@ -71,11 +71,6 @@
                 {{ form.responsavel }}
                 {% if form.responsavel.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.responsavel.errors|striptags }}</div>{% endif %}
               </div>
-              <div class="field col-4">
-                <label class="form-label">Status<span class="req">*</span></label>
-                {{ form.status }}
-                {% if form.status.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.status.errors|striptags }}</div>{% endif %}
-              </div>
               <div class="field col-12">
                 <label class="form-label">Observações</label>
                 {{ form.observacoes }}

@@ -358,7 +358,9 @@ def dashboard_estufas(request):
 
     total_lotes = LoteMuda.objects.filter(empresa=empresa).count()
     lotes_prontos = LoteMuda.objects.filter(empresa=empresa, status='PRONTO').count()
-    total_transplantados = OSTransplantio.objects.filter(os__empresa=empresa).aggregate(
+    total_transplantados = OSTransplantio.objects.filter(
+        os__empresa=empresa, os__status__in=['EM_ANDAMENTO', 'CONCLUIDA'],
+    ).aggregate(
         t=Sum('quantidade_transplantada'),
     )['t'] or 0
 

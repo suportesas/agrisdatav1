@@ -6,6 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator, FileExt
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
+from datetime import timedelta
 
 
 # ============================================================================
@@ -1105,6 +1106,74 @@ class RegistroCadernoCampoFuncionario(models.Model):
 
     def __str__(self):
         return f"{self.funcionario} — {self.horas_trabalhadas or '—'} h"
+
+
+def proximo_numero_corte(talhao, safra=None, excluir_pk=None):
+    """
+    Calcula o próximo número de corte de colheita para o talhão informado,
+    contando as OS de Colheita já registradas (excluindo canceladas) — 1º, 2º,
+    3º corte etc. do mesmo ciclo (cana-de-açúcar, forragens etc.).
+
+    Escopo por safra quando informada, para não somar cortes de ciclos/safras
+    diferentes. `excluir_pk` descarta a própria OS ao recalcular numa edição.
+    """
+    qs = OrdemServico.objects.filter(talhao=talhao, tipo='COLHEITA').exclude(status='CANCELADA')
+    if safra:
+        qs = qs.filter(safra=safra)
+    if excluir_pk:
+        qs = qs.exclude(pk=excluir_pk)
+    return qs.count() + 1
+
+
+def verificar_carencia_defensivos(talhao, safra=None):
+    """
+    Verifica, a partir do Caderno de Campo, se há aplicação de defensivo no talhão
+    cuja carência (período entre aplicação e colheita) ainda não foi cumprida.
+
+    Retorna uma lista de pendências (dicts com produto/data_aplicacao/carencia_dias/
+    data_liberacao/dias_restantes), ordenada da mais restritiva para a menos restritiva.
+    Lista vazia = apto para colheita.
+    """
+    from produtos.models import ProdutoDefensivoCultura
+
+    hoje = timezone.now().date()
+
+    cultura = None
+    if safra:
+        safra_cultura = safra.culturas.filter(talhoes=talhao).select_related('cultura').first()
+        if safra_cultura:
+            cultura = safra_cultura.cultura
+
+    registros = RegistroCadernoCampo.objects.filter(
+        talhao=talhao, tipo_atividade='APLICACAO_DEFENSIVO',
+    ).prefetch_related('insumos_utilizados__produto')
+    if safra:
+        registros = registros.filter(safra=safra)
+
+    pendencias = []
+    for registro in registros:
+        for insumo in registro.insumos_utilizados.all():
+            carencia_dias = insumo.carencia_dias
+            if not carencia_dias and cultura:
+                carencia_dias = ProdutoDefensivoCultura.objects.filter(
+                    produto=insumo.produto, cultura=cultura
+                ).aggregate(models.Max('carencia'))['carencia__max']
+            if not carencia_dias:
+                carencia_dias = insumo.produto.periodo_carencia
+            if not carencia_dias:
+                continue
+
+            data_liberacao = registro.data_atividade + timedelta(days=carencia_dias)
+            if data_liberacao > hoje:
+                pendencias.append({
+                    'produto': insumo.produto,
+                    'data_aplicacao': registro.data_atividade,
+                    'carencia_dias': carencia_dias,
+                    'data_liberacao': data_liberacao,
+                    'dias_restantes': (data_liberacao - hoje).days,
+                })
+
+    return sorted(pendencias, key=lambda p: p['data_liberacao'], reverse=True)
 
 
 # ============================================================================

@@ -828,6 +828,8 @@ const TIPOS_COM_CORTE = ['COLHEITA'];
 const divPoco = document.getElementById('div_poco');
 const divNumeroCorte = document.getElementById('div_numero_corte');
 const AJAX_TIPO_LEGADO_URL = "{% url 'operacoes_campo:os_ajax_opcoes_servico' %}";
+const AJAX_NUMERO_CORTE_URL = "{% url 'operacoes_campo:os_ajax_numero_corte' %}";
+const OS_INSTANCE_ID = "{{ form.instance.pk|default:'' }}";
 
 function togglePoco(tipoLegado) {
   if (!divPoco) return;
@@ -845,9 +847,25 @@ function toggleNumeroCorte(tipoLegado) {
   if (corteInput && !mostrar) corteInput.value = '';
 }
 
+// Número do Corte é sempre calculado no servidor ao salvar (OrdemServicoForm.clean);
+// esta chamada só alimenta o preview em tela conforme talhão/safra escolhidos.
+function atualizarNumeroCorte() {
+  const corteInput = document.getElementById('id_numero_corte');
+  if (!corteInput || !divNumeroCorte || divNumeroCorte.style.display === 'none') return;
+  if (!talhaoSelect || !talhaoSelect.value) { corteInput.value = ''; return; }
+  let url = AJAX_NUMERO_CORTE_URL + '?talhao_id=' + talhaoSelect.value;
+  if (safraSelect && safraSelect.value) url += '&safra_id=' + safraSelect.value;
+  if (OS_INSTANCE_ID) url += '&os_id=' + OS_INSTANCE_ID;
+  fetch(url)
+    .then(r => r.json())
+    .then(data => { corteInput.value = data.numero_corte || ''; })
+    .catch(() => {});
+}
+
 function aplicarTipoLegado(tipoLegado) {
   togglePoco(tipoLegado);
   toggleNumeroCorte(tipoLegado);
+  atualizarNumeroCorte();
 }
 
 // Ao mudar tipo_servico, busca o tipo_legado para decidir exibição
@@ -966,6 +984,7 @@ if (talhaoSelect) {
   // nível do jQuery, sem chegar a um addEventListener nativo — por isso o
   // listener precisa ser registrado com $(...).on(), não addEventListener.
   $(talhaoSelect).on('change', function () { carregarSafrasTalhao(this.value, '', ''); });
+  $(talhaoSelect).on('change', atualizarNumeroCorte);
   const safraAtual = safraSelect ? safraSelect.value : '';
   const culturaAtual = safraCulturaSelect ? safraCulturaSelect.value : '';
   if (talhaoSelect.value) carregarSafrasTalhao(talhaoSelect.value, safraAtual, culturaAtual);
@@ -975,6 +994,7 @@ if (safraSelect) {
   // Troca manual da Safra (sem talhão definido ainda): mostra todas as
   // culturas dessa safra, sem restringir a nenhum talhão específico.
   safraSelect.addEventListener('change', function () { carregarCulturasPorSafra(this.value, '', false); });
+  safraSelect.addEventListener('change', atualizarNumeroCorte);
 }
 
 // ── Ao escolher a Cultura da Safra: preenche Cultura Atual e sugere/filtra o Talhão ──

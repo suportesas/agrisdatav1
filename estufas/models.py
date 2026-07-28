@@ -95,7 +95,13 @@ class LoteMuda(models.Model):
 
     @property
     def quantidade_transplantada(self):
-        return self.transplantios.aggregate(t=models.Sum('quantidade_transplantada'))['t'] or 0
+        """
+        Só conta transplantios de OS que realmente entraram em execução — enquanto a OS
+        está apenas ABERTA/APROVADA, a muda ainda não saiu de fato do lote.
+        """
+        return self.transplantios.filter(
+            os__status__in=['EM_ANDAMENTO', 'CONCLUIDA']
+        ).aggregate(t=models.Sum('quantidade_transplantada'))['t'] or 0
 
     @property
     def quantidade_disponivel(self):

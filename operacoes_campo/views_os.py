@@ -23,6 +23,7 @@ from .models import (
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
     EtapaColheita, PushSubscriptionCampo, OSIntervalo,
     OSTransplantio, OSReplantio, OSFuncionario, OSMaquina,
+    proximo_numero_corte,
 )
 from cadastros.models import Talhao, Safra, SafraCultura
 from .forms import (
@@ -767,19 +768,30 @@ def os_create(request):
         precisa_transplantio = subtipo_legado == SUBTIPO_LEGADO_TRANSPLANTE
         precisa_replantio = subtipo_legado == SUBTIPO_LEGADO_REPLANTIO
 
+        form_valido = form.is_valid()
+
         extras_validos = True
         if precisa_transplantio and not transplantio_form.data.get('transplantio-lote_muda'):
             transplantio_form.add_error('lote_muda', 'Selecione o lote de mudas para o transplantio.')
             extras_validos = False
         elif precisa_transplantio and not transplantio_form.is_valid():
             extras_validos = False
+        elif precisa_transplantio and form_valido:
+            lote_muda = transplantio_form.cleaned_data.get('lote_muda')
+            safra_cultura = form.cleaned_data.get('safra_cultura')
+            if lote_muda and safra_cultura and lote_muda.cultura_id != safra_cultura.cultura_id:
+                transplantio_form.add_error('lote_muda', (
+                    f'A muda selecionada é de {lote_muda.cultura.nome}, mas a cultura da '
+                    f'safra escolhida é {safra_cultura.cultura.nome}.'
+                ))
+                extras_validos = False
         if precisa_replantio and not replantio_form.data.get('replantio-quantidade'):
             replantio_form.add_error('quantidade', 'Informe a quantidade replantada.')
             extras_validos = False
         elif precisa_replantio and not replantio_form.is_valid():
             extras_validos = False
 
-        if form.is_valid() and func_formset.is_valid() and maq_formset.is_valid() and extras_validos:
+        if form_valido and func_formset.is_valid() and maq_formset.is_valid() and extras_validos:
             os_obj = form.save(commit=False)
             os_obj.empresa = empresa
             os_obj.solicitante = request.user
@@ -1367,19 +1379,30 @@ def os_update(request, pk):
         precisa_transplantio = subtipo_legado == SUBTIPO_LEGADO_TRANSPLANTE
         precisa_replantio = subtipo_legado == SUBTIPO_LEGADO_REPLANTIO
 
+        form_valido = form.is_valid()
+
         extras_validos = True
         if precisa_transplantio and not transplantio_form.data.get('transplantio-lote_muda') and not transplantio_instance:
             transplantio_form.add_error('lote_muda', 'Selecione o lote de mudas para o transplantio.')
             extras_validos = False
         elif precisa_transplantio and not transplantio_form.is_valid():
             extras_validos = False
+        elif precisa_transplantio and form_valido:
+            lote_muda = transplantio_form.cleaned_data.get('lote_muda')
+            safra_cultura = form.cleaned_data.get('safra_cultura')
+            if lote_muda and safra_cultura and lote_muda.cultura_id != safra_cultura.cultura_id:
+                transplantio_form.add_error('lote_muda', (
+                    f'A muda selecionada é de {lote_muda.cultura.nome}, mas a cultura da '
+                    f'safra escolhida é {safra_cultura.cultura.nome}.'
+                ))
+                extras_validos = False
         if precisa_replantio and not replantio_form.data.get('replantio-quantidade') and not replantio_instance:
             replantio_form.add_error('quantidade', 'Informe a quantidade replantada.')
             extras_validos = False
         elif precisa_replantio and not replantio_form.is_valid():
             extras_validos = False
 
-        if form.is_valid() and func_formset.is_valid() and maq_formset.is_valid() and extras_validos:
+        if form_valido and func_formset.is_valid() and maq_formset.is_valid() and extras_validos:
             form.save()
             func_formset.save()
             maq_formset.save()
@@ -1499,6 +1522,19 @@ def os_iniciar(request, pk):
                         'Encerre o cultivo atual antes de iniciar um novo plantio.'
                     )
                     return redirect('operacoes_campo:os_detail', pk=pk)
+
+                subtipo_legado = os_obj.subtipo_servico.subtipo_legado if os_obj.subtipo_servico_id else ''
+                transplantio = getattr(os_obj, 'transplantio', None)
+                if subtipo_legado == SUBTIPO_LEGADO_TRANSPLANTE and transplantio:
+                    if transplantio.quantidade_transplantada > transplantio.lote_muda.quantidade_disponivel:
+                        messages.error(
+                            request,
+                            f'O lote {transplantio.lote_muda.codigo_lote} não tem mais '
+                            f'{transplantio.quantidade_transplantada} mudas disponíveis — outra OS pode '
+                            'ter consumido o saldo enquanto esta ficava em aberto. Ajuste a quantidade '
+                            'do transplantio antes de iniciar.'
+                        )
+                        return redirect('operacoes_campo:os_detail', pk=pk)
 
             os_obj.status = 'EM_ANDAMENTO'
             os_obj.data_inicio = timezone.now()
@@ -1948,6 +1984,36 @@ def ajax_talhoes_por_safra_cultura(request):
 
     talhoes = list(sc.talhoes.filter(ativo=True).values('id', 'nome', 'codigo').order_by('codigo'))
     return JsonResponse({'talhoes': talhoes})
+
+
+@login_required
+def ajax_numero_corte(request):
+    """
+    Prévia do próximo Número do Corte para uma OS de Colheita: conta as OS de
+    Colheita já registradas para o talhão (e safra, se informada) e retorna
+    contagem + 1. O valor final é sempre recalculado no servidor ao salvar
+    (OrdemServicoForm.clean); este endpoint só alimenta o preview em tela.
+    GET ?talhao_id=<id>&safra_id=<id opcional>&os_id=<id opcional, para edição>
+    """
+    empresa = request.user.empresa
+    talhao_id = request.GET.get('talhao_id')
+    safra_id = request.GET.get('safra_id')
+    os_id = request.GET.get('os_id')
+
+    if not talhao_id:
+        return JsonResponse({'numero_corte': None})
+
+    try:
+        talhao = Talhao.objects.get(pk=talhao_id, empresa=empresa)
+    except Talhao.DoesNotExist:
+        return JsonResponse({'numero_corte': None})
+
+    safra = None
+    if safra_id:
+        safra = Safra.objects.filter(pk=safra_id, fazenda__empresa=empresa).first()
+
+    numero_corte = proximo_numero_corte(talhao, safra, excluir_pk=os_id or None)
+    return JsonResponse({'numero_corte': numero_corte})
 
 
 @login_required

@@ -61,7 +61,7 @@ def ajax_buscar_veiculos(request):
             Q(marca__icontains=q) | Q(modelo__icontains=q) | Q(descricao__icontains=q) |
             Q(plates__placa__icontains=q)
         ).distinct()
-    qs = qs.order_by('marca', 'modelo')
+    qs = qs.order_by('descricao', 'modelo')
 
     def serialize(v):
         return {'id': v.pk, 'text': str(v)}

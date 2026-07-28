@@ -44,7 +44,7 @@ class LoteMudaForm(forms.ModelForm):
         model = LoteMuda
         fields = [
             'estufa', 'cultura', 'cultivar', 'lote_semente', 'data_semeadura',
-            'quantidade_semeada', 'data_prevista_pronto', 'status', 'responsavel', 'observacoes',
+            'quantidade_semeada', 'data_prevista_pronto', 'responsavel', 'observacoes',
         ]
         widgets = {
             'estufa': forms.Select(attrs={'class': 'form-select'}),
@@ -54,7 +54,6 @@ class LoteMudaForm(forms.ModelForm):
             'data_semeadura': DateBRInput(attrs={'class': 'form-control'}),
             'quantidade_semeada': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Total de sementes'}),
             'data_prevista_pronto': DateBRInput(attrs={'class': 'form-control'}),
-            'status': forms.Select(attrs={'class': 'form-select'}),
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
@@ -116,8 +115,12 @@ class AplicacaoEstufaForm(forms.ModelForm):
             self.fields[f].required = False
         if self.user and self.user.empresa:
             self.fields['responsavel'].queryset = Funcionario.objects.filter(empresa=self.user.empresa, ativo=True)
+            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=self.user.empresa, ativo=True).order_by('nome')
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=self.user.empresa).order_by('nome')
         else:
             self.fields['responsavel'].queryset = Funcionario.objects.none()
+            self.fields['produto'].queryset = Produto.objects.none()
+            self.fields['unidade_medida'].queryset = UnidadeMedida.objects.none()
 
 
 class MonitoramentoEstufaForm(forms.ModelForm):

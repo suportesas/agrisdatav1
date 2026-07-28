@@ -17,6 +17,7 @@ from .models import (
     PlanejamentoCustoItemIndireto, FormacaoPreco,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
     OSTransplantio, OSReplantio,
+    verificar_carencia_defensivos, proximo_numero_corte,
 )
 
 
@@ -43,7 +44,7 @@ class OrdemServicoForm(forms.ModelForm):
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'data_prevista': DateBRInput(attrs={'class': 'form-control'}),
             'area_executada_ha': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.0001', 'placeholder': 'Ex: 2.5000'}),
-            'numero_corte': forms.NumberInput(attrs={'class': 'form-control', 'step': '1', 'min': '1', 'placeholder': 'Ex: 1'}),
+            'numero_corte': forms.NumberInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'placeholder': 'Calculado automaticamente'}),
             'fornecedor_servico': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
             'valor_servico_externo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'unidade_cobranca': forms.Select(attrs={'class': 'form-select'}),
@@ -134,6 +135,55 @@ class OrdemServicoForm(forms.ModelForm):
         valor = cleaned_data.get('valor_servico_externo')
         if fornecedor and not valor:
             self.add_error('valor_servico_externo', 'Informe o valor do serviço externo.')
+
+        talhao = cleaned_data.get('talhao')
+        if tipo_servico and (tipo_servico.tipo_legado or '') == 'COLHEITA' and talhao:
+            if talhao.status not in ('PLANTADO', 'COLHEITA'):
+                self.add_error('talhao', (
+                    f"O talhão {talhao.nome} não está apto para colheita "
+                    f"(status atual: {talhao.get_status_display()}). "
+                    "Só é possível abrir OS de colheita para talhões com cultivo ativo "
+                    "(Plantado ou Em Colheita)."
+                ))
+
+            pendencias = verificar_carencia_defensivos(talhao, cleaned_data.get('safra'))
+            if pendencias:
+                pior = pendencias[0]
+                self.add_error(None, (
+                    f"Não é possível abrir OS de colheita: o prazo de carência do defensivo "
+                    f"\"{pior['produto'].nome}\" aplicado em {pior['data_aplicacao'].strftime('%d/%m/%Y')} "
+                    f"no talhão {talhao.nome} ainda não foi cumprido. Libera em "
+                    f"{pior['data_liberacao'].strftime('%d/%m/%Y')} (faltam {pior['dias_restantes']} dia(s))."
+                ))
+
+            # Número do corte é sempre calculado pelo sistema, nunca digitado.
+            cleaned_data['numero_corte'] = proximo_numero_corte(
+                talhao, cleaned_data.get('safra'), excluir_pk=self.instance.pk
+            )
+
+        if (
+            subtipo_servico and (subtipo_servico.subtipo_legado or '') == 'TRANSPLANTE'
+            and talhao and self.instance.status not in ('EM_ANDAMENTO', 'CONCLUIDA')
+        ):
+            safra_cultura = cleaned_data.get('safra_cultura')
+            # Talhão RESERVADO para a própria safra_cultura escolhida nesta OS é o caso
+            # normal de transplantio (reserva feita ao vincular o talhão à safra) — não
+            # é "outro uso" da reserva, então não deve ser bloqueado.
+            reservado_para_esta_safra = (
+                talhao.status == 'RESERVADO'
+                and safra_cultura is not None
+                and talhao.culturas_safra.filter(pk=safra_cultura.pk).exists()
+            )
+            apto = talhao.ativo and talhao.pronto_para_plantio and (
+                talhao.status in ('DISPONIVEL', 'DESCANSO') or reservado_para_esta_safra
+            )
+            if not apto:
+                self.add_error('talhao', (
+                    f"O talhão {talhao.nome} não está apto para receber um novo plantio "
+                    f"(status atual: {talhao.get_status_display()}). É necessário estar "
+                    "Disponível, Em Descanso ou Reservado para esta mesma safra, "
+                    "ativo e pronto para plantio."
+                ))
         return cleaned_data
 
 

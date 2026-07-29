@@ -237,7 +237,7 @@
                 {% for ordem in ordens_embalagem %}
                 <tr>
                   <td><strong>{{ ordem.numero }}</strong></td>
-                  <td>{{ ordem.tipo_embalagem|default:"—" }}</td>
+                  <td>{% for t in ordem.tipos_embalagem.all %}{{ t.nome }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
                   <td>{{ ordem.quantidade_entrada_kg|floatformat:"1g" }}</td>
                   <td><span class="badge bg-light text-dark">{{ ordem.get_status_display }}</span></td>
                   <td>{{ ordem.pallets.count }}</td>

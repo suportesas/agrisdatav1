@@ -1,6 +1,5 @@
 import io
 import json
-import math
 from decimal import Decimal
 
 from django.contrib import messages
@@ -18,8 +17,8 @@ from core.barcode_utils import barcode_b64 as _barcode_b64
 from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
 from .forms import (
-    CargaFreteForm, ItemPalletForm, OrdemEmbalagemForm, RomaneioVendaForm, TipoEmbalagemForm,
-    TrocarClienteRomaneioForm,
+    CargaFreteForm, GerarPalletsForm, ItemPalletForm, OrdemEmbalagemForm, RomaneioVendaForm,
+    TipoEmbalagemForm, TrocarClienteRomaneioForm,
 )
 from .models import (
     CargaFrete, CargaFreteError, ItemPallet, ItemRomaneioVenda, OrdemEmbalagem, PalletEmbalado,
@@ -42,7 +41,7 @@ def embalagem_dashboard(request):
     ordens_abertas = OrdemEmbalagem.objects.filter(empresa=empresa, status__in=['ABERTA', 'EM_ANDAMENTO']).count()
     romaneios_rascunho = RomaneioVenda.objects.filter(empresa=empresa, status='RASCUNHO').count()
     romaneios_confirmados = RomaneioVenda.objects.filter(empresa=empresa, status__in=['CONFIRMADO', 'CARREGANDO']).count()
-    ultimas_ordens = OrdemEmbalagem.objects.filter(empresa=empresa).select_related('tipo_embalagem').order_by('-criado_em')[:4]
+    ultimas_ordens = OrdemEmbalagem.objects.filter(empresa=empresa).prefetch_related('tipos_embalagem').order_by('-criado_em')[:4]
     ultimos_romaneios = RomaneioVenda.objects.filter(empresa=empresa).select_related('cliente').order_by('-criado_em')[:4]
     return render(request, 'embalagem/dashboard.html', {
         'fluxo': {
@@ -117,7 +116,7 @@ def tipo_embalagem_update(request, pk):
 @login_required
 def ordem_list(request):
     empresa = _get_empresa(request)
-    qs = OrdemEmbalagem.objects.filter(empresa=empresa).select_related('tipo_embalagem', 'lote_origem__produto')
+    qs = OrdemEmbalagem.objects.filter(empresa=empresa).select_related('lote_origem__produto').prefetch_related('tipos_embalagem')
     q = request.GET.get('q', '')
     status_f = request.GET.get('status', '')
     data_ini = request.GET.get('data_ini', '')
@@ -150,6 +149,7 @@ def ordem_create(request):
                 ordem.numero = OrdemEmbalagem._gerar_numero(empresa)
                 ordem.criado_por = request.user
                 ordem.save()
+                form.save_m2m()
             messages.success(request, f'Ordem {ordem.numero} criada.')
             return redirect('embalagem:ordem_detail', pk=ordem.pk)
     else:
@@ -164,9 +164,26 @@ def ordem_detail(request, pk):
     empresa = _get_empresa(request)
     ordem = get_object_or_404(OrdemEmbalagem, pk=pk, empresa=empresa)
     pallets = ordem.pallets.select_related('armazem').order_by('numero_sequencial')
+    tipos = list(ordem.tipos_embalagem.all().order_by('nome'))
+    tipos_resumo = [
+        {'tipo': te, 'sugestao': ordem.pallets_possiveis(te)}
+        for te in tipos
+    ]
+    tipos_info = {
+        te.pk: {
+            'peso_liquido_pallet': float(te.peso_liquido_pallet),
+            'sugestao': ordem.pallets_possiveis(te),
+        }
+        for te in tipos
+    }
     return render(request, 'embalagem/ordem/detail.html', {
         'ordem': ordem,
         'pallets': pallets,
+        'tipos_embalagem': tipos,
+        'tipos_resumo': tipos_resumo,
+        'gerar_pallets_form': GerarPalletsForm(ordem=ordem),
+        'tipos_info_json': json.dumps(tipos_info),
+        'item_pallet_form': ItemPalletForm(ordem=ordem, auto_id='id_misto_%s'),
     })
 
 
@@ -180,11 +197,16 @@ def ordem_gerar_pallets(request, pk):
         messages.error(request, 'Ordem cancelada não pode gerar pallets.')
         return redirect('embalagem:ordem_detail', pk=pk)
 
-    if ordem.pallets.exists():
-        messages.warning(request, 'Esta ordem já possui pallets gerados.')
+    form = GerarPalletsForm(request.POST, ordem=ordem)
+    if not form.is_valid():
+        for erros in form.errors.values():
+            for erro in erros:
+                messages.error(request, erro)
         return redirect('embalagem:ordem_detail', pk=pk)
 
-    te = ordem.tipo_embalagem
+    te = form.cleaned_data['tipo_embalagem']
+    n_pallets = form.cleaned_data['n_pallets']
+
     peso_liq_pallet = te.peso_liquido_pallet
     if not peso_liq_pallet:
         messages.error(request, 'Tipo de embalagem inválido (peso zero).')
@@ -194,17 +216,13 @@ def ordem_gerar_pallets(request, pk):
         messages.error(request, f'Tipo de embalagem "{te.nome}" não tem produto configurado — associe um produto antes de gerar pallets.')
         return redirect('embalagem:ordem_detail', pk=pk)
 
-    n_pallets = int(math.floor(float(ordem.quantidade_entrada_kg) / float(peso_liq_pallet)))
-    if n_pallets < 1:
-        messages.error(request, 'Quantidade insuficiente para gerar pelo menos 1 pallet.')
-        return redirect('embalagem:ordem_detail', pk=pk)
-
     hoje = timezone.now().date()
     from django.core.exceptions import ValidationError
     from estoque.services import criar_movimentacao
     try:
         with transaction.atomic():
-            for seq in range(1, n_pallets + 1):
+            seq_inicial = ordem.pallets.count() + 1
+            for seq in range(seq_inicial, seq_inicial + n_pallets):
                 codigo = PalletEmbalado._gerar_codigo(empresa, hoje, safra=ordem.safra)
                 PalletEmbalado.objects.create(
                     empresa=empresa,
@@ -219,12 +237,11 @@ def ordem_gerar_pallets(request, pk):
                     armazem=ordem.armazem_destino,
                     local_estocagem=ordem.local_destino,
                     status='DISPONIVEL',
+                    estoque_baixado=True,
                 )
 
             # Baixa o lote de matéria-prima a granel na quantidade efetivamente
-            # empacotada (n_pallets * peso líquido do pallet), não em
-            # `quantidade_entrada_kg`, que pode ser maior por causa do
-            # arredondamento por baixo (math.floor) acima.
+            # empacotada (n_pallets * peso líquido do pallet) deste tipo.
             quantidade_empacotada = Decimal(n_pallets) * Decimal(peso_liq_pallet)
             criar_movimentacao(
                 empresa=empresa,
@@ -234,7 +251,7 @@ def ordem_gerar_pallets(request, pk):
                 usuario=request.user,
                 lote=ordem.lote_origem,
                 documento=ordem.numero,
-                observacao=f'Baixa por embalagem — Ordem {ordem.numero} ({n_pallets} pallets).',
+                observacao=f'Baixa por embalagem — Ordem {ordem.numero} ({n_pallets} pallets de {te.nome}).',
             )
 
             # Entrada em estoque do produto acabado (pallets gerados)
@@ -244,13 +261,13 @@ def ordem_gerar_pallets(request, pk):
                 produto=te.produto,
                 armazem=ordem.armazem_destino,
                 local_estocagem=ordem.local_destino,
-                numero_lote=f"EMB-{ordem.numero}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                numero_lote=f"EMB-{ordem.numero}-{te.pk}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
                 data_fabricacao=hoje,
                 quantidade_inicial=total_caixas,
                 quantidade_atual=total_caixas,
                 unidade_medida=te.produto.unidade_venda,
                 status='DISPONIVEL',
-                observacoes=f'Produto acabado da Ordem de Embalagem {ordem.numero} ({n_pallets} pallets).',
+                observacoes=f'Produto acabado da Ordem de Embalagem {ordem.numero} ({n_pallets} pallets de {te.nome}).',
                 cadastrado_por=request.user,
             )
             MovimentacaoEstoque.objects.create(
@@ -268,13 +285,14 @@ def ordem_gerar_pallets(request, pk):
                 data_execucao=timezone.now(),
             )
 
-            ordem.status = 'CONCLUIDA'
-            ordem.save(update_fields=['status'])
+            if ordem.status == 'ABERTA':
+                ordem.status = 'EM_ANDAMENTO'
+                ordem.save(update_fields=['status'])
     except ValidationError as exc:
         messages.error(request, f'Saldo insuficiente no lote de origem: {"; ".join(exc.messages)}')
         return redirect('embalagem:ordem_detail', pk=pk)
 
-    messages.success(request, f'{n_pallets} pallets gerados com sucesso.')
+    messages.success(request, f'{n_pallets} pallets de {te.nome} gerados com sucesso.')
     return redirect('embalagem:ordem_detail', pk=pk)
 
 
@@ -340,8 +358,8 @@ def _render_etiqueta_pdf(pallets, romaneio=None):
         rom = romaneio
         if not rom:
             item = p.itens_romaneio.select_related(
-                'romaneio__cliente', 'romaneio__booking__armador',
-                'romaneio__booking__navio', 'romaneio__booking__porto_destino',
+                'romaneio__cliente', 'romaneio__booking__solicitacao__armador',
+                'romaneio__booking__solicitacao__navio', 'romaneio__booking__porto_destino',
                 'romaneio__container',
             ).first()
             rom = item.romaneio if item else None
@@ -373,8 +391,8 @@ def pallet_etiqueta_pdf(request, pk):
         pk=pk, empresa=empresa,
     )
     item_rom = pallet.itens_romaneio.select_related(
-        'romaneio__cliente', 'romaneio__booking__armador',
-        'romaneio__booking__navio', 'romaneio__booking__porto_destino',
+        'romaneio__cliente', 'romaneio__booking__solicitacao__armador',
+        'romaneio__booking__solicitacao__navio', 'romaneio__booking__porto_destino',
         'romaneio__container',
     ).first()
     romaneio = item_rom.romaneio if item_rom else None
@@ -408,7 +426,7 @@ def romaneio_etiquetas_pdf(request, pk):
     empresa = _get_empresa(request)
     romaneio = get_object_or_404(
         RomaneioVenda.objects.select_related(
-            'cliente', 'booking__armador', 'booking__navio', 'booking__porto_destino', 'container',
+            'cliente', 'booking__solicitacao__armador', 'booking__solicitacao__navio', 'booking__porto_destino', 'container',
         ),
         pk=pk, empresa=empresa,
     )
@@ -576,7 +594,9 @@ def romaneio_update(request, pk):
 def romaneio_detail(request, pk):
     empresa = _get_empresa(request)
     rom = get_object_or_404(RomaneioVenda, pk=pk, empresa=empresa)
-    itens = rom.itens.select_related('pallet__tipo_embalagem', 'pallet__armazem').order_by('pallet__codigo_pallet')
+    itens = rom.itens.select_related('pallet__tipo_embalagem', 'pallet__armazem').prefetch_related(
+        'pallet__composicao__tipo_embalagem',
+    ).order_by('pallet__codigo_pallet')
     armazens = Armazem.objects.filter(empresa=empresa).order_by('nome')
     return render(request, 'embalagem/romaneio/detail.html', {
         'romaneio': rom,
@@ -618,7 +638,49 @@ def romaneio_gerar_pedido(request, pk):
         messages.error(request, 'Confirme o romaneio antes de gerar o pedido.')
         return redirect('embalagem:romaneio_detail', pk=pk)
 
-    from vendas.models import PedidoVenda, ItemPedidoVenda
+    from vendas.models import PedidoVenda, ItemPedidoVenda, TabelaPreco
+    from produtos.tributacao import resolver_tributacao_venda
+
+    avisos = []
+
+    tipo_venda = 'EXPORTACAO' if rom.tipo == 'EXPORTACAO' else 'MERCADO_INTERNO'
+    moeda_padrao_cliente = (rom.cliente.moeda_padrao or '').strip().upper()
+    moedas_validas = dict(PedidoVenda.MOEDA_CHOICES)
+    if moeda_padrao_cliente in moedas_validas:
+        moeda = moeda_padrao_cliente
+    else:
+        moeda = 'USD' if rom.tipo == 'EXPORTACAO' else 'BRL'
+
+    # Condição/forma de pagamento padrão do cliente — mesma regra usada em
+    # cadastros.views.ajax_dados_cliente para pré-preencher o form manual.
+    if rom.cliente.prazo_pagamento_padrao_id:
+        condicao_pagamento = f"{rom.cliente.prazo_pagamento_padrao.termos} dias"
+    elif rom.cliente.prazo_pagamento:
+        condicao_pagamento = f"{rom.cliente.prazo_pagamento} dias"
+    else:
+        condicao_pagamento = ''
+    forma_pagamento = (
+        rom.cliente.get_forma_pagamento_padrao_display() if rom.cliente.forma_pagamento_padrao else ''
+    )
+    vendedor = rom.cliente.vendedor_responsavel
+
+    # Cotação PTAX do BCB é buscada fora da transação (chamada de rede) —
+    # mesma fonte usada pelo botão "Buscar Cotação BCB" do formulário manual.
+    taxa_cambio = None
+    if moeda != 'BRL':
+        from faturamento.bcb import buscar_cotacoes
+        try:
+            resultado_bcb = buscar_cotacoes(moedas=[moeda])
+            cotacao = resultado_bcb['cotacoes'].get(moeda)
+            if cotacao:
+                taxa_cambio = cotacao['venda']
+        except Exception:
+            pass
+        if taxa_cambio is None:
+            avisos.append(
+                f'Não foi possível obter a cotação BCB para {moeda} automaticamente — '
+                'informe a taxa de câmbio manualmente ao editar o pedido.'
+            )
 
     with transaction.atomic():
         ano = timezone.now().year
@@ -635,9 +697,6 @@ def romaneio_gerar_pedido(request, pk):
             seq = 1
         numero_pv = f'PV-{ano}-{seq:04d}'
 
-        tipo_venda = 'EXPORTACAO' if rom.tipo == 'EXPORTACAO' else 'MERCADO_INTERNO'
-        moeda = 'USD' if rom.tipo == 'EXPORTACAO' else 'BRL'
-
         pedido = PedidoVenda.objects.create(
             empresa=empresa,
             numero=numero_pv,
@@ -646,24 +705,57 @@ def romaneio_gerar_pedido(request, pk):
             status='RASCUNHO',
             tipo_venda=tipo_venda,
             moeda=moeda,
+            taxa_cambio=taxa_cambio,
+            condicao_pagamento=condicao_pagamento,
+            forma_pagamento=forma_pagamento,
+            vendedor=vendedor,
             criado_por=request.user,
         )
 
+        hoje = timezone.now().date()
         for te, totais in _agrupar_itens_por_tipo(rom).items():
+            resultado = resolver_tributacao_venda(te.produto, empresa, rom.cliente, tipo_venda)
+            if resultado.ok:
+                ncm, cfop, tributacao = resultado.ncm_codigo, resultado.cfop_codigo, resultado.tributacao
+            else:
+                ncm, cfop, tributacao = '', '', None
+                avisos.append(resultado.mensagem)
+
+            preco_unitario = Decimal('0')
+            tabelas_vigentes = TabelaPreco.objects.filter(
+                empresa=empresa, produto=te.produto, moeda=moeda, ativo=True,
+                vigencia_inicio__lte=hoje,
+            ).filter(Q(vigencia_fim__isnull=True) | Q(vigencia_fim__gte=hoje))
+            tabela = (
+                tabelas_vigentes.filter(cliente=rom.cliente).first()
+                or tabelas_vigentes.filter(cliente__isnull=True).first()
+            )
+            if tabela:
+                preco_unitario = tabela.preco_unitario
+            else:
+                avisos.append(
+                    f'Sem tabela de preço vigente para "{te.produto.nome}" em {moeda} — preço zerado.'
+                )
+
             ItemPedidoVenda.objects.create(
                 pedido=pedido,
                 produto=te.produto,
                 descricao=te.nome,
+                ncm=ncm,
+                cfop=cfop,
+                tributacao=tributacao,
                 unidade='CX',
                 quantidade=totais['caixas'],
-                preco_unitario=Decimal('0'),
-                preco_total=Decimal('0'),
+                preco_unitario=preco_unitario,
             )
 
         pedido.calcular_total()
+        pedido.save(update_fields=['valor_produtos', 'valor_total'])
         rom.pedido_venda = pedido
         rom.save(update_fields=['pedido_venda'])
 
+    for aviso in avisos:
+        messages.warning(request, aviso)
     messages.success(request, f'Pedido {pedido.numero} criado a partir do romaneio.')
     return redirect('vendas:pedido_detail', pk=pedido.pk)
 
@@ -973,7 +1065,7 @@ def romaneio_conferencia_pdf(request, pk):
     empresa = _get_empresa(request)
     rom = get_object_or_404(
         RomaneioVenda.objects.select_related(
-            'cliente', 'booking__armador', 'booking__navio',
+            'cliente', 'booking__solicitacao__armador', 'booking__solicitacao__navio',
             'booking__porto_destino', 'container', 'empresa',
         ),
         pk=pk, empresa=empresa,
@@ -1025,7 +1117,7 @@ def ajax_pallets_disponiveis(request):
     empresa = _get_empresa(request)
     qs = PalletEmbalado.objects.filter(
         empresa=empresa, status='DISPONIVEL'
-    ).select_related('tipo_embalagem', 'armazem')
+    ).select_related('tipo_embalagem', 'armazem').order_by('codigo_pallet')
 
     tipo_id = request.GET.get('tipo_embalagem')
     armazem_id = request.GET.get('armazem')
@@ -1038,8 +1130,19 @@ def ajax_pallets_disponiveis(request):
     if q:
         qs = qs.filter(codigo_pallet__icontains=q)
 
-    data = [{
-        'pk': p.pk,
+    page = int(request.GET.get('page') or 1)
+    page_size = 20
+    start = (page - 1) * page_size
+    pallets = list(qs[start:start + page_size + 1])
+    has_more = len(pallets) > page_size
+    pallets = pallets[:page_size]
+
+    results = [{
+        'id': p.pk,
+        'text': (
+            f"{p.codigo_pallet} — {p.tipo_embalagem.nome if p.tipo_embalagem else 'Misto'} — "
+            f"{p.quantidade_caixas} cx — {p.peso_liquido_kg:.3f} kg — {p.armazem.nome}"
+        ),
         'codigo_pallet': p.codigo_pallet,
         'tipo_embalagem': p.tipo_embalagem.nome if p.tipo_embalagem else 'Misto',
         'quantidade_caixas': p.quantidade_caixas,
@@ -1047,9 +1150,9 @@ def ajax_pallets_disponiveis(request):
         'peso_liquido_kg': float(p.peso_liquido_kg),
         'armazem': p.armazem.nome,
         'data_embalagem': p.data_embalagem.strftime('%d/%m/%Y'),
-    } for p in qs[:100]]
+    } for p in pallets]
 
-    return JsonResponse({'pallets': data})
+    return JsonResponse({'results': results, 'pagination': {'more': has_more}})
 
 
 @login_required
@@ -1170,12 +1273,13 @@ def ajax_conferir_pallet(request):
 @login_required
 @require_POST
 def pallet_misto_create(request, ordem_pk):
+    """Cria um pallet misto vazio. Chamado via AJAX pelo modal em ordem_detail —
+    a composição é montada ali mesmo, sem navegar para outra página."""
     empresa = _get_empresa(request)
     ordem = get_object_or_404(OrdemEmbalagem, pk=ordem_pk, empresa=empresa)
 
     if ordem.status == 'CANCELADA':
-        messages.error(request, 'Ordem cancelada não pode receber pallets.')
-        return redirect('embalagem:ordem_detail', pk=ordem_pk)
+        return JsonResponse({'erro': 'Ordem cancelada não pode receber pallets.'}, status=400)
 
     hoje = timezone.now().date()
     with transaction.atomic():
@@ -1200,7 +1304,7 @@ def pallet_misto_create(request, ordem_pk):
             ordem.status = 'EM_ANDAMENTO'
             ordem.save(update_fields=['status'])
 
-    return redirect('embalagem:pallet_misto_detail', pk=pallet.pk)
+    return JsonResponse({'ok': True, 'pallet_pk': pallet.pk, 'codigo_pallet': pallet.codigo_pallet})
 
 
 @login_required
@@ -1212,7 +1316,7 @@ def pallet_misto_detail(request, pk):
     return render(request, 'embalagem/pallet/detalhe_misto.html', {
         'pallet': pallet,
         'itens': itens,
-        'form': ItemPalletForm(empresa=empresa),
+        'form': ItemPalletForm(ordem=pallet.ordem_embalagem),
         'capacidade': capacidade,
         'alerta_capacidade': pallet.alerta_capacidade,
     })
@@ -1226,8 +1330,10 @@ def pallet_misto_add_item(request, pk):
 
     if pallet.status != 'DISPONIVEL':
         return JsonResponse({'erro': 'Pallet não pode ser editado neste status.'}, status=400)
+    if pallet.estoque_baixado:
+        return JsonResponse({'erro': 'Pallet já finalizado — a composição não pode mais ser alterada.'}, status=400)
 
-    form = ItemPalletForm(request.POST, empresa=empresa)
+    form = ItemPalletForm(request.POST, ordem=pallet.ordem_embalagem)
     if not form.is_valid():
         return JsonResponse({'erro': str(form.errors)}, status=400)
 
@@ -1262,6 +1368,8 @@ def pallet_misto_add_item(request, pk):
 def pallet_misto_remove_item(request, pk, item_pk):
     empresa = _get_empresa(request)
     pallet = get_object_or_404(PalletEmbalado, pk=pk, empresa=empresa, is_misto=True)
+    if pallet.estoque_baixado:
+        return JsonResponse({'erro': 'Pallet já finalizado — a composição não pode mais ser alterada.'}, status=400)
     item = get_object_or_404(ItemPallet, pk=item_pk, pallet=pallet)
 
     with transaction.atomic():
@@ -1281,3 +1389,91 @@ def pallet_misto_remove_item(request, pk, item_pk):
             if alerta else ''
         ),
     })
+
+
+@login_required
+@require_POST
+def pallet_misto_finalizar(request, pk):
+    """Confirma a composição do pallet misto: baixa o granel de origem (proporcional
+    ao peso de cada item) e dá entrada no estoque do produto acabado de cada tipo usado.
+    Só é feita uma vez — depois disso a composição fica travada."""
+    empresa = _get_empresa(request)
+    pallet = get_object_or_404(PalletEmbalado, pk=pk, empresa=empresa, is_misto=True)
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if pallet.estoque_baixado:
+        if is_ajax:
+            return JsonResponse({'erro': 'Este pallet já foi finalizado.'}, status=400)
+        messages.warning(request, 'Este pallet já foi finalizado.')
+        return redirect('embalagem:pallet_misto_detail', pk=pk)
+
+    itens = list(pallet.composicao.select_related('tipo_embalagem__produto').all())
+    if not itens:
+        if is_ajax:
+            return JsonResponse({'erro': 'Adicione ao menos um item à composição antes de finalizar.'}, status=400)
+        messages.error(request, 'Adicione ao menos um item à composição antes de finalizar.')
+        return redirect('embalagem:pallet_misto_detail', pk=pk)
+
+    ordem = pallet.ordem_embalagem
+    from django.core.exceptions import ValidationError
+    from estoque.services import criar_movimentacao
+    try:
+        with transaction.atomic():
+            for item in itens:
+                te = item.tipo_embalagem
+                if not te.produto_id:
+                    raise ValidationError(f'Tipo de embalagem "{te.nome}" não tem produto configurado.')
+
+                criar_movimentacao(
+                    empresa=empresa,
+                    tipo='SAIDA',
+                    origem='PEDIDO_VENDA',
+                    quantidade=item.peso_liquido_kg,
+                    usuario=request.user,
+                    lote=ordem.lote_origem,
+                    documento=pallet.codigo_pallet,
+                    observacao=f'Baixa por pallet misto {pallet.codigo_pallet} — {item.quantidade_caixas}cx de {te.nome}.',
+                )
+
+                lote_embalado = Lote.objects.create(
+                    empresa=empresa,
+                    produto=te.produto,
+                    armazem=pallet.armazem,
+                    local_estocagem=pallet.local_estocagem,
+                    numero_lote=f"EMB-{pallet.codigo_pallet}-{te.pk}-{timezone.now().strftime('%Y%m%d%H%M%S')}",
+                    data_fabricacao=pallet.data_embalagem,
+                    quantidade_inicial=item.quantidade_caixas,
+                    quantidade_atual=item.quantidade_caixas,
+                    unidade_medida=te.produto.unidade_venda,
+                    status='DISPONIVEL',
+                    observacoes=f'Produto acabado — pallet misto {pallet.codigo_pallet}.',
+                    cadastrado_por=request.user,
+                )
+                MovimentacaoEstoque.objects.create(
+                    empresa=empresa,
+                    produto=te.produto,
+                    lote=lote_embalado,
+                    tipo='ENTRADA',
+                    origem='PRODUCAO',
+                    quantidade=item.quantidade_caixas,
+                    documento=pallet.codigo_pallet,
+                    observacao=f'Embalagem — pallet misto {pallet.codigo_pallet}: {item.quantidade_caixas}cx de {te.nome}.',
+                    status='EXECUTADO',
+                    cadastrado_por=request.user,
+                    executado_por=request.user,
+                    data_execucao=timezone.now(),
+                )
+
+            pallet.estoque_baixado = True
+            pallet.save(update_fields=['estoque_baixado'])
+    except ValidationError as exc:
+        erro_msg = f'Saldo insuficiente no lote de origem: {"; ".join(exc.messages)}'
+        if is_ajax:
+            return JsonResponse({'erro': erro_msg}, status=400)
+        messages.error(request, erro_msg)
+        return redirect('embalagem:pallet_misto_detail', pk=pk)
+
+    if is_ajax:
+        return JsonResponse({'ok': True, 'redirect_url': reverse('embalagem:ordem_detail', args=[ordem.pk])})
+    messages.success(request, f'Pallet misto {pallet.codigo_pallet} finalizado — estoque atualizado.')
+    return redirect('embalagem:ordem_detail', pk=ordem.pk)

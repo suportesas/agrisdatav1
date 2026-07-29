@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{{ romaneio.numero }}{% endblock %}
 {% block page_title %}Romaneios de Venda{% endblock %}
 
@@ -196,8 +197,8 @@
           <dl class="row mb-0 small">
             <dt class="col-sm-5">Booking</dt><dd class="col-sm-7">{{ romaneio.booking.numero }}</dd>
             {% if romaneio.container %}<dt class="col-sm-5">Container</dt><dd class="col-sm-7">{{ romaneio.container.numero_container }}</dd>{% endif %}
-            {% if romaneio.booking.armador %}<dt class="col-sm-5">Armador</dt><dd class="col-sm-7">{{ romaneio.booking.armador.nome }}</dd>{% endif %}
-            {% if romaneio.booking.navio %}<dt class="col-sm-5">Navio</dt><dd class="col-sm-7">{{ romaneio.booking.navio.nome }}</dd>{% endif %}
+            {% if romaneio.booking.solicitacao.armador %}<dt class="col-sm-5">Armador</dt><dd class="col-sm-7">{{ romaneio.booking.solicitacao.armador.nome }}</dd>{% endif %}
+            {% if romaneio.booking.solicitacao.navio %}<dt class="col-sm-5">Navio</dt><dd class="col-sm-7">{{ romaneio.booking.solicitacao.navio.nome }}</dd>{% endif %}
             {% if romaneio.booking.porto_destino %}<dt class="col-sm-5">Destino</dt><dd class="col-sm-7">{{ romaneio.booking.porto_destino.nome }}</dd>{% endif %}
           </dl>
         </div>
@@ -245,11 +246,11 @@
       <span><i class="bi bi-plus-circle me-1 text-primary"></i>Adicionar Pallets</span>
     </div>
     <div class="card-body">
-      <div class="row g-2 mb-3" id="filtro-pallets">
-        <div class="col-md-4">
-          <input type="text" id="busca-pallet" class="form-control form-control-sm" placeholder="Código do pallet ou tipo embalagem">
+      <div class="row g-2" id="filtro-pallets">
+        <div class="col-md-7">
+          <select id="select-pallet" class="form-select form-select-sm" style="width:100%"></select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-5">
           <select id="filtro-armazem" class="form-select form-select-sm">
             <option value="">Todos armazéns</option>
             {% for a in armazens %}
@@ -257,14 +258,6 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-2">
-          <button class="btn btn-sm btn-outline-secondary w-100" onclick="buscarPallets()">
-            <i class="bi bi-search"></i> Buscar
-          </button>
-        </div>
-      </div>
-      <div id="resultado-pallets" class="table-responsive">
-        <p class="text-muted small">Use a busca acima para encontrar pallets disponíveis.</p>
       </div>
     </div>
   </div>
@@ -289,10 +282,16 @@
             </tr>
           </thead>
           <tbody id="itens-romaneio">
-            {% for item in romaneio.itens.all %}
+            {% for item in itens %}
             <tr id="item-row-{{ item.pk }}">
               <td><strong>{{ item.pallet.codigo_pallet }}</strong></td>
-              <td>{{ item.pallet.tipo_embalagem.nome|default:"Misto" }}{% if item.pallet.is_misto %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7em">MISTO</span>{% endif %}</td>
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-secondary toggle-composicao"
+                        data-bs-target="composicao-{{ item.pk }}" aria-expanded="false">
+                  <i class="bi bi-chevron-down"></i>
+                  {% if item.pallet.is_misto %}Misto{% else %}{{ item.pallet.tipo_embalagem.nome }}{% endif %}
+                </button>
+              </td>
               <td class="text-end">{{ item.quantidade_caixas }}</td>
               <td class="text-end">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
               <td class="text-end">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
@@ -313,6 +312,50 @@
                 </form>
               </td>
               {% endif %}
+            </tr>
+            <tr class="composicao-detail d-none" id="composicao-{{ item.pk }}">
+              <td colspan="{% if romaneio.status == 'RASCUNHO' %}8{% else %}7{% endif %}" class="p-0 border-0">
+                <div class="bg-light px-4 py-3">
+                  <table class="table table-sm table-borderless mb-0">
+                    <thead>
+                      <tr class="text-muted small">
+                        <th>Tipo Embalagem</th>
+                        <th>Variedade</th>
+                        <th>Calibre</th>
+                        <th>Marca</th>
+                        <th class="text-end">Caixas</th>
+                        <th class="text-end">Peso Líq. (kg)</th>
+                        <th class="text-end">Peso Bruto (kg)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% if item.pallet.is_misto %}
+                      {% for comp in item.pallet.composicao.all %}
+                      <tr>
+                        <td>{{ comp.tipo_embalagem.nome }}</td>
+                        <td>{{ comp.tipo_embalagem.variedade|default:"—" }}</td>
+                        <td>{{ comp.tipo_embalagem.tipo_calibre|default:"—" }}</td>
+                        <td>{{ comp.tipo_embalagem.marca|default:"—" }}</td>
+                        <td class="text-end text-mono">{{ comp.quantidade_caixas }}</td>
+                        <td class="text-end text-mono">{{ comp.peso_liquido_kg|floatformat:"3g" }}</td>
+                        <td class="text-end text-mono">{{ comp.peso_bruto_kg|floatformat:"3g" }}</td>
+                      </tr>
+                      {% endfor %}
+                      {% else %}
+                      <tr>
+                        <td>{{ item.pallet.tipo_embalagem.nome }}</td>
+                        <td>{{ item.pallet.tipo_embalagem.variedade|default:"—" }}</td>
+                        <td>{{ item.pallet.tipo_embalagem.tipo_calibre|default:"—" }}</td>
+                        <td>{{ item.pallet.tipo_embalagem.marca|default:"—" }}</td>
+                        <td class="text-end text-mono">{{ item.quantidade_caixas }}</td>
+                        <td class="text-end text-mono">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+                        <td class="text-end text-mono">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
+                      </tr>
+                      {% endif %}
+                    </tbody>
+                  </table>
+                </div>
+              </td>
             </tr>
             {% empty %}
             <tr><td colspan="8" class="text-center text-muted py-4">Nenhum pallet adicionado.</td></tr>
@@ -335,48 +378,46 @@
   </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.toggle-composicao').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const row = document.getElementById(btn.dataset.bsTarget);
+      const icon = btn.querySelector('i');
+      const expanded = !row.classList.contains('d-none');
+      row.classList.toggle('d-none');
+      icon.classList.toggle('bi-chevron-down', expanded);
+      icon.classList.toggle('bi-chevron-up', !expanded);
+      btn.setAttribute('aria-expanded', String(!expanded));
+    });
+  });
+});
+</script>
+
 {% if romaneio.status == 'RASCUNHO' %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=8"></script>
 <script>
 const ROMANEIO_PK = {{ romaneio.pk }};
 const AJAX_BUSCAR_URL = "{% url 'embalagem:ajax_pallets_disponiveis' %}";
 const AJAX_ADD_URL = "{% url 'embalagem:ajax_adicionar_pallet' %}";
 const CSRF = "{{ csrf_token }}";
 
-function buscarPallets() {
-  const q = document.getElementById('busca-pallet').value;
-  const armazem = document.getElementById('filtro-armazem').value;
-  const params = new URLSearchParams({ q, armazem, romaneio_pk: ROMANEIO_PK });
-  fetch(AJAX_BUSCAR_URL + '?' + params)
-    .then(r => r.json())
-    .then(data => renderizarPallets(data.pallets || []));
-}
-
-function renderizarPallets(pallets) {
-  const div = document.getElementById('resultado-pallets');
-  if (!pallets.length) {
-    div.innerHTML = '<p class="text-muted small">Nenhum pallet disponível com esses filtros.</p>';
-    return;
-  }
-  let html = `<table class="table table-sm table-bordered mb-0">
-    <thead class="table-success"><tr>
-      <th>Código</th><th>Tipo Embalagem</th><th class="text-end">Cx</th>
-      <th class="text-end">Kg Líq.</th><th>Armazém</th><th></th>
-    </tr></thead><tbody>`;
-  pallets.forEach(p => {
-    html += `<tr>
-      <td><strong>${p.codigo_pallet}</strong></td>
-      <td>${p.tipo_embalagem}</td>
-      <td class="text-end">${p.quantidade_caixas}</td>
-      <td class="text-end">${parseFloat(p.peso_liquido_kg).toFixed(3)}</td>
-      <td>${p.armazem}</td>
-      <td><button class="btn btn-sm btn-success" onclick="adicionarPallet(${p.pk})">
-        <i class="bi bi-plus-circle"></i> Adicionar
-      </button></td>
-    </tr>`;
+$(function () {
+  AgrisSelect2.init('#select-pallet', {
+    url: AJAX_BUSCAR_URL,
+    placeholder: 'Buscar pallet por código...',
+    extraParams: function () {
+      return { armazem: document.getElementById('filtro-armazem').value };
+    },
+  }).on('select2:select', function (e) {
+    adicionarPallet(e.params.data.id);
   });
-  html += '</tbody></table>';
-  div.innerHTML = html;
-}
+});
 
 function adicionarPallet(palletPk) {
   fetch(AJAX_ADD_URL, {
@@ -410,17 +451,12 @@ function adicionarPallet(palletPk) {
             </form>
           </td>
         </tr>`);
-      buscarPallets();
     } else {
       alert(data.erro || 'Erro ao adicionar pallet.');
     }
+    $('#select-pallet').val(null).trigger('change');
   });
 }
-
-// Busca inicial ao carregar
-document.getElementById('busca-pallet').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); buscarPallets(); }
-});
 </script>
 {% endif %}
 {% endblock %}

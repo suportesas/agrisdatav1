@@ -83,14 +83,16 @@
           </div>
 
           <div class="field col-3">
-            <label class="form-label">Tipo de Embalagem<span class="req">*</span></label>
-            <select name="tipo_embalagem" class="form-select" required>
-              <option value="">Selecione o tipo de embalagem...</option>
+            <label class="form-label">Tipos de Embalagem<span class="req">*</span></label>
+            <div class="d-flex flex-wrap gap-3">
               {% for tipo in tipos_embalagem %}
-                <option value="{{ tipo.pk }}">{{ tipo.nome }}</option>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="tipo_embalagem" value="{{ tipo.pk }}" id="tipo-embalagem-{{ tipo.pk }}">
+                <label class="form-check-label" for="tipo-embalagem-{{ tipo.pk }}">{{ tipo.label_completo }}</label>
+              </div>
               {% endfor %}
-            </select>
-            <div class="helper-note">Usado ao gerar os pallets desta ordem de embalagem.</div>
+            </div>
+            <div class="helper-note">Tipos que poderão ser usados ao gerar os pallets desta ordem de embalagem. Marque mais de um para permitir pallets mistos.</div>
           </div>
 
           <div class="field col-2">

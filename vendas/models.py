@@ -120,6 +120,12 @@ class PedidoVenda(models.Model):
         self.valor_total = total_itens + self.valor_frete - self.valor_desconto
         return self.valor_total
 
+    @property
+    def valor_total_brl(self):
+        if self.moeda == 'BRL' or not self.taxa_cambio:
+            return None
+        return self.valor_total * self.taxa_cambio
+
     @classmethod
     def _gerar_numero(cls, empresa):
         from django.utils import timezone as tz

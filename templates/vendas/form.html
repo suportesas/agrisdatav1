@@ -601,9 +601,12 @@
     const elMoedaValue = document.getElementById('resumo-moeda-value');
     const elTotal = document.getElementById('resumo-total');
 
-    if (elSubtotal) elSubtotal.textContent = 'R$ ' + fmtNum(subtotal);
-    if (elFrete) elFrete.textContent = 'R$ ' + fmtNum(frete);
-    if (elDesconto) elDesconto.textContent = 'R$ ' + fmtNum(descontoTotal);
+    const MOEDA_PREFIXOS = { BRL: 'R$', USD: 'US$', EUR: '€', GBP: '£' };
+    const prefixoMoeda = (MOEDA_PREFIXOS[moeda] || moeda) + ' ';
+
+    if (elSubtotal) elSubtotal.textContent = prefixoMoeda + fmtNum(subtotal);
+    if (elFrete) elFrete.textContent = prefixoMoeda + fmtNum(frete);
+    if (elDesconto) elDesconto.textContent = prefixoMoeda + fmtNum(descontoTotal);
 
     const exportacaoMoedaEstrangeira = tipoVenda === 'EXPORTACAO' && moeda !== 'BRL';
 

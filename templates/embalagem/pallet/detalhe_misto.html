@@ -30,9 +30,22 @@
         <small class="text-muted">Ordem {{ pallet.ordem_embalagem.numero }} — {{ pallet.data_embalagem|date:"d/m/Y" }}</small>
       </div>
     </div>
-    <a href="{% url 'embalagem:pallet_etiqueta_pdf' pallet.pk %}" class="btn btn-outline-primary" target="_blank">
-      <i class="bi bi-printer me-1"></i>Etiqueta PDF
-    </a>
+    <div class="d-flex gap-2">
+      {% if pallet.estoque_baixado %}
+      <span class="btn btn-success disabled"><i class="bi bi-check-circle me-1"></i>Estoque Baixado</span>
+      {% else %}
+      <form method="post" action="{% url 'embalagem:pallet_misto_finalizar' pallet.pk %}"
+        onsubmit="return confirm('Finalizar este pallet? A composição não poderá mais ser alterada e o estoque será baixado.')">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success" {% if not itens %}disabled{% endif %}>
+          <i class="bi bi-check-lg me-1"></i>Finalizar Pallet
+        </button>
+      </form>
+      {% endif %}
+      <a href="{% url 'embalagem:pallet_etiqueta_pdf' pallet.pk %}" class="btn btn-outline-primary" target="_blank">
+        <i class="bi bi-printer me-1"></i>Etiqueta PDF
+      </a>
+    </div>
   </div>
 
   {% if messages %}
@@ -78,6 +91,11 @@
       {% endif %}
 
       <!-- Formulário adicionar item -->
+      {% if pallet.estoque_baixado %}
+      <div class="alert alert-success">
+        <i class="bi bi-check-circle me-1"></i>Pallet finalizado — composição travada e estoque já baixado.
+      </div>
+      {% else %}
       <div class="card border-0 shadow-sm">
         <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-1"></i>Adicionar Item</div>
         <div class="card-body">
@@ -98,6 +116,7 @@
           <div id="form-erro" class="text-danger small mt-2 d-none"></div>
         </div>
       </div>
+      {% endif %}
     </div>
 
     <!-- Coluna direita: composição do pallet -->
@@ -126,9 +145,11 @@
                   <td class="text-end">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
                   <td class="text-end">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
                   <td class="text-end">
+                    {% if not pallet.estoque_baixado %}
                     <button class="btn btn-sm btn-outline-danger btn-remover" data-item="{{ item.pk }}" title="Remover">
                       <i class="bi bi-trash"></i>
                     </button>
+                    {% endif %}
                   </td>
                 </tr>
                 {% empty %}

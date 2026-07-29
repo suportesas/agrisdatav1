@@ -4,6 +4,16 @@ from core.widgets import Select2AjaxWidget, DateBRInput, MoneyBRInput, DecimalBR
 from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda, CargaFrete
 
 
+class TipoEmbalagemChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.label_completo
+
+
+class TipoEmbalagemMultipleChoiceField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, obj):
+        return obj.label_completo
+
+
 class TipoEmbalagemForm(forms.ModelForm):
     class Meta:
         model = TipoEmbalagem
@@ -67,16 +77,21 @@ class TipoEmbalagemForm(forms.ModelForm):
 
 
 class OrdemEmbalagemForm(forms.ModelForm):
+    tipos_embalagem = TipoEmbalagemMultipleChoiceField(
+        queryset=TipoEmbalagem.objects.none(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        label='Tipos de Embalagem Permitidos',
+    )
+
     class Meta:
         model = OrdemEmbalagem
         fields = [
-            'data', 'safra', 'tipo_embalagem', 'lote_origem', 'quantidade_entrada_kg',
+            'data', 'safra', 'tipos_embalagem', 'lote_origem', 'quantidade_entrada_kg',
             'capacidade_caixas_pallet', 'armazem_destino', 'local_destino', 'responsavel', 'observacoes',
         ]
         widgets = {
             'data': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'safra': forms.Select(attrs={'class': 'form-select'}),
-            'tipo_embalagem': forms.Select(attrs={'class': 'form-select'}),
             'lote_origem': forms.Select(attrs={'class': 'form-select'}),
             'quantidade_entrada_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'capacidade_caixas_pallet': forms.NumberInput(attrs={
@@ -95,20 +110,32 @@ class OrdemEmbalagemForm(forms.ModelForm):
         self.empresa = empresa
         if empresa:
             from estoque.models import Lote, Armazem, LocalEstocagem
-            from usuarios.models import Usuario
+            from rh.models import Funcionario
             from cadastros.models import Safra
             self.fields['safra'].queryset = Safra.objects.filter(
                 fazenda__empresa=empresa).select_related('fazenda').order_by('-ano', 'nome')
-            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
+            self.fields['tipos_embalagem'].queryset = TipoEmbalagem.objects.filter(
                 empresa=empresa, ativo=True).order_by('nome')
+            # lote_origem é o granel colhido, não o produto embalado (caixa) do
+            # TipoEmbalagem — por isso o filtro é pela categoria do produto (ex:
+            # "Frutas"), não pelo produto exato, que aponta para a caixa final.
+            # Exclui também lotes cujo produto já É uma caixa embalada (produto
+            # de algum TipoEmbalagem), para não reembalar um lote já pronto.
+            produtos_embalados = TipoEmbalagem.objects.filter(
+                empresa=empresa, ativo=True, produto__isnull=False
+            ).values_list('produto_id', flat=True)
+            categorias_embalaveis = TipoEmbalagem.objects.filter(
+                empresa=empresa, ativo=True, produto__isnull=False
+            ).values_list('produto__categoria_id', flat=True)
             self.fields['lote_origem'].queryset = Lote.objects.filter(
-                empresa=empresa, status='DISPONIVEL').select_related('produto').order_by('-data_entrada')
+                empresa=empresa, status='DISPONIVEL', produto__categoria_id__in=categorias_embalaveis
+            ).exclude(produto_id__in=produtos_embalados).select_related('produto').order_by('-data_entrada')
             self.fields['armazem_destino'].queryset = Armazem.objects.filter(
                 empresa=empresa).order_by('nome')
             self.fields['local_destino'].queryset = LocalEstocagem.objects.filter(
                 armazem__empresa=empresa).order_by('codigo')
-            self.fields['responsavel'].queryset = Usuario.objects.filter(
-                empresa=empresa, is_active=True).order_by('first_name')
+            self.fields['responsavel'].queryset = Funcionario.objects.filter(
+                empresa=empresa, ativo=True).order_by('nome_completo')
         self.fields['safra'].required = False
         self.fields['local_destino'].required = False
         self.fields['responsavel'].required = False
@@ -122,13 +149,33 @@ class OrdemEmbalagemForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        te = cleaned.get('tipo_embalagem')
+        tipos = cleaned.get('tipos_embalagem')
         qty = cleaned.get('quantidade_entrada_kg')
-        if te and qty and qty < te.peso_liquido_cx:
-            raise forms.ValidationError(
-                f'Quantidade ({qty} kg) menor que o peso de uma caixa ({te.peso_liquido_cx} kg).'
-            )
+        if tipos and qty:
+            menor_caixa = min(te.peso_liquido_cx for te in tipos)
+            if qty < menor_caixa:
+                raise forms.ValidationError(
+                    f'Quantidade ({qty} kg) menor que o peso da menor caixa entre os tipos escolhidos ({menor_caixa} kg).'
+                )
         return cleaned
+
+
+class GerarPalletsForm(forms.Form):
+    tipo_embalagem = TipoEmbalagemChoiceField(
+        queryset=TipoEmbalagem.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Tipo de Embalagem',
+    )
+    n_pallets = forms.IntegerField(
+        min_value=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        label='Quantidade de Pallets',
+    )
+
+    def __init__(self, *args, ordem=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if ordem is not None:
+            self.fields['tipo_embalagem'].queryset = ordem.tipos_embalagem.all().order_by('nome')
 
 
 class RomaneioVendaForm(forms.ModelForm):
@@ -245,17 +292,25 @@ class TrocarClienteRomaneioForm(forms.ModelForm):
 
 
 class ItemPalletForm(forms.ModelForm):
+    tipo_embalagem = TipoEmbalagemChoiceField(
+        queryset=TipoEmbalagem.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Tipo de Embalagem',
+    )
+
     class Meta:
         model = ItemPallet
         fields = ['tipo_embalagem', 'quantidade_caixas']
         widgets = {
-            'tipo_embalagem': forms.Select(attrs={'class': 'form-select'}),
             'quantidade_caixas': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
         }
 
-    def __init__(self, *args, empresa=None, **kwargs):
+    def __init__(self, *args, empresa=None, ordem=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if empresa:
+        if ordem is not None:
+            self.fields['tipo_embalagem'].queryset = ordem.tipos_embalagem.all().select_related(
+                'cultura', 'produto').order_by('nome')
+        elif empresa:
             self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
                 empresa=empresa, ativo=True
             ).select_related('cultura', 'produto').order_by('nome')

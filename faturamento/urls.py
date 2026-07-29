@@ -55,6 +55,9 @@ urlpatterns = [
     path('configuracao/certificado/consultar/', views.certificado_consultar, name='certificado_consultar'),
     path('configuracao/certificado/excluir/', views.certificado_delete, name='certificado_delete'),
 
+    # Distribuição de DF-e (protótipo)
+    path('distribuicao-dfe/', views.consultar_dfe, name='consultar_dfe'),
+
     # Webhook IntegraNota
     path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
 

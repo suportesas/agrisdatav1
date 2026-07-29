@@ -2906,6 +2906,60 @@ def certificado_delete(request):
     return redirect('faturamento:configuracao')
 
 
+# ─────────────────────────── Distribuição de DF-e (protótipo) ───────────────────────────
+
+@login_required
+def consultar_dfe(request):
+    """Protótipo: consulta o serviço de Distribuição de DF-e (distDFeInt) por CNPJ/CPF.
+
+    Usa o certificado A1 já cadastrado em Configuração Fiscal. Não persiste nada —
+    só exibe o resultado da consulta na tela.
+    """
+    from .services.distribuicao_dfe import DistribuicaoDFeError, consultar_distribuicao_dfe
+
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
+    resultado = None
+    cnpj_cpf = request.POST.get('cnpj_cpf', '').strip() or config.certificado_cnpj or ''
+    uf = request.POST.get('uf', '').strip() or empresa.uf or ''
+    ult_nsu = request.POST.get('ult_nsu', '').strip() or '0'
+
+    if request.method == 'POST':
+        if not config.certificado_pfx:
+            messages.error(request, 'Cadastre um certificado digital A1 em Configuração Fiscal antes de consultar.')
+        elif not cnpj_cpf:
+            messages.error(request, 'Informe o CNPJ/CPF a consultar.')
+        elif not uf:
+            messages.error(request, 'Informe a UF (a empresa não tem UF cadastrada).')
+        else:
+            try:
+                resultado = consultar_distribuicao_dfe(
+                    cnpj_cpf=cnpj_cpf,
+                    cert_pfx=bytes(config.certificado_pfx),
+                    senha_cert=config.senha_certificado,
+                    uf=uf,
+                    ambiente=config.ambiente_nfe,
+                    ult_nsu=ult_nsu,
+                )
+                if resultado.sucesso:
+                    messages.success(request, f'cStat {resultado.c_stat}: {resultado.x_motivo}')
+                else:
+                    messages.warning(request, f'cStat {resultado.c_stat}: {resultado.x_motivo}')
+            except DistribuicaoDFeError as exc:
+                messages.error(request, str(exc))
+
+    return render(request, 'faturamento/consultar_dfe.html', {
+        'config': config,
+        'resultado': resultado,
+        'cnpj_cpf': cnpj_cpf,
+        'uf': uf,
+        'ult_nsu': ult_nsu,
+    })
+
+
 # ─────────────────────────── AJAX ───────────────────────────
 
 @login_required

@@ -84,7 +84,7 @@
             <tr>
               <th class="ps-4">Número</th>
               <th>Data</th>
-              <th>Tipo Embalagem</th>
+              <th>Tipos Embalagem</th>
               <th>Lote Origem</th>
               <th class="text-end">Kg Entrada</th>
               <th class="text-end">Pallets</th>
@@ -99,12 +99,23 @@
             <tr>
               <td class="ps-4"><a href="{% url 'embalagem:ordem_detail' o.pk %}"><strong>{{ o.numero }}</strong></a></td>
               <td class="text-mono">{{ o.data|date:"d/m/Y" }}</td>
-              <td>{{ o.tipo_embalagem.nome }}</td>
+              <td>
+                {% with total=o.tipos_embalagem.count %}
+                {% if total %}
+                <button type="button" class="btn btn-sm btn-outline-secondary toggle-tipos-embalagem"
+                        data-bs-target="tipos-embalagem-{{ o.pk }}" aria-expanded="false">
+                  <i class="bi bi-chevron-down"></i> {{ total }} tipo{{ total|pluralize }}
+                </button>
+                {% else %}
+                <span class="text-muted small">—</span>
+                {% endif %}
+                {% endwith %}
+              </td>
               <td><small>{{ o.lote_origem.numero|default:o.lote_origem.pk }}</small></td>
               <td class="text-end text-mono">{{ o.quantidade_entrada_kg|floatformat:"0g" }}</td>
               <td class="text-end text-mono">{{ o.n_pallets }}</td>
               <td>{{ o.armazem_destino.nome }}</td>
-              <td>{{ o.responsavel.get_full_name|default:"—" }}</td>
+              <td>{{ o.responsavel.nome_completo|default:"—" }}</td>
               <td class="text-center">
                 {% if o.status == 'ABERTA' %}<span class="badge bg-secondary">Aberta</span>
                 {% elif o.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary">Em Andamento</span>
@@ -117,6 +128,40 @@
                 </a>
               </td>
             </tr>
+            {% if o.tipos_embalagem.all %}
+            <tr class="tipos-embalagem-detail d-none" id="tipos-embalagem-{{ o.pk }}">
+              <td colspan="10" class="p-0 border-0">
+                <div class="bg-light px-4 py-3">
+                  <table class="table table-sm table-borderless mb-0">
+                    <thead>
+                      <tr class="text-muted small">
+                        <th>Embalagem</th>
+                        <th>Variedade</th>
+                        <th>Calibre</th>
+                        <th>Marca</th>
+                        <th class="text-end">Peso Líq. (kg/cx)</th>
+                        <th class="text-end">Peso Bruto (kg/cx)</th>
+                        <th class="text-end">Cx/Pallet</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for t in o.tipos_embalagem.all %}
+                      <tr>
+                        <td>{{ t.nome }}</td>
+                        <td>{{ t.variedade|default:"—" }}</td>
+                        <td>{{ t.tipo_calibre|default:"—" }}</td>
+                        <td>{{ t.marca|default:"—" }}</td>
+                        <td class="text-end text-mono">{{ t.peso_liquido_cx }}</td>
+                        <td class="text-end text-mono">{{ t.peso_bruto_cx }}</td>
+                        <td class="text-end text-mono">{{ t.caixas_por_pallet }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+            {% endif %}
             {% empty %}
             <tr>
               <td colspan="10" class="text-center text-muted py-5">
@@ -143,6 +188,18 @@ document.addEventListener('DOMContentLoaded', function () {
   if (form) {
     form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
   }
+
+  document.querySelectorAll('.toggle-tipos-embalagem').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const row = document.getElementById(btn.dataset.bsTarget);
+      const icon = btn.querySelector('i');
+      const expanded = !row.classList.contains('d-none');
+      row.classList.toggle('d-none');
+      icon.classList.toggle('bi-chevron-down', expanded);
+      icon.classList.toggle('bi-chevron-up', !expanded);
+      btn.setAttribute('aria-expanded', String(!expanded));
+    });
+  });
 });
 </script>
 {% endblock %}

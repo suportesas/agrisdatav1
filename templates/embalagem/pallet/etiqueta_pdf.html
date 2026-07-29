@@ -136,9 +136,9 @@
   <div class="secao">
     <div class="secao-titulo">Shipping / Exportação</div>
     <table class="dados">
-      {% if romaneio.booking.navio %}<tr><td class="lbl">Vessel:</td><td>{{ romaneio.booking.navio.nome }}</td></tr>{% endif %}
+      {% if romaneio.booking.solicitacao.navio %}<tr><td class="lbl">Vessel:</td><td>{{ romaneio.booking.solicitacao.navio.nome }}</td></tr>{% endif %}
       {% if romaneio.booking.viagem %}<tr><td class="lbl">Voyage:</td><td>{{ romaneio.booking.viagem }}</td></tr>{% endif %}
-      {% if romaneio.booking.armador %}<tr><td class="lbl">Carrier:</td><td>{{ romaneio.booking.armador.nome }}</td></tr>{% endif %}
+      {% if romaneio.booking.solicitacao.armador %}<tr><td class="lbl">Carrier:</td><td>{{ romaneio.booking.solicitacao.armador.nome }}</td></tr>{% endif %}
       {% if romaneio.container %}<tr><td class="lbl">Container:</td><td><strong>{{ romaneio.container.numero_container }}</strong></td></tr>{% endif %}
       {% if romaneio.booking.porto_destino %}<tr><td class="lbl">Port of Dest.:</td><td>{{ romaneio.booking.porto_destino.nome }}</td></tr>{% endif %}
     </table>

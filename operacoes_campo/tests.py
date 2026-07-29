@@ -98,7 +98,7 @@ class LoteRecepcaoPackingTestCase(TestCase):
 
         ordem = OrdemEmbalagem.objects.get(lote_producao=self.lote)
         self.assertEqual(ordem.lote_origem_id, lote_estoque.pk)
-        self.assertEqual(ordem.tipo_embalagem_id, self.tipo_embalagem.pk)
+        self.assertEqual(list(ordem.tipos_embalagem.values_list('pk', flat=True)), [self.tipo_embalagem.pk])
         self.assertTrue(ordem.numero)
 
     def test_exige_produto(self):

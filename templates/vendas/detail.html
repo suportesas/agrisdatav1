@@ -87,6 +87,13 @@
             <dt class="col-sm-6">Desconto</dt><dd class="col-sm-6">- {{ pedido.valor_desconto|floatformat:"2g" }}</dd>
             <dt class="col-sm-6">Frete</dt><dd class="col-sm-6">{{ pedido.valor_frete|floatformat:"2g" }}</dd>
             <dt class="col-sm-6 fw-bold">Total {{ pedido.moeda }}</dt><dd class="col-sm-6 fw-bold fs-5">{{ pedido.valor_total|floatformat:"2g" }}</dd>
+            {% if pedido.moeda != 'BRL' %}
+              {% if pedido.taxa_cambio %}
+              <dt class="col-sm-6">Total (R$)</dt><dd class="col-sm-6">{{ pedido.valor_total_brl|floatformat:"2g" }}</dd>
+              {% else %}
+              <dt class="col-sm-6">Total (R$)</dt><dd class="col-sm-6 text-muted">Informe a taxa de câmbio</dd>
+              {% endif %}
+            {% endif %}
           </dl>
         </div>
       </div>

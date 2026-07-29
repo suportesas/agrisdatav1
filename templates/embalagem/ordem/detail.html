@@ -31,25 +31,18 @@
       <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
       <div>
         <h3 class="mb-0">{{ ordem.numero }}</h3>
-        <small class="text-muted">{{ ordem.tipo_embalagem.nome }} — {{ ordem.data|date:"d/m/Y" }}</small>
+        <small class="text-muted">{{ ordem.data|date:"d/m/Y" }}</small>
       </div>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       {% if ordem.status == 'ABERTA' or ordem.status == 'EM_ANDAMENTO' %}
-      <form method="post" action="{% url 'embalagem:ordem_gerar_pallets' ordem.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-success"
-          onclick="return confirm('Gerar pallets automaticamente a partir da quantidade de entrada?')">
-          <i class="bi bi-stack me-1"></i>Gerar Pallets
-        </button>
-      </form>
-      <form method="post" action="{% url 'embalagem:pallet_misto_create' ordem.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-outline-warning"
-          title="Cria um pallet com composição manual de múltiplos tipos">
-          <i class="bi bi-layers me-1"></i>Novo Pallet Misto
-        </button>
-      </form>
+      <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGerarPallets">
+        <i class="bi bi-stack me-1"></i>Gerar Pallets
+      </button>
+      <button type="button" class="btn btn-outline-warning" id="btn-novo-pallet-misto"
+        title="Cria um pallet com composição manual de múltiplos tipos">
+        <i class="bi bi-layers me-1"></i>Novo Pallet Misto
+      </button>
       {% endif %}
       {% if ordem.pallets.count > 0 %}
       <a href="{% url 'embalagem:ordem_etiquetas_pdf' ordem.pk %}" class="btn btn-outline-primary" target="_blank">
@@ -58,6 +51,91 @@
       {% endif %}
     </div>
   </div>
+
+  {% if ordem.status == 'ABERTA' or ordem.status == 'EM_ANDAMENTO' %}
+  <!-- Modal: Gerar Pallets -->
+  <div class="modal fade" id="modalGerarPallets" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form method="post" action="{% url 'embalagem:ordem_gerar_pallets' ordem.pk %}"
+          onsubmit="return confirm('Gerar os pallets deste tipo e dar baixa no granel?')">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-stack me-1"></i>Gerar Pallets</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Tipo de Embalagem</label>
+              {{ gerar_pallets_form.tipo_embalagem }}
+            </div>
+            <div class="mb-0">
+              <label class="form-label">Quantidade de Pallets</label>
+              {{ gerar_pallets_form.n_pallets }}
+              <div class="form-text">Pré-preenchido com o máximo que cabe no saldo atual do lote de origem.</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-success"><i class="bi bi-stack me-1"></i>Gerar Pallets</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Novo Pallet Misto (composição embutida, sem trocar de página) -->
+  <div class="modal fade" id="modalPalletMisto" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="bi bi-layers me-1"></i>Pallet Misto <span id="misto-codigo" class="text-muted"></span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-4">
+            <div class="col-md-5">
+              <label class="form-label small fw-semibold">Tipo de Embalagem</label>
+              {{ item_pallet_form.tipo_embalagem }}
+              <label class="form-label small fw-semibold mt-2">Quantidade de Caixas</label>
+              {{ item_pallet_form.quantidade_caixas }}
+              <button type="button" class="btn btn-success w-100 mt-2" id="misto-btn-add">
+                <i class="bi bi-plus me-1"></i>Adicionar
+              </button>
+              <div id="misto-form-erro" class="text-danger small mt-2 d-none"></div>
+              <hr>
+              <dl class="row mb-0 small">
+                <dt class="col-6">Total de Caixas</dt><dd class="col-6 fw-bold" id="misto-total-caixas">0</dd>
+                <dt class="col-6">Peso Líquido</dt><dd class="col-6" id="misto-total-liquido">0,000 kg</dd>
+                <dt class="col-6">Peso Bruto</dt><dd class="col-6" id="misto-total-bruto">0,000 kg</dd>
+              </dl>
+            </div>
+            <div class="col-md-7">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-light">
+                    <tr><th>Tipo</th><th class="text-end">Caixas</th><th></th></tr>
+                  </thead>
+                  <tbody id="misto-tbody-itens">
+                    <tr id="misto-linha-vazia"><td colspan="3" class="text-center text-muted py-3">Nenhum item adicionado.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+          <button type="button" class="btn btn-success" id="misto-btn-finalizar" disabled>
+            <i class="bi bi-check-lg me-1"></i>Finalizar Pallet
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   {% if messages %}
   {% for msg in messages %}
@@ -83,9 +161,13 @@
           <dl class="row mb-0 small">
             <dt class="col-sm-5">Número</dt><dd class="col-sm-7">{{ ordem.numero }}</dd>
             <dt class="col-sm-5">Data</dt><dd class="col-sm-7">{{ ordem.data|date:"d/m/Y" }}</dd>
-            <dt class="col-sm-5">Tipo Embalagem</dt><dd class="col-sm-7">{{ ordem.tipo_embalagem.nome }}</dd>
-            <dt class="col-sm-5">Calibre</dt><dd class="col-sm-7">{{ ordem.tipo_embalagem.tipo_calibre|default:"—" }}</dd>
-            <dt class="col-sm-5">Responsável</dt><dd class="col-sm-7">{{ ordem.responsavel.get_full_name|default:"—" }}</dd>
+            <dt class="col-sm-5">Tipos Embalagem</dt>
+            <dd class="col-sm-7">
+              {% for t in tipos_embalagem %}
+              <div{% if not forloop.last %} class="border-bottom pb-1 mb-1"{% endif %}>{{ t.label_completo }}</div>
+              {% endfor %}
+            </dd>
+            <dt class="col-sm-5">Responsável</dt><dd class="col-sm-7">{{ ordem.responsavel.nome_completo|default:"—" }}</dd>
             {% if ordem.observacoes %}<dt class="col-sm-5">Obs.</dt><dd class="col-sm-7">{{ ordem.observacoes }}</dd>{% endif %}
           </dl>
         </div>
@@ -98,9 +180,20 @@
           <dl class="row mb-0 small">
             <dt class="col-sm-6">Lote Origem</dt><dd class="col-sm-6">{{ ordem.lote_origem }}</dd>
             <dt class="col-sm-6">Qtd. Entrada</dt><dd class="col-sm-6 fw-bold">{{ ordem.quantidade_entrada_kg|floatformat:"3g" }} kg</dd>
-            <dt class="col-sm-6">Kg/Pallet (líq.)</dt><dd class="col-sm-6">{{ ordem.tipo_embalagem.peso_liquido_pallet|floatformat:"3g" }} kg</dd>
-            <dt class="col-sm-6">Pallets Estimados</dt><dd class="col-sm-6">{{ ordem.n_pallets_esperados }}</dd>
+            <dt class="col-sm-6">Saldo Atual</dt><dd class="col-sm-6 fw-bold">{{ ordem.lote_origem.quantidade_atual|floatformat:"3g" }} kg</dd>
           </dl>
+          {% if tipos_resumo %}
+          <hr class="my-2">
+          <div class="small text-muted mb-2">Pallets possíveis com o saldo atual:</div>
+          <div class="small">
+            {% for r in tipos_resumo %}
+            <div class="d-flex justify-content-between align-items-start gap-2{% if not forloop.last %} border-bottom pb-2 mb-2{% endif %}">
+              <span>{{ r.tipo.label_completo }}</span>
+              <span class="fw-bold text-success flex-shrink-0">{{ r.sugestao }} pallet{{ r.sugestao|pluralize }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -197,4 +290,147 @@
     </div>
   </div>
 </div>
+
+<script>
+(function() {
+  var tiposInfo = {{ tipos_info_json|default:"{}"|safe }};
+  var selectTipo = document.getElementById('id_tipo_embalagem');
+  var inputPallets = document.getElementById('id_n_pallets');
+  if (!selectTipo || !inputPallets) return;
+
+  function preencherSugestao() {
+    var info = tiposInfo[selectTipo.value];
+    inputPallets.value = info ? info.sugestao : '';
+  }
+
+  selectTipo.addEventListener('change', preencherSugestao);
+  preencherSugestao();
+})();
+</script>
+
+{% if ordem.status == 'ABERTA' or ordem.status == 'EM_ANDAMENTO' %}
+<script>
+(function() {
+  const CSRF = '{{ csrf_token }}';
+  const btnNovo = document.getElementById('btn-novo-pallet-misto');
+  const modalEl = document.getElementById('modalPalletMisto');
+  if (!btnNovo || !modalEl) return;
+  let bsModal = null;
+  function getModal() {
+    if (!bsModal) bsModal = new bootstrap.Modal(modalEl);
+    return bsModal;
+  }
+
+  const URL_CREATE = '{% url "embalagem:pallet_misto_create" ordem.pk %}';
+  const URL_ADD_TPL = '{% url "embalagem:pallet_misto_add_item" 1 %}'.replace('/1/', '/0/');
+  const URL_REM_TPL = '{% url "embalagem:pallet_misto_remove_item" 1 1 %}'.replace('/1/', '/0/').replace('/1/', '/0/');
+  const URL_FIN_TPL = '{% url "embalagem:pallet_misto_finalizar" 1 %}'.replace('/1/', '/0/');
+
+  let palletPk = null;
+  const urlAdd = () => URL_ADD_TPL.replace('/0/', `/${palletPk}/`);
+  const urlRem = (itemPk) => URL_REM_TPL.replace('/0/', `/${palletPk}/`).replace('/0/', `/${itemPk}/`);
+  const urlFin = () => URL_FIN_TPL.replace('/0/', `/${palletPk}/`);
+
+  const elCodigo = document.getElementById('misto-codigo');
+  const elTbody = document.getElementById('misto-tbody-itens');
+  const elTotalCx = document.getElementById('misto-total-caixas');
+  const elTotalLiq = document.getElementById('misto-total-liquido');
+  const elTotalBruto = document.getElementById('misto-total-bruto');
+  const elErro = document.getElementById('misto-form-erro');
+  const btnAdd = document.getElementById('misto-btn-add');
+  const btnFinalizar = document.getElementById('misto-btn-finalizar');
+  const selTipo = document.getElementById('id_misto_tipo_embalagem');
+  const inpQtd = document.getElementById('id_misto_quantidade_caixas');
+
+  function resetModal() {
+    palletPk = null;
+    elCodigo.textContent = '';
+    elTbody.innerHTML = '<tr id="misto-linha-vazia"><td colspan="3" class="text-center text-muted py-3">Nenhum item adicionado.</td></tr>';
+    elTotalCx.textContent = '0';
+    elTotalLiq.textContent = '0,000 kg';
+    elTotalBruto.textContent = '0,000 kg';
+    btnFinalizar.disabled = true;
+    elErro.classList.add('d-none');
+    if (inpQtd) inpQtd.value = '';
+  }
+
+  function atualizarTotais(data) {
+    elTotalCx.textContent = data.total_caixas;
+    elTotalLiq.textContent = parseFloat(data.total_liquido).toFixed(3) + ' kg';
+    elTotalBruto.textContent = parseFloat(data.total_bruto).toFixed(3) + ' kg';
+    btnFinalizar.disabled = data.total_caixas <= 0;
+  }
+
+  btnNovo.addEventListener('click', async () => {
+    resetModal();
+    const resp = await fetch(URL_CREATE, {method: 'POST', headers: {'X-CSRFToken': CSRF}});
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+      alert(data.erro || 'Erro ao criar pallet misto.');
+      return;
+    }
+    palletPk = data.pallet_pk;
+    elCodigo.textContent = data.codigo_pallet;
+    getModal().show();
+  });
+
+  btnAdd.addEventListener('click', async () => {
+    elErro.classList.add('d-none');
+    const fd = new FormData();
+    fd.append('tipo_embalagem', selTipo.value);
+    fd.append('quantidade_caixas', inpQtd.value);
+    const resp = await fetch(urlAdd(), {method: 'POST', headers: {'X-CSRFToken': CSRF}, body: fd});
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+      elErro.textContent = data.erro || 'Erro ao adicionar item.';
+      elErro.classList.remove('d-none');
+      return;
+    }
+    const vazia = document.getElementById('misto-linha-vazia');
+    if (vazia) vazia.remove();
+    const tr = document.createElement('tr');
+    tr.id = `misto-item-${data.item_pk}`;
+    tr.innerHTML = `
+      <td>${data.descricao}</td>
+      <td class="text-end">${data.quantidade_caixas}</td>
+      <td class="text-end">
+        <button type="button" class="btn btn-sm btn-outline-danger misto-btn-remover" data-item="${data.item_pk}" title="Remover">
+          <i class="bi bi-trash"></i>
+        </button>
+      </td>`;
+    elTbody.appendChild(tr);
+    atualizarTotais(data);
+    inpQtd.value = '';
+  });
+
+  elTbody.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.misto-btn-remover');
+    if (!btn) return;
+    const itemPk = btn.dataset.item;
+    const resp = await fetch(urlRem(itemPk), {method: 'POST', headers: {'X-CSRFToken': CSRF}});
+    const data = await resp.json();
+    if (!data.ok) return;
+    document.getElementById(`misto-item-${itemPk}`).remove();
+    atualizarTotais(data);
+    if (elTbody.querySelectorAll('tr').length === 0) {
+      elTbody.innerHTML = '<tr id="misto-linha-vazia"><td colspan="3" class="text-center text-muted py-3">Nenhum item adicionado.</td></tr>';
+    }
+  });
+
+  btnFinalizar.addEventListener('click', async () => {
+    if (!confirm('Finalizar este pallet? A composição não poderá mais ser alterada e o estoque será baixado.')) return;
+    const resp = await fetch(urlFin(), {
+      method: 'POST',
+      headers: {'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest'},
+    });
+    const data = await resp.json();
+    if (!resp.ok || !data.ok) {
+      alert((data && data.erro) || 'Erro ao finalizar pallet.');
+      return;
+    }
+    window.location.href = data.redirect_url;
+  });
+})();
+</script>
+{% endif %}
 {% endblock %}

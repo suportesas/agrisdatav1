@@ -28,6 +28,7 @@ urlpatterns = [
     path('pallets/<int:pk>/misto/', views.pallet_misto_detail, name='pallet_misto_detail'),
     path('pallets/<int:pk>/misto/adicionar/', views.pallet_misto_add_item, name='pallet_misto_add_item'),
     path('pallets/<int:pk>/misto/remover/<int:item_pk>/', views.pallet_misto_remove_item, name='pallet_misto_remove_item'),
+    path('pallets/<int:pk>/misto/finalizar/', views.pallet_misto_finalizar, name='pallet_misto_finalizar'),
 
     # Romaneios
     path('romaneios/', views.romaneio_list, name='romaneio_list'),

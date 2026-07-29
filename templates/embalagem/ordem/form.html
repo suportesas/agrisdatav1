@@ -56,9 +56,10 @@
             <dt class="col-sm-4">Data <span class="text-danger">*</span></dt>
             <dd class="col-sm-8">Data de início do processo de embalagem no packing house.</dd>
 
-            <dt class="col-sm-4">Tipo de Embalagem <span class="text-danger">*</span></dt>
+            <dt class="col-sm-4">Tipos de Embalagem <span class="text-danger">*</span></dt>
             <dd class="col-sm-8">
-              Padrão da caixa e do pallet (peso, marca, calibre, caixas/pallet).
+              Padrões de caixa e pallet (peso, marca, calibre, caixas/pallet) que poderão ser gerados a partir desta ordem.
+              Marque mais de um para poder escolher qual gerar depois (inclusive pallets mistos, combinando vários tipos).
               Se não aparecer nenhum, <a href="{% url 'embalagem:tipo_embalagem_create' %}" target="_blank">cadastre um Tipo de Embalagem primeiro</a>.
             </dd>
 
@@ -124,12 +125,19 @@
             {{ form.data }}
             {% if form.data.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="field col-5">
-            <label class="form-label">Tipo de Embalagem <span class="req">*</span></label>
-            {{ form.tipo_embalagem }}
-            {% if form.tipo_embalagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_embalagem.errors|striptags }}</div>{% endif %}
+          <div class="field col-9">
+            <label class="form-label">Tipos de Embalagem <span class="req">*</span></label>
+            <div class="d-flex flex-wrap gap-3">
+              {% for checkbox in form.tipos_embalagem %}
+              <div class="form-check">
+                {{ checkbox.tag }}
+                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+            {% if form.tipos_embalagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipos_embalagem.errors|striptags }}</div>{% endif %}
           </div>
-          <div class="field col-4">
+          <div class="field col-3">
             <label class="form-label">Responsável</label>
             {{ form.responsavel }}
           </div>

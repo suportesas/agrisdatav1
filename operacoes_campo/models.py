@@ -943,7 +943,7 @@ class LoteProducao(models.Model):
         if not self.etapa_colheita_id:
             return
         from django.db.models import Sum, Avg
-        viagens = self.etapa_colheita.viagens.all()
+        viagens = ViagemColheita.objects.filter(carrocao__frota__etapa=self.etapa_colheita)
         agg = viagens.aggregate(total=Sum('peso_final_kg'))
         self.peso_total_colhido_kg = agg['total'] or Decimal('0')
         umidade = viagens.exclude(umidade_pct__isnull=True).aggregate(m=Avg('umidade_pct'))

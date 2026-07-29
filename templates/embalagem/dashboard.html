@@ -205,7 +205,11 @@
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <span class="fw-semibold">{{ o.numero }}</span>
-                <small class="text-muted ms-2">{{ o.tipo_embalagem.nome }}</small>
+                <div class="text-muted">
+                  {% for t in o.tipos_embalagem.all %}
+                  <small class="d-block">{{ t.label_completo }}</small>
+                  {% endfor %}
+                </div>
               </div>
               <div class="d-flex align-items-center gap-2">
                 <small class="text-muted">{{ o.data|date:"d/m/Y" }}</small>

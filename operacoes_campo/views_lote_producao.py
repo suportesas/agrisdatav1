@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import LoteProducao
+from .models import LoteProducao, ViagemColheita
 
 
 @login_required
@@ -67,9 +67,11 @@ def lote_detail(request, pk):
 
     viagens = []
     if lote.etapa_colheita_id:
-        viagens = lote.etapa_colheita.viagens.select_related('carrocao').order_by('data_registro')
+        viagens = ViagemColheita.objects.filter(
+            carrocao__frota__etapa=lote.etapa_colheita
+        ).select_related('carrocao').order_by('data_registro')
 
-    ordens_embalagem = lote.ordens_embalagem.select_related('tipo_embalagem', 'responsavel').all()
+    ordens_embalagem = lote.ordens_embalagem.select_related('responsavel').prefetch_related('tipos_embalagem').all()
 
     pallets = []
     for ordem in ordens_embalagem:
@@ -104,7 +106,7 @@ def lote_recepcao_packing(request, pk):
     if request.method == 'POST':
         armazem_id = request.POST.get('armazem_destino')
         produto_id = request.POST.get('produto')
-        tipo_embalagem_id = request.POST.get('tipo_embalagem')
+        tipo_embalagem_ids = request.POST.getlist('tipo_embalagem')
         observacoes = request.POST.get('observacoes', '')
 
         from decimal import Decimal, InvalidOperation
@@ -117,8 +119,8 @@ def lote_recepcao_packing(request, pk):
             messages.error(request, 'Selecione o armazém de destino.')
         elif not produto_id:
             messages.error(request, 'Selecione o produto a granel colhido.')
-        elif not tipo_embalagem_id:
-            messages.error(request, 'Selecione o tipo de embalagem que será usado nesta ordem.')
+        elif not tipo_embalagem_ids:
+            messages.error(request, 'Selecione ao menos um tipo de embalagem que poderá ser usado nesta ordem.')
         elif not quantidade_kg or quantidade_kg <= 0:
             messages.error(request, 'Informe uma quantidade recebida (kg) válida.')
         else:
@@ -127,7 +129,7 @@ def lote_recepcao_packing(request, pk):
                 with transaction.atomic():
                     armazem = Armazem.objects.get(pk=armazem_id, empresa=empresa)
                     produto = Produto.objects.get(pk=produto_id, categoria__empresa=empresa)
-                    tipo_embalagem = TipoEmbalagem.objects.get(pk=tipo_embalagem_id, empresa=empresa)
+                    tipos_selecionados = list(TipoEmbalagem.objects.filter(pk__in=tipo_embalagem_ids, empresa=empresa))
 
                     lote.status = 'RECEBIDO_PACKING'
                     lote.data_recepcao_packing = timezone.now()
@@ -162,11 +164,10 @@ def lote_recepcao_packing(request, pk):
                         data_execucao=timezone.now(),
                     )
 
-                    OrdemEmbalagem.objects.create(
+                    ordem = OrdemEmbalagem.objects.create(
                         empresa=empresa,
                         numero=OrdemEmbalagem._gerar_numero(empresa),
                         armazem_destino=armazem,
-                        tipo_embalagem=tipo_embalagem,
                         safra=lote.safra,
                         lote_producao=lote,
                         lote_origem=lote_estoque,
@@ -174,6 +175,7 @@ def lote_recepcao_packing(request, pk):
                         status='ABERTA',
                         criado_por=request.user,
                     )
+                    ordem.tipos_embalagem.set(tipos_selecionados)
             except Exception as e:
                 messages.error(request, f'Erro ao receber o lote no packing: {e}')
             else:

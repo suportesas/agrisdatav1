@@ -102,6 +102,22 @@ class TipoEmbalagem(models.Model):
         return ' '.join(partes) if len(partes) > 1 else self.nome
 
     @property
+    def label_completo(self):
+        """Rótulo para diferenciar tipos parecidos em selects/checkboxes.
+        Ex: Melão Amarelo Goldex, pt. 05 - Terra Brasilis 13,000kg/cx
+        """
+        label = self.nome
+        if self.variedade:
+            label += f' {self.variedade}'
+        if self.tipo_calibre:
+            label += f', pt. {self.tipo_calibre}'
+        if self.marca:
+            label += f' - {self.marca}'
+        peso = f'{self.peso_liquido_cx:.3f}'.replace('.', ',')
+        label += f' {peso}kg/cx'
+        return label
+
+    @property
     def peso_liquido_pallet(self):
         return self.peso_liquido_cx * self.caixas_por_pallet
 
@@ -128,11 +144,11 @@ class OrdemEmbalagem(models.Model):
     )
     numero = models.CharField('Número', max_length=20, unique=True, blank=True)
     data = models.DateField('Data', default=timezone.now)
-    tipo_embalagem = models.ForeignKey(
+    tipos_embalagem = models.ManyToManyField(
         TipoEmbalagem,
-        on_delete=models.PROTECT,
-        related_name='ordens',
-        verbose_name='Tipo de Embalagem',
+        related_name='ordens_permitidas',
+        verbose_name='Tipos de Embalagem Permitidos',
+        help_text='Tipos de embalagem que podem ser gerados a partir desta ordem.',
     )
     lote_origem = models.ForeignKey(
         'estoque.Lote',
@@ -183,7 +199,7 @@ class OrdemEmbalagem(models.Model):
     )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='ABERTA')
     responsavel = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        'rh.Funcionario',
         on_delete=models.SET_NULL,
         related_name='ordens_embalagem_responsavel',
         verbose_name='Responsável',
@@ -235,12 +251,12 @@ class OrdemEmbalagem(models.Model):
     def n_pallets(self):
         return self.pallets.count()
 
-    @property
-    def n_pallets_esperados(self):
-        lp = self.tipo_embalagem.peso_liquido_pallet
-        if lp:
-            return int(self.quantidade_entrada_kg / lp)
-        return 0
+    def pallets_possiveis(self, tipo_embalagem):
+        """Quantos pallets desse tipo cabem no saldo atual do lote de origem."""
+        lp = tipo_embalagem.peso_liquido_pallet
+        if not lp:
+            return 0
+        return int(self.lote_origem.quantidade_atual / lp)
 
 
 # ──────────────────────────── PalletEmbalado ───────────────────────────────
@@ -276,6 +292,10 @@ class PalletEmbalado(models.Model):
         help_text='Nulo quando o pallet for misto (composição com múltiplos tipos)',
     )
     is_misto = models.BooleanField('Pallet Misto', default=False)
+    estoque_baixado = models.BooleanField(
+        'Baixa de Estoque Realizada', default=False,
+        help_text='Pallets homogêneos já nascem com baixa feita; pallets mistos precisam ser finalizados.',
+    )
     numero_sequencial = models.PositiveIntegerField('Nº Sequencial na Ordem')
     quantidade_caixas = models.PositiveIntegerField('Qtd de Caixas', default=0)
     peso_bruto_kg = models.DecimalField('Peso Bruto (kg)', max_digits=10, decimal_places=3, default=0)

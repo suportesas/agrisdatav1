@@ -23,6 +23,7 @@ urlpatterns = [
     
     # PAGAMENTOS
     path('parcelas/<int:parcela_pk>/pagar/', views.parcela_pagar, name='parcela_pagar'),
+    path('parcelas/<int:parcela_pk>/juros-multa/', views.parcela_atualizar_juros_multa, name='parcela_atualizar_juros_multa'),
     path('pagamentos/<int:pk>/retornar-pendente/', views.pagamento_retornar_pendente, name='pagamento_retornar_pendente'),
     path('contas/<int:pk>/quitar-saldo/', views.conta_quitar_saldo, name='conta_quitar_saldo'),
     path('contas/<int:pk>/ajuste/', views.ajuste_criar, name='ajuste_criar'),

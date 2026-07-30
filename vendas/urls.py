@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:pk>/', views.pedido_detail, name='pedido_detail'),
     path('<int:pk>/editar/', views.pedido_update, name='pedido_update'),
     path('<int:pk>/aprovar/', views.pedido_aprovar, name='pedido_aprovar'),
+    path('<int:pk>/pdf/', views.pedido_pdf, name='pedido_pdf'),
     path('<int:pk>/emitir/', views.pedido_emitir_documento, name='pedido_emitir'),
     path('<int:pk>/cancelar/', views.pedido_cancelar, name='pedido_cancelar'),
 

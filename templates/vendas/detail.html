@@ -14,6 +14,9 @@
       </div>
     </div>
     <div class="d-flex gap-2">
+      <a href="{% url 'vendas:pedido_pdf' pedido.pk %}" target="_blank" class="btn btn-outline-secondary">
+        <i class="bi bi-file-earmark-pdf me-1"></i>Pré-visualizar PDF
+      </a>
       {% if pedido.status == 'RASCUNHO' %}
       <a href="{% url 'vendas:pedido_update' pedido.pk %}" class="btn btn-outline-secondary">
         <i class="bi bi-pencil me-1"></i>Editar

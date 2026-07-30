@@ -1,5 +1,7 @@
 import logging
+import re
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -61,12 +63,14 @@ from .forms import (
     DuplicataNFFormSet,
     NFeReferenciadaFormSet,
     EncerrarMDFeForm,
+    InstrucaoEmbarqueForm,
     InvoiceExportacaoForm,
     InutilizacaoNFeForm,
     ItemInvoiceFormSet,
     ItemNotaFiscalFormSet,
     ItemPackingListFormSet,
     ManifestoDocumentoFiscalForm,
+    MinutaForm,
     NotaFiscalCancelarForm,
     NotaFiscalForm,
     PackingListForm,
@@ -84,13 +88,16 @@ from .models import (
     CondutorAdicionalMDFe,
     ConfiguracaoFiscal,
     ConhecimentoTransporte,
+    DfeRecebido,
     DocumentoVinculadoCTe,
     DocumentoVinculadoMDFe,
+    InstrucaoEmbarque,
     InutilizacaoNFe,
     InvoiceExportacao,
     ItemNotaFiscal,
     ItemPackingList,
     ManifestoDocumentoFiscal,
+    Minuta,
     NotaFiscal,
     PackingList,
     PercursoMDFe,
@@ -2747,6 +2754,321 @@ def packing_list_pdf(request, pk):
     return HttpResponse('Erro ao gerar PDF', status=500)
 
 
+# ─────────────────────────── Instrução de Embarque ───────────────────────────
+
+@login_required
+def instrucao_embarque_list(request):
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    qs = InstrucaoEmbarque.objects.filter(empresa=empresa).select_related('invoice', 'invoice__cliente')
+
+    status_filter = request.GET.get('status', '')
+    q = request.GET.get('q', '')
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if q:
+        qs = qs.filter(Q(numero__icontains=q) | Q(invoice__numero__icontains=q))
+
+    qs = qs.order_by('-data_emissao')
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'faturamento/instrucao_embarque/list.html', {
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'q': q,
+        'status_choices': InstrucaoEmbarque.STATUS,
+    })
+
+
+@login_required
+def instrucao_embarque_create(request):
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    invoice_id = request.GET.get('invoice')
+    initial = {}
+    if invoice_id:
+        try:
+            inv = InvoiceExportacao.objects.select_related('cliente').get(pk=invoice_id, empresa=empresa)
+            initial['invoice'] = inv
+            endereco_linha = ', '.join(filter(None, [empresa.endereco, empresa.cidade and f'{empresa.cidade} - {empresa.uf}']))
+            initial['shipper'] = '\n'.join(filter(None, [
+                empresa.razao_social or empresa.nome,
+                endereco_linha,
+                f'CNPJ: {empresa.cnpj}' if empresa.cnpj else '',
+            ]))
+            if inv.cliente:
+                initial['consignee'] = inv.cliente.razao_social
+        except InvoiceExportacao.DoesNotExist:
+            pass
+
+    if request.method == 'POST':
+        form = InstrucaoEmbarqueForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            ie = form.save(user=request.user)
+            ie.numero = _gerar_numero_ie(empresa)
+            ie.save(update_fields=['numero'])
+            messages.success(request, f'Instrução de Embarque {ie.numero} criada com sucesso.')
+            return redirect('faturamento:instrucao_embarque_detail', pk=ie.pk)
+    else:
+        form = InstrucaoEmbarqueForm(empresa=empresa, initial=initial)
+
+    return render(request, 'faturamento/instrucao_embarque/form.html', {
+        'form': form,
+        'title': 'Nova Instrução de Embarque',
+    })
+
+
+def _gerar_numero_ie(empresa):
+    ano = timezone.now().year
+    ultimo = InstrucaoEmbarque.objects.filter(
+        empresa=empresa,
+        numero__startswith=f'SI-{ano}-',
+    ).order_by('-numero').first()
+    if ultimo and ultimo.numero:
+        try:
+            seq = int(ultimo.numero.split('-')[-1]) + 1
+        except ValueError:
+            seq = 1
+    else:
+        seq = 1
+    return f'SI-{ano}-{seq:04d}'
+
+
+@login_required
+def instrucao_embarque_detail(request, pk):
+    empresa = _get_empresa(request)
+    ie = get_object_or_404(InstrucaoEmbarque, pk=pk, empresa=empresa)
+    return render(request, 'faturamento/instrucao_embarque/detail.html', {'ie': ie})
+
+
+@login_required
+def instrucao_embarque_update(request, pk):
+    empresa = _get_empresa(request)
+    ie = get_object_or_404(InstrucaoEmbarque, pk=pk, empresa=empresa)
+
+    if ie.status != 'RASCUNHO':
+        messages.error(request, 'Apenas Instruções de Embarque em RASCUNHO podem ser editadas.')
+        return redirect('faturamento:instrucao_embarque_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = InstrucaoEmbarqueForm(request.POST, instance=ie, empresa=empresa)
+        if form.is_valid():
+            form.save(user=request.user)
+            messages.success(request, 'Instrução de Embarque atualizada.')
+            return redirect('faturamento:instrucao_embarque_detail', pk=pk)
+    else:
+        form = InstrucaoEmbarqueForm(instance=ie, empresa=empresa)
+
+    return render(request, 'faturamento/instrucao_embarque/form.html', {
+        'form': form,
+        'ie': ie,
+        'title': f'Editar {ie.numero}',
+    })
+
+
+@login_required
+@require_POST
+def instrucao_embarque_emitir(request, pk):
+    empresa = _get_empresa(request)
+    ie = get_object_or_404(InstrucaoEmbarque, pk=pk, empresa=empresa)
+
+    if ie.status != 'RASCUNHO':
+        messages.error(request, 'Apenas Instruções de Embarque em RASCUNHO podem ser emitidas.')
+        return redirect('faturamento:instrucao_embarque_detail', pk=pk)
+
+    ie.status = 'EMITIDA'
+    ie.atualizado_por = request.user
+    ie.save(update_fields=['status', 'atualizado_por'])
+    messages.success(request, f'{ie.numero} emitida com sucesso.')
+    return redirect('faturamento:instrucao_embarque_detail', pk=pk)
+
+
+@login_required
+def instrucao_embarque_pdf(request, pk):
+    empresa = _get_empresa(request)
+    ie = get_object_or_404(InstrucaoEmbarque, pk=pk, empresa=empresa)
+
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from django.http import HttpResponse
+    import io
+
+    template = get_template('faturamento/instrucao_embarque/pdf.html')
+    html = template.render({'ie': ie, 'empresa': empresa})
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{ie.numero}.pdf"'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
+
+
+# ─────────────────────────── Minuta de Conhecimento ───────────────────────────
+
+@login_required
+def minuta_list(request):
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    qs = Minuta.objects.filter(empresa=empresa).select_related('invoice', 'invoice__cliente')
+
+    status_filter = request.GET.get('status', '')
+    q = request.GET.get('q', '')
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if q:
+        qs = qs.filter(Q(numero__icontains=q) | Q(invoice__numero__icontains=q))
+
+    qs = qs.order_by('-data_emissao')
+    paginator = Paginator(qs, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'faturamento/minuta/list.html', {
+        'page_obj': page_obj,
+        'status_filter': status_filter,
+        'q': q,
+        'status_choices': Minuta.STATUS,
+    })
+
+
+@login_required
+def minuta_create(request):
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    invoice_id = request.GET.get('invoice')
+    initial = {}
+    if invoice_id:
+        try:
+            inv = InvoiceExportacao.objects.select_related('cliente').get(pk=invoice_id, empresa=empresa)
+            initial['invoice'] = inv
+            endereco_linha = ', '.join(filter(None, [empresa.endereco, empresa.cidade and f'{empresa.cidade} - {empresa.uf}']))
+            initial['shipper'] = '\n'.join(filter(None, [
+                empresa.razao_social or empresa.nome,
+                endereco_linha,
+                f'CNPJ: {empresa.cnpj}' if empresa.cnpj else '',
+            ]))
+            if inv.cliente:
+                initial['consignee'] = inv.cliente.razao_social
+            cidade_uf = f'{empresa.cidade}/{empresa.uf}' if (empresa.cidade and empresa.uf) else (empresa.cidade or '')
+            if cidade_uf:
+                initial['local_emissao'] = cidade_uf
+        except InvoiceExportacao.DoesNotExist:
+            pass
+
+    if request.method == 'POST':
+        form = MinutaForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            mn = form.save(user=request.user)
+            mn.numero = _gerar_numero_mn(empresa)
+            mn.save(update_fields=['numero'])
+            messages.success(request, f'Minuta {mn.numero} criada com sucesso.')
+            return redirect('faturamento:minuta_detail', pk=mn.pk)
+    else:
+        form = MinutaForm(empresa=empresa, initial=initial)
+
+    return render(request, 'faturamento/minuta/form.html', {
+        'form': form,
+        'title': 'Nova Minuta de Conhecimento',
+    })
+
+
+def _gerar_numero_mn(empresa):
+    ano = timezone.now().year
+    ultimo = Minuta.objects.filter(
+        empresa=empresa,
+        numero__startswith=f'MN-{ano}-',
+    ).order_by('-numero').first()
+    if ultimo and ultimo.numero:
+        try:
+            seq = int(ultimo.numero.split('-')[-1]) + 1
+        except ValueError:
+            seq = 1
+    else:
+        seq = 1
+    return f'MN-{ano}-{seq:04d}'
+
+
+@login_required
+def minuta_detail(request, pk):
+    empresa = _get_empresa(request)
+    mn = get_object_or_404(Minuta, pk=pk, empresa=empresa)
+    return render(request, 'faturamento/minuta/detail.html', {'mn': mn})
+
+
+@login_required
+def minuta_update(request, pk):
+    empresa = _get_empresa(request)
+    mn = get_object_or_404(Minuta, pk=pk, empresa=empresa)
+
+    if mn.status != 'RASCUNHO':
+        messages.error(request, 'Apenas Minutas em RASCUNHO podem ser editadas.')
+        return redirect('faturamento:minuta_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = MinutaForm(request.POST, instance=mn, empresa=empresa)
+        if form.is_valid():
+            form.save(user=request.user)
+            messages.success(request, 'Minuta atualizada.')
+            return redirect('faturamento:minuta_detail', pk=pk)
+    else:
+        form = MinutaForm(instance=mn, empresa=empresa)
+
+    return render(request, 'faturamento/minuta/form.html', {
+        'form': form,
+        'mn': mn,
+        'title': f'Editar {mn.numero}',
+    })
+
+
+@login_required
+@require_POST
+def minuta_emitir(request, pk):
+    empresa = _get_empresa(request)
+    mn = get_object_or_404(Minuta, pk=pk, empresa=empresa)
+
+    if mn.status != 'RASCUNHO':
+        messages.error(request, 'Apenas Minutas em RASCUNHO podem ser emitidas.')
+        return redirect('faturamento:minuta_detail', pk=pk)
+
+    mn.status = 'EMITIDA'
+    mn.atualizado_por = request.user
+    mn.save(update_fields=['status', 'atualizado_por'])
+    messages.success(request, f'{mn.numero} emitida com sucesso.')
+    return redirect('faturamento:minuta_detail', pk=pk)
+
+
+@login_required
+def minuta_pdf(request, pk):
+    empresa = _get_empresa(request)
+    mn = get_object_or_404(Minuta, pk=pk, empresa=empresa)
+
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from django.http import HttpResponse
+    import io
+
+    template = get_template('faturamento/minuta/pdf.html')
+    html = template.render({'mn': mn, 'empresa': empresa})
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{mn.numero}.pdf"'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
+
+
 # ─────────────────────────── Configuração Fiscal ───────────────────────────
 
 @login_required
@@ -2906,58 +3228,284 @@ def certificado_delete(request):
     return redirect('faturamento:configuracao')
 
 
-# ─────────────────────────── Distribuição de DF-e (protótipo) ───────────────────────────
+# ─────────────────────────── Distribuição de DF-e ───────────────────────────
+
+_SOMENTE_DIGITOS_RE = re.compile(r'\D')
+
 
 @login_required
-def consultar_dfe(request):
-    """Protótipo: consulta o serviço de Distribuição de DF-e (distDFeInt) por CNPJ/CPF.
-
-    Usa o certificado A1 já cadastrado em Configuração Fiscal. Não persiste nada —
-    só exibe o resultado da consulta na tela.
-    """
-    from .services.distribuicao_dfe import DistribuicaoDFeError, consultar_distribuicao_dfe
-
+def dfe_list(request):
+    """Lista os documentos descobertos via Distribuição de DF-e, com filtros."""
     empresa = _get_empresa(request)
     if not empresa:
         return redirect('dashboard:index')
 
     config, _ = ConfiguracaoFiscal.objects.get_or_create(empresa=empresa)
-    resultado = None
-    cnpj_cpf = request.POST.get('cnpj_cpf', '').strip() or config.certificado_cnpj or ''
-    uf = request.POST.get('uf', '').strip() or empresa.uf or ''
-    ult_nsu = request.POST.get('ult_nsu', '').strip() or '0'
+
+    cnpj_emitente = request.GET.get('cnpj_emitente', '').strip()
+    chave_acesso = request.GET.get('chave_acesso', '').strip()
+    tipo = request.GET.get('tipo', '').strip()
+    situacao = request.GET.get('situacao', '').strip()
+    data_ini = request.GET.get('data_ini', '').strip()
+    data_fim = request.GET.get('data_fim', '').strip()
+
+    qs = DfeRecebido.objects.filter(empresa=empresa)
+    if cnpj_emitente:
+        qs = qs.filter(cnpj_emitente__icontains=_SOMENTE_DIGITOS_RE.sub('', cnpj_emitente))
+    if chave_acesso:
+        qs = qs.filter(chave_acesso__icontains=_SOMENTE_DIGITOS_RE.sub('', chave_acesso))
+    if tipo:
+        qs = qs.filter(schema=tipo)
+    if situacao:
+        qs = qs.filter(situacao=situacao)
+    if data_ini:
+        qs = qs.filter(data_emissao__gte=data_ini)
+    if data_fim:
+        qs = qs.filter(data_emissao__lte=data_fim)
+
+    total = qs.count()
+    total_autorizadas = qs.filter(situacao='1').count()
+    total_canceladas = qs.filter(situacao='2').count()
+    total_pendente_manifestacao = qs.filter(
+        schema='resNFe', situacao='1', manifestacao_tipo='',
+    ).exclude(cnpj_emitente=_SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or '')).count()
+
+    paginator = Paginator(qs, 30)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'faturamento/dfe_list.html', {
+        'config': config,
+        'page_obj': page_obj,
+        'cnpj_emitente': cnpj_emitente,
+        'chave_acesso': chave_acesso,
+        'tipo': tipo,
+        'situacao': situacao,
+        'data_ini': data_ini,
+        'data_fim': data_fim,
+        'tipo_choices': DfeRecebido.SCHEMA_CHOICES,
+        'situacao_choices': DfeRecebido.SITUACAO_CHOICES,
+        'total': total,
+        'total_autorizadas': total_autorizadas,
+        'total_canceladas': total_canceladas,
+        'total_pendente_manifestacao': total_pendente_manifestacao,
+        'cnpj_empresa': _SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or ''),
+    })
+
+
+@login_required
+@require_POST
+def dfe_sincronizar_agora(request):
+    """Dispara uma sincronização síncrona (sem esperar o cron de 2h) para a empresa logada."""
+    from .services.distribuicao_dfe import sincronizar_dfe_empresa
+
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    resultado = sincronizar_dfe_empresa(empresa)
+    if resultado['erro']:
+        messages.error(request, f"Falha na sincronização: {resultado['erro']}")
+    else:
+        messages.success(
+            request,
+            f"Sincronizado: {resultado['novos']} documento(s) novo(s), "
+            f"{resultado['ciencia_automatica']} manifestação(ões) de Ciência automática, "
+            f"{resultado['xml_baixados']} XML(s) completo(s) baixado(s)."
+        )
+    return redirect('faturamento:dfe_list')
+
+
+@login_required
+def dfe_manifestar(request, pk):
+    """Registra Manifestação do Destinatário (MD-e) para um resNFe recebido via distribuição.
+
+    Mesmo fluxo de compras.views.recebimento_manifestar, adaptado para DfeRecebido.
+    """
+    documento = get_object_or_404(DfeRecebido, pk=pk, empresa=_get_empresa(request))
+
+    if documento.schema != 'resNFe' or not documento.chave_acesso:
+        messages.error(request, 'Este documento não é uma NF-e manifestável.')
+        return redirect('faturamento:dfe_list')
+
+    cnpj_empresa = _SOMENTE_DIGITOS_RE.sub('', documento.empresa.cnpj or '')
+    if documento.cnpj_emitente == cnpj_empresa:
+        messages.error(request, 'Não é possível manifestar sobre uma nota emitida pela própria empresa.')
+        return redirect('faturamento:dfe_list')
+
+    if documento.manifestacao_tipo:
+        messages.info(request, f'Manifestação já registrada: {documento.get_manifestacao_tipo_display()}.')
+        return redirect('faturamento:dfe_list')
+
+    TIPOS = DfeRecebido.MANIFESTACAO_TIPO_CHOICES
 
     if request.method == 'POST':
-        if not config.certificado_pfx:
-            messages.error(request, 'Cadastre um certificado digital A1 em Configuração Fiscal antes de consultar.')
-        elif not cnpj_cpf:
-            messages.error(request, 'Informe o CNPJ/CPF a consultar.')
-        elif not uf:
-            messages.error(request, 'Informe a UF (a empresa não tem UF cadastrada).')
-        else:
-            try:
-                resultado = consultar_distribuicao_dfe(
-                    cnpj_cpf=cnpj_cpf,
-                    cert_pfx=bytes(config.certificado_pfx),
-                    senha_cert=config.senha_certificado,
-                    uf=uf,
-                    ambiente=config.ambiente_nfe,
-                    ult_nsu=ult_nsu,
-                )
-                if resultado.sucesso:
-                    messages.success(request, f'cStat {resultado.c_stat}: {resultado.x_motivo}')
-                else:
-                    messages.warning(request, f'cStat {resultado.c_stat}: {resultado.x_motivo}')
-            except DistribuicaoDFeError as exc:
-                messages.error(request, str(exc))
+        from .services.integranotas import IntegranNotasClient, IntegranNotasError
 
-    return render(request, 'faturamento/consultar_dfe.html', {
-        'config': config,
-        'resultado': resultado,
-        'cnpj_cpf': cnpj_cpf,
-        'uf': uf,
-        'ult_nsu': ult_nsu,
-    })
+        tipo = request.POST.get('tipo', '').strip()
+        justificativa = request.POST.get('justificativa', '').strip()
+        tipos_validos = [t[0] for t in TIPOS]
+
+        if tipo not in tipos_validos:
+            messages.error(request, 'Tipo de manifestação inválido.')
+            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
+
+        if tipo == 'operacao_nao_realizada' and not justificativa:
+            messages.error(request, 'Justificativa obrigatória para "Operação Não Realizada".')
+            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
+
+        config = ConfiguracaoFiscal.objects.filter(empresa=documento.empresa).first()
+        if not config or not config.has_token:
+            messages.error(request, 'Configure o token IntegraNota em Configuração Fiscal para registrar manifestação.')
+            return redirect('faturamento:dfe_list')
+
+        try:
+            client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+            resultado = client.manifestar_nfe(documento.chave_acesso, tipo, justificativa)
+        except IntegranNotasError as exc:
+            messages.error(request, f'Erro ao registrar manifestação [{exc.codigo}]: {exc}')
+            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
+        except Exception as exc:
+            messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
+
+        documento.manifestacao_tipo = tipo
+        documento.manifestacao_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
+        documento.manifestacao_data = timezone.now()
+        documento.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
+        messages.success(request, f'Manifestação "{dict(TIPOS)[tipo]}" registrada com sucesso na SEFAZ.')
+        return redirect('faturamento:dfe_list')
+
+    return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
+
+
+@login_required
+@require_POST
+def dfe_manifestar_lote(request):
+    """Registra Ciência da Operação em lote para os documentos selecionados na listagem.
+
+    Só "Ciência" é oferecida em lote — Confirmação/Desconhecimento/Operação Não Realizada
+    exigem julgamento sobre o recebimento físico de cada nota, então continuam manuais
+    (via dfe_manifestar). Documentos não elegíveis (evento, nota própria, já manifestada)
+    são simplesmente ignorados.
+    """
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    ids = request.POST.getlist('ids')
+    if not ids:
+        messages.warning(request, 'Nenhum documento selecionado.')
+        return redirect('faturamento:dfe_list')
+
+    config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+    if not config or not config.has_token:
+        messages.error(request, 'Configure o token IntegraNota em Configuração Fiscal para registrar manifestação.')
+        return redirect('faturamento:dfe_list')
+
+    from .services.integranotas import IntegranNotasClient
+
+    cnpj_empresa = _SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or '')
+    documentos = DfeRecebido.objects.filter(
+        empresa=empresa, pk__in=ids, schema='resNFe', manifestacao_tipo='',
+    ).exclude(chave_acesso='').exclude(cnpj_emitente=cnpj_empresa)
+
+    client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+    sucesso = 0
+    falhas = 0
+    for doc in documentos:
+        try:
+            resultado = client.manifestar_nfe(doc.chave_acesso, 'ciencia_operacao')
+        except Exception as exc:
+            logger.warning('Falha ao manifestar em lote a chave %s: %s', doc.chave_acesso, exc)
+            falhas += 1
+            continue
+        doc.manifestacao_tipo = 'ciencia_operacao'
+        doc.manifestacao_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
+        doc.manifestacao_data = timezone.now()
+        doc.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
+        sucesso += 1
+
+    if sucesso:
+        messages.success(request, f'{sucesso} manifestação(ões) de Ciência registrada(s) com sucesso.')
+    if falhas:
+        messages.warning(request, f'{falhas} documento(s) falharam ao manifestar (veja o log do servidor).')
+    if not sucesso and not falhas:
+        messages.info(request, 'Nenhum dos documentos selecionados era elegível para manifestação (evento, nota própria ou já manifestada).')
+    return redirect('faturamento:dfe_list')
+
+
+@login_required
+@require_POST
+def dfe_baixar_xml_lote(request):
+    """Baixa em um único .zip os XMLs completos já disponíveis dos documentos selecionados.
+
+    Só inclui documentos com `xml_url` preenchido — os ainda pendentes (sem manifestação
+    ou aguardando a próxima sincronização) são ignorados e reportados à parte.
+    """
+    import zipfile
+    from io import BytesIO
+
+    import requests
+
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    ids = request.POST.getlist('ids')
+    if not ids:
+        messages.warning(request, 'Nenhum documento selecionado.')
+        return redirect('faturamento:dfe_list')
+
+    documentos = list(DfeRecebido.objects.filter(empresa=empresa, pk__in=ids).exclude(xml_url=''))
+    ignorados = len(ids) - len(documentos)
+
+    if not documentos:
+        messages.warning(
+            request,
+            'Nenhum dos documentos selecionados tem XML completo disponível. '
+            'Registre a manifestação e aguarde a próxima sincronização antes de baixar.',
+        )
+        return redirect('faturamento:dfe_list')
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for doc in documentos:
+            try:
+                resp = requests.get(doc.xml_url, timeout=30)
+                resp.raise_for_status()
+            except Exception as exc:
+                logger.warning('Falha ao baixar XML %s para o zip em lote: %s', doc.chave_acesso, exc)
+                continue
+            zf.writestr(f'{doc.chave_acesso or doc.pk}.xml', resp.content)
+
+    if ignorados:
+        messages.info(request, f'{ignorados} documento(s) selecionado(s) ainda sem XML completo foram ignorados.')
+
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+    filename = f'dfe_xmls_{timezone.now():%Y%m%d_%H%M%S}.zip'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@csrf_exempt
+def dfe_sync_webhook(request):
+    """Webhook para o cron do Supabase (pg_cron + pg_net) disparar a sincronização
+    periódica de todas as empresas. Protegido por segredo compartilhado — diferente
+    de `integranotas_webhook`, que não tem autenticação porque só recebe notificações;
+    este endpoint executa consultas reais à SEFAZ e uploads, então precisa de segredo.
+    """
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    secret = request.headers.get('X-Sync-Secret', '')
+    if not settings.DFE_SYNC_SECRET or secret != settings.DFE_SYNC_SECRET:
+        return HttpResponse(status=403)
+
+    from .services.distribuicao_dfe import sincronizar_todas_empresas
+
+    resultados = sincronizar_todas_empresas()
+    return JsonResponse({'resultados': resultados})
 
 
 # ─────────────────────────── AJAX ───────────────────────────

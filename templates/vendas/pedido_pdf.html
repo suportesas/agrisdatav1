@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ pedido.numero }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 9pt; margin: 0; padding: 12px; color: #000; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .company h1 { font-size: 13pt; margin: 0 0 2px; }
+    .doc-title { text-align: right; }
+    .doc-title h2 { font-size: 18pt; margin: 0; color: #1a7a3c; letter-spacing: 2px; }
+    .doc-title .status { font-size: 9pt; font-weight: bold; color: #555; }
+    hr { border: 1.5px solid #1a7a3c; margin: 8px 0; }
+    .info-grid { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .info-cell { border: 1px solid #ccc; padding: 4px 6px; min-width: 130px; }
+    .label { font-size: 7pt; color: #555; }
+    .value { font-size: 9pt; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+    th { background: #1a7a3c; color: #fff; padding: 4px 5px; text-align: left; }
+    td { border-bottom: 1px solid #ddd; padding: 3px 5px; }
+    tr:nth-child(even) td { background: #f5faf6; }
+    tfoot td { background: #eee !important; font-weight: bold; border-top: 2px solid #1a7a3c; }
+    .text-right { text-align: right; }
+    .totals { width: 260px; margin-left: auto; margin-top: 10px; }
+    .totals td { border-bottom: none; padding: 2px 5px; }
+    .totals tr.total td { font-size: 11pt; font-weight: bold; border-top: 2px solid #1a7a3c; padding-top: 4px; }
+    .obs { margin-top: 12px; font-size: 8pt; }
+    .obs strong { display: block; margin-bottom: 2px; }
+    .footer { margin-top: 16px; font-size: 8pt; color: #555; border-top: 1px solid #ccc; padding-top: 6px; }
+    .watermark { text-align: center; font-size: 8pt; color: #b00; font-weight: bold; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="watermark">PRÉ-VISUALIZAÇÃO — DOCUMENTO SEM VALOR FISCAL</div>
+
+<div class="header">
+  <div class="company">
+    <h1>{{ empresa.razao_social|default:"EMPRESA" }}</h1>
+    <div>{{ empresa.logradouro|default:"" }}, {{ empresa.cidade|default:"" }} - {{ empresa.uf|default:"" }}, Brasil</div>
+    <div>CNPJ: {{ empresa.cnpj|default:"" }}</div>
+  </div>
+  <div class="doc-title">
+    <h2>PEDIDO DE VENDA</h2>
+    <div>Nº {{ pedido.numero }}</div>
+    <div>Data: {{ pedido.data_pedido|date:"d/m/Y" }}</div>
+    <div class="status">{{ pedido.get_status_display }}</div>
+  </div>
+</div>
+
+<hr>
+
+<div class="info-grid">
+  <div class="info-cell">
+    <div class="label">Cliente</div>
+    <div class="value">{{ pedido.cliente.razao_social }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Tipo de Venda</div>
+    <div class="value">{{ pedido.get_tipo_venda_display }}</div>
+  </div>
+  {% if pedido.vendedor %}
+  <div class="info-cell">
+    <div class="label">Vendedor</div>
+    <div class="value">{{ pedido.vendedor.nome_completo }}</div>
+  </div>
+  {% endif %}
+  {% if pedido.data_entrega_prevista %}
+  <div class="info-cell">
+    <div class="label">Entrega Prevista</div>
+    <div class="value">{{ pedido.data_entrega_prevista|date:"d/m/Y" }}</div>
+  </div>
+  {% endif %}
+  {% if pedido.condicao_pagamento %}
+  <div class="info-cell">
+    <div class="label">Condição de Pagamento</div>
+    <div class="value">{{ pedido.condicao_pagamento }}</div>
+  </div>
+  {% endif %}
+  {% if pedido.forma_pagamento %}
+  <div class="info-cell">
+    <div class="label">Forma de Pagamento</div>
+    <div class="value">{{ pedido.forma_pagamento }}</div>
+  </div>
+  {% endif %}
+  <div class="info-cell">
+    <div class="label">Moeda</div>
+    <div class="value">{{ pedido.moeda }}{% if pedido.taxa_cambio %} (câmbio {{ pedido.taxa_cambio|floatformat:"4g" }}){% endif %}</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Descrição</th>
+      <th>NCM</th>
+      <th>CFOP</th>
+      <th>Un.</th>
+      <th class="text-right">Qtd.</th>
+      <th class="text-right">Preço Unit.</th>
+      <th class="text-right">Desconto</th>
+      <th class="text-right">Total</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in itens %}
+    <tr>
+      <td>{{ item.descricao }}</td>
+      <td>{{ item.ncm|default:"—" }}</td>
+      <td>{{ item.cfop|default:"—" }}</td>
+      <td>{{ item.unidade }}</td>
+      <td class="text-right">{{ item.quantidade|floatformat:"3g" }}</td>
+      <td class="text-right">{{ item.preco_unitario|floatformat:"4g" }}</td>
+      <td class="text-right">{{ item.desconto_item|floatformat:"2g" }}</td>
+      <td class="text-right">{{ item.preco_total|floatformat:"2g" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="8" class="text-right">Sem itens.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr>
+    <td>Produtos</td>
+    <td class="text-right">{{ pedido.valor_produtos|floatformat:"2g" }}</td>
+  </tr>
+  <tr>
+    <td>Desconto</td>
+    <td class="text-right">- {{ pedido.valor_desconto|floatformat:"2g" }}</td>
+  </tr>
+  <tr>
+    <td>Frete</td>
+    <td class="text-right">{{ pedido.valor_frete|floatformat:"2g" }}</td>
+  </tr>
+  <tr class="total">
+    <td>TOTAL {{ pedido.moeda }}</td>
+    <td class="text-right">{{ pedido.valor_total|floatformat:"2g" }}</td>
+  </tr>
+  {% if pedido.moeda != 'BRL' and pedido.taxa_cambio %}
+  <tr>
+    <td>Total (R$)</td>
+    <td class="text-right">{{ pedido.valor_total_brl|floatformat:"2g" }}</td>
+  </tr>
+  {% endif %}
+</table>
+
+{% if pedido.observacoes %}
+<div class="obs"><strong>Observações:</strong>{{ pedido.observacoes }}</div>
+{% endif %}
+{% if pedido.observacoes_fiscais %}
+<div class="obs"><strong>Informações Complementares (NF-e):</strong>{{ pedido.observacoes_fiscais }}</div>
+{% endif %}
+
+<div class="footer">
+  {{ empresa.razao_social|default:"" }} | {{ pedido.numero }} | {{ pedido.data_pedido|date:"d/m/Y" }} | Documento gerado para conferência interna, sem valor fiscal.
+</div>
+
+</body>
+</html>

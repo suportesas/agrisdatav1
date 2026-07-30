@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ mn.numero }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 9pt; margin: 0; padding: 12px; color: #000; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .company h1 { font-size: 14pt; margin: 0 0 2px; }
+    .doc-title { text-align: right; }
+    .doc-title h2 { font-size: 18pt; margin: 0; color: #003366; letter-spacing: 2px; }
+    .doc-title .number { font-size: 11pt; font-weight: bold; }
+    hr { border: 1.5px solid #003366; margin: 8px 0; }
+    .parties { display: flex; gap: 20px; margin-bottom: 10px; }
+    .party { flex: 1; border: 1px solid #ccc; padding: 6px; white-space: pre-line; }
+    .party-title { font-weight: bold; font-size: 8pt; color: #003366; border-bottom: 1px solid #ccc; margin-bottom: 4px; }
+    .info-grid { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .info-cell { border: 1px solid #ccc; padding: 4px 6px; min-width: 120px; }
+    .label { font-size: 7pt; color: #555; }
+    .value { font-size: 9pt; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8.5pt; }
+    th { background: #003366; color: #fff; padding: 4px 5px; text-align: left; }
+    td { border-bottom: 1px solid #ddd; padding: 3px 5px; }
+    tr:nth-child(even) td { background: #f5f8ff; }
+    .text-right { text-align: right; }
+    .box { border: 1px solid #ccc; padding: 6px; margin-top: 8px; font-size: 8pt; white-space: pre-line; }
+    .footer { margin-top: 20px; font-size: 8pt; color: #555; border-top: 1px solid #ccc; padding-top: 6px; }
+    .draft-tag { text-align: center; font-size: 9pt; color: #c00; font-weight: bold; letter-spacing: 3px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="draft-tag">DRAFT / MINUTA — NOT NEGOTIABLE</div>
+
+<div class="header">
+  <div class="company">
+    <h1>{{ empresa.razao_social|default:"EXPORTADORA" }}</h1>
+    <div>CNPJ: {{ empresa.cnpj|default:"" }}</div>
+    <div>{{ empresa.logradouro|default:"" }}, {{ empresa.cidade|default:"" }} - {{ empresa.uf|default:"" }}, Brasil</div>
+  </div>
+  <div class="doc-title">
+    <h2>BILL OF LADING DRAFT</h2>
+    <div>MINUTA DE CONHECIMENTO</div>
+    <div class="number">Nº {{ mn.numero }}</div>
+    <div>Date / Data: {{ mn.data_emissao|date:"d/m/Y" }}</div>
+  </div>
+</div>
+
+<hr>
+
+<div class="parties">
+  <div class="party">
+    <div class="party-title">SHIPPER / EXPORTADOR</div>
+    {{ mn.shipper|default:"—" }}
+  </div>
+  <div class="party">
+    <div class="party-title">CONSIGNEE</div>
+    {{ mn.consignee|default:"—" }}
+  </div>
+  <div class="party">
+    <div class="party-title">NOTIFY PARTY</div>
+    {{ mn.notify_party|default:"—" }}
+  </div>
+</div>
+
+<div class="info-grid">
+  <div class="info-cell">
+    <div class="label">Invoice Nº</div>
+    <div class="value">{{ mn.invoice.numero }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Booking Nº</div>
+    <div class="value">{{ mn.invoice.booking.codigo|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Port of Loading</div>
+    <div class="value">{{ mn.invoice.porto_embarque|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Port of Discharge</div>
+    <div class="value">{{ mn.invoice.porto_destino|default:"—" }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Freight Terms</div>
+    <div class="value">{{ mn.get_clausula_frete_display }}</div>
+  </div>
+  <div class="info-cell">
+    <div class="label">Place / Date of Issue</div>
+    <div class="value">{{ mn.local_emissao|default:"—" }}, {{ mn.data_emissao|date:"d/m/Y" }}</div>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Description of Goods / Descrição</th>
+      <th>Container / Seal</th>
+      <th>Marks & Numbers</th>
+      <th class="text-right">Qty</th>
+      <th class="text-right">Gross Weight (kg)</th>
+      <th class="text-right">Net Weight (kg)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in mn.invoice.itens.all %}
+    <tr>
+      <td>{{ item.descricao }}</td>
+      <td>{{ item.container.numero_container|default:"—" }}</td>
+      <td>{{ item.marks_numbers|default:"—" }}</td>
+      <td class="text-right">{{ item.quantidade|floatformat:"4g" }} {{ item.unidade }}</td>
+      <td class="text-right">{{ item.peso_bruto_kg|floatformat:"3g" }}</td>
+      <td class="text-right">{{ item.peso_liquido_kg|floatformat:"3g" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-center">No cargo items linked to this invoice.</td></tr>
+    {% endfor %}
+    <tr>
+      <td colspan="4"><strong>TOTAL</strong></td>
+      <td class="text-right"><strong>{{ mn.invoice.peso_bruto_total|floatformat:"3g" }}</strong></td>
+      <td class="text-right"><strong>{{ mn.invoice.peso_liquido_total|floatformat:"3g" }}</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+{% if mn.observacoes %}
+<div class="box"><strong>Remarks / Observações:</strong>{{ "\n" }}{{ mn.observacoes }}</div>
+{% endif %}
+
+<div class="footer">
+  <div>{{ empresa.razao_social|default:"" }} | {{ mn.data_emissao|date:"d/m/Y" }} | {{ mn.numero }}</div>
+  <div>This is a draft for approval before the carrier issues the original Bill of Lading. / Esta é uma minuta para conferência antes da emissão do conhecimento original.</div>
+</div>
+
+</body>
+</html>

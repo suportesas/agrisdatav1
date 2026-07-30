@@ -1,0 +1,1600 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<title>Manual do Sistema - AgrisData</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@page { margin: 0; }
+* { box-sizing: border-box; }
+body {
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #1f2937;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+}
+.cover {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #10231a 0%, #1a7a3c 100%);
+  color: #fff;
+  page-break-after: always;
+  text-align: center;
+}
+.cover img { width: 280px; margin-bottom: 32px; }
+.cover h1 { font-size: 34px; margin: 0 0 8px; }
+.cover p { font-size: 15px; opacity: .85; margin: 4px 0; }
+
+.toc { page-break-after: always; padding: 48px 56px; }
+.toc h1 { color: #1a7a3c; border-bottom: 2px solid #1a7a3c; padding-bottom: 8px; }
+.toc ul { list-style: none; padding-left: 0; }
+.toc li { margin: 6px 0; }
+.toc a { color: #1f2937; text-decoration: none; }
+.toc a:hover { color: #1a7a3c; }
+.toc .h2-toc { padding-left: 20px; font-size: 13px; color: #4b5563; }
+
+.chapter { padding: 20px 56px 56px; }
+.chapter h1 {
+  color: #fff; background: #1a7a3c; margin: 0 -56px 24px; padding: 20px 56px;
+  page-break-before: always; font-size: 26px;
+}
+.chapter > h1:first-child { page-break-before: auto; }
+h2 { color: #1a7a3c; border-bottom: 1px solid #d1e7d6; padding-bottom: 6px; margin-top: 36px; }
+h3 { color: #14532d; margin-top: 24px; }
+figure { margin: 20px 0; page-break-inside: avoid; }
+figure img {
+  max-width: 100%; border: 1px solid #e5e7eb; border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+figcaption { font-size: 12px; color: #6b7280; font-style: italic; margin-top: 6px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 13px; }
+th, td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }
+th { background: #f0f7f2; color: #14532d; }
+code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; color: #4b5563; background: #f9fafb; }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <img src="file:///F:/projetos/agrisdatav1/static/img/logo.png">
+    <h1>Manual do Sistema</h1>
+    <p>AgrisData &mdash; Gestão Agrícola Inteligente</p>
+    <p>Gerado em 30/07/2026</p>
+  </div>
+  <div class="toc">
+    <h1>Sumário</h1>
+    <ul><li><a href="#producao-agricola"><strong>Produção Agrícola</strong></a></li><li class="h2-toc"><a href="#cadastros-agricolas-cadastros">Cadastros Agrícolas (/cadastros/)</a></li><li class="h2-toc"><a href="#ordens-de-servico-campoordens-servico">Ordens de Serviço (/campo/ordens-servico/)</a></li><li class="h2-toc"><a href="#mip-manejo-integrado-de-pragas-mip">MIP — Manejo Integrado de Pragas (/mip/)</a></li><li class="h2-toc"><a href="#estufas-e-mudas-estufas">Estufas e Mudas (/estufas/)</a></li><li><a href="#pessoas-parceiros"><strong>Pessoas &amp; Parceiros</strong></a></li><li class="h2-toc"><a href="#cadastros-de-parceiros-cadastros">Cadastros de Parceiros (/cadastros/)</a></li><li class="h2-toc"><a href="#frota-frota">Frota (/frota/)</a></li><li class="h2-toc"><a href="#rh-rh">RH (/rh/)</a></li><li class="h2-toc"><a href="#patrimonio-patrimonio">Patrimônio (/patrimonio/)</a></li><li><a href="#suprimentos-estoque"><strong>Suprimentos &amp; Estoque</strong></a></li><li class="h2-toc"><a href="#produtos-produtos">Produtos (/produtos/)</a></li><li class="h2-toc"><a href="#estoque-estoque">Estoque (/estoque/)</a></li><li class="h2-toc"><a href="#compras-compras">Compras (/compras/)</a></li><li><a href="#financeiro-fiscal"><strong>Financeiro &amp; Fiscal</strong></a></li><li class="h2-toc"><a href="#cadastros-fiscais-cadastros">Cadastros Fiscais (/cadastros/)</a></li><li class="h2-toc"><a href="#financeiro-financeiro">Financeiro (/financeiro/)</a></li><li class="h2-toc"><a href="#plano-de-contas-plano-contas">Plano de Contas (/plano-contas/)</a></li><li class="h2-toc"><a href="#contas-bancarias-bancario">Contas Bancárias (/bancario/)</a></li><li class="h2-toc"><a href="#adiantamentos-internacionais-adiantamentos">Adiantamentos Internacionais (/adiantamentos/)</a></li><li><a href="#comercial-exportacao"><strong>Comercial &amp; Exportação</strong></a></li><li class="h2-toc"><a href="#vendas-vendas">Vendas (/vendas/)</a></li><li class="h2-toc"><a href="#embalagem-embalagem">Embalagem (/embalagem/)</a></li><li class="h2-toc"><a href="#etiquetas-avulsas-etiquetas-avulsas">Etiquetas Avulsas (/etiquetas-avulsas/)</a></li><li class="h2-toc"><a href="#exportacao-exportacao">Exportação (/exportacao/)</a></li><li class="h2-toc"><a href="#drawback-drawback">Drawback (/drawback/)</a></li><li class="h2-toc"><a href="#faturamento-faturamento">Faturamento (/faturamento/)</a></li><li><a href="#infraestrutura"><strong>Infraestrutura</strong></a></li><li class="h2-toc"><a href="#energia-solar-energia">Energia Solar (/energia/)</a></li><li><a href="#gestao-do-sistema"><strong>Gestão do Sistema</strong></a></li><li class="h2-toc"><a href="#dashboard-dashboard">Dashboard (/dashboard/)</a></li><li class="h2-toc"><a href="#empresas-empresas">Empresas (/empresas/)</a></li><li class="h2-toc"><a href="#usuarios-usuarios">Usuários (/usuarios/)</a></li><li class="h2-toc"><a href="#dashboard-executivo-metricas-dashboard-executivo">Dashboard Executivo / Métricas (/dashboard-executivo/)</a></li><li class="h2-toc"><a href="#portal-do-cliente-portalcliente">Portal do Cliente (/portal/cliente/)</a></li></ul>
+  </div>
+  <section class="chapter"><h1 id="producao-agricola">Produção Agrícola</h1>
+<h2 id="cadastros-agricolas-cadastros">Cadastros Agrícolas (<code>/cadastros/</code>)</h2>
+<h3 id="visao-geral">Visão geral</h3>
+<p>Antes de operar o campo, a estrutura física da produção precisa estar cadastrada: <strong>Fazenda → Área → Talhão</strong>, as <strong>Culturas</strong> plantadas, as <strong>Safras</strong> de cada ciclo produtivo, e cadastros de apoio como <strong>Pragas</strong> e <strong>Poços/Bombas</strong> (irrigação). Esses cadastros alimentam praticamente todo o restante do sistema: Ordens de Serviço, MIP, Estufas, Planejamento de Custo e os relatórios de rastreabilidade.</p>
+<h3 id="conceitos-principais">Conceitos principais</h3>
+<table>
+<thead>
+<tr>
+<th>Conceito</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fazenda</td>
+<td>Propriedade rural — unidade organizacional de mais alto nível</td>
+</tr>
+<tr>
+<td>Área</td>
+<td>Subdivisão da fazenda (ex: um bloco de produção)</td>
+</tr>
+<tr>
+<td>Talhão</td>
+<td>Menor unidade de área plantável, dentro de uma Área; é o nível em que os custos de campo são apurados</td>
+</tr>
+<tr>
+<td>Cultura</td>
+<td>O que é plantado (ex: melão, melancia, milho)</td>
+</tr>
+<tr>
+<td>Safra</td>
+<td>Um ciclo produtivo específico, vinculado a uma fazenda e um período</td>
+</tr>
+<tr>
+<td>Praga</td>
+<td>Cadastro de pragas/doenças usado pelo módulo MIP</td>
+</tr>
+<tr>
+<td>Poço/Bomba</td>
+<td>Ponto de captação de água usado na irrigação</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tela-lista-de-fazendas">Tela: Lista de Fazendas</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/01-fazendas-lista.png" alt="Lista de Fazendas">
+  <figcaption>Fazendas cadastradas (`/cadastros/fazendas/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-fazenda">Tela: Detalhe da Fazenda</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/02-fazenda-detalhe.png" alt="Detalhe de uma Fazenda">
+  <figcaption>Dados gerais, endereços, contatos, contas bancárias e documentos vinculados à fazenda.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-areas">Tela: Lista de Áreas</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/03-areas-lista.png" alt="Lista de Áreas">
+  <figcaption>Áreas cadastradas (`/cadastros/areas/`), sempre vinculadas a uma fazenda.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-talhoes">Tela: Lista de Talhões</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/04-talhoes-lista.png" alt="Lista de Talhões">
+  <figcaption>Talhões (`/cadastros/talhoes/`) — nível em que os custos de operações de campo são apurados.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-talhao">Tela: Detalhe do Talhão</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/05-talhao-detalhe.png" alt="Detalhe de um Talhão">
+  <figcaption>Dados do talhão e histórico de ocupação/cultivo.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-culturas">Tela: Lista de Culturas</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/06-culturas-lista.png" alt="Lista de Culturas">
+  <figcaption>Culturas cadastradas (`/cadastros/culturas/`).</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-safras">Tela: Lista de Safras</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/07-safras-lista.png" alt="Lista de Safras">
+  <figcaption>Safras (`/cadastros/safras/`), cada uma vinculada a uma fazenda e um período.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-safra">Tela: Detalhe da Safra</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/08-safra-detalhe.png" alt="Detalhe de uma Safra">
+  <figcaption>Planejamento da safra e talhões/culturas envolvidos no ciclo.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-pragas">Tela: Lista de Pragas</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/09-pragas-lista.png" alt="Lista de Pragas">
+  <figcaption>Cadastro de pragas e doenças (`/cadastros/pragas/`), usado pelo módulo MIP.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-pocosbombas">Tela: Lista de Poços/Bombas</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/10-pocos-lista.png" alt="Lista de Poços/Bombas">
+  <figcaption>Pontos de captação de água (`/cadastros/pocos/`) usados na irrigação.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
+<ul>
+<li>Um Talhão sempre pertence a uma Área, que sempre pertence a uma Fazenda — cadastre nessa ordem.</li>
+<li>Uma Safra sem talhões/culturas associados não aparece nas opções de Ordem de Serviço nem no Planejamento de Custo.</li>
+</ul>
+<h2 id="ordens-de-servico-campoordens-servico">Ordens de Serviço (<code>/campo/ordens-servico/</code>)</h2>
+<h3 id="visao-geral_1">Visão geral</h3>
+<p>A Ordem de Serviço (OS) é o registro central de qualquer operação de campo: colheita, plantio (incluindo transplante e replantio), pulverização, adubação, preparo de solo, entre outras. Toda OS acumula três frentes de custo — <strong>mão de obra</strong>, <strong>maquinário</strong> e <strong>insumos</strong> — e ao final apura o custo total e o custo por hectare, que alimentam o Custo por Talhão/Safra e o Planejamento de Custo.</p>
+<h3 id="status-e-ciclo-de-vida">Status e ciclo de vida</h3>
+<pre><code>Aberta → Aprovada → Em Andamento → Concluída
+</code></pre>
+<p>Uma OS também pode ser <strong>pausada</strong> e <strong>retomada</strong> por um administrador durante a execução, e pode ficar bloqueada aguardando <strong>horímetro pendente</strong> quando envolve máquina cujo horímetro final ainda não foi lançado. Ao concluir a OS, o sistema desconta os insumos do estoque e — quando aplicável — atualiza o status de lotes de mudas envolvidos (transplante) ou registra a colheita.</p>
+<h3 id="tela-lista-de-ordens-de-servico">Tela: Lista de Ordens de Serviço</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/01-os-lista.png" alt="Lista de Ordens de Serviço">
+  <figcaption>OS cadastradas, com tipo de serviço, talhão, safra e status.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-ordem-de-servico">Tela: Detalhe da Ordem de Serviço</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/02-os-detalhe.png" alt="Detalhe de uma Ordem de Serviço">
+  <figcaption>Linha do tempo do status, custos por categoria (mão de obra/maquinário/insumos) e abas de Execução, Evidências, Custos, Histórico e Colheita.</figcaption>
+</figure>
+
+<p>As abas da OS organizam: <strong>Execução</strong> (funcionários e máquinas alocados), <strong>Evidências</strong> (fotos anexadas no campo, geralmente via portal do campo), <strong>Custos</strong> (detalhamento por item), <strong>Histórico</strong> (linha do tempo de mudanças) e, quando aplicável, <strong>Colheita</strong> (quantidade colhida).</p>
+<h3 id="tela-nova-ordem-de-servico">Tela: Nova Ordem de Serviço</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/03-os-nova.png" alt="Formulário de Nova Ordem de Serviço">
+  <figcaption>Escolha de tipo/subtipo de serviço, talhão, safra e datas planejadas.</figcaption>
+</figure>
+
+<h3 id="tela-painel-de-delegacao">Tela: Painel de Delegação</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/04-painel-delegacao.png" alt="Painel de Delegação">
+  <figcaption>Visão consolidada para delegar OS às equipes de campo (usado junto com o Portal do Campo).</figcaption>
+</figure>
+
+<h3 id="tela-custo-por-talhaosafra">Tela: Custo por Talhão/Safra</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/05-custo-talhao.png" alt="Custo por Talhão/Safra">
+  <figcaption>Consolidação de todos os custos de OS por talhão e safra.</figcaption>
+</figure>
+
+<h3 id="tela-planejamento-de-custo">Tela: Planejamento de Custo</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/06-planejamento-custo-lista.png" alt="Planejamento de Custo">
+  <figcaption>Orçamento planejado de custos por safra/talhão, comparado ao custo real das OS.</figcaption>
+</figure>
+
+<p>O planejamento de custo permite lançar itens diretos (insumos, mão de obra, máquinas) e indiretos, e simular a formação de preço do produto final com base no custo projetado.</p>
+<h3 id="tela-custohora-de-maquinas">Tela: Custo/Hora de Máquinas</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/07-custos-maquina.png" alt="Custo/Hora de Máquinas">
+  <figcaption>Tabela de custo por hora de cada máquina, usada para ratear o custo de maquinário nas OS.</figcaption>
+</figure>
+
+<h3 id="tela-pluviometria">Tela: Pluviometria</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/08-pluviometria.png" alt="Pluviometria">
+  <figcaption>Registro de chuvas por fazenda/período.</figcaption>
+</figure>
+
+<h3 id="tela-qualidade-de-campo">Tela: Qualidade de Campo</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/09-qualidade-campo.png" alt="Qualidade de Campo">
+  <figcaption>Inspeções de qualidade registradas em campo, com geração de PDF.</figcaption>
+</figure>
+
+<h3 id="tela-caderno-de-campo">Tela: Caderno de Campo</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/10-caderno-campo.png" alt="Caderno de Campo">
+  <figcaption>Registro formal de aplicações (insumos e mão de obra) por talhão, exigido para rastreabilidade agronômica.</figcaption>
+</figure>
+
+<h3 id="tela-lotes-de-producao">Tela: Lotes de Produção</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/11-lotes-producao.png" alt="Lotes de Produção">
+  <figcaption>Lotes gerados a partir da colheita, usados na recepção do packing house.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_1">Dicas e erros comuns</h3>
+<ul>
+<li>Uma OS <strong>pausada</strong> não permite lançar novos custos até ser retomada por um administrador.</li>
+<li>Uma OS de tipo "Plantio" com subtipo Transplante ou Replantio atualiza automaticamente o status do lote de mudas de origem (em Estufas e Mudas) ao ser concluída — não é preciso atualizar o lote manualmente.</li>
+<li>O custo de uma OS só é considerado "final" após a conclusão; enquanto em andamento, os valores mostrados são parciais.</li>
+</ul>
+<h2 id="mip-manejo-integrado-de-pragas-mip">MIP — Manejo Integrado de Pragas (<code>/mip/</code>)</h2>
+<h3 id="visao-geral_2">Visão geral</h3>
+<p>O módulo MIP registra o monitoramento fitossanitário: visitas a talhões para inspecionar a presença de pragas/doenças, com múltiplos pontos de amostragem (georreferenciados) por praga monitorada. Diferente das demais operações de campo, o monitoramento MIP tem seu próprio ciclo de vida — incluindo um status pós-conclusão de <strong>análise</strong> — e pode opcionalmente gerar uma Ordem de Serviço (ex: para uma aplicação de defensivo recomendada a partir do resultado).</p>
+<h3 id="tela-estagios-de-desenvolvimento">Tela: Estágios de Desenvolvimento</h3>
+<figure>
+  <img src="screenshots/mip/01-estagios.png" alt="Estágios de Desenvolvimento">
+  <figcaption>Estágios fenológicos da cultura (`/mip/estagios/`), usados para contextualizar o monitoramento.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-monitoramento-mip">Tela: Lista de Monitoramento MIP</h3>
+<figure>
+  <img src="screenshots/mip/02-monitoramento-lista.png" alt="Lista de Monitoramento MIP">
+  <figcaption>Visitas de monitoramento registradas (`/mip/monitoramento/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-monitoramento-mip">Tela: Detalhe do Monitoramento MIP</h3>
+<figure>
+  <img src="screenshots/mip/03-monitoramento-detalhe.png" alt="Detalhe de um Monitoramento MIP">
+  <figcaption>Pragas monitoradas na visita, cada uma com seus pontos de amostragem e nível de incidência calculado.</figcaption>
+</figure>
+
+<p>A partir do detalhe é possível <strong>adicionar uma praga</strong> à visita, registrar os <strong>pontos de amostragem</strong> de cada praga, gerar o <strong>PDF</strong> do laudo, e — se a incidência justificar — <strong>gerar uma Ordem de Serviço</strong> de tratamento diretamente a partir do monitoramento.</p>
+<h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
+<ul>
+<li>O nível de incidência é calculado a partir dos pontos de amostragem lançados — quanto mais pontos, mais preciso o cálculo.</li>
+<li>Gerar OS a partir do monitoramento evita ter que recriar manualmente os dados de talhão/safra na nova ordem de serviço.</li>
+</ul>
+<h2 id="estufas-e-mudas-estufas">Estufas e Mudas (<code>/estufas/</code>)</h2>
+<h3 id="visao-geral_3">Visão geral</h3>
+<p>Controla a produção de mudas em estufa antes do transplante para o talhão definitivo: cadastro das estufas físicas, lotes de mudas em produção, aplicações e perdas registradas durante o cultivo em estufa, e o avanço de status do lote até o transplante.</p>
+<h3 id="tela-dashboard-de-estufas">Tela: Dashboard de Estufas</h3>
+<figure>
+  <img src="screenshots/estufas/01-dashboard.png" alt="Dashboard de Estufas">
+  <figcaption>Indicadores gerais de produção de mudas.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-estufas">Tela: Lista de Estufas</h3>
+<figure>
+  <img src="screenshots/estufas/02-estufas-lista.png" alt="Lista de Estufas">
+  <figcaption>Estufas cadastradas (`/estufas/`).</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-lotes-de-mudas">Tela: Lista de Lotes de Mudas</h3>
+<figure>
+  <img src="screenshots/estufas/03-lotes-mudas-lista.png" alt="Lista de Lotes de Mudas">
+  <figcaption>Lotes de mudas em produção (`/estufas/lotes/`), com status do ciclo.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-lote-de-mudas">Tela: Detalhe do Lote de Mudas</h3>
+<figure>
+  <img src="screenshots/estufas/04-lote-mudas-detalhe.png" alt="Detalhe de um Lote de Mudas">
+  <figcaption>Aplicações, perdas e monitoramentos registrados durante o cultivo do lote em estufa.</figcaption>
+</figure>
+
+<p>O lote de mudas avança por estágios até ficar pronto para o transplante. Quando uma Ordem de Serviço do tipo Plantio/Transplante referente a esse lote é concluída no módulo de Ordens de Serviço, o lote é automaticamente marcado como <strong>transplantado</strong> — não é necessário atualizar o status manualmente aqui.</p>
+<h3 id="dicas-e-erros-comuns_3">Dicas e erros comuns</h3>
+<ul>
+<li>Registrar perdas e aplicações ao longo do ciclo (não só no fim) mantém o custo do lote de mudas mais preciso quando ele é transferido para o custo do talhão no transplante.</li>
+</ul></section><section class="chapter"><h1 id="pessoas-parceiros">Pessoas &amp; Parceiros</h1>
+<h2 id="cadastros-de-parceiros-cadastros">Cadastros de Parceiros (<code>/cadastros/</code>)</h2>
+<h3 id="visao-geral">Visão geral</h3>
+<p>Reúne os cadastros de todas as pessoas físicas e jurídicas com quem a empresa se relaciona comercialmente: <strong>Clientes</strong> (quem compra), <strong>Produtores</strong> (fornecedores de matéria-prima agrícola, muitas vezes com acesso a um portal próprio), <strong>Fornecedores</strong> (quem vende insumos/serviços), <strong>Transportadoras</strong> e <strong>Vendedores</strong> internos.</p>
+<h3 id="tela-lista-de-clientes">Tela: Lista de Clientes</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/01-clientes-lista.png" alt="Lista de Clientes">
+  <figcaption>Clientes cadastrados (`/cadastros/clientes/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-cliente">Tela: Detalhe do Cliente</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/02-cliente-detalhe.png" alt="Detalhe de um Cliente">
+  <figcaption>Dados gerais, endereços, contatos, contas bancárias e documentos do cliente.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-produtores">Tela: Lista de Produtores</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/03-produtores-lista.png" alt="Lista de Produtores">
+  <figcaption>Produtores rurais cadastrados (`/cadastros/produtores/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-produtor">Tela: Detalhe do Produtor</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/04-produtor-detalhe.png" alt="Detalhe de um Produtor">
+  <figcaption>Dados do produtor; a partir daqui é possível criar acesso ao Portal do Produtor.</figcaption>
+</figure>
+
+<p>Produtores (e Fornecedores) podem receber um <strong>acesso de portal</strong> próprio — um login restrito onde eles acompanham suas próprias operações (entregas, pagamentos, empréstimos) sem precisar de um usuário completo do sistema interno. O acesso é criado e pode ser bloqueado a partir da própria ficha do produtor/fornecedor.</p>
+<h3 id="tela-lista-de-fornecedores">Tela: Lista de Fornecedores</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/05-fornecedores-lista.png" alt="Lista de Fornecedores">
+  <figcaption>Fornecedores cadastrados (`/cadastros/fornecedores/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-fornecedor">Tela: Detalhe do Fornecedor</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/06-fornecedor-detalhe.png" alt="Detalhe de um Fornecedor">
+  <figcaption>Dados cadastrais, histórico de compras e acesso ao Portal do Fornecedor.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-transportadoras">Tela: Lista de Transportadoras</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/07-transportadoras-lista.png" alt="Lista de Transportadoras">
+  <figcaption>Transportadoras cadastradas (`/cadastros/transportadoras/`), usadas em CT-e e MDF-e.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-vendedores">Tela: Lista de Vendedores</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/08-vendedores-lista.png" alt="Lista de Vendedores">
+  <figcaption>Vendedores internos (`/cadastros/vendedores/`), vinculados aos pedidos de venda.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
+<ul>
+<li>Um cliente/fornecedor <strong>inativo</strong> não é excluído — apenas some das buscas de uso corrente, preservando o histórico de documentos já emitidos.</li>
+<li>Bloquear o acesso ao portal de um produtor/fornecedor não apaga o cadastro dele, só impede o login externo.</li>
+</ul>
+<h2 id="frota-frota">Frota (<code>/frota/</code>)</h2>
+<h3 id="visao-geral_1">Visão geral</h3>
+<p>Controla veículos e máquinas da empresa: dados cadastrais, histórico de valor, abastecimentos, manutenções, pedágios, viagens e telemetria. Também gerencia os <strong>motoristas</strong> e o vínculo entre motorista e veículo/placa ao longo do tempo — importante porque um mesmo veículo pode trocar de motorista e um motorista pode dirigir vários veículos.</p>
+<h3 id="tela-dashboard-de-frota">Tela: Dashboard de Frota</h3>
+<figure>
+  <img src="screenshots/frota/01-dashboard.png" alt="Dashboard de Frota">
+  <figcaption>Indicadores gerais da frota: veículos ativos, alertas de manutenção, custos recentes.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-veiculos">Tela: Lista de Veículos</h3>
+<figure>
+  <img src="screenshots/frota/02-veiculos-lista.png" alt="Lista de Veículos">
+  <figcaption>Veículos e máquinas cadastrados (`/frota/veiculos/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-veiculo">Tela: Detalhe do Veículo</h3>
+<figure>
+  <img src="screenshots/frota/03-veiculo-detalhe.png" alt="Detalhe de um Veículo">
+  <figcaption>Dados do veículo, histórico de placas, valor e documentos vinculados.</figcaption>
+</figure>
+
+<h3 id="tela-combustivelabastecimentos">Tela: Combustível/Abastecimentos</h3>
+<figure>
+  <img src="screenshots/frota/04-abastecimentos.png" alt="Abastecimentos">
+  <figcaption>Registros de abastecimento (`/frota/abastecimentos/`), com opção de importação em lote via CSV.</figcaption>
+</figure>
+
+<h3 id="tela-manutencoes">Tela: Manutenções</h3>
+<figure>
+  <img src="screenshots/frota/05-manutencoes.png" alt="Manutenções">
+  <figcaption>Manutenções preventivas/corretivas (`/frota/manutencoes/`), com itens e alertas programados.</figcaption>
+</figure>
+
+<h3 id="tela-pedagios">Tela: Pedágios</h3>
+<figure>
+  <img src="screenshots/frota/06-pedagios.png" alt="Pedágios">
+  <figcaption>Registros de pedágio por veículo/viagem.</figcaption>
+</figure>
+
+<h3 id="tela-viagens">Tela: Viagens</h3>
+<figure>
+  <img src="screenshots/frota/07-viagens.png" alt="Viagens">
+  <figcaption>Viagens realizadas, associando veículo, motorista e trajeto.</figcaption>
+</figure>
+
+<h3 id="tela-telemetria">Tela: Telemetria</h3>
+<figure>
+  <img src="screenshots/frota/08-telemetria.png" alt="Telemetria">
+  <figcaption>Dados de telemetria recebidos dos veículos (quando integrados).</figcaption>
+</figure>
+
+<h3 id="tela-alertas">Tela: Alertas</h3>
+<figure>
+  <img src="screenshots/frota/09-alertas.png" alt="Alertas">
+  <figcaption>Alertas de manutenção/documentação vencendo.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-motoristas">Tela: Lista de Motoristas</h3>
+<figure>
+  <img src="screenshots/frota/10-motoristas-lista.png" alt="Lista de Motoristas">
+  <figcaption>Motoristas cadastrados (`/frota/motoristas/`); podem receber PIN de acesso ao Portal do Motorista.</figcaption>
+</figure>
+
+<h3 id="tela-vinculos-motorista-x-frota">Tela: Vínculos Motorista x Frota</h3>
+<figure>
+  <img src="screenshots/frota/11-vinculos-lista.png" alt="Vínculos Motorista x Frota">
+  <figcaption>Histórico de qual motorista esteve vinculado a qual veículo/placa em cada período.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_1">Dicas e erros comuns</h3>
+<ul>
+<li>O histórico de <strong>vínculos</strong> é o que permite saber, numa data específica, qual motorista estava com qual veículo — útil para investigar multas ou ocorrências antigas.</li>
+<li>Documentos de veículo/motorista vencidos disparam <strong>alertas</strong>; vale revisar essa tela periodicamente.</li>
+</ul>
+<h2 id="rh-rh">RH (<code>/rh/</code>)</h2>
+<h3 id="visao-geral_2">Visão geral</h3>
+<p>Gestão de funcionários: dados cadastrais, funções/cargos, férias, afastamentos, vínculos contratuais, riscos ambientais/laudos (SST) e ASO (Atestado de Saúde Ocupacional). Funcionários cadastrados aqui são referenciados pelas Ordens de Serviço (mão de obra) e podem receber PIN de acesso ao Portal do Campo.</p>
+<h3 id="tela-dashboard-de-rh">Tela: Dashboard de RH</h3>
+<figure>
+  <img src="screenshots/rh/01-dashboard.png" alt="Dashboard de RH">
+  <figcaption>Indicadores gerais: funcionários ativos, férias e ASOs próximos do vencimento.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-funcionarios">Tela: Lista de Funcionários</h3>
+<figure>
+  <img src="screenshots/rh/02-funcionarios-lista.png" alt="Lista de Funcionários">
+  <figcaption>Funcionários cadastrados (`/rh/funcionarios/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-funcionario">Tela: Detalhe do Funcionário</h3>
+<figure>
+  <img src="screenshots/rh/03-funcionario-detalhe.png" alt="Detalhe de um Funcionário">
+  <figcaption>Dados cadastrais, função, documentos e PIN de acesso ao Portal do Campo.</figcaption>
+</figure>
+
+<h3 id="tela-funcoescargos">Tela: Funções/Cargos</h3>
+<figure>
+  <img src="screenshots/rh/04-funcoes-lista.png" alt="Funções/Cargos">
+  <figcaption>Cadastro de funções (`/rh/funcoes/`), com faixa salarial de referência.</figcaption>
+</figure>
+
+<h3 id="tela-ferias">Tela: Férias</h3>
+<figure>
+  <img src="screenshots/rh/05-ferias-lista.png" alt="Férias">
+  <figcaption>Controle de períodos de férias, com relatório de previsão em PDF.</figcaption>
+</figure>
+
+<h3 id="tela-afastamentos">Tela: Afastamentos</h3>
+<figure>
+  <img src="screenshots/rh/06-afastamentos-lista.png" alt="Afastamentos">
+  <figcaption>Afastamentos registrados (licença, atestado, etc.).</figcaption>
+</figure>
+
+<h3 id="tela-riscos-ambientais">Tela: Riscos Ambientais</h3>
+<figure>
+  <img src="screenshots/rh/07-riscos-ambientais.png" alt="Riscos Ambientais">
+  <figcaption>Catálogo de riscos ambientais usado nos laudos de segurança do trabalho.</figcaption>
+</figure>
+
+<h3 id="tela-vinculos-contratuais">Tela: Vínculos Contratuais</h3>
+<figure>
+  <img src="screenshots/rh/08-vinculos-lista.png" alt="Vínculos Contratuais">
+  <figcaption>Histórico de vínculo empregatício de cada funcionário.</figcaption>
+</figure>
+
+<h3 id="tela-laudos-de-risco">Tela: Laudos de Risco</h3>
+<figure>
+  <img src="screenshots/rh/09-laudos-lista.png" alt="Laudos de Risco">
+  <figcaption>Laudos de risco ambiental por função/setor.</figcaption>
+</figure>
+
+<h3 id="tela-aso-solicitacoes">Tela: ASO — Solicitações</h3>
+<figure>
+  <img src="screenshots/rh/10-aso-solicitacoes.png" alt="ASO - Solicitações">
+  <figcaption>Solicitações de Atestado de Saúde Ocupacional, com tipos de exame configuráveis.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
+<ul>
+<li>Um funcionário sem <strong>função</strong> cadastrada não aparece corretamente no rateio de custo de mão de obra nas Ordens de Serviço.</li>
+<li>ASOs vencidos ou próximos do vencimento aparecem como alerta no dashboard — acompanhar evita não-conformidade trabalhista.</li>
+</ul>
+<h2 id="patrimonio-patrimonio">Patrimônio (<code>/patrimonio/</code>)</h2>
+<h3 id="visao-geral_3">Visão geral</h3>
+<p>Controla os bens patrimoniais da empresa (máquinas, equipamentos, imóveis, veículos convertidos em patrimônio), com depreciação e auditoria física periódica para conferir se o bem registrado ainda existe e está no local esperado.</p>
+<h3 id="tela-lista-de-patrimonios">Tela: Lista de Patrimônios</h3>
+<figure>
+  <img src="screenshots/patrimonio/01-lista.png" alt="Lista de Patrimônios">
+  <figcaption>Bens patrimoniais cadastrados (`/patrimonio/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-patrimonio">Tela: Detalhe do Patrimônio</h3>
+<figure>
+  <img src="screenshots/patrimonio/02-detalhe.png" alt="Detalhe de um Patrimônio">
+  <figcaption>Dados do bem, valor, depreciação acumulada e movimentações (transferência de local/responsável).</figcaption>
+</figure>
+
+<p>Um veículo da Frota pode ser <strong>exportado como Patrimônio</strong>, evitando recadastrar os dados básicos já existentes no cadastro de veículo.</p>
+<h3 id="tela-auditorias">Tela: Auditorias</h3>
+<figure>
+  <img src="screenshots/patrimonio/03-auditorias-lista.png" alt="Auditorias">
+  <figcaption>Auditorias físicas programadas (`/patrimonio/auditorias/`); cada item é conferido e o resultado registrado.</figcaption>
+</figure>
+
+<h3 id="tela-relatorio-de-patrimonios">Tela: Relatório de Patrimônios</h3>
+<figure>
+  <img src="screenshots/patrimonio/04-relatorio.png" alt="Relatório de Patrimônios">
+  <figcaption>Relatório consolidado (PDF/Excel) de todos os bens, com valor atual e depreciação.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_3">Dicas e erros comuns</h3>
+<ul>
+<li>Finalizar uma auditoria sem conferir todos os itens deixa bens sem status de conferência — revise a lista de pendentes antes de finalizar.</li>
+</ul></section><section class="chapter"><h1 id="suprimentos-estoque">Suprimentos &amp; Estoque</h1>
+<h2 id="produtos-produtos">Produtos (<code>/produtos/</code>)</h2>
+<h3 id="visao-geral">Visão geral</h3>
+<p>O catálogo de produtos é a base de todo o sistema: praticamente todos os outros módulos (compras, estoque, vendas, faturamento) referenciam um <code>Produto</code>. Cada produto pertence a uma hierarquia <strong>Categoria → Subcategoria</strong> (ex: Fertilizante → Químico/Orgânico/Foliar/Mineral; Defensivo → Herbicida/Inseticida/Fungicida/Acaricida), tem uma <strong>Unidade de Medida</strong>, um <strong>Tipo de Produto</strong> e dados fiscais (NCM, tributação) usados na emissão de notas fiscais.</p>
+<h3 id="conceitos-principais">Conceitos principais</h3>
+<table>
+<thead>
+<tr>
+<th>Conceito</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Categoria → Subcategoria</td>
+<td>Classificação hierárquica do produto; a subcategoria só aparece no formulário depois de escolhida a categoria pai</td>
+</tr>
+<tr>
+<td>Tipo de Produto</td>
+<td>Classificação livre adicional (ex: matéria-prima, revenda, insumo)</td>
+</tr>
+<tr>
+<td>Unidade de Medida</td>
+<td>Unidade em que o produto é comprado/vendido/estocado (kg, un, litro, etc.)</td>
+</tr>
+<tr>
+<td>Marca</td>
+<td>Fabricante/marca comercial do produto</td>
+</tr>
+<tr>
+<td>Natureza de Operação</td>
+<td>Natureza fiscal usada nas notas fiscais que envolvem o produto</td>
+</tr>
+<tr>
+<td>Variantes / Atributos</td>
+<td>Permitem um mesmo produto-base ter variações (ex: tamanho, cor) sem duplicar o cadastro</td>
+</tr>
+</tbody>
+</table>
+<p>Produtos do tipo <strong>Defensivo Agrícola</strong> têm campos próprios (ingrediente ativo, classe toxicológica, intervalo de segurança, culturas registradas) e podem ser vinculados a culturas específicas — essa relação alimenta as recomendações do módulo MIP (Manejo Integrado de Pragas).</p>
+<h3 id="tela-dashboard-de-produtos">Tela: Dashboard de Produtos</h3>
+<figure>
+  <img src="screenshots/produtos/01-dashboard.png" alt="Dashboard de Produtos">
+  <figcaption>Indicadores gerais do catálogo: total de produtos, ativos/inativos, alertas de estoque baixo.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-produtos">Tela: Lista de Produtos</h3>
+<figure>
+  <img src="screenshots/produtos/02-lista.png" alt="Lista de Produtos">
+  <figcaption>Catálogo em cards, com foto, categoria, status, preço de venda e estoque atual de cada produto.</figcaption>
+</figure>
+
+<p>A listagem (<code>/produtos/</code>) mostra contadores no topo (total, ativos, inativos, estoque baixo) e permite buscar por código/nome/código de barras, e filtrar por categoria, tipo e status. Cada card traz atalhos rápidos para visualizar, editar, duplicar e excluir (soft-delete via <code>ativo=False</code>). Produtos com variantes mostram um indicador "N variantes" em vez de um preço único.</p>
+<h3 id="tela-detalhe-do-produto">Tela: Detalhe do Produto</h3>
+<figure>
+  <img src="screenshots/produtos/03-detalhe.png" alt="Detalhe de um Produto">
+  <figcaption>Ficha completa do produto: dados gerais, fiscais, fornecedores vinculados e histórico de preços.</figcaption>
+</figure>
+
+<h3 id="tela-novo-produto">Tela: Novo Produto</h3>
+<figure>
+  <img src="screenshots/produtos/04-novo.png" alt="Formulário de Novo Produto">
+  <figcaption>Cadastro de produto: dados gerais, categoria/subcategoria, unidade, dados fiscais (NCM/tributação).</figcaption>
+</figure>
+
+<p>Ao escolher a <strong>Categoria</strong>, a lista de <strong>Subcategoria</strong> é filtrada automaticamente para mostrar só as subcategorias daquela categoria — não é possível salvar uma subcategoria "solta", sem categoria pai.</p>
+<h3 id="telas-de-apoio-ao-catalogo">Telas de apoio ao catálogo</h3>
+<figure>
+  <img src="screenshots/produtos/05-tipos-produto.png" alt="Tipos de Produto">
+  <figcaption>Tipos de Produto (`/produtos/tipos-produto/`).</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/produtos/06-categorias.png" alt="Categorias">
+  <figcaption>Categorias (`/produtos/categorias/`) — nível superior da hierarquia de classificação.</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/produtos/07-subcategorias.png" alt="Subcategorias">
+  <figcaption>Subcategorias (`/produtos/subcategorias/`), sempre associadas a uma categoria pai.</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/produtos/08-marcas.png" alt="Marcas">
+  <figcaption>Marcas (`/produtos/marcas/`) — fabricantes/marcas comerciais dos produtos.</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/produtos/09-unidades.png" alt="Unidades de Medida">
+  <figcaption>Unidades de Medida (`/produtos/unidades/`), usadas em compras, estoque e vendas.</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/produtos/10-naturezas.png" alt="Naturezas de Operação">
+  <figcaption>Naturezas de Operação (`/produtos/naturezas/`) — classificação fiscal usada nas notas fiscais.</figcaption>
+</figure>
+
+<p>Essas seis telas de apoio (Tipos de Produto, Categorias, Subcategorias, Marcas, Unidades e Naturezas de Operação) seguem o mesmo padrão simples: uma lista com busca/status e um formulário curto de criação/edição. São cadastradas uma vez e reutilizadas por todos os produtos.</p>
+<h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
+<ul>
+<li>Um produto <strong>inativo</strong> (<code>ativo=False</code>) continua existindo no histórico (notas, movimentações antigas) mas some das buscas de uso corrente — é a forma correta de "excluir" um produto que já foi usado.</li>
+<li>Sem uma <strong>Subcategoria</strong> compatível com a Categoria escolhida, o formulário não deixa salvar — cadastre a subcategoria que falta antes de criar o produto.</li>
+<li>Produtos do tipo Defensivo Agrícola sem os campos de registro/classe toxicológica preenchidos aparecem incompletos nas recomendações do módulo MIP.</li>
+</ul>
+<h2 id="estoque-estoque">Estoque (<code>/estoque/</code>)</h2>
+<h3 id="visao-geral_1">Visão geral</h3>
+<p>O módulo de Estoque controla armazéns, locais de estocagem, lotes e movimentações, e é o responsável por manter <code>Produto.estoque_atual</code> sempre correto. O sistema suporta <strong>dois fluxos de atualização</strong> que convivem lado a lado:</p>
+<ul>
+<li><strong>Fluxo com lote</strong> (rastreabilidade completa) — usado quando o produto exige controle por lote (validade, número de lote, rastreamento PEPS/FIFO). A movimentação referencia um <code>Lote</code>; ao executá-la, o sistema atualiza a quantidade do lote e recalcula o estoque do produto como soma dos lotes disponíveis.</li>
+<li><strong>Fluxo direto</strong> (entrada rápida, sem lote) — usado para produtos sem necessidade de rastreabilidade detalhada. A <code>MovimentacaoEstoque</code> é criada sem lote; o estoque do produto é recalculado automaticamente como <code>soma das entradas - soma das saídas</code>, sem precisar de uma etapa extra de execução.</li>
+</ul>
+<h3 id="conceitos-principais_1">Conceitos principais</h3>
+<table>
+<thead>
+<tr>
+<th>Conceito</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Armazém</td>
+<td>Unidade física/organizacional onde o estoque é guardado</td>
+</tr>
+<tr>
+<td>Local de Estocagem</td>
+<td>Subdivisão de um armazém (prateleira, box, câmara fria); pode ser bloqueado</td>
+</tr>
+<tr>
+<td>Lote</td>
+<td>Quantidade de um produto com identidade própria (validade, número de lote); usado no fluxo rastreável</td>
+</tr>
+<tr>
+<td>Movimentação de Estoque</td>
+<td>Registro de entrada, saída, transferência ou ajuste; pode precisar de execução explícita</td>
+</tr>
+<tr>
+<td>Inventário Cíclico</td>
+<td>Contagem periódica programada para conferir o saldo físico contra o sistema</td>
+</tr>
+</tbody>
+</table>
+<p>Toda movimentação que envolve lote (saída, transferência, ajuste) fica com status pendente até ser <strong>executada</strong> — a execução valida a quantidade disponível no lote de origem antes de efetivar a baixa. Já a entrada simples (sem lote) atualiza o estoque assim que é salva, sem etapa de execução.</p>
+<h3 id="tela-dashboard-de-estoque">Tela: Dashboard de Estoque</h3>
+<figure>
+  <img src="screenshots/estoque/01-dashboard.png" alt="Dashboard de Estoque">
+  <figcaption>Indicadores gerais: valor em estoque, produtos com estoque baixo, movimentações recentes.</figcaption>
+</figure>
+
+<h3 id="tela-estoque-de-produtos">Tela: Estoque de Produtos</h3>
+<figure>
+  <img src="screenshots/estoque/02-produtos-estoque.png" alt="Estoque de Produtos">
+  <figcaption>Visão de estoque por produto (`/estoque/produtos/`), com quantidade atual, mínima e máxima.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-armazens">Tela: Lista de Armazéns</h3>
+<figure>
+  <img src="screenshots/estoque/03-armazens-lista.png" alt="Lista de Armazéns">
+  <figcaption>Armazéns cadastrados (`/estoque/armazens/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-armazem">Tela: Detalhe do Armazém</h3>
+<figure>
+  <img src="screenshots/estoque/04-armazem-detalhe.png" alt="Detalhe de um Armazém">
+  <figcaption>Locais de estocagem e lotes vinculados a um armazém específico.</figcaption>
+</figure>
+
+<h3 id="tela-locais-de-estocagem">Tela: Locais de Estocagem</h3>
+<figure>
+  <img src="screenshots/estoque/05-locais-lista.png" alt="Locais de Estocagem">
+  <figcaption>Subdivisões de armazém (`/estoque/locais/`); podem ser bloqueados para impedir novas movimentações.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-lotes">Tela: Lista de Lotes</h3>
+<figure>
+  <img src="screenshots/estoque/06-lotes-lista.png" alt="Lista de Lotes">
+  <figcaption>Lotes ativos (`/estoque/lotes/`), com validade e quantidade atual.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-lote">Tela: Detalhe do Lote</h3>
+<figure>
+  <img src="screenshots/estoque/07-lote-detalhe.png" alt="Detalhe de um Lote">
+  <figcaption>Histórico de movimentações de um lote específico — base do relatório de rastreamento.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-movimentacoes">Tela: Lista de Movimentações</h3>
+<figure>
+  <img src="screenshots/estoque/08-movimentacoes-lista.png" alt="Lista de Movimentações">
+  <figcaption>Todas as movimentações (`/estoque/movimentacoes/`): entrada, saída, transferência, ajuste.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-movimentacao">Tela: Detalhe da Movimentação</h3>
+<figure>
+  <img src="screenshots/estoque/09-movimentacao-detalhe.png" alt="Detalhe de uma Movimentação">
+  <figcaption>Dados da movimentação e, quando pendente, o botão para executá-la ou cancelá-la.</figcaption>
+</figure>
+
+<h3 id="telas-entrada-saida-e-transferencia-rapidas">Telas: Entrada, Saída e Transferência rápidas</h3>
+<figure>
+  <img src="screenshots/estoque/10-entrada.png" alt="Registrar Entrada">
+  <figcaption>Formulário de entrada rápida (`/estoque/entrada/`).</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/estoque/11-saida.png" alt="Registrar Saída">
+  <figcaption>Formulário de saída (`/estoque/saida/`).</figcaption>
+</figure>
+
+<figure>
+  <img src="screenshots/estoque/12-transferencia.png" alt="Registrar Transferência">
+  <figcaption>Formulário de transferência entre armazéns/locais (`/estoque/transferencia/`).</figcaption>
+</figure>
+
+<h3 id="tela-inventario-ciclico">Tela: Inventário Cíclico</h3>
+<figure>
+  <img src="screenshots/estoque/13-inventario-ciclico.png" alt="Inventário Cíclico">
+  <figcaption>Contagens programadas (`/estoque/inventario-ciclico/`), com registro de contagem e conciliação de divergências.</figcaption>
+</figure>
+
+<p>O inventário cíclico permite programar contagens periódicas por armazém/categoria, registrar a contagem física, comparar com o saldo do sistema e conciliar (gerando ajuste) as divergências encontradas.</p>
+<h3 id="tela-relatorio-de-alertas-de-estoque">Tela: Relatório de Alertas de Estoque</h3>
+<figure>
+  <img src="screenshots/estoque/14-relatorio-alertas.png" alt="Relatório de Alertas de Estoque">
+  <figcaption>Produtos em estado crítico (saldo ≤ estoque mínimo) e em excesso, com opção de gerar solicitação de compra em lote.</figcaption>
+</figure>
+
+<p>Um produto crítico que ainda não tem solicitação de compra em aberto pode ser marcado direto nesta tela para gerar uma nova Solicitação de Compra, unificando o alerta com a ação de repor o estoque.</p>
+<h3 id="tela-analise-abc">Tela: Análise ABC</h3>
+<figure>
+  <img src="screenshots/estoque/15-relatorio-abc.png" alt="Análise ABC">
+  <figcaption>Classificação de produtos por relevância de valor em estoque (curva ABC).</figcaption>
+</figure>
+
+<p>Há ainda outros relatórios avançados no menu Relatórios (comparativo entre períodos, auditoria, rastreamento de lote, validação de disponibilidade) que seguem o mesmo padrão de filtro por período/armazém/produto.</p>
+<h3 id="dicas-e-erros-comuns_1">Dicas e erros comuns</h3>
+<ul>
+<li>Uma movimentação de <strong>saída/transferência/ajuste</strong> que não aparece refletida no estoque provavelmente ainda não foi <strong>executada</strong> — verifique o status na lista de movimentações.</li>
+<li>Um <strong>local de estocagem bloqueado</strong> não aceita novas movimentações; desbloqueie antes de tentar novamente.</li>
+<li>Relatórios como Alertas e Análise ABC podem demorar alguns segundos para carregar em bases com muitos produtos — isso é esperado, não é travamento.</li>
+<li>Divergências do inventário cíclico só se refletem no estoque depois de <strong>conciliadas</strong>; registrar a contagem sozinha não altera o saldo.</li>
+</ul>
+<h2 id="compras-compras">Compras (<code>/compras/</code>)</h2>
+<h3 id="visao-geral_2">Visão geral</h3>
+<p>O módulo de Compras organiza a compra de insumos e materiais em três níveis de formalidade, que convivem no mesmo sistema:</p>
+<ul>
+<li><strong>Pedido direto</strong> — compra rápida, sem cotação, para reposições simples e urgências de baixo valor.</li>
+<li><strong>Fluxo completo com cotação seletiva</strong> — Solicitação de Compra (SC) → Cotação com múltiplos fornecedores → Pedido de Compra → Recebimento. É o caminho recomendado para compras de maior valor ou que exigem comparação de preços.</li>
+<li><strong>Entrada direta de NF-e</strong> — importação do XML de uma nota fiscal do fornecedor diretamente para o estoque, pulando o fluxo de solicitação/pedido quando a compra já aconteceu por fora do sistema (ex: compra de balcão).</li>
+</ul>
+<p>O ponto central do fluxo formal é a <strong>cotação seletiva</strong>: dentro de uma mesma Solicitação de Compra, o comprador pode escolher cotar só uma parte dos itens em cada rodada, permitindo cobrir os itens urgentes primeiro e deixar o restante para uma cotação seguinte.</p>
+<h3 id="conceitos-e-status">Conceitos e status</h3>
+<table>
+<thead>
+<tr>
+<th>Documento</th>
+<th>Prefixo</th>
+<th>Para que serve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Solicitação de Compra (SC)</td>
+<td><code>SC-000024</code></td>
+<td>Pedido interno de compra, feito por qualquer usuário autorizado</td>
+</tr>
+<tr>
+<td>Cotação (COT)</td>
+<td>vinculada à SC</td>
+<td>Rodada de consulta de preço a um ou mais fornecedores</td>
+</tr>
+<tr>
+<td>Pedido de Compra (PC)</td>
+<td>gerado da cotação vencedora ou direto</td>
+<td>Documento formal enviado ao fornecedor</td>
+</tr>
+<tr>
+<td>Recebimento</td>
+<td>vinculado ao PC</td>
+<td>Conferência física da mercadoria + registro da nota fiscal</td>
+</tr>
+</tbody>
+</table>
+<p>Status de uma Solicitação de Compra, na ordem em que aparecem na coluna <strong>Status</strong> da listagem:</p>
+<pre><code>RASCUNHO → PENDENTE → APROVADA → PARCIALMENTE COTADA → TOTALMENTE COTADA → EM COMPRA → CONCLUÍDA
+</code></pre>
+<p>A coluna <strong>% Cotado</strong> na lista de solicitações mostra o percentual de itens da SC que já têm um fornecedor vencedor definido — 100% não significa que o pedido já foi feito, só que toda a SC já foi cotada.</p>
+<p>Existe também um fluxo <strong>emergencial</strong>: ao marcar a solicitação como emergencial, ela pula a etapa <code>PENDENTE</code> e já nasce <code>APROVADA</code>, com o próprio solicitante como aprovador (exige justificativa). É pensado para quebra de equipamento ou falta de insumo crítico que não pode esperar aprovação formal — use com critério, pois hoje o sistema não limita quem pode marcar uma compra como emergencial por valor ou cargo.</p>
+<h3 id="tela-dashboard-de-compras">Tela: Dashboard de Compras</h3>
+<figure>
+  <img src="screenshots/compras/01-dashboard.png" alt="Dashboard de Compras">
+  <figcaption>Painel com indicadores gerais de compras: solicitações em aberto, pedidos pendentes de recebimento e alertas.</figcaption>
+</figure>
+
+<p>Ponto de partida do módulo (<code>/compras/dashboard-compras/</code>). Mostra de forma resumida quantas solicitações aguardam ação, quantos pedidos estão pendentes de recebimento e atalhos para as ações mais comuns.</p>
+<h3 id="tela-lista-de-solicitacoes-de-compra">Tela: Lista de Solicitações de Compra</h3>
+<figure>
+  <img src="screenshots/compras/02-solicitacoes-lista.png" alt="Lista de Solicitações de Compra">
+  <figcaption>Lista de solicitações (`/compras/solicitacoes/`), com número, solicitante, datas, status e % cotado.</figcaption>
+</figure>
+
+<p>Cada linha é uma SC. O ícone de olho (👁) na coluna <strong>Ações</strong> abre o detalhe. O botão <strong>Nova Solicitação</strong>, no canto superior direito, inicia uma nova SC. O botão <strong>Filtros</strong> permite restringir a lista por período, status ou solicitante.</p>
+<h3 id="tela-detalhe-da-solicitacao-de-compra">Tela: Detalhe da Solicitação de Compra</h3>
+<figure>
+  <img src="screenshots/compras/03-solicitacao-detalhe.png" alt="Detalhe de uma Solicitação de Compra">
+  <figcaption>Tela de detalhe de uma SC: itens solicitados, status individual de cada item e histórico.</figcaption>
+</figure>
+
+<p>Aqui ficam os itens da solicitação, cada um com seu próprio status (<code>PENDENTE → SELECIONADO → EM_COTAÇÃO → COTADO → APROVADO</code>). É nesta tela que o comprador marca quais itens entram na próxima rodada de cotação, usando o checkbox de seleção e o botão <strong>Cotar Selecionados</strong>.</p>
+<h3 id="tela-nova-solicitacao-de-compra">Tela: Nova Solicitação de Compra</h3>
+<figure>
+  <img src="screenshots/compras/04-solicitacao-nova.png" alt="Formulário de Nova Solicitação de Compra">
+  <figcaption>Formulário de criação de uma SC: itens, quantidades, data de necessidade e urgência.</figcaption>
+</figure>
+
+<p>Formulário para abrir uma nova solicitação. Campos principais: descrição do que está sendo pedido, quantidade, unidade, data em que o material é necessário e, opcionalmente, a marcação de <strong>emergencial</strong> (com campo de justificativa obrigatório).</p>
+<h3 id="tela-lista-de-cotacoes">Tela: Lista de Cotações</h3>
+<figure>
+  <img src="screenshots/compras/05-cotacoes-lista.png" alt="Lista de Cotações">
+  <figcaption>Lista de cotações (`/compras/cotacoes/`), cada uma vinculada a uma SC.</figcaption>
+</figure>
+
+<p>Cada cotação nasce de uma seleção de itens dentro de uma SC. Uma mesma SC pode gerar mais de uma cotação ao longo do tempo, se o comprador optar por cotar em rodadas separadas.</p>
+<h3 id="tela-detalhe-da-cotacao-comparativo-de-fornecedores">Tela: Detalhe da Cotação (comparativo de fornecedores)</h3>
+<figure>
+  <img src="screenshots/compras/06-cotacao-detalhe.png" alt="Detalhe de uma Cotação">
+  <figcaption>Comparativo de propostas de fornecedores por item, com seleção do vencedor.</figcaption>
+</figure>
+
+<p>Esta é a tela onde o comprador lança as propostas recebidas de cada fornecedor por item (preço, prazo de entrega, condição de pagamento) e marca a proposta vencedora. Ao selecionar um vencedor para todos os itens da cotação e concluir, os itens envolvidos passam para <code>COTADO</code> e o % cotado da SC de origem é recalculado automaticamente.</p>
+<h3 id="tela-lista-de-pedidos-de-compra">Tela: Lista de Pedidos de Compra</h3>
+<figure>
+  <img src="screenshots/compras/07-pedidos-lista.png" alt="Lista de Pedidos de Compra">
+  <figcaption>Pedidos de compra (`/compras/pedidos/`) gerados a partir de cotações concluídas ou de pedido direto.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-pedido-de-compra">Tela: Detalhe do Pedido de Compra</h3>
+<figure>
+  <img src="screenshots/compras/08-pedido-detalhe.png" alt="Detalhe de um Pedido de Compra">
+  <figcaption>Detalhe do pedido: itens, fornecedor, valores e ações de envio/cancelamento/PDF.</figcaption>
+</figure>
+
+<p>A partir daqui é possível enviar o pedido ao fornecedor (e-mail ou WhatsApp), gerar o PDF do pedido, cancelá-lo ou — quando a mercadoria chegar — iniciar o recebimento.</p>
+<h3 id="tela-pedido-direto-compra-rapida">Tela: Pedido Direto (compra rápida)</h3>
+<figure>
+  <img src="screenshots/compras/09-pedido-direto.png" alt="Formulário de Pedido Direto">
+  <figcaption>Formulário de compra rápida: fornecedor, produtos, quantidades e preços, sem cotação.</figcaption>
+</figure>
+
+<p>Atalho para compras simples: gera um Pedido de Compra diretamente, sem passar por solicitação nem cotação. Indicado para reposições rotineiras de baixo risco.</p>
+<h3 id="tela-lista-de-recebimentos">Tela: Lista de Recebimentos</h3>
+<figure>
+  <img src="screenshots/compras/10-recebimentos-lista.png" alt="Lista de Recebimentos">
+  <figcaption>Recebimentos (`/compras/recebimentos/`) — conferência física da mercadoria vinculada a um pedido.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-recebimento">Tela: Detalhe do Recebimento</h3>
+<figure>
+  <img src="screenshots/compras/11-recebimento-detalhe.png" alt="Detalhe de um Recebimento">
+  <figcaption>Conferência de itens recebidos, registro de divergências e vínculo com a nota fiscal do fornecedor.</figcaption>
+</figure>
+
+<p>Ao confirmar o recebimento, o sistema gera automaticamente o(s) lote(s) de estoque e atualiza a quantidade disponível do produto. Se houver nota fiscal vinculada, o lançamento no financeiro (Conta a Pagar) também é criado a partir daqui.</p>
+<h3 id="tela-entrada-direta-de-nf-e">Tela: Entrada Direta de NF-e</h3>
+<figure>
+  <img src="screenshots/compras/12-entrada-direta-nf.png" alt="Entrada Direta de NF-e">
+  <figcaption>Importação do XML da nota fiscal do fornecedor direto para o estoque.</figcaption>
+</figure>
+
+<p>Usada quando a compra já foi feita fora do fluxo de solicitação/pedido. Basta importar o XML da NF-e; o sistema lê os produtos e quantidades e permite vincular cada item da nota a um produto já cadastrado antes de lançar a entrada em estoque.</p>
+<h3 id="tela-manifestacao-do-destinatario-md-e">Tela: Manifestação do Destinatário (MD-e)</h3>
+<figure>
+  <img src="screenshots/compras/13-mde-lista.png" alt="Manifestação do Destinatário">
+  <figcaption>Lista de notas fiscais recebidas de fornecedores pendentes de manifestação junto à SEFAZ.</figcaption>
+</figure>
+
+<p>Toda NF-e emitida contra o CNPJ da empresa precisa ser "manifestada" perante a SEFAZ (confirmar ciência, confirmar a operação, ou declarar desconhecimento/operação não realizada). Esta tela reúne as notas pendentes dessa manifestação.</p>
+<h3 id="tela-planejamento-de-embalagens">Tela: Planejamento de Embalagens</h3>
+<figure>
+  <img src="screenshots/compras/14-planejamento-embalagem.png" alt="Planejamento de Embalagens">
+  <figcaption>Planejamento de compra de embalagens com base na previsão de uso.</figcaption>
+</figure>
+
+<h3 id="tela-relatorio-geral-de-compras">Tela: Relatório Geral de Compras</h3>
+<figure>
+  <img src="screenshots/compras/15-relatorio-geral.png" alt="Relatório Geral de Compras">
+  <figcaption>Visão consolidada de compras por período, fornecedor e status.</figcaption>
+</figure>
+
+<h3 id="fluxo-passo-a-passo-do-pedido-ao-estoque">Fluxo passo a passo — do pedido ao estoque</h3>
+<ol>
+<li>Um usuário abre uma <strong>Solicitação de Compra</strong> informando o que precisa e para quando.</li>
+<li>Um aprovador aprova a SC (ou ela nasce aprovada, se marcada como emergencial).</li>
+<li>O comprador seleciona os itens que quer cotar agora — não precisa ser todos de uma vez — e cria uma <strong>Cotação</strong>.</li>
+<li>As propostas de cada fornecedor são lançadas item a item; o comprador escolhe o vencedor por item.</li>
+<li>Ao concluir a cotação, o pedido de compra é gerado a partir dos itens vencedores.</li>
+<li>O pedido é enviado ao fornecedor (e-mail, WhatsApp ou PDF).</li>
+<li>Quando a mercadoria chega, o <strong>Recebimento</strong> é conferido contra o pedido; divergências (falta, sobra, avaria) são registradas.</li>
+<li>Confirmado o recebimento, o estoque é atualizado automaticamente e — se houver NF vinculada — o lançamento financeiro (Conta a Pagar) é criado.</li>
+</ol>
+<h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
+<ul>
+<li>Uma SC com <strong>% Cotado</strong> menor que 100% ainda tem itens pendentes de uma rodada de cotação — não é um erro, é esperado em cotação seletiva com múltiplas rodadas.</li>
+<li>Uma solicitação <strong>Cancelada</strong> não pode voltar a tramitar; é preciso abrir uma nova.</li>
+<li>A <strong>Entrada Direta de NF-e</strong> não substitui o fluxo formal quando já existe um Pedido de Compra em aberto para aquele fornecedor — use-a só para compras que não passaram pelo fluxo de solicitação.</li>
+<li>Notas pendentes de <strong>manifestação</strong> por muito tempo podem gerar bloqueios fiscais; vale revisar a tela de MD-e periodicamente.</li>
+</ul></section><section class="chapter"><h1 id="financeiro-fiscal">Financeiro &amp; Fiscal</h1>
+<h2 id="cadastros-fiscais-cadastros">Cadastros Fiscais (<code>/cadastros/</code>)</h2>
+<h3 id="visao-geral">Visão geral</h3>
+<p>NCM e CFOP são tabelas fiscais de referência usadas na emissão de notas fiscais e no cadastro de produtos. Normalmente são importadas em lote (arquivo oficial da Receita/SEFAZ) e depois só consultadas — não é comum cadastrar item a item manualmente.</p>
+<h3 id="tela-lista-de-ncm">Tela: Lista de NCM</h3>
+<figure>
+  <img src="screenshots/cadastros_fiscal/01-ncm-lista.png" alt="Lista de NCM">
+  <figcaption>Códigos NCM cadastrados (`/cadastros/ncm/`), com opção de importação em massa.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-cfop">Tela: Lista de CFOP</h3>
+<figure>
+  <img src="screenshots/cadastros_fiscal/02-cfop-lista.png" alt="Lista de CFOP">
+  <figcaption>Códigos CFOP cadastrados (`/cadastros/cfop/`), usados para definir a natureza fiscal de cada operação.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
+<ul>
+<li>Prefira sempre <strong>importar</strong> a tabela oficial de NCM/CFOP em vez de cadastrar manualmente, para evitar divergência com a tabela usada pela SEFAZ.</li>
+</ul>
+<h2 id="financeiro-financeiro">Financeiro (<code>/financeiro/</code>)</h2>
+<h3 id="visao-geral_1">Visão geral</h3>
+<p>Controla o ciclo completo de <strong>Contas a Pagar</strong> e <strong>Contas a Receber</strong>. A hierarquia de cada lado é a mesma: um documento principal, dividido em parcelas, cada parcela podendo ter um ou mais pagamentos/recebimentos registrados.</p>
+<pre><code>ContaPagar
+  └─ ParcelaContaPagar (1..N)
+       └─ PagamentoContaPagar (0..N)
+
+ContaReceber
+  └─ ParcelaContaReceber (1..N)
+       └─ RecebimentoContaReceber (0..N)
+</code></pre>
+<h3 id="conceitos-e-status">Conceitos e status</h3>
+<p>Uma <strong>Conta a Pagar</strong> segue o ciclo <code>ABERTA → APROVADA → PAGA</code> (ou <code>CANCELADA</code>/<code>RENEGOCIADA</code>). Se marcada como <code>requer_aprovacao</code>, fica bloqueada para pagamento até ser aprovada. Cada parcela tem seu próprio status (<code>ABERTA | VENCIDA | PAGA | RENEGOCIADA | CANCELADA</code>) e os juros/multa de atraso <strong>não são recalculados automaticamente</strong> — é preciso acionar o recálculo (botão na tela da conta) para atualizar o valor devido antes de registrar o pagamento.</p>
+<p>Uma <strong>Conta a Receber</strong> pode nascer de um Pedido de Venda, de uma Nota Fiscal, de uma Invoice de Exportação, ou ser lançada manualmente — e suporta moeda estrangeira (valor na moeda + taxa de câmbio, convertido para BRL).</p>
+<p>A maior parte das Contas a Pagar nasce automaticamente do módulo de <strong>Compras</strong>, no momento em que a nota fiscal do fornecedor é registrada no Recebimento — por isso este módulo funciona como o destino natural do fluxo de compras.</p>
+<h3 id="tela-dashboard-financeiro">Tela: Dashboard Financeiro</h3>
+<figure>
+  <img src="screenshots/financeiro/01-dashboard.png" alt="Dashboard Financeiro">
+  <figcaption>Posição consolidada: total a pagar, a receber e saldo líquido projetado.</figcaption>
+</figure>
+
+<h3 id="tela-contas-a-pagar">Tela: Contas a Pagar</h3>
+<figure>
+  <img src="screenshots/financeiro/02-contas-pagar-lista.png" alt="Contas a Pagar">
+  <figcaption>Lista de documentos de Contas a Pagar (`/financeiro/contas/`), filtrável por período (vencidas/próximas/30 dias/todas).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-conta-a-pagar">Tela: Detalhe da Conta a Pagar</h3>
+<figure>
+  <img src="screenshots/financeiro/03-conta-pagar-detalhe.png" alt="Detalhe de uma Conta a Pagar">
+  <figcaption>Parcelas, pagamentos registrados, e ações de aprovação, recálculo de juros e quitação de saldo.</figcaption>
+</figure>
+
+<p>Uma conta com saldo residual pequeno pode ser <strong>quitada</strong> diretamente (ação de renegociação), ajustando o valor e mudando o status para <code>RENEGOCIADA</code>, em vez de manter uma parcela pendente por centavos.</p>
+<h3 id="tela-agenda-de-pagamentos">Tela: Agenda de Pagamentos</h3>
+<figure>
+  <img src="screenshots/financeiro/04-parcelas-lista.png" alt="Agenda de Pagamentos">
+  <figcaption>Lista de parcelas (`/financeiro/parcelas/`) — diferente da lista de Contas a Pagar, que mostra os documentos, não as parcelas individuais.</figcaption>
+</figure>
+
+<p>Esta é a tela do dia a dia de quem paga contas: mostra cada parcela isoladamente, com data de vencimento, para decidir o que pagar primeiro.</p>
+<h3 id="tela-contas-a-receber">Tela: Contas a Receber</h3>
+<figure>
+  <img src="screenshots/financeiro/05-contas-receber-lista.png" alt="Contas a Receber">
+  <figcaption>Lista de Contas a Receber (`/financeiro/contas-receber/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-conta-a-receber">Tela: Detalhe da Conta a Receber</h3>
+<figure>
+  <img src="screenshots/financeiro/06-conta-receber-detalhe.png" alt="Detalhe de uma Conta a Receber">
+  <figcaption>Parcelas e recebimentos registrados; suporta valores em moeda estrangeira convertidos para BRL.</figcaption>
+</figure>
+
+<h3 id="tela-fluxo-de-caixa">Tela: Fluxo de Caixa</h3>
+<figure>
+  <img src="screenshots/financeiro/07-fluxo-caixa.png" alt="Fluxo de Caixa">
+  <figcaption>Projeção de entradas e saídas por período, cruzando Contas a Pagar e a Receber.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_1">Dicas e erros comuns</h3>
+<ul>
+<li>Antes de pagar uma parcela em atraso, use o recálculo de juros/multa — o valor exibido pode estar desatualizado até esse passo.</li>
+<li>Sempre use o valor em <strong>BRL</strong> ao somar contas a receber em moeda estrangeira; o valor na moeda original não é comparável entre contas de moedas diferentes.</li>
+<li>Uma Conta a Pagar com <code>requer_aprovacao=True</code> não deixa registrar pagamento antes de ser aprovada.</li>
+</ul>
+<h2 id="plano-de-contas-plano-contas">Plano de Contas (<code>/plano-contas/</code>)</h2>
+<h3 id="visao-geral_2">Visão geral</h3>
+<p>Estrutura hierárquica de contas contábeis (ex: Receitas → Receita de Vendas → Vendas de Frutas) e centros de custo, usada para classificar manualmente lançamentos financeiros e para gerar o balancete. A classificação <strong>não é automática</strong> — o usuário escolhe a conta contábil/centro de custo ao lançar uma Conta a Pagar ou a Receber.</p>
+<h3 id="tela-contas-contabeis">Tela: Contas Contábeis</h3>
+<figure>
+  <img src="screenshots/plano_contas/01-lista.png" alt="Contas Contábeis">
+  <figcaption>Lista de contas cadastradas (`/plano-contas/`).</figcaption>
+</figure>
+
+<h3 id="tela-arvore-do-plano-de-contas">Tela: Árvore do Plano de Contas</h3>
+<figure>
+  <img src="screenshots/plano_contas/02-arvore.png" alt="Árvore do Plano de Contas">
+  <figcaption>Visualização hierárquica das contas contábeis.</figcaption>
+</figure>
+
+<h3 id="tela-balancete">Tela: Balancete</h3>
+<figure>
+  <img src="screenshots/plano_contas/03-balancete.png" alt="Balancete">
+  <figcaption>Saldo consolidado por conta contábil em um período.</figcaption>
+</figure>
+
+<h3 id="tela-centros-de-custo">Tela: Centros de Custo</h3>
+<figure>
+  <img src="screenshots/plano_contas/04-centros-custo.png" alt="Centros de Custo">
+  <figcaption>Centros de custo cadastrados (`/plano-contas/centros/`), usados para segmentar o resultado por área/projeto.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
+<ul>
+<li>O plano de contas padrão pode ser gerado via comando <code>seed_plano_contas</code> (101 contas de referência) e depois ajustado conforme a necessidade da empresa.</li>
+</ul>
+<h2 id="contas-bancarias-bancario">Contas Bancárias (<code>/bancario/</code>)</h2>
+<h3 id="visao-geral_3">Visão geral</h3>
+<p>Gerencia as contas bancárias da empresa e a conciliação bancária: importação de extrato (OFX/CNAB) e comparação automática com os lançamentos do sistema, com sugestões de correspondência.</p>
+<h3 id="tela-contas-bancarias">Tela: Contas Bancárias</h3>
+<figure>
+  <img src="screenshots/bancario/01-contas-lista.png" alt="Contas Bancárias">
+  <figcaption>Contas bancárias cadastradas (`/bancario/contas/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-conta-bancaria">Tela: Detalhe da Conta Bancária</h3>
+<figure>
+  <img src="screenshots/bancario/02-conta-detalhe.png" alt="Detalhe de uma Conta Bancária">
+  <figcaption>Extrato importado e histórico de conciliação da conta.</figcaption>
+</figure>
+
+<p>A importação do extrato (botão na própria conta) aceita arquivos OFX/CNAB; após importar, a <strong>conciliação</strong> compara cada linha do extrato com os lançamentos do sistema e sugere pares prováveis, que podem ser confirmados, ignorados ou desfeitos.</p>
+<h3 id="tela-relatorio-de-conciliacao">Tela: Relatório de Conciliação</h3>
+<figure>
+  <img src="screenshots/bancario/03-relatorio-conciliacao.png" alt="Relatório de Conciliação">
+  <figcaption>Resumo de itens conciliados, pendentes e ignorados por período.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_3">Dicas e erros comuns</h3>
+<ul>
+<li>Uma conciliação <strong>desfeita</strong> volta o item para pendente — útil quando uma sugestão automática foi confirmada por engano.</li>
+</ul>
+<h2 id="adiantamentos-internacionais-adiantamentos">Adiantamentos Internacionais (<code>/adiantamentos/</code>)</h2>
+<h3 id="visao-geral_4">Visão geral</h3>
+<p>Controla adiantamentos recebidos de clientes internacionais antes do embarque de uma exportação, em moeda estrangeira, com desconto programado a cada embarque (valor fixo ou percentual da invoice) até a quitação. Um adiantamento não descontado até o fim da safra pode ser <strong>migrado</strong> para a safra seguinte.</p>
+<h3 id="status">Status</h3>
+<pre><code>PENDENTE_EMBARQUE → EM_ANDAMENTO → PARCIALMENTE_QUITADO → QUITADO
+</code></pre>
+<p>(ou <code>MIGRADO</code> / <code>CANCELADO</code>)</p>
+<h3 id="tela-lista-de-adiantamentos">Tela: Lista de Adiantamentos</h3>
+<figure>
+  <img src="screenshots/adiantamentos/01-lista.png" alt="Lista de Adiantamentos Internacionais">
+  <figcaption>Adiantamentos registrados (`/adiantamentos/`), por cliente e safra de referência.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-adiantamento">Tela: Detalhe do Adiantamento</h3>
+<figure>
+  <img src="screenshots/adiantamentos/02-detalhe.png" alt="Detalhe de um Adiantamento">
+  <figcaption>Valor em moeda estrangeira e convertido, regra de desconto e histórico de descontos aplicados por embarque.</figcaption>
+</figure>
+
+<p>A cada embarque/invoice do cliente, é possível <strong>aplicar o desconto</strong> programado (valor fixo ou percentual) ou <strong>pular</strong> o desconto daquele embarque específico, mantendo o saldo do adiantamento para os próximos.</p>
+<h3 id="tela-relatorio-de-adiantamentos">Tela: Relatório de Adiantamentos</h3>
+<figure>
+  <img src="screenshots/adiantamentos/03-relatorio.png" alt="Relatório de Adiantamentos">
+  <figcaption>Posição consolidada de adiantamentos por cliente/safra e saldo remanescente.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_4">Dicas e erros comuns</h3>
+<ul>
+<li>Um adiantamento não quitado até o fim da safra deve ser <strong>migrado</strong>, não cancelado — isso preserva o saldo e o histórico para a safra seguinte.</li>
+<li>O valor de referência para relatórios é sempre o <strong>convertido em BRL</strong> pela taxa de câmbio acordada, não o valor na moeda estrangeira.</li>
+</ul></section><section class="chapter"><h1 id="comercial-exportacao">Comercial &amp; Exportação</h1>
+<h2 id="vendas-vendas">Vendas (<code>/vendas/</code>)</h2>
+<h3 id="visao-geral">Visão geral</h3>
+<p>Gerencia os Pedidos de Venda, o documento comercial que formaliza uma venda para um cliente antes da emissão da nota fiscal. Trabalha junto com Embalagem (o romaneio pode nascer antes do pedido fechado) e Tabelas de Preço (para precificar automaticamente os itens conforme o cliente).</p>
+<h3 id="tela-pedidos-de-venda">Tela: Pedidos de Venda</h3>
+<figure>
+  <img src="screenshots/vendas/01-pedidos-lista.png" alt="Pedidos de Venda">
+  <figcaption>Lista de pedidos de venda (`/vendas/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-pedido-de-venda">Tela: Detalhe do Pedido de Venda</h3>
+<figure>
+  <img src="screenshots/vendas/02-pedido-detalhe.png" alt="Detalhe de um Pedido de Venda">
+  <figcaption>Itens do pedido, valores, e ações de aprovação, emissão de documento fiscal e cancelamento.</figcaption>
+</figure>
+
+<p>Um pedido aprovado pode <strong>emitir o documento fiscal</strong> correspondente diretamente a partir do detalhe, integrando com o módulo de Faturamento.</p>
+<h3 id="tela-novo-pedido-de-venda">Tela: Novo Pedido de Venda</h3>
+<figure>
+  <img src="screenshots/vendas/03-pedido-novo.png" alt="Novo Pedido de Venda">
+  <figcaption>Formulário de novo pedido: cliente, vendedor, itens e condição comercial.</figcaption>
+</figure>
+
+<h3 id="tela-tabelas-de-preco">Tela: Tabelas de Preço</h3>
+<figure>
+  <img src="screenshots/vendas/04-tabelas-preco.png" alt="Tabelas de Preço">
+  <figcaption>Tabelas de preço (`/vendas/tabelas-preco/`) usadas para sugerir preços por cliente/produto no pedido.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
+<ul>
+<li>Em operações de fruta/hortifruti, é comum o <strong>romaneio de embalagem</strong> nascer antes do pedido de venda estar fechado — o pedido é ajustado depois com o que efetivamente foi embalado. Veja a seção Embalagem abaixo.</li>
+</ul>
+<h2 id="embalagem-embalagem">Embalagem (<code>/embalagem/</code>)</h2>
+<h3 id="visao-geral_1">Visão geral</h3>
+<p>Controla a produção de embalagens para venda: ordens de embalagem que geram pallets, e romaneios que consolidam os pallets para uma venda/carga específica. O fluxo comum em operações de fruta é <strong>romaneio-primeiro</strong>: a embalagem acontece e o romaneio é fechado antes mesmo do pedido de venda estar formalmente concluído — o pedido nasce a partir do que foi efetivamente embalado, não o contrário.</p>
+<h3 id="tela-dashboard-de-embalagem">Tela: Dashboard de Embalagem</h3>
+<figure>
+  <img src="screenshots/embalagem/01-dashboard.png" alt="Dashboard de Embalagem">
+  <figcaption>Indicadores gerais de produção de embalagem.</figcaption>
+</figure>
+
+<h3 id="tela-tipos-de-embalagem">Tela: Tipos de Embalagem</h3>
+<figure>
+  <img src="screenshots/embalagem/02-tipos-embalagem.png" alt="Tipos de Embalagem">
+  <figcaption>Tipos de embalagem cadastrados (`/embalagem/tipos/`) — caixa, pallet, etc.</figcaption>
+</figure>
+
+<h3 id="tela-ordens-de-embalagem">Tela: Ordens de Embalagem</h3>
+<figure>
+  <img src="screenshots/embalagem/03-ordens-lista.png" alt="Ordens de Embalagem">
+  <figcaption>Ordens de embalagem (`/embalagem/ordens/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-ordem-de-embalagem">Tela: Detalhe da Ordem de Embalagem</h3>
+<figure>
+  <img src="screenshots/embalagem/04-ordem-detalhe.png" alt="Detalhe de uma Ordem de Embalagem">
+  <figcaption>Itens embalados; a partir daqui é possível gerar os pallets e imprimir etiquetas.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-pallets">Tela: Lista de Pallets</h3>
+<figure>
+  <img src="screenshots/embalagem/05-pallets-lista.png" alt="Lista de Pallets">
+  <figcaption>Pallets gerados a partir das ordens de embalagem, incluindo pallets mistos (múltiplos produtos).</figcaption>
+</figure>
+
+<h3 id="tela-romaneios-de-venda">Tela: Romaneios de Venda</h3>
+<figure>
+  <img src="screenshots/embalagem/06-romaneios-lista.png" alt="Romaneios de Venda">
+  <figcaption>Romaneios (`/embalagem/romaneios/`) — consolidação de pallets para uma carga/venda.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-romaneio">Tela: Detalhe do Romaneio</h3>
+<figure>
+  <img src="screenshots/embalagem/07-romaneio-detalhe.png" alt="Detalhe de um Romaneio">
+  <figcaption>Pallets incluídos no romaneio, com rateio de frete e ICMS por carga (maior resto) quando aplicável.</figcaption>
+</figure>
+
+<p>Quando o romaneio envolve frete e ICMS a ratear entre os itens da carga, o sistema usa o método do <strong>maior resto</strong> para distribuir o valor sem deixar diferenças de arredondamento, e pode gerar automaticamente um pré-CT-e a partir dos dados do romaneio.</p>
+<h3 id="dicas-e-erros-comuns_1">Dicas e erros comuns</h3>
+<ul>
+<li>Gerar os pallets a partir da Ordem de Embalagem evita ter que cadastrá-los manualmente no Romaneio depois.</li>
+<li>Pallets <strong>mistos</strong> (mais de um produto) só podem ser finalizados depois de todos os itens planejados serem adicionados.</li>
+</ul>
+<h2 id="etiquetas-avulsas-etiquetas-avulsas">Etiquetas Avulsas (<code>/etiquetas-avulsas/</code>)</h2>
+<h3 id="visao-geral_2">Visão geral</h3>
+<p>Gera lotes de etiquetas para reimpressão ou emissão avulsa, fora do fluxo normal de uma Ordem de Embalagem — por exemplo, para repor uma etiqueta danificada ou gerar etiquetas extras sem reabrir a ordem original.</p>
+<h3 id="tela-lotes-de-etiquetas-avulsas">Tela: Lotes de Etiquetas Avulsas</h3>
+<figure>
+  <img src="screenshots/etiquetas_avulsas/01-lotes-lista.png" alt="Lotes de Etiquetas Avulsas">
+  <figcaption>Lotes gerados (`/etiquetas-avulsas/lotes/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-lote-de-etiquetas">Tela: Detalhe do Lote de Etiquetas</h3>
+<figure>
+  <img src="screenshots/etiquetas_avulsas/02-lote-detalhe.png" alt="Detalhe de um Lote de Etiquetas">
+  <figcaption>Etiquetas do lote, com opção de reimpressão ou cancelamento individual.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
+<ul>
+<li>Uma etiqueta avulsa <strong>cancelada</strong> não é reaproveitável — gere uma nova em vez de tentar reativar.</li>
+</ul>
+<h2 id="exportacao-exportacao">Exportação (<code>/exportacao/</code>)</h2>
+<h3 id="visao-geral_3">Visão geral</h3>
+<p>Controla o processo de exportação marítima: solicitação e confirmação de booking (reserva de espaço no navio), containers vinculados ao booking, e ordens de coleta da carga. Os cadastros de apoio (portos, armadores, navios, agentes de exportação) ficam em Cadastros.</p>
+<h3 id="status-do-booking">Status do Booking</h3>
+<pre><code>Solicitação → Booking confirmado → Embarcado
+</code></pre>
+<h3 id="tela-solicitacoes-de-booking">Tela: Solicitações de Booking</h3>
+<figure>
+  <img src="screenshots/exportacao/01-solicitacoes-lista.png" alt="Solicitações de Booking">
+  <figcaption>Solicitações de reserva de espaço no navio (`/exportacao/solicitacoes/`).</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-bookings">Tela: Lista de Bookings</h3>
+<figure>
+  <img src="screenshots/exportacao/02-bookings-lista.png" alt="Lista de Bookings">
+  <figcaption>Bookings confirmados (`/exportacao/bookings/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-booking">Tela: Detalhe do Booking</h3>
+<figure>
+  <img src="screenshots/exportacao/03-booking-detalhe.png" alt="Detalhe de um Booking">
+  <figcaption>Containers vinculados ao booking, com opção de transferir carga entre containers e ver o histórico.</figcaption>
+</figure>
+
+<h3 id="tela-ordens-de-coleta">Tela: Ordens de Coleta</h3>
+<figure>
+  <img src="screenshots/exportacao/04-ordens-coleta.png" alt="Ordens de Coleta">
+  <figcaption>Ordens de coleta da carga para o porto de embarque.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_3">Dicas e erros comuns</h3>
+<ul>
+<li>Um booking só deve ser marcado como <strong>embarcado</strong> depois que todos os containers previstos estiverem devidamente carregados.</li>
+</ul>
+<h2 id="drawback-drawback">Drawback (<code>/drawback/</code>)</h2>
+<h3 id="visao-geral_4">Visão geral</h3>
+<p>Controla o regime aduaneiro especial de Drawback (suspensão/isenção de tributos sobre insumos importados usados na produção de mercadorias exportadas), organizado por <strong>Ato Concessório</strong> (AC) — o documento que autoriza o regime — com registro de entradas (insumos importados/adquiridos) e saídas (produtos exportados) vinculadas ao AC.</p>
+<h3 id="tela-dashboard-de-drawback-atos-concessorios">Tela: Dashboard de Drawback (Atos Concessórios)</h3>
+<figure>
+  <img src="screenshots/drawback/01-dashboard.png" alt="Dashboard de Drawback">
+  <figcaption>Atos Concessórios cadastrados, com saldo de insumos disponível para uso.</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-ato-concessorio">Tela: Detalhe do Ato Concessório</h3>
+<figure>
+  <img src="screenshots/drawback/02-ac-detalhe.png" alt="Detalhe de um Ato Concessório">
+  <figcaption>Entradas e saídas vinculadas ao AC, com saldo por produto e relatório exportável.</figcaption>
+</figure>
+
+<p>Entradas e saídas podem ser importadas em lote via planilha (XLSX), ou vinculadas diretamente a um Recebimento de Compra / item de NF-e já existente no sistema, evitando digitação duplicada.</p>
+<h3 id="dicas-e-erros-comuns_4">Dicas e erros comuns</h3>
+<ul>
+<li>Uma entrada ou saída <strong>anulada</strong> não conta mais no saldo do AC — use com cuidado, pois pode ser necessário para corrigir um lançamento incorreto.</li>
+<li>Vincular entradas/saídas aos documentos já existentes no ERP (compra/NF-e) é preferível a importar por planilha, pois mantém rastreabilidade cruzada.</li>
+</ul>
+<h2 id="faturamento-faturamento">Faturamento (<code>/faturamento/</code>)</h2>
+<h3 id="visao-geral_5">Visão geral</h3>
+<p>Módulo fiscal central: emissão de <strong>NF-e</strong> (venda), <strong>CT-e</strong> (transporte), <strong>MDF-e</strong> (manifesto de carga), <strong>Invoice de Exportação</strong> e <strong>Packing List</strong>, além da configuração fiscal da empresa (certificado digital, ambiente SEFAZ) e da <strong>Distribuição de DF-e</strong> — recebimento automático de documentos fiscais de terceiros emitidos contra o CNPJ da empresa.</p>
+<h3 id="tela-dashboard-de-faturamento">Tela: Dashboard de Faturamento</h3>
+<figure>
+  <img src="screenshots/faturamento/01-dashboard.png" alt="Dashboard de Faturamento">
+  <figcaption>Indicadores gerais: notas emitidas, pendências e alertas fiscais.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-notas-fiscais-nf-e">Tela: Lista de Notas Fiscais (NF-e)</h3>
+<figure>
+  <img src="screenshots/faturamento/02-nfe-lista.png" alt="Lista de Notas Fiscais">
+  <figcaption>NF-e emitidas (`/faturamento/notas-fiscais/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-nf-e">Tela: Detalhe da NF-e</h3>
+<figure>
+  <img src="screenshots/faturamento/03-nfe-detalhe.png" alt="Detalhe de uma NF-e">
+  <figcaption>Itens, status de autorização na SEFAZ, e ações (emitir, cancelar, consultar, DANFE, XML, carta de correção).</figcaption>
+</figure>
+
+<p>Uma NF-e passa por: <strong>rascunho → emissão</strong> (envio à SEFAZ) <strong>→ autorizada</strong> (ou rejeitada/denegada). Após autorizada, ainda é possível emitir <strong>carta de correção</strong> para ajustes que não alteram valores, ou <strong>cancelar</strong> dentro do prazo legal.</p>
+<h3 id="tela-remessas-pendentes">Tela: Remessas Pendentes</h3>
+<figure>
+  <img src="screenshots/faturamento/04-remessas-pendentes.png" alt="Remessas Pendentes">
+  <figcaption>Pedidos/remessas aguardando faturamento, com opção de fechar lote e gerar nota-mãe.</figcaption>
+</figure>
+
+<h3 id="tela-invoices-de-exportacao">Tela: Invoices de Exportação</h3>
+<figure>
+  <img src="screenshots/faturamento/05-invoices-lista.png" alt="Invoices de Exportação">
+  <figcaption>Invoices comerciais de exportação (`/faturamento/invoices/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-invoice">Tela: Detalhe da Invoice</h3>
+<figure>
+  <img src="screenshots/faturamento/06-invoice-detalhe.png" alt="Detalhe de uma Invoice">
+  <figcaption>Itens da invoice, valores em moeda estrangeira e vínculo com adiantamentos internacionais.</figcaption>
+</figure>
+
+<h3 id="tela-packing-lists">Tela: Packing Lists</h3>
+<figure>
+  <img src="screenshots/faturamento/07-packing-lists.png" alt="Packing Lists">
+  <figcaption>Packing Lists (`/faturamento/packing-lists/`) — detalhamento físico da carga de exportação.</figcaption>
+</figure>
+
+<h3 id="tela-ct-e-conhecimento-de-transporte">Tela: CT-e (Conhecimento de Transporte)</h3>
+<figure>
+  <img src="screenshots/faturamento/08-cte-lista.png" alt="Lista de CT-e">
+  <figcaption>CT-e emitidos (`/faturamento/cte/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-ct-e">Tela: Detalhe do CT-e</h3>
+<figure>
+  <img src="screenshots/faturamento/09-cte-detalhe.png" alt="Detalhe de um CT-e">
+  <figcaption>Dados do frete, documentos vinculados (NF-e transportadas) e ações fiscais (emitir, cancelar, DACTE).</figcaption>
+</figure>
+
+<p>Um CT-e pode ser gerado automaticamente a partir de uma NF-e (ligação NF-e → CT-e) ou de um Romaneio com frete a ratear, evitando redigitar os dados da carga transportada.</p>
+<h3 id="tela-mdf-e-manifestos">Tela: MDF-e (Manifestos)</h3>
+<figure>
+  <img src="screenshots/faturamento/10-mdfe-lista.png" alt="Lista de MDF-e">
+  <figcaption>MDF-e emitidos (`/faturamento/mdfe/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-do-mdf-e">Tela: Detalhe do MDF-e</h3>
+<figure>
+  <img src="screenshots/faturamento/11-mdfe-detalhe.png" alt="Detalhe de um MDF-e">
+  <figcaption>Condutor(es), veículo(s) e documentos fiscais (NF-e/CT-e) incluídos no manifesto; deve ser encerrado ao fim da viagem.</figcaption>
+</figure>
+
+<h3 id="tela-cotacoes-bcb">Tela: Cotações BCB</h3>
+<figure>
+  <img src="screenshots/faturamento/12-cotacoes-bcb.png" alt="Cotações BCB">
+  <figcaption>Cotações de câmbio do Banco Central, usadas para converter valores em Invoice/Adiantamentos.</figcaption>
+</figure>
+
+<h3 id="tela-configuracao-fiscal">Tela: Configuração Fiscal</h3>
+<figure>
+  <img src="screenshots/faturamento/13-configuracao-fiscal.png" alt="Configuração Fiscal">
+  <figcaption>Certificado digital, ambiente SEFAZ (homologação/produção) e parâmetros gerais de emissão.</figcaption>
+</figure>
+
+<h3 id="tela-distribuicao-de-df-e">Tela: Distribuição de DF-e</h3>
+<figure>
+  <img src="screenshots/faturamento/14-distribuicao-dfe.png" alt="Distribuição de DF-e">
+  <figcaption>Notas e eventos de terceiros recebidos automaticamente da SEFAZ, com contadores de autorizadas/canceladas e manifestação pendente.</figcaption>
+</figure>
+
+<p>Toda vez que um fornecedor emite uma NF-e contra o CNPJ da empresa, ela aparece aqui automaticamente (sincronização periódica com a SEFAZ). Cada NF-e recebida precisa ser <strong>manifestada</strong> (Ciência da Operação, Confirmação, Desconhecimento ou Operação não Realizada) — o botão de ação na coluna Manifestação permite isso individualmente ou em lote. Este fluxo se conecta ao módulo de Compras: uma NF-e manifestada com Ciência pode ser usada para abrir uma Entrada Direta / Recebimento.</p>
+<h3 id="dicas-e-erros-comuns_5">Dicas e erros comuns</h3>
+<ul>
+<li>Uma NF-e <strong>autorizada</strong> com erro só pode ser corrigida por carta de correção (dados não fiscais) ou cancelamento dentro do prazo — nunca editada diretamente.</li>
+<li>Verifique a <strong>Distribuição de DF-e</strong> regularmente: notas de fornecedor não manifestadas por muito tempo podem gerar problemas fiscais para a empresa.</li>
+<li>O MDF-e precisa ser <strong>encerrado</strong> ao final da viagem — um manifesto aberto indefinidamente distorce relatórios de carga em trânsito.</li>
+</ul></section><section class="chapter"><h1 id="infraestrutura">Infraestrutura</h1>
+<h2 id="energia-solar-energia">Energia Solar (<code>/energia/</code>)</h2>
+<h3 id="visao-geral">Visão geral</h3>
+<p>Acompanha a geração de energia solar da empresa: usinas fotovoltaicas próprias, as unidades consumidoras que recebem os créditos de energia gerados (compensação de energia entre unidades, comum em sistemas de geração distribuída), lançamentos mensais de geração/consumo, relatórios por usina e ocorrências (falhas, manutenções).</p>
+<h3 id="conceitos-principais">Conceitos principais</h3>
+<table>
+<thead>
+<tr>
+<th>Conceito</th>
+<th>Papel</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Usina Fotovoltaica</td>
+<td>Instalação geradora (capacidade em kWp, geração mensal/anual acordada)</td>
+</tr>
+<tr>
+<td>Unidade Consumidora</td>
+<td>Ponto de consumo — pode ser <strong>geradora</strong> (onde os painéis estão), <strong>beneficiária</strong> (recebe créditos) ou <strong>convencional</strong> (sem energia solar)</td>
+</tr>
+<tr>
+<td>Lançamento Mensal</td>
+<td>Registro mensal de geração e consumo, usado para acompanhar o desempenho frente ao acordado</td>
+</tr>
+<tr>
+<td>Ocorrência</td>
+<td>Falha ou evento registrado numa usina (queda de geração, manutenção, etc.)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tela-dashboard-de-energia">Tela: Dashboard de Energia</h3>
+<figure>
+  <img src="screenshots/energia/01-dashboard.png" alt="Dashboard de Energia">
+  <figcaption>Indicadores gerais de geração e consumo do período.</figcaption>
+</figure>
+
+<h3 id="tela-consolidado-ranking">Tela: Consolidado / Ranking</h3>
+<figure>
+  <img src="screenshots/energia/02-consolidado.png" alt="Consolidado / Ranking">
+  <figcaption>Comparativo entre usinas e unidades consumidoras, com ranking de desempenho.</figcaption>
+</figure>
+
+<h3 id="tela-lista-de-usinas">Tela: Lista de Usinas</h3>
+<figure>
+  <img src="screenshots/energia/03-usinas-lista.png" alt="Lista de Usinas">
+  <figcaption>Usinas fotovoltaicas cadastradas (`/energia/usinas/`).</figcaption>
+</figure>
+
+<h3 id="tela-detalhe-da-usina">Tela: Detalhe da Usina</h3>
+<figure>
+  <img src="screenshots/energia/04-usina-detalhe.png" alt="Detalhe de uma Usina">
+  <figcaption>Capacidade instalada, geração acordada e histórico de lançamentos/ocorrências da usina.</figcaption>
+</figure>
+
+<h3 id="tela-unidades-consumidoras">Tela: Unidades Consumidoras</h3>
+<figure>
+  <img src="screenshots/energia/05-unidades-lista.png" alt="Unidades Consumidoras">
+  <figcaption>Unidades consumidoras (`/energia/unidades/`), classificadas como geradora, beneficiária ou convencional.</figcaption>
+</figure>
+
+<h3 id="tela-lancamentos-mensais">Tela: Lançamentos Mensais</h3>
+<figure>
+  <img src="screenshots/energia/06-lancamentos-lista.png" alt="Lançamentos Mensais">
+  <figcaption>Lançamentos de geração/consumo por mês (`/energia/lancamentos/`).</figcaption>
+</figure>
+
+<h3 id="tela-relatorios-de-usina">Tela: Relatórios de Usina</h3>
+<figure>
+  <img src="screenshots/energia/07-relatorios-usina.png" alt="Relatórios de Usina">
+  <figcaption>Relatórios consolidados por usina e período.</figcaption>
+</figure>
+
+<h3 id="tela-ocorrencias">Tela: Ocorrências</h3>
+<figure>
+  <img src="screenshots/energia/08-ocorrencias-lista.png" alt="Ocorrências">
+  <figcaption>Ocorrências registradas por usina (`/energia/ocorrencias/`), com opção de marcar como resolvida.</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
+<ul>
+<li>Uma queda de geração recorrente numa usina deve ser registrada como <strong>ocorrência</strong>, não só observada no lançamento mensal — isso mantém o histórico de problemas rastreável.</li>
+<li>O prognóstico mensal serve de referência para identificar desvios; geração muito abaixo do prognóstico é o principal sinal de alerta a acompanhar no Consolidado.</li>
+</ul></section><section class="chapter"><h1 id="gestao-do-sistema">Gestão do Sistema</h1>
+<h2 id="dashboard-dashboard">Dashboard (<code>/dashboard/</code>)</h2>
+<h3 id="visao-geral">Visão geral</h3>
+<p>Tela inicial do sistema para a maioria dos usuários: um resumo rápido da situação da empresa (contas a pagar vencidas, a receber em aberto, compras e vendas do mês, cadastros principais) com atalhos para os módulos mais usados.</p>
+<h3 id="tela-dashboard-geral">Tela: Dashboard Geral</h3>
+<figure>
+  <img src="screenshots/dashboard/01-geral.png" alt="Dashboard Geral">
+  <figcaption>Indicadores do mês, ações necessárias (aprovações pendentes, mensagens não lidas) e acesso rápido aos módulos.</figcaption>
+</figure>
+
+<h2 id="empresas-empresas">Empresas (<code>/empresas/</code>)</h2>
+<h3 id="visao-geral_1">Visão geral</h3>
+<p>Cadastro das empresas (tenants) do sistema — cada empresa é isolada das demais, e cada usuário só enxerga os dados da sua própria empresa (exceto superusuários, que têm visão de todas). Aqui também ficam <strong>Funções/Roles</strong> (perfis de permissão personalizáveis), <strong>Planos</strong> de assinatura e as <strong>Preferências</strong> da empresa.</p>
+<h3 id="tela-lista-de-empresas">Tela: Lista de Empresas</h3>
+<figure>
+  <img src="screenshots/empresas/01-lista.png" alt="Lista de Empresas">
+  <figcaption>Empresas visíveis para o usuário logado — um administrador de empresa vê apenas a própria; um superusuário vê todas.</figcaption>
+</figure>
+
+<h3 id="tela-painel-admin">Tela: Painel Admin</h3>
+<figure>
+  <img src="screenshots/empresas/02-painel-admin.png" alt="Painel Admin">
+  <figcaption>Painel administrativo da empresa.</figcaption>
+</figure>
+
+<h3 id="tela-funcoesroles">Tela: Funções/Roles</h3>
+<figure>
+  <img src="screenshots/empresas/03-roles-lista.png" alt="Funções/Roles">
+  <figcaption>Perfis de permissão (`/empresas/roles/`) que podem ser atribuídos a usuários, com permissões granulares por módulo.</figcaption>
+</figure>
+
+<p>Uma Role pode ser <strong>clonada</strong> ou <strong>personalizada</strong> (fork) a partir de um template existente, em vez de configurar as permissões do zero a cada nova função.</p>
+<h3 id="tela-planos">Tela: Planos</h3>
+<figure>
+  <img src="screenshots/empresas/04-planos-lista.png" alt="Planos">
+  <figcaption>Planos de assinatura disponíveis (`/empresas/planos/`), usados para limitar recursos por empresa.</figcaption>
+</figure>
+
+<h3 id="tela-preferencias-da-empresa">Tela: Preferências da Empresa</h3>
+<figure>
+  <img src="screenshots/empresas/05-preferencias.png" alt="Preferências da Empresa">
+  <figcaption>Configurações gerais da empresa (logo, dados cadastrais, preferências de exibição).</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
+<ul>
+<li>Antes de criar uma Role do zero, veja se um <strong>template de permissões</strong> existente já cobre a maior parte do que é preciso — é mais rápido clonar e ajustar.</li>
+</ul>
+<h2 id="usuarios-usuarios">Usuários (<code>/usuarios/</code>)</h2>
+<h3 id="visao-geral_2">Visão geral</h3>
+<p>Gerencia os usuários internos do sistema (tipos ADMIN, GERENTE, FUNC, PROD, VENDEDOR, FINANCEIRO), autenticação (incluindo 2FA) e logs de acesso.</p>
+<h3 id="tela-lista-de-usuarios">Tela: Lista de Usuários</h3>
+<figure>
+  <img src="screenshots/usuarios/01-lista.png" alt="Lista de Usuários">
+  <figcaption>Usuários cadastrados (`/usuarios/`), com tipo de acesso e status.</figcaption>
+</figure>
+
+<h3 id="tela-tipos-de-usuario">Tela: Tipos de Usuário</h3>
+<figure>
+  <img src="screenshots/usuarios/02-tipos-lista.png" alt="Tipos de Usuário">
+  <figcaption>Tipos de usuário configuráveis (`/usuarios/tipos/`).</figcaption>
+</figure>
+
+<h3 id="tela-logs-de-login">Tela: Logs de Login</h3>
+<figure>
+  <img src="screenshots/usuarios/03-registros-login.png" alt="Logs de Login">
+  <figcaption>Histórico de acessos ao sistema (`/usuarios/registros/`), útil para auditoria de segurança.</figcaption>
+</figure>
+
+<h3 id="tela-meu-perfil">Tela: Meu Perfil</h3>
+<figure>
+  <img src="screenshots/usuarios/04-meu-perfil.png" alt="Meu Perfil">
+  <figcaption>Dados do próprio usuário logado, troca de senha e configuração de autenticação em duas etapas (2FA).</figcaption>
+</figure>
+
+<h3 id="dicas-e-erros-comuns_1">Dicas e erros comuns</h3>
+<ul>
+<li>Um usuário do tipo <code>PROD</code> (produtor) ou os tipos de portal são automaticamente restritos ao respectivo portal — não têm acesso ao painel administrativo interno.</li>
+<li>Ativar o 2FA em <strong>Meu Perfil</strong> gera códigos de backup — guarde-os, pois são a única forma de recuperar acesso se o dispositivo de autenticação for perdido.</li>
+</ul>
+<h2 id="dashboard-executivo-metricas-dashboard-executivo">Dashboard Executivo / Métricas (<code>/dashboard-executivo/</code>)</h2>
+<h3 id="visao-geral_3">Visão geral</h3>
+<p>Painel de KPIs de alto nível, pensado para visão gerencial/executiva: métricas consolidadas, consumo de recursos por empresa (relevante em ambientes com múltiplas empresas/planos) e alertas operacionais. O conteúdo completo (comparativo entre empresas, consumo por plano) é visível para <strong>superusuários</strong>; um administrador de empresa comum vê uma versão equivalente ao dashboard padrão da própria empresa.</p>
+<h3 id="tela-dashboard-executivo">Tela: Dashboard Executivo</h3>
+<figure>
+  <img src="screenshots/metricas/01-dashboard-executivo.png" alt="Dashboard Executivo">
+  <figcaption>KPIs principais da empresa.</figcaption>
+</figure>
+
+<h3 id="tela-consumo-de-recursos">Tela: Consumo de Recursos</h3>
+<figure>
+  <img src="screenshots/metricas/02-consumo-recursos.png" alt="Consumo de Recursos">
+  <figcaption>Consumo de recursos por empresa — visão completa disponível para superusuários.</figcaption>
+</figure>
+
+<h3 id="tela-alertas">Tela: Alertas</h3>
+<figure>
+  <img src="screenshots/metricas/03-alertas.png" alt="Alertas">
+  <figcaption>Alertas operacionais consolidados.</figcaption>
+</figure>
+
+<h2 id="portal-do-cliente-portalcliente">Portal do Cliente (<code>/portal/cliente/</code>)</h2>
+<h3 id="visao-geral_4">Visão geral</h3>
+<p>Portal de autoatendimento para os clientes da empresa, com login próprio (separado do login interno) e acesso restrito às informações do próprio cliente: posição financeira e documentos. Não aparece na sidebar interna — o cliente acessa diretamente pela URL do portal, geralmente com um link/credencial fornecido pela empresa.</p>
+<table>
+<thead>
+<tr>
+<th>Tela</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Login do Portal</td>
+<td><code>/portal/cliente/login/</code></td>
+</tr>
+<tr>
+<td>Dashboard do Portal</td>
+<td><code>/portal/cliente/</code></td>
+</tr>
+<tr>
+<td>Financeiro (lista/detalhe)</td>
+<td><code>/portal/cliente/financeiro/</code></td>
+</tr>
+<tr>
+<td>Documentos</td>
+<td><code>/portal/cliente/documentos/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Estruturalmente equivalente aos demais portais satélites do sistema — <strong>Portal do Fornecedor</strong> e <strong>Portal do Produtor</strong> (acessados a partir do botão "criar acesso" na ficha do fornecedor/produtor, em Cadastros) e <strong>Portal do Motorista</strong> / <strong>Portal do Campo</strong> (a partir de Frota e Ordens de Serviço, respectivamente) — cada um com login e escopo de dados próprios, isolados do painel administrativo interno.</p>
+<h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
+<ul>
+<li>O acesso ao portal de um cliente/fornecedor/produtor pode ser <strong>bloqueado</strong> a qualquer momento a partir da ficha correspondente no sistema interno, sem excluir o cadastro.</li>
+</ul></section>
+</body>
+</html>

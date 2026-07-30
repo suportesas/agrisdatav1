@@ -141,13 +141,31 @@
                             </thead>
                             <tbody>
                                 {% for parcela in parcelas %}
-                                <tr>
+                                <tr {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}data-juros-multa-url="{% url 'financeiro:parcela_atualizar_juros_multa' parcela.id %}"{% endif %}>
                                     <td class="ps-4 text-mono">{{ parcela.numero_parcela }}</td>
                                     <td class="text-mono">{{ parcela.data_vencimento|date:'d/m/Y' }}</td>
                                     <td class="text-mono">R$ {{ parcela.valor_parcela|floatformat:"2g" }}</td>
-                                    <td class="text-mono">R$ {{ parcela.juros_parcela|floatformat:"2g" }}</td>
-                                    <td class="text-mono">R$ {{ parcela.multa_parcela|floatformat:"2g" }}</td>
-                                    <td class="text-mono fw-semibold">R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</td>
+                                    <td class="text-mono" style="min-width:110px">
+                                        {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}
+                                        <input type="text" inputmode="decimal" autocomplete="off" data-decimals="2"
+                                               class="form-control form-control-sm money-mask-input js-juros-input"
+                                               value="{{ parcela.juros_parcela|stringformat:'.2f' }}"
+                                               title="Juros por atraso (editável)">
+                                        {% else %}
+                                        R$ {{ parcela.juros_parcela|floatformat:"2g" }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-mono" style="min-width:110px">
+                                        {% if parcela.status == 'ABERTA' or parcela.status == 'VENCIDA' %}
+                                        <input type="text" inputmode="decimal" autocomplete="off" data-decimals="2"
+                                               class="form-control form-control-sm money-mask-input js-multa-input"
+                                               value="{{ parcela.multa_parcela|stringformat:'.2f' }}"
+                                               title="Multa por atraso (editável)">
+                                        {% else %}
+                                        R$ {{ parcela.multa_parcela|floatformat:"2g" }}
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-mono fw-semibold js-total-parcela">R$ {{ parcela.valor_total_parcela|floatformat:"2g" }}</td>
                                     <td>
                                         <span class="status-pill {% if parcela.status == 'PAGA' %}green{% elif parcela.status == 'VENCIDA' %}red{% else %}orange{% endif %}">
                                             {{ parcela.get_status_display }}
@@ -601,6 +619,61 @@ document.getElementById('modalEditarPagamento').addEventListener('show.bs.modal'
     document.querySelector('#formEditarPagamento input[name="senha"]').value = '';
     document.querySelector('#formEditarPagamento textarea[name="observacao"]').value = '';
 });
+</script>
+
+<!-- Edição inline de Juros/Multa nas parcelas -->
+<script>
+(function () {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    const tabelaParcelas = document.querySelector('#parcelas');
+    if (!tabelaParcelas) return;
+
+    function lerValor(el) {
+        // A máscara (money-mask.js) troca o input original por um par
+        // hidden (valor decimal puro) + display (texto formatado em BR).
+        // MoneyMask.getValue aceita qualquer um dos dois e devolve o número.
+        if (window.MoneyMask) return window.MoneyMask.getValue(el);
+        return parseFloat((el.value || '0').replace(',', '.')) || 0;
+    }
+
+    function salvarJurosMulta(row) {
+        const jurosEl = row.querySelector('.js-juros-input');
+        const multaEl = row.querySelector('.js-multa-input');
+        const totalCell = row.querySelector('.js-total-parcela');
+        const url = row.dataset.jurosMultaUrl;
+
+        const fd = new FormData();
+        fd.append('juros', lerValor(jurosEl));
+        fd.append('multa', lerValor(multaEl));
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrftoken },
+            body: fd
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (!data.success) {
+                alert(data.error || 'Não foi possível salvar juros/multa.');
+                return;
+            }
+            const total = parseFloat(data.valor_total_parcela).toFixed(2).replace('.', ',');
+            totalCell.textContent = 'R$ ' + total;
+            totalCell.classList.add('text-success');
+            setTimeout(() => totalCell.classList.remove('text-success'), 1200);
+        })
+        .catch(() => alert('Erro de conexão ao salvar juros/multa.'));
+    }
+
+    // Delegação via "focusout" (ao contrário de "blur", ele propaga/bubbles),
+    // pois a máscara substitui o input original por um elemento novo (o
+    // display) que não existe ainda quando este script roda.
+    tabelaParcelas.addEventListener('focusout', function (ev) {
+        if (!ev.target.classList) return;
+        if (!ev.target.classList.contains('js-juros-input') && !ev.target.classList.contains('js-multa-input')) return;
+        salvarJurosMulta(ev.target.closest('tr'));
+    });
+})();
 </script>
 
 {% endblock %}

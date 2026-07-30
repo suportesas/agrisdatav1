@@ -164,6 +164,17 @@ def etapa_concluir(request, os_pk, etapa_pk):
         messages.error(request, 'Não é possível concluir sem registrar ao menos uma pesagem.')
         return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 
+    pendentes = ViagemColheita.objects.filter(
+        carrocao__frota__etapa=etapa, status='AGUARDANDO_LIBERACAO'
+    ).count()
+    if pendentes:
+        messages.error(
+            request,
+            f'Existem {pendentes} viagem(ns) aguardando liberação de retorno. '
+            'Libere todas antes de concluir a etapa.'
+        )
+        return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+
     ultimo_corte = request.POST.get('ultimo_corte_ciclo') == 'on'
 
     etapa.recalcular_total()
@@ -407,6 +418,7 @@ def viagem_nova(request, os_pk, etapa_pk, carrocao_pk):
                     'peso_final': str(viagem.peso_final_kg),
                     'total_carrocao': str(total_carrocao),
                     'total_etapa': str(etapa.total_liquido_kg),
+                    'status': viagem.status,
                 })
             messages.success(
                 request,
@@ -467,6 +479,44 @@ def viagem_excluir(request, os_pk, etapa_pk, viagem_pk):
             viagem.delete()
             etapa.recalcular_total()
             messages.success(request, 'Viagem excluída.')
+
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+
+
+@login_required
+def viagem_liberar_retorno(request, os_pk, etapa_pk, viagem_pk):
+    """Marca a viagem como liberada para o carroção retornar ao campo."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=os_pk, empresa=empresa)
+    etapa = get_object_or_404(EtapaColheita, pk=etapa_pk, os=os_obj)
+    viagem = get_object_or_404(ViagemColheita, pk=viagem_pk, carrocao__frota__etapa=etapa)
+
+    if request.method == 'POST':
+        if etapa.status == 'CONCLUIDA':
+            messages.error(request, 'Etapa concluída — operação não permitida.')
+        elif viagem.status == 'LIBERADA':
+            messages.warning(request, 'Esta viagem já está liberada.')
+        else:
+            viagem.liberar_retorno(request.user)
+            messages.success(request, f'Viagem {viagem.numero_viagem} liberada para retorno ao campo.')
+
+    return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
+
+
+@login_required
+def viagem_reverter_liberacao(request, os_pk, etapa_pk, viagem_pk):
+    """Reverte a liberação de retorno de uma viagem (correção de erro)."""
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=os_pk, empresa=empresa)
+    etapa = get_object_or_404(EtapaColheita, pk=etapa_pk, os=os_obj)
+    viagem = get_object_or_404(ViagemColheita, pk=viagem_pk, carrocao__frota__etapa=etapa)
+
+    if request.method == 'POST':
+        if etapa.status == 'CONCLUIDA':
+            messages.error(request, 'Etapa concluída — operação não permitida.')
+        else:
+            viagem.reverter_liberacao()
+            messages.success(request, f'Liberação da viagem {viagem.numero_viagem} revertida.')
 
     return redirect('operacoes_campo:colheita_detalhe', os_pk=os_pk, etapa_pk=etapa_pk)
 

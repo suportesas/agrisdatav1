@@ -20,8 +20,12 @@ https://www.nfe.fazenda.gov.br). Hoje o certificado fica em
 `ConfiguracaoFiscal` (por empresa), então se o CNPJ/CPF da fazenda for
 diferente do CNPJ do certificado, a SEFAZ vai rejeitar a consulta.
 
-Este módulo é um PROTÓTIPO: não está ligado a nenhuma view/URL. Para testar,
-use o management command `consultar_dfe`.
+Sincronização automática: `sincronizar_dfe_empresa()` / `sincronizar_todas_empresas()`
+fazem a varredura incremental por NSU, gravam `faturamento.models.DfeRecebido` e buscam
+o XML completo de cada NF-e nova (throttled — ver docstring de `sincronizar_dfe_empresa`).
+São chamadas pelo management command `sincronizar_dfe` e pelo webhook
+`faturamento:dfe_sync_webhook` (para o cron do Supabase). Para uma consulta pontual
+manual, use o management command `consultar_dfe`.
 """
 from __future__ import annotations
 
@@ -34,9 +38,12 @@ import ssl
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 import requests
 import truststore
+from django.utils import timezone
 from lxml import etree
 from requests.adapters import HTTPAdapter
 
@@ -301,3 +308,219 @@ def _extrair_chave(xml_str: str) -> str:
         if el is not None and el.text:
             return el.text
     return ''
+
+
+def _extrair_dados_resumo(xml_str: str) -> dict:
+    """Extrai os campos do resumo (resNFe/resEvento) já presentes no próprio XML —
+    não precisa do XML completo pra isso (CNPJ, nome, valor, data, situação/evento)."""
+    try:
+        doc = etree.fromstring(xml_str.encode('utf-8'))
+    except etree.XMLSyntaxError:
+        return {}
+    ns = {'nfe': NFE_NS}
+
+    def _t(tag: str) -> str:
+        el = doc.find(f'.//nfe:{tag}', namespaces=ns)
+        return (el.text or '').strip() if el is not None else ''
+
+    valor_txt = _t('vNF')
+    try:
+        valor_total = Decimal(valor_txt) if valor_txt else None
+    except InvalidOperation:
+        valor_total = None
+
+    data_txt = _t('dhEmi') or _t('dhEvento')
+    data_emissao = None
+    if data_txt:
+        try:
+            data_emissao = datetime.fromisoformat(data_txt.replace('Z', '+00:00')).date()
+        except ValueError:
+            data_emissao = None
+
+    return {
+        'chave_acesso': _t('chNFe') or _t('chNFePend'),
+        'cnpj_emitente': _t('CNPJ'),
+        'nome_emitente': _t('xNome'),
+        'situacao': _t('cSitNFe'),
+        'tipo_evento': _t('tpEvento'),
+        'valor_total': valor_total,
+        'data_emissao': data_emissao,
+    }
+
+
+# ─── Sincronização automática (usa as funções acima) ────────────────────────────
+
+CANCELAMENTO_TPEVENTO = '110111'
+
+
+def _normalizar_schema(schema_raw: str) -> str:
+    """O atributo `schema` do docZip vem como nome de arquivo XSD (ex: 'resNFe_v1.01.xsd'),
+    não o valor curto usado em DfeRecebido.SCHEMA_CHOICES — normaliza aqui."""
+    if schema_raw.startswith('resNFe'):
+        return 'resNFe'
+    if schema_raw.startswith('resEvento'):
+        return 'resEvento'
+    return schema_raw[:20]
+
+
+def sincronizar_dfe_empresa(empresa, *, max_xml: int = 10, max_manifestacoes: int = 10) -> dict:
+    """Sincroniza a Distribuição de DF-e de uma empresa a partir do último NSU salvo.
+
+    1. Avança página a página em `distNSU` (usando `ConfiguracaoFiscal.dfe_ultimo_nsu`
+       como cursor) até alcançar o `maxNSU` informado pela SEFAZ, gravando um
+       `DfeRecebido` por documento novo (idempotente via unique_together empresa+nsu).
+    2. Se `dfe_manifestar_ciencia_automatica` estiver ativo, registra "Ciência da
+       Operação" (via IntegraNotas) para até `max_manifestacoes` `resNFe` de terceiros
+       ainda sem manifestação — necessário porque a SEFAZ só libera o download do XML
+       completo (`consChNFe`) ao destinatário depois de pelo menos essa manifestação.
+    3. Busca o XML completo (`consChNFe`) de até `max_xml` `resNFe` pendentes
+       (`xml_url=''`) e sobe pro Supabase — throttled porque cada busca é uma consulta
+       extra à SEFAZ, sujeita ao mesmo rate limit (`cStat 656`) do distNSU.
+
+    Sempre consulta ambiente PRODUÇÃO (documentos reais só existem lá) e usa o CNPJ/CPF
+    cadastrado na própria Empresa (não o do certificado — só precisam ser compatíveis
+    perante a SEFAZ, por outorga/procuração).
+
+    Retorna um resumo: {'empresa_id', 'novos', 'ciencia_automatica', 'xml_baixados', 'erro'}.
+    """
+    from faturamento.fiscal_storage import upload_xml_texto
+    from faturamento.models import ConfiguracaoFiscal, DfeRecebido
+    from faturamento.services.integranotas import IntegranNotasClient
+
+    resultado = {'empresa_id': empresa.id, 'novos': 0, 'ciencia_automatica': 0, 'xml_baixados': 0, 'erro': None}
+
+    try:
+        config = ConfiguracaoFiscal.objects.get(empresa=empresa)
+    except ConfiguracaoFiscal.DoesNotExist:
+        resultado['erro'] = 'Empresa sem Configuração Fiscal.'
+        return resultado
+
+    if not config.certificado_pfx:
+        resultado['erro'] = 'Empresa sem certificado digital A1 configurado.'
+        return resultado
+
+    cnpj_cpf = _ONLY_DIGITS.sub('', empresa.cnpj or '')
+    if not cnpj_cpf:
+        resultado['erro'] = 'Empresa sem CNPJ/CPF cadastrado.'
+        return resultado
+
+    uf = (empresa.uf or '').upper()
+    if not uf:
+        resultado['erro'] = 'Empresa sem UF cadastrada.'
+        return resultado
+
+    cert_pfx = bytes(config.certificado_pfx)
+    senha_cert = config.senha_certificado
+    ult_nsu = config.dfe_ultimo_nsu or '0'
+
+    # Limite de páginas por execução — cada página já traz um lote de documentos;
+    # isso é só uma trava de segurança contra loop infinito, não um limite operacional.
+    for _ in range(50):
+        try:
+            resp = consultar_distribuicao_dfe(
+                cnpj_cpf=cnpj_cpf, cert_pfx=cert_pfx, senha_cert=senha_cert,
+                uf=uf, ambiente='1', ult_nsu=ult_nsu,
+            )
+        except DistribuicaoDFeError as exc:
+            resultado['erro'] = str(exc)
+            break
+
+        if resp.c_stat not in ('137', '138'):
+            resultado['erro'] = f'cStat {resp.c_stat}: {resp.x_motivo}'
+            break
+
+        for doc in resp.documentos:
+            schema = _normalizar_schema(doc.schema)
+            dados = _extrair_dados_resumo(doc.xml)
+
+            if schema == 'resEvento' and dados.get('tipo_evento') == CANCELAMENTO_TPEVENTO and dados.get('chave_acesso'):
+                DfeRecebido.objects.filter(
+                    empresa=empresa, chave_acesso=dados['chave_acesso'],
+                ).update(situacao='2')
+
+            _, criado = DfeRecebido.objects.get_or_create(
+                empresa=empresa, nsu=doc.nsu,
+                defaults={
+                    'schema': schema,
+                    'chave_acesso': dados.get('chave_acesso', ''),
+                    'cnpj_emitente': dados.get('cnpj_emitente', ''),
+                    'nome_emitente': dados.get('nome_emitente', ''),
+                    'valor_total': dados.get('valor_total'),
+                    'data_emissao': dados.get('data_emissao'),
+                    'situacao': dados.get('situacao', ''),
+                },
+            )
+            if criado:
+                resultado['novos'] += 1
+
+        novo_ult_nsu = resp.ult_nsu or ult_nsu
+        if novo_ult_nsu != config.dfe_ultimo_nsu:
+            config.dfe_ultimo_nsu = novo_ult_nsu
+            config.save(update_fields=['dfe_ultimo_nsu'])
+        ult_nsu = novo_ult_nsu
+
+        if not resp.documentos or not resp.max_nsu or resp.ult_nsu == resp.max_nsu:
+            break
+
+    if config.dfe_manifestar_ciencia_automatica and config.has_token:
+        pendentes_manifestacao = DfeRecebido.objects.filter(
+            empresa=empresa, schema='resNFe', manifestacao_tipo='',
+        ).exclude(chave_acesso='').exclude(cnpj_emitente='').exclude(
+            cnpj_emitente=cnpj_cpf,
+        ).order_by('nsu')[:max_manifestacoes]
+
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        for doc in pendentes_manifestacao:
+            try:
+                resp_manifesto = client.manifestar_nfe(doc.chave_acesso, 'ciencia_operacao')
+            except Exception as exc:
+                logger.warning('Falha ao manifestar Ciência automática da chave %s: %s', doc.chave_acesso, exc)
+                continue
+
+            doc.manifestacao_tipo = 'ciencia_operacao'
+            doc.manifestacao_protocolo = resp_manifesto.get('protocolo', '') or resp_manifesto.get('numero_protocolo', '')
+            doc.manifestacao_data = timezone.now()
+            doc.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
+            resultado['ciencia_automatica'] += 1
+
+    pendentes = DfeRecebido.objects.filter(
+        empresa=empresa, schema='resNFe', xml_url='',
+    ).exclude(chave_acesso='').order_by('nsu')[:max_xml]
+
+    for pendente in pendentes:
+        try:
+            resp_chave = consultar_distribuicao_dfe(
+                cnpj_cpf=cnpj_cpf, cert_pfx=cert_pfx, senha_cert=senha_cert,
+                uf=uf, ambiente='1', chave=pendente.chave_acesso,
+            )
+        except DistribuicaoDFeError as exc:
+            logger.warning('Falha ao baixar XML completo da chave %s: %s', pendente.chave_acesso, exc)
+            continue
+
+        if resp_chave.documentos:
+            url = upload_xml_texto(resp_chave.documentos[0].xml, empresa.id, pendente.chave_acesso)
+            if url:
+                pendente.xml_url = url
+                pendente.save(update_fields=['xml_url'])
+                resultado['xml_baixados'] += 1
+
+    return resultado
+
+
+def sincronizar_todas_empresas(*, max_xml: int = 10) -> list[dict]:
+    """Roda `sincronizar_dfe_empresa` para toda empresa com certificado configurado.
+
+    Erros em uma empresa não interrompem as demais.
+    """
+    from faturamento.models import ConfiguracaoFiscal
+
+    resultados = []
+    for config in ConfiguracaoFiscal.objects.select_related('empresa'):
+        if not config.certificado_pfx:
+            continue
+        try:
+            resultados.append(sincronizar_dfe_empresa(config.empresa, max_xml=max_xml))
+        except Exception as exc:
+            logger.exception('Falha ao sincronizar DF-e da empresa %s', config.empresa_id)
+            resultados.append({'empresa_id': config.empresa_id, 'erro': str(exc)})
+    return resultados

@@ -133,6 +133,7 @@
                 <th>Imp.%</th>
                 <th>Desconto (kg)</th>
                 <th class="text-success">Final (kg)</th>
+                <th>Retorno</th>
                 <th></th>
               </tr>
             </thead>
@@ -147,6 +148,13 @@
                 <td>{{ viagem.impureza_pct|default:"—" }}</td>
                 <td>{{ viagem.desconto_kg|floatformat:"0g" }}</td>
                 <td class="fw-bold text-success">{{ viagem.peso_final_kg|floatformat:"0g" }}</td>
+                <td id="viagem-status-{{ viagem.pk }}">
+                  {% if viagem.status == 'LIBERADA' %}
+                  <span class="status-pill green" title="Liberada por {{ viagem.liberado_por_nome }} às {{ viagem.hora_liberacao_retorno|time:'H:i' }}">Liberada</span>
+                  {% else %}
+                  <span class="status-pill orange">Aguardando</span>
+                  {% endif %}
+                </td>
                 <td>
                   {% if etapa.status == 'ABERTA' %}
                   <a href="{% url 'operacoes_campo:colheita_viagem_editar' os_pk=os.pk etapa_pk=etapa.pk viagem_pk=viagem.pk %}"
@@ -163,6 +171,27 @@
                       <i class="bi bi-trash"></i>
                     </button>
                   </form>
+                  {% if viagem.status == 'AGUARDANDO_LIBERACAO' %}
+                  <form method="post"
+                        action="{% url 'operacoes_campo:colheita_viagem_liberar_retorno' os_pk=os.pk etapa_pk=etapa.pk viagem_pk=viagem.pk %}"
+                        class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-xs btn-outline-success py-0 px-1" title="Liberar Retorno ao Campo">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                  </form>
+                  {% else %}
+                  <form method="post"
+                        action="{% url 'operacoes_campo:colheita_viagem_reverter_liberacao' os_pk=os.pk etapa_pk=etapa.pk viagem_pk=viagem.pk %}"
+                        class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-xs btn-outline-warning py-0 px-1"
+                            onclick="return confirm('Reverter liberação da viagem {{ viagem.numero_viagem }}?')"
+                            title="Reverter Liberação">
+                      <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                  </form>
+                  {% endif %}
                   {% endif %}
                 </td>
               </tr>
@@ -414,6 +443,7 @@ const EM_USO_IDS = new Set({{ carrocoes_em_uso_ids|safe }});
 const CARROCOES_AJAX_URL = "{% url 'operacoes_campo:colheita_ajax_carrocoes' os_pk=os.pk etapa_pk=etapa.pk %}";
 const CARROCAO_REMOVE_URL_BASE = "{% url 'operacoes_campo:colheita_carrocao_remover' os_pk=os.pk etapa_pk=etapa.pk carrocao_pk=0 %}";
 const VIAGEM_NOVA_URL_BASE = "{% url 'operacoes_campo:colheita_viagem_nova' os_pk=os.pk etapa_pk=etapa.pk carrocao_pk=0 %}";
+const VIAGEM_LIBERAR_URL_BASE = "{% url 'operacoes_campo:colheita_viagem_liberar_retorno' os_pk=os.pk etapa_pk=etapa.pk viagem_pk=0 %}";
 
 const selectCarrocao = document.getElementById('{{ carrocao_form.veiculo.id_for_label }}');
 const formCarrocao = document.getElementById('formCarrocao');
@@ -681,7 +711,15 @@ function addViagemToDom(data) {
     <td>—</td>
     <td>${Number(data.desconto || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
     <td class="fw-bold text-success">${Number(data.peso_final || 0).toLocaleString('pt-BR', { maximumFractionDigits: 0 })}</td>
-    <td><span class="text-muted">—</span></td>
+    <td id="viagem-status-${data.viagem_id}"><span class="status-pill orange">Aguardando</span></td>
+    <td>
+      <form method="post" action="${VIAGEM_LIBERAR_URL_BASE.replace('/0/', `/${data.viagem_id}/`)}" class="d-inline">
+        <input type="hidden" name="csrfmiddlewaretoken" value="${getCsrfToken(formViagem)}">
+        <button type="submit" class="btn btn-xs btn-outline-success py-0 px-1" title="Liberar Retorno ao Campo">
+          <i class="bi bi-check-circle"></i>
+        </button>
+      </form>
+    </td>
   `;
   tbody.appendChild(row);
 

@@ -113,6 +113,17 @@ class ConfiguracaoFiscal(models.Model):
     certificado_cnpj = models.CharField('CNPJ Titular', max_length=18, blank=True)
     certificado_arquivo_nome = models.CharField('Nome do Arquivo (.pfx)', max_length=255, blank=True)
 
+    # Distribuição de DF-e — cursor de sincronização incremental (NSU)
+    dfe_ultimo_nsu = models.CharField('Último NSU (Distribuição de DF-e)', max_length=15, blank=True, default='0')
+    dfe_manifestar_ciencia_automatica = models.BooleanField(
+        '"Ciência da Operação" automática na Distribuição de DF-e',
+        default=False,
+        help_text='Ao sincronizar, registra automaticamente a Ciência da Operação para toda NF-e nova '
+                  'recebida de terceiros — necessário para a SEFAZ liberar o download do XML completo. '
+                  'Não substitui a Confirmação/Desconhecimento/Operação Não Realizada posterior, que '
+                  'continuam manuais.',
+    )
+
     # ── Token encryption helpers ─────────────────────────────────────────────
     def set_token(self, raw_token: str) -> None:
         """Criptografa e armazena o token. Chamar .save() separadamente."""
@@ -133,6 +144,66 @@ class ConfiguracaoFiscal(models.Model):
 
     def __str__(self):
         return f'Config Fiscal - {self.empresa}'
+
+
+class DfeRecebido(models.Model):
+    """Documento (NF-e ou evento) descoberto via Distribuição de DF-e (distDFeInt).
+
+    Um registro por NSU retornado pela SEFAZ — ver faturamento/services/distribuicao_dfe.py.
+    """
+    SCHEMA_CHOICES = [
+        ('resNFe', 'Resumo de NF-e'),
+        ('resEvento', 'Resumo de Evento'),
+    ]
+    SITUACAO_CHOICES = [
+        ('1', 'Autorizada'),
+        ('2', 'Cancelada'),
+        ('3', 'Denegada'),
+    ]
+    MANIFESTACAO_TIPO_CHOICES = [
+        ('ciencia_operacao', 'Ciência da Operação'),
+        ('confirmacao_operacao', 'Confirmação da Operação'),
+        ('desconhecimento_operacao', 'Desconhecimento da Operação'),
+        ('operacao_nao_realizada', 'Operação Não Realizada'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='documentos_dfe',
+        verbose_name='Empresa',
+    )
+    nsu = models.CharField('NSU', max_length=15)
+    schema = models.CharField('Tipo', max_length=20, choices=SCHEMA_CHOICES)
+    chave_acesso = models.CharField('Chave de Acesso', max_length=44, blank=True)
+    cnpj_emitente = models.CharField('CNPJ Emitente', max_length=14, blank=True)
+    nome_emitente = models.CharField('Nome do Emitente', max_length=120, blank=True)
+    valor_total = models.DecimalField('Valor Total', max_digits=15, decimal_places=2, null=True, blank=True)
+    data_emissao = models.DateField('Data de Emissão', null=True, blank=True)
+    situacao = models.CharField('Situação', max_length=1, choices=SITUACAO_CHOICES, blank=True)
+
+    xml_url = models.URLField('URL do XML Completo', blank=True)
+
+    manifestacao_tipo = models.CharField('Tipo de Manifestação', max_length=40, blank=True, choices=MANIFESTACAO_TIPO_CHOICES)
+    manifestacao_protocolo = models.CharField('Protocolo da Manifestação', max_length=50, blank=True)
+    manifestacao_data = models.DateTimeField('Data/Hora da Manifestação', null=True, blank=True)
+
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Documento Distribuído (DF-e)'
+        verbose_name_plural = 'Documentos Distribuídos (DF-e)'
+        ordering = ['-nsu']
+        constraints = [
+            models.UniqueConstraint(fields=['empresa', 'nsu'], name='unique_dfe_empresa_nsu'),
+        ]
+        indexes = [
+            models.Index(fields=['empresa', 'chave_acesso'], name='dfe_empresa_chave_idx'),
+            models.Index(fields=['empresa', 'data_emissao'], name='dfe_empresa_data_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.schema} NSU {self.nsu} — {self.chave_acesso or self.nome_emitente}'
 
 
 class NotaFiscal(FaturamentoBaseModel):
@@ -1344,6 +1415,98 @@ class PackingList(FaturamentoBaseModel):
     @property
     def total_caixas(self):
         return sum(i.quantidade_caixas for i in self.itens.all())
+
+
+class InstrucaoEmbarque(FaturamentoBaseModel):
+    STATUS = [
+        ('RASCUNHO', 'Rascunho'),
+        ('EMITIDA', 'Emitida'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    TIPO_BL_CHOICES = [
+        ('ORIGINAL', 'Original Bill of Lading'),
+        ('TELEX_RELEASE', 'Telex Release'),
+        ('SEAWAY_BILL', 'Seaway Bill'),
+    ]
+    FRETE_CHOICES = [
+        ('PREPAID', 'Prepaid'),
+        ('COLLECT', 'Collect'),
+    ]
+
+    invoice = models.ForeignKey(
+        InvoiceExportacao,
+        on_delete=models.PROTECT,
+        related_name='instrucoes_embarque',
+        verbose_name='Invoice',
+    )
+    numero = models.CharField('Número', max_length=30, blank=True)
+    data_emissao = models.DateField('Data de Emissão', default=timezone.now)
+    status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
+    shipper = models.TextField(
+        'Shipper / Exportador', blank=True,
+        help_text='Em branco, assume os dados da empresa.',
+    )
+    consignee = models.TextField(
+        'Consignee / Importador', blank=True,
+        help_text='Em branco, assume os dados do cliente da invoice.',
+    )
+    notify_party = models.TextField('Notify Party', blank=True)
+    freight_forwarder = models.CharField('Freight Forwarder', max_length=150, blank=True)
+    tipo_bl = models.CharField('Tipo de B/L', max_length=20, choices=TIPO_BL_CHOICES, default='ORIGINAL')
+    numero_vias_original = models.PositiveSmallIntegerField('Nº de Vias Originais', default=3)
+    clausula_frete = models.CharField('Cláusula de Frete', max_length=10, choices=FRETE_CHOICES, default='PREPAID')
+    instrucoes_especiais = models.TextField('Instruções Especiais', blank=True)
+    observacoes = models.TextField('Observações', blank=True)
+
+    class Meta:
+        verbose_name = 'Instrução de Embarque'
+        verbose_name_plural = 'Instruções de Embarque'
+        ordering = ['-data_emissao']
+
+    def __str__(self):
+        return f'{self.numero or "SI"} - {self.invoice}'
+
+
+class Minuta(FaturamentoBaseModel):
+    STATUS = [
+        ('RASCUNHO', 'Rascunho'),
+        ('EMITIDA', 'Emitida'),
+        ('CANCELADA', 'Cancelada'),
+    ]
+    FRETE_CHOICES = [
+        ('PREPAID', 'Prepaid'),
+        ('COLLECT', 'Collect'),
+    ]
+
+    invoice = models.ForeignKey(
+        InvoiceExportacao,
+        on_delete=models.PROTECT,
+        related_name='minutas',
+        verbose_name='Invoice',
+    )
+    numero = models.CharField('Número', max_length=30, blank=True)
+    data_emissao = models.DateField('Data de Emissão', default=timezone.now)
+    status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
+    shipper = models.TextField(
+        'Shipper / Exportador', blank=True,
+        help_text='Em branco, assume os dados da empresa.',
+    )
+    consignee = models.TextField(
+        'Consignee', blank=True,
+        help_text='Em branco, assume os dados do cliente da invoice. Use "TO ORDER" para minuta à ordem.',
+    )
+    notify_party = models.TextField('Notify Party', blank=True)
+    local_emissao = models.CharField('Local de Emissão', max_length=100, blank=True)
+    clausula_frete = models.CharField('Cláusula de Frete', max_length=10, choices=FRETE_CHOICES, default='PREPAID')
+    observacoes = models.TextField('Observações', blank=True)
+
+    class Meta:
+        verbose_name = 'Minuta de Conhecimento'
+        verbose_name_plural = 'Minutas de Conhecimento'
+        ordering = ['-data_emissao']
+
+    def __str__(self):
+        return f'{self.numero or "Minuta"} - {self.invoice}'
 
 
 # ═══════════════════════════════════════════════════════════════════

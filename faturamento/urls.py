@@ -49,17 +49,38 @@ urlpatterns = [
     path('packing-lists/<int:pk>/emitir/', views.packing_list_emitir, name='packing_list_emitir'),
     path('packing-lists/<int:pk>/pdf/', views.packing_list_pdf, name='packing_list_pdf'),
 
+    # Instrução de Embarque
+    path('instrucoes-embarque/', views.instrucao_embarque_list, name='instrucao_embarque_list'),
+    path('instrucoes-embarque/nova/', views.instrucao_embarque_create, name='instrucao_embarque_create'),
+    path('instrucoes-embarque/<int:pk>/', views.instrucao_embarque_detail, name='instrucao_embarque_detail'),
+    path('instrucoes-embarque/<int:pk>/editar/', views.instrucao_embarque_update, name='instrucao_embarque_update'),
+    path('instrucoes-embarque/<int:pk>/emitir/', views.instrucao_embarque_emitir, name='instrucao_embarque_emitir'),
+    path('instrucoes-embarque/<int:pk>/pdf/', views.instrucao_embarque_pdf, name='instrucao_embarque_pdf'),
+
+    # Minuta de Conhecimento
+    path('minutas/', views.minuta_list, name='minuta_list'),
+    path('minutas/nova/', views.minuta_create, name='minuta_create'),
+    path('minutas/<int:pk>/', views.minuta_detail, name='minuta_detail'),
+    path('minutas/<int:pk>/editar/', views.minuta_update, name='minuta_update'),
+    path('minutas/<int:pk>/emitir/', views.minuta_emitir, name='minuta_emitir'),
+    path('minutas/<int:pk>/pdf/', views.minuta_pdf, name='minuta_pdf'),
+
     # Configuração
     path('configuracao/', views.configuracao_fiscal, name='configuracao'),
     path('configuracao/certificado/', views.certificado_upload, name='certificado_upload'),
     path('configuracao/certificado/consultar/', views.certificado_consultar, name='certificado_consultar'),
     path('configuracao/certificado/excluir/', views.certificado_delete, name='certificado_delete'),
 
-    # Distribuição de DF-e (protótipo)
-    path('distribuicao-dfe/', views.consultar_dfe, name='consultar_dfe'),
+    # Distribuição de DF-e
+    path('distribuicao-dfe/', views.dfe_list, name='dfe_list'),
+    path('distribuicao-dfe/sincronizar/', views.dfe_sincronizar_agora, name='dfe_sincronizar_agora'),
+    path('distribuicao-dfe/<int:pk>/manifestar/', views.dfe_manifestar, name='dfe_manifestar'),
+    path('distribuicao-dfe/manifestar-lote/', views.dfe_manifestar_lote, name='dfe_manifestar_lote'),
+    path('distribuicao-dfe/baixar-xml-lote/', views.dfe_baixar_xml_lote, name='dfe_baixar_xml_lote'),
 
-    # Webhook IntegraNota
+    # Webhooks
     path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),
+    path('webhook/sincronizar-dfe/', views.dfe_sync_webhook, name='dfe_sync_webhook'),
 
     # CT-e
     path('cte/', views.cte_list, name='cte_list'),

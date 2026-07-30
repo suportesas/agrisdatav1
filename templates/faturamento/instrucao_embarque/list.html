@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Instruções de Embarque{% endblock %}
+{% block page_title %}Instruções de Embarque{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-truck"></i></span>
+          <h2>Instruções de Embarque</h2>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if request.GET.q or request.GET.status %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if request.GET.q or request.GET.status %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+      </div>
+  </div>
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if request.GET.q or request.GET.status %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Número SI ou Invoice...">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">Todos</option>
+          {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if val == status_filter %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'faturamento:instrucao_embarque_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+        Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+        de <strong>{{ page_obj.paginator.count }}</strong> instrução{{ page_obj.paginator.count|pluralize:"ões" }} de embarque
+      {% endif %}
+    </span>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Nº SI</th>
+              <th>Invoice</th>
+              <th>Cliente</th>
+              <th>Emissão</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ie in page_obj %}
+            <tr>
+              <td class="ps-4 fw-semibold">{{ ie.numero|default:"—" }}</td>
+              <td>{{ ie.invoice.numero }}</td>
+              <td>{{ ie.invoice.cliente.razao_social }}</td>
+              <td class="text-mono">{{ ie.data_emissao|date:"d/m/Y" }}</td>
+              <td class="text-center">
+                {% if ie.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
+                {% elif ie.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>
+                {% else %}<span class="badge bg-danger">Cancelada</span>{% endif %}
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon" href="{% url 'faturamento:instrucao_embarque_detail' ie.pk %}" title="Ver detalhes">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    {% if ie.status == 'RASCUNHO' %}
+                    <a class="action-icon edit" href="{% url 'faturamento:instrucao_embarque_update' ie.pk %}" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    {% endif %}
+                    <a class="action-icon" href="{% url 'faturamento:instrucao_embarque_pdf' ie.pk %}" target="_blank" title="PDF">
+                        <i class="bi bi-file-pdf"></i>
+                    </a>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhuma instrução de embarque encontrada
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+});
+</script>
+{% endblock %}

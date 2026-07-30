@@ -145,6 +145,7 @@ PG_NAME=  PG_HOST=  PG_USER=  PG_PASSWORD=  PG_PORT=5432
 SUPABASE_URL=  SUPABASE_ANON_KEY=  SUPABASE_SERVICE_ROLE_KEY=
 FIELD_ENCRYPTION_KEY=   # generate with Fernet.generate_key()
 FF_<FLAG_NAME>=true     # enable feature flags
+DFE_SYNC_SECRET=        # shared secret for faturamento:dfe_sync_webhook (Distribuição de DF-e cron)
 ```
 
 SQLite is used automatically when PostgreSQL env vars are absent (development only).

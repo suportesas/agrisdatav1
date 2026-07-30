@@ -8,7 +8,7 @@
   <div class="form-header">
     <div class="form-header-top">
       <div class="form-header-title">
-        <span class="icon-badge gray"><i class="bi bi-chat-square-check"></i></span>
+        <span class="icon-badge gray"><i class="bi bi-check2-square"></i></span>
         <div>
           <h2>Manifestação do Destinatário</h2>
           <p class="text-muted mb-0">NF {{ nf.numero|stringformat:"09d" }}/{{ nf.serie|stringformat:"03d" }} — {{ nf.cliente.razao_social }}</p>
@@ -38,7 +38,7 @@
 
   <div class="form-section">
     <div class="form-section-header">
-      <span class="icon-badge sm gray"><i class="bi bi-chat-square-check"></i></span>
+      <span class="icon-badge sm gray"><i class="bi bi-check2-square"></i></span>
       <span class="title">Registrar Manifestação</span>
     </div>
     <div class="form-section-body">
@@ -74,7 +74,7 @@
   <div class="app-footer-bar">
     <a href="{% url 'faturamento:nota_fiscal_detail' nf.pk %}" class="btn btn-outline">Cancelar</a>
     <button type="submit" form="manifestacao-form" class="btn btn-primary">
-      <i class="bi bi-chat-square-check me-1"></i>Registrar Manifestação
+      <i class="bi bi-check2-square me-1"></i>Registrar Manifestação
     </button>
   </div>
 

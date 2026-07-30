@@ -8,7 +8,7 @@
   <!-- Cabeçalho -->
   <div class="page-header mb-3">
       <div class="d-flex align-items-center gap-3">
-          <span class="page-header-icon gray"><i class="bi bi-chat-square-check"></i></span>
+          <span class="page-header-icon gray"><i class="bi bi-check2-square"></i></span>
           <div>
               <h2>Manifestação do Destinatário</h2>
               <p class="text-muted mb-0">NF-e recebidas de fornecedores — registre sua posição na SEFAZ</p>
@@ -188,7 +188,7 @@
                     </a>
                     {% if not rec.manifestacao_tipo %}
                     <a class="action-icon" href="{% url 'compras:recebimento_manifestar' rec.pk %}" title="Registrar Manifestação MD-e">
-                        <i class="bi bi-chat-square-check"></i>
+                        <i class="bi bi-check2-square"></i>
                     </a>
                     {% endif %}
                 </div>

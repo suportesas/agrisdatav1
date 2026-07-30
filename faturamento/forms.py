@@ -20,11 +20,13 @@ from .models import (
     DocumentoVinculadoMDFe,
     DuplicataNF,
     InvoiceExportacao,
+    InstrucaoEmbarque,
     InutilizacaoNFe,
     ItemInvoice,
     ItemNotaFiscal,
     ItemPackingList,
     ManifestoDocumentoFiscal,
+    Minuta,
     NFeReferenciada,
     NotaFiscal,
     PackingList,
@@ -261,6 +263,7 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'natureza_operacao_padrao',
             'observacoes_padrao_nfe',
             'observacoes_padrao_invoice',
+            'dfe_manifestar_ciencia_automatica',
         ]
         widgets = {
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
@@ -275,6 +278,7 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'natureza_operacao_padrao': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes_padrao_nfe': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'observacoes_padrao_invoice': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'dfe_manifestar_ciencia_automatica': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
@@ -1236,6 +1240,78 @@ ItemPackingListFormSet = inlineformset_factory(
     min_num=1,
     validate_min=True,
 )
+
+class InstrucaoEmbarqueForm(FaturamentoBaseForm):
+    class Meta:
+        model = InstrucaoEmbarque
+        fields = [
+            'invoice',
+            'data_emissao',
+            'shipper',
+            'consignee',
+            'notify_party',
+            'freight_forwarder',
+            'tipo_bl',
+            'numero_vias_original',
+            'clausula_frete',
+            'instrucoes_especiais',
+            'observacoes',
+        ]
+        widgets = {
+            'invoice': forms.Select(attrs={'class': 'form-select'}),
+            'data_emissao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'shipper': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'consignee': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'notify_party': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'freight_forwarder': forms.TextInput(attrs={'class': 'form-control'}),
+            'tipo_bl': forms.Select(attrs={'class': 'form-select'}),
+            'numero_vias_original': forms.NumberInput(attrs={'class': 'form-control'}),
+            'clausula_frete': forms.Select(attrs={'class': 'form-select'}),
+            'instrucoes_especiais': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, empresa=empresa, **kwargs)
+        if empresa:
+            self.fields['invoice'].queryset = InvoiceExportacao.objects.filter(
+                empresa=empresa,
+                status='EMITIDA',
+            ).order_by('-data_emissao')
+
+
+class MinutaForm(FaturamentoBaseForm):
+    class Meta:
+        model = Minuta
+        fields = [
+            'invoice',
+            'data_emissao',
+            'shipper',
+            'consignee',
+            'notify_party',
+            'local_emissao',
+            'clausula_frete',
+            'observacoes',
+        ]
+        widgets = {
+            'invoice': forms.Select(attrs={'class': 'form-select'}),
+            'data_emissao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'shipper': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'consignee': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'notify_party': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'local_emissao': forms.TextInput(attrs={'class': 'form-control'}),
+            'clausula_frete': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, empresa=empresa, **kwargs)
+        if empresa:
+            self.fields['invoice'].queryset = InvoiceExportacao.objects.filter(
+                empresa=empresa,
+                status='EMITIDA',
+            ).order_by('-data_emissao')
+
 
 # ═══════════════════════════════════════════════════════════════════
 #  CT-e — Formulários

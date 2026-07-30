@@ -1,0 +1,434 @@
+[
+  {
+    "modulo": "compras",
+    "slug": "01-dashboard",
+    "titulo": "Dashboard de Compras",
+    "path": "/compras/dashboard-compras/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "02-solicitacoes-lista",
+    "titulo": "Lista de Solicitações de Compra",
+    "path": "/compras/solicitacoes/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "03-solicitacao-detalhe",
+    "titulo": "Detalhe de uma Solicitação de Compra",
+    "path": "/compras/solicitacoes/{pk}/",
+    "pk_from": {"app_label": "compras", "model_name": "SolicitacaoCompra", "filters": {"empresa_id": 1}}
+  },
+  {
+    "modulo": "compras",
+    "slug": "04-solicitacao-nova",
+    "titulo": "Formulário de Nova Solicitação de Compra",
+    "path": "/compras/solicitacoes/nova/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "05-cotacoes-lista",
+    "titulo": "Lista de Cotações",
+    "path": "/compras/cotacoes/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "06-cotacao-detalhe",
+    "titulo": "Detalhe de uma Cotação (comparativo de fornecedores)",
+    "path": "/compras/cotacoes/{pk}/",
+    "pk_from": {"app_label": "compras", "model_name": "Cotacao", "filters": {"empresa_id": 1}}
+  },
+  {
+    "modulo": "compras",
+    "slug": "07-pedidos-lista",
+    "titulo": "Lista de Pedidos de Compra",
+    "path": "/compras/pedidos/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "08-pedido-detalhe",
+    "titulo": "Detalhe de um Pedido de Compra",
+    "path": "/compras/pedidos/{pk}/",
+    "pk_from": {"app_label": "compras", "model_name": "PedidoCompra", "filters": {"empresa_id": 1}}
+  },
+  {
+    "modulo": "compras",
+    "slug": "09-pedido-direto",
+    "titulo": "Formulário de Pedido Direto (compra rápida)",
+    "path": "/compras/pedidos/direto/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "10-recebimentos-lista",
+    "titulo": "Lista de Recebimentos",
+    "path": "/compras/recebimentos/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "11-recebimento-detalhe",
+    "titulo": "Detalhe de um Recebimento",
+    "path": "/compras/recebimentos/{pk}/",
+    "pk_from": {"app_label": "compras", "model_name": "RecebimentoCompra", "filters": {"empresa_id": 1}}
+  },
+  {
+    "modulo": "compras",
+    "slug": "12-entrada-direta-nf",
+    "titulo": "Entrada Direta de NF-e (importação de XML)",
+    "path": "/compras/recebimentos/entrada-direta/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "13-mde-lista",
+    "titulo": "Manifestação do Destinatário (MD-e)",
+    "path": "/compras/mde/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "14-planejamento-embalagem",
+    "titulo": "Planejamento de Embalagens",
+    "path": "/compras/planejamento-embalagem/"
+  },
+  {
+    "modulo": "compras",
+    "slug": "15-relatorio-geral",
+    "titulo": "Relatório Geral de Compras",
+    "path": "/compras/relatorios/geral/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "01-dashboard",
+    "titulo": "Dashboard de Produtos",
+    "path": "/produtos/dashboard/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "02-lista",
+    "titulo": "Lista de Produtos",
+    "path": "/produtos/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "03-detalhe",
+    "titulo": "Detalhe de um Produto",
+    "path": "/produtos/{pk}/",
+    "pk_from": {"app_label": "produtos", "model_name": "Produto", "filters": {"categoria__empresa_id": 1}}
+  },
+  {
+    "modulo": "produtos",
+    "slug": "04-novo",
+    "titulo": "Formulário de Novo Produto",
+    "path": "/produtos/cadastrar/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "05-tipos-produto",
+    "titulo": "Tipos de Produto",
+    "path": "/produtos/tipos-produto/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "06-categorias",
+    "titulo": "Categorias",
+    "path": "/produtos/categorias/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "07-subcategorias",
+    "titulo": "Subcategorias",
+    "path": "/produtos/subcategorias/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "08-marcas",
+    "titulo": "Marcas",
+    "path": "/produtos/marcas/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "09-unidades",
+    "titulo": "Unidades de Medida",
+    "path": "/produtos/unidades/"
+  },
+  {
+    "modulo": "produtos",
+    "slug": "10-naturezas",
+    "titulo": "Naturezas de Operação",
+    "path": "/produtos/naturezas/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "01-dashboard",
+    "titulo": "Dashboard de Estoque",
+    "path": "/estoque/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "02-produtos-estoque",
+    "titulo": "Estoque de Produtos",
+    "path": "/estoque/produtos/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "03-armazens-lista",
+    "titulo": "Lista de Armazéns",
+    "path": "/estoque/armazens/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "04-armazem-detalhe",
+    "titulo": "Detalhe de um Armazém",
+    "path": "/estoque/armazens/{pk}/",
+    "pk_from": {"app_label": "estoque", "model_name": "Armazem", "filters": {"empresa_id": 1}}
+  },
+  {
+    "modulo": "estoque",
+    "slug": "05-locais-lista",
+    "titulo": "Locais de Estocagem",
+    "path": "/estoque/locais/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "06-lotes-lista",
+    "titulo": "Lista de Lotes",
+    "path": "/estoque/lotes/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "07-lote-detalhe",
+    "titulo": "Detalhe de um Lote",
+    "path": "/estoque/lotes/{pk}/",
+    "pk_from": {"app_label": "estoque", "model_name": "Lote", "filters": {"empresa_id": 1}}
+  },
+  {
+    "modulo": "estoque",
+    "slug": "08-movimentacoes-lista",
+    "titulo": "Lista de Movimentações",
+    "path": "/estoque/movimentacoes/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "09-movimentacao-detalhe",
+    "titulo": "Detalhe de uma Movimentação",
+    "path": "/estoque/movimentacoes/{pk}/",
+    "pk_from": {"app_label": "estoque", "model_name": "MovimentacaoEstoque", "filters": {"empresa_id": 1}}
+  },
+  {
+    "modulo": "estoque",
+    "slug": "10-entrada",
+    "titulo": "Registrar Entrada",
+    "path": "/estoque/entrada/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "11-saida",
+    "titulo": "Registrar Saída",
+    "path": "/estoque/saida/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "12-transferencia",
+    "titulo": "Registrar Transferência",
+    "path": "/estoque/transferencia/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "13-inventario-ciclico",
+    "titulo": "Inventário Cíclico",
+    "path": "/estoque/inventario-ciclico/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "14-relatorio-alertas",
+    "titulo": "Relatório de Alertas de Estoque",
+    "path": "/estoque/relatorio/alertas/"
+  },
+  {
+    "modulo": "estoque",
+    "slug": "15-relatorio-abc",
+    "titulo": "Análise ABC",
+    "path": "/estoque/relatorio/abc/"
+  },
+  {"modulo": "cadastros_agro", "slug": "01-fazendas-lista", "titulo": "Lista de Fazendas", "path": "/cadastros/fazendas/"},
+  {"modulo": "cadastros_agro", "slug": "02-fazenda-detalhe", "titulo": "Detalhe de uma Fazenda", "path": "/cadastros/fazendas/{pk}/",
+   "pk_from": {"app_label": "cadastros", "model_name": "Fazenda", "filters": {"empresa_id": 1}}},
+  {"modulo": "cadastros_agro", "slug": "03-areas-lista", "titulo": "Lista de Áreas", "path": "/cadastros/areas/"},
+  {"modulo": "cadastros_agro", "slug": "04-talhoes-lista", "titulo": "Lista de Talhões", "path": "/cadastros/talhoes/"},
+  {"modulo": "cadastros_agro", "slug": "05-talhao-detalhe", "titulo": "Detalhe de um Talhão", "path": "/cadastros/talhoes/{pk}/",
+   "pk_from": {"app_label": "cadastros", "model_name": "Talhao", "filters": {"empresa_id": 1}}},
+  {"modulo": "cadastros_agro", "slug": "06-culturas-lista", "titulo": "Lista de Culturas", "path": "/cadastros/culturas/"},
+  {"modulo": "cadastros_agro", "slug": "07-safras-lista", "titulo": "Lista de Safras", "path": "/cadastros/safras/"},
+  {"modulo": "cadastros_agro", "slug": "08-safra-detalhe", "titulo": "Detalhe de uma Safra", "path": "/cadastros/safras/{pk}/",
+   "pk_from": {"app_label": "cadastros", "model_name": "Safra", "filters": {"fazenda__empresa_id": 1}}},
+  {"modulo": "cadastros_agro", "slug": "09-pragas-lista", "titulo": "Lista de Pragas", "path": "/cadastros/pragas/"},
+  {"modulo": "cadastros_agro", "slug": "10-pocos-lista", "titulo": "Lista de Poços/Bombas", "path": "/cadastros/pocos/"},
+
+  {"modulo": "operacoes_campo", "slug": "01-os-lista", "titulo": "Lista de Ordens de Serviço", "path": "/campo/ordens-servico/"},
+  {"modulo": "operacoes_campo", "slug": "02-os-detalhe", "titulo": "Detalhe de uma Ordem de Serviço", "path": "/campo/ordens-servico/{pk}/",
+   "pk_from": {"app_label": "operacoes_campo", "model_name": "OrdemServico", "filters": {"empresa_id": 1}}},
+  {"modulo": "operacoes_campo", "slug": "03-os-nova", "titulo": "Formulário de Nova Ordem de Serviço", "path": "/campo/ordens-servico/nova/"},
+  {"modulo": "operacoes_campo", "slug": "04-painel-delegacao", "titulo": "Painel de Delegação", "path": "/campo/delegacao/"},
+  {"modulo": "operacoes_campo", "slug": "05-custo-talhao", "titulo": "Custo por Talhão/Safra", "path": "/campo/ordens-servico/custos-talhao/"},
+  {"modulo": "operacoes_campo", "slug": "06-planejamento-custo-lista", "titulo": "Planejamento de Custo", "path": "/campo/planejamento-custo/"},
+  {"modulo": "operacoes_campo", "slug": "07-custos-maquina", "titulo": "Custo/Hora de Máquinas", "path": "/campo/custos-maquina/"},
+  {"modulo": "operacoes_campo", "slug": "08-pluviometria", "titulo": "Pluviometria", "path": "/campo/pluviometria/"},
+  {"modulo": "operacoes_campo", "slug": "09-qualidade-campo", "titulo": "Qualidade de Campo", "path": "/campo/qualidade-campo/"},
+  {"modulo": "operacoes_campo", "slug": "10-caderno-campo", "titulo": "Caderno de Campo", "path": "/campo/caderno-campo/"},
+  {"modulo": "operacoes_campo", "slug": "11-lotes-producao", "titulo": "Lotes de Produção", "path": "/campo/lotes-producao/"},
+
+  {"modulo": "mip", "slug": "01-estagios", "titulo": "Estágios de Desenvolvimento", "path": "/mip/estagios/"},
+  {"modulo": "mip", "slug": "02-monitoramento-lista", "titulo": "Lista de Monitoramento MIP", "path": "/mip/monitoramento/"},
+  {"modulo": "mip", "slug": "03-monitoramento-detalhe", "titulo": "Detalhe de um Monitoramento MIP", "path": "/mip/monitoramento/{pk}/",
+   "pk_from": {"app_label": "mip", "model_name": "MonitoramentoMIP", "filters": {"empresa_id": 1}}},
+
+  {"modulo": "estufas", "slug": "01-dashboard", "titulo": "Dashboard de Estufas", "path": "/estufas/dashboard/"},
+  {"modulo": "estufas", "slug": "02-estufas-lista", "titulo": "Lista de Estufas", "path": "/estufas/"},
+  {"modulo": "estufas", "slug": "03-lotes-mudas-lista", "titulo": "Lista de Lotes de Mudas", "path": "/estufas/lotes/"},
+  {"modulo": "estufas", "slug": "04-lote-mudas-detalhe", "titulo": "Detalhe de um Lote de Mudas", "path": "/estufas/lotes/{pk}/",
+   "pk_from": {"app_label": "estufas", "model_name": "LoteMuda", "filters": {"empresa_id": 1}}},
+
+  {"modulo": "cadastros_pessoas", "slug": "01-clientes-lista", "titulo": "Lista de Clientes", "path": "/cadastros/clientes/"},
+  {"modulo": "cadastros_pessoas", "slug": "02-cliente-detalhe", "titulo": "Detalhe de um Cliente", "path": "/cadastros/clientes/{pk}/",
+   "pk_from": {"app_label": "cadastros", "model_name": "Cliente", "filters": {"empresa_id": 1}}},
+  {"modulo": "cadastros_pessoas", "slug": "03-produtores-lista", "titulo": "Lista de Produtores", "path": "/cadastros/produtores/"},
+  {"modulo": "cadastros_pessoas", "slug": "04-produtor-detalhe", "titulo": "Detalhe de um Produtor", "path": "/cadastros/produtores/{pk}/",
+   "pk_from": {"app_label": "cadastros", "model_name": "Produtor", "filters": {"empresa_id": 1}}},
+  {"modulo": "cadastros_pessoas", "slug": "05-fornecedores-lista", "titulo": "Lista de Fornecedores", "path": "/cadastros/fornecedores/"},
+  {"modulo": "cadastros_pessoas", "slug": "06-fornecedor-detalhe", "titulo": "Detalhe de um Fornecedor", "path": "/cadastros/fornecedores/{pk}/",
+   "pk_from": {"app_label": "cadastros", "model_name": "Fornecedor", "filters": {"empresa_id": 1}}},
+  {"modulo": "cadastros_pessoas", "slug": "07-transportadoras-lista", "titulo": "Lista de Transportadoras", "path": "/cadastros/transportadoras/"},
+  {"modulo": "cadastros_pessoas", "slug": "08-vendedores-lista", "titulo": "Lista de Vendedores", "path": "/cadastros/vendedores/"},
+
+  {"modulo": "frota", "slug": "01-dashboard", "titulo": "Dashboard de Frota", "path": "/frota/"},
+  {"modulo": "frota", "slug": "02-veiculos-lista", "titulo": "Lista de Veículos", "path": "/frota/veiculos/"},
+  {"modulo": "frota", "slug": "03-veiculo-detalhe", "titulo": "Detalhe de um Veículo", "path": "/frota/veiculos/{pk}/",
+   "pk_from": {"app_label": "frota", "model_name": "Vehicle", "filters": {"empresa_id": 1}}},
+  {"modulo": "frota", "slug": "04-abastecimentos", "titulo": "Combustível/Abastecimentos", "path": "/frota/abastecimentos/"},
+  {"modulo": "frota", "slug": "05-manutencoes", "titulo": "Manutenções", "path": "/frota/manutencoes/"},
+  {"modulo": "frota", "slug": "06-pedagios", "titulo": "Pedágios", "path": "/frota/pedagios/"},
+  {"modulo": "frota", "slug": "07-viagens", "titulo": "Viagens", "path": "/frota/viagens/"},
+  {"modulo": "frota", "slug": "08-telemetria", "titulo": "Telemetria", "path": "/frota/telemetria/"},
+  {"modulo": "frota", "slug": "09-alertas", "titulo": "Alertas", "path": "/frota/alertas/"},
+  {"modulo": "frota", "slug": "10-motoristas-lista", "titulo": "Lista de Motoristas", "path": "/frota/motoristas/"},
+  {"modulo": "frota", "slug": "11-vinculos-lista", "titulo": "Vínculos Motorista x Frota", "path": "/frota/motoristas/vinculos/"},
+
+  {"modulo": "rh", "slug": "01-dashboard", "titulo": "Dashboard de RH", "path": "/rh/"},
+  {"modulo": "rh", "slug": "02-funcionarios-lista", "titulo": "Lista de Funcionários", "path": "/rh/funcionarios/"},
+  {"modulo": "rh", "slug": "03-funcionario-detalhe", "titulo": "Detalhe de um Funcionário", "path": "/rh/funcionarios/{pk}/",
+   "pk_from": {"app_label": "rh", "model_name": "Funcionario", "filters": {"empresa_id": 1}}},
+  {"modulo": "rh", "slug": "04-funcoes-lista", "titulo": "Funções/Cargos", "path": "/rh/funcoes/"},
+  {"modulo": "rh", "slug": "05-ferias-lista", "titulo": "Férias", "path": "/rh/ferias/"},
+  {"modulo": "rh", "slug": "06-afastamentos-lista", "titulo": "Afastamentos", "path": "/rh/afastamentos/"},
+  {"modulo": "rh", "slug": "07-riscos-ambientais", "titulo": "Riscos Ambientais", "path": "/rh/riscos-ambientais/"},
+  {"modulo": "rh", "slug": "08-vinculos-lista", "titulo": "Vínculos Contratuais", "path": "/rh/vinculos/"},
+  {"modulo": "rh", "slug": "09-laudos-lista", "titulo": "Laudos de Risco", "path": "/rh/laudos/"},
+  {"modulo": "rh", "slug": "10-aso-solicitacoes", "titulo": "ASO - Solicitações", "path": "/rh/aso/solicitacoes/"},
+
+  {"modulo": "patrimonio", "slug": "01-lista", "titulo": "Lista de Patrimônios", "path": "/patrimonio/"},
+  {"modulo": "patrimonio", "slug": "02-detalhe", "titulo": "Detalhe de um Patrimônio", "path": "/patrimonio/{pk}/",
+   "pk_from": {"app_label": "patrimonio", "model_name": "Patrimonio", "filters": {"empresa_id": 1}}},
+  {"modulo": "patrimonio", "slug": "03-auditorias-lista", "titulo": "Auditorias", "path": "/patrimonio/auditorias/"},
+  {"modulo": "patrimonio", "slug": "04-relatorio", "titulo": "Relatório de Patrimônios", "path": "/patrimonio/relatorio/"},
+
+  {"modulo": "cadastros_fiscal", "slug": "01-ncm-lista", "titulo": "Lista de NCM", "path": "/cadastros/ncm/"},
+  {"modulo": "cadastros_fiscal", "slug": "02-cfop-lista", "titulo": "Lista de CFOP", "path": "/cadastros/cfop/"},
+
+  {"modulo": "financeiro", "slug": "01-dashboard", "titulo": "Dashboard Financeiro", "path": "/financeiro/"},
+  {"modulo": "financeiro", "slug": "02-contas-pagar-lista", "titulo": "Contas a Pagar", "path": "/financeiro/contas/"},
+  {"modulo": "financeiro", "slug": "03-conta-pagar-detalhe", "titulo": "Detalhe de uma Conta a Pagar", "path": "/financeiro/contas/{pk}/",
+   "pk_from": {"app_label": "financeiro", "model_name": "ContaPagar", "filters": {"empresa_id": 1}}},
+  {"modulo": "financeiro", "slug": "04-parcelas-lista", "titulo": "Agenda de Pagamentos (Parcelas)", "path": "/financeiro/parcelas/"},
+  {"modulo": "financeiro", "slug": "05-contas-receber-lista", "titulo": "Contas a Receber", "path": "/financeiro/contas-receber/"},
+  {"modulo": "financeiro", "slug": "06-conta-receber-detalhe", "titulo": "Detalhe de uma Conta a Receber", "path": "/financeiro/contas-receber/{pk}/",
+   "pk_from": {"app_label": "financeiro", "model_name": "ContaReceber", "filters": {"empresa_id": 1}}},
+  {"modulo": "financeiro", "slug": "07-fluxo-caixa", "titulo": "Fluxo de Caixa", "path": "/financeiro/relatorios/fluxo-caixa/"},
+
+  {"modulo": "plano_contas", "slug": "01-lista", "titulo": "Contas Contábeis", "path": "/plano-contas/"},
+  {"modulo": "plano_contas", "slug": "02-arvore", "titulo": "Árvore do Plano de Contas", "path": "/plano-contas/arvore/"},
+  {"modulo": "plano_contas", "slug": "03-balancete", "titulo": "Balancete", "path": "/plano-contas/balancete/"},
+  {"modulo": "plano_contas", "slug": "04-centros-custo", "titulo": "Centros de Custo", "path": "/plano-contas/centros/"},
+
+  {"modulo": "bancario", "slug": "01-contas-lista", "titulo": "Contas Bancárias", "path": "/bancario/contas/"},
+  {"modulo": "bancario", "slug": "02-conta-detalhe", "titulo": "Detalhe de uma Conta Bancária", "path": "/bancario/contas/{pk}/",
+   "pk_from": {"app_label": "bancario", "model_name": "ContaBancaria", "filters": {"empresa_id": 1}}},
+  {"modulo": "bancario", "slug": "03-relatorio-conciliacao", "titulo": "Relatório de Conciliação", "path": "/bancario/relatorio/"},
+
+  {"modulo": "adiantamentos", "slug": "01-lista", "titulo": "Lista de Adiantamentos Internacionais", "path": "/adiantamentos/"},
+  {"modulo": "adiantamentos", "slug": "02-detalhe", "titulo": "Detalhe de um Adiantamento", "path": "/adiantamentos/{pk}/",
+   "pk_from": {"app_label": "adiantamentos", "model_name": "AdiantamentoInternacional", "filters": {"empresa_id": 1}}},
+  {"modulo": "adiantamentos", "slug": "03-relatorio", "titulo": "Relatório de Adiantamentos", "path": "/adiantamentos/relatorio/"},
+
+  {"modulo": "exportacao", "slug": "01-solicitacoes-lista", "titulo": "Solicitações de Booking", "path": "/exportacao/solicitacoes/"},
+  {"modulo": "exportacao", "slug": "02-bookings-lista", "titulo": "Lista de Bookings", "path": "/exportacao/bookings/"},
+  {"modulo": "exportacao", "slug": "03-booking-detalhe", "titulo": "Detalhe de um Booking", "path": "/exportacao/bookings/{pk}/",
+   "pk_from": {"app_label": "exportacao", "model_name": "Booking", "filters": {"empresa_id": 1}}},
+  {"modulo": "exportacao", "slug": "04-ordens-coleta", "titulo": "Ordens de Coleta", "path": "/exportacao/ordens-coleta/"},
+
+  {"modulo": "embalagem", "slug": "01-dashboard", "titulo": "Dashboard de Embalagem", "path": "/embalagem/"},
+  {"modulo": "embalagem", "slug": "02-tipos-embalagem", "titulo": "Tipos de Embalagem", "path": "/embalagem/tipos/"},
+  {"modulo": "embalagem", "slug": "03-ordens-lista", "titulo": "Ordens de Embalagem", "path": "/embalagem/ordens/"},
+  {"modulo": "embalagem", "slug": "04-ordem-detalhe", "titulo": "Detalhe de uma Ordem de Embalagem", "path": "/embalagem/ordens/{pk}/",
+   "pk_from": {"app_label": "embalagem", "model_name": "OrdemEmbalagem", "filters": {"empresa_id": 1}}},
+  {"modulo": "embalagem", "slug": "05-pallets-lista", "titulo": "Lista de Pallets", "path": "/embalagem/pallets/"},
+  {"modulo": "embalagem", "slug": "06-romaneios-lista", "titulo": "Romaneios de Venda", "path": "/embalagem/romaneios/"},
+  {"modulo": "embalagem", "slug": "07-romaneio-detalhe", "titulo": "Detalhe de um Romaneio", "path": "/embalagem/romaneios/{pk}/",
+   "pk_from": {"app_label": "embalagem", "model_name": "RomaneioVenda", "filters": {"empresa_id": 1}}},
+
+  {"modulo": "etiquetas_avulsas", "slug": "01-lotes-lista", "titulo": "Lotes de Etiquetas Avulsas", "path": "/etiquetas-avulsas/lotes/"},
+  {"modulo": "etiquetas_avulsas", "slug": "02-lote-detalhe", "titulo": "Detalhe de um Lote de Etiquetas", "path": "/etiquetas-avulsas/lotes/{pk}/",
+   "pk_from": {"app_label": "etiquetas_avulsas", "model_name": "LoteEtiquetaAvulsa", "filters": {"empresa_id": 1}}},
+
+  {"modulo": "vendas", "slug": "01-pedidos-lista", "titulo": "Pedidos de Venda", "path": "/vendas/"},
+  {"modulo": "vendas", "slug": "02-pedido-detalhe", "titulo": "Detalhe de um Pedido de Venda", "path": "/vendas/{pk}/",
+   "pk_from": {"app_label": "vendas", "model_name": "PedidoVenda", "filters": {"empresa_id": 1}}},
+  {"modulo": "vendas", "slug": "03-pedido-novo", "titulo": "Novo Pedido de Venda", "path": "/vendas/novo/"},
+  {"modulo": "vendas", "slug": "04-tabelas-preco", "titulo": "Tabelas de Preço", "path": "/vendas/tabelas-preco/"},
+
+  {"modulo": "faturamento", "slug": "01-dashboard", "titulo": "Dashboard de Faturamento", "path": "/faturamento/"},
+  {"modulo": "faturamento", "slug": "02-nfe-lista", "titulo": "Lista de Notas Fiscais (NF-e)", "path": "/faturamento/notas-fiscais/"},
+  {"modulo": "faturamento", "slug": "03-nfe-detalhe", "titulo": "Detalhe de uma NF-e", "path": "/faturamento/notas-fiscais/{pk}/",
+   "pk_from": {"app_label": "faturamento", "model_name": "NotaFiscal", "filters": {"empresa_id": 1}}},
+  {"modulo": "faturamento", "slug": "04-remessas-pendentes", "titulo": "Remessas Pendentes", "path": "/faturamento/remessas-pendentes/"},
+  {"modulo": "faturamento", "slug": "05-invoices-lista", "titulo": "Invoices de Exportação", "path": "/faturamento/invoices/"},
+  {"modulo": "faturamento", "slug": "06-invoice-detalhe", "titulo": "Detalhe de uma Invoice", "path": "/faturamento/invoices/{pk}/",
+   "pk_from": {"app_label": "faturamento", "model_name": "InvoiceExportacao", "filters": {"empresa_id": 1}}},
+  {"modulo": "faturamento", "slug": "07-packing-lists", "titulo": "Packing Lists", "path": "/faturamento/packing-lists/"},
+  {"modulo": "faturamento", "slug": "08-cte-lista", "titulo": "CT-e (Conhecimento de Transporte)", "path": "/faturamento/cte/"},
+  {"modulo": "faturamento", "slug": "09-cte-detalhe", "titulo": "Detalhe de um CT-e", "path": "/faturamento/cte/{pk}/",
+   "pk_from": {"app_label": "faturamento", "model_name": "ConhecimentoTransporte", "filters": {"empresa_id": 1}}},
+  {"modulo": "faturamento", "slug": "10-mdfe-lista", "titulo": "MDF-e (Manifestos)", "path": "/faturamento/mdfe/"},
+  {"modulo": "faturamento", "slug": "11-mdfe-detalhe", "titulo": "Detalhe de um MDF-e", "path": "/faturamento/mdfe/{pk}/",
+   "pk_from": {"app_label": "faturamento", "model_name": "ManifestoDocumentoFiscal", "filters": {"empresa_id": 1}}},
+  {"modulo": "faturamento", "slug": "12-cotacoes-bcb", "titulo": "Cotações BCB", "path": "/faturamento/cotacoes-bcb/"},
+  {"modulo": "faturamento", "slug": "13-configuracao-fiscal", "titulo": "Configuração Fiscal", "path": "/faturamento/configuracao/"},
+  {"modulo": "faturamento", "slug": "14-distribuicao-dfe", "titulo": "Distribuição de DF-e", "path": "/faturamento/distribuicao-dfe/"},
+
+  {"modulo": "drawback", "slug": "01-dashboard", "titulo": "Dashboard de Drawback", "path": "/drawback/"},
+  {"modulo": "drawback", "slug": "02-ac-detalhe", "titulo": "Detalhe de um Ato Concessório", "path": "/drawback/ac/{pk}/",
+   "pk_from": {"app_label": "drawback", "model_name": "AtoConcessorio", "filters": {"empresa_id": 1}}},
+
+  {"modulo": "energia", "slug": "01-dashboard", "titulo": "Dashboard de Energia", "path": "/energia/"},
+  {"modulo": "energia", "slug": "02-consolidado", "titulo": "Consolidado / Ranking", "path": "/energia/consolidado/"},
+  {"modulo": "energia", "slug": "03-usinas-lista", "titulo": "Lista de Usinas", "path": "/energia/usinas/"},
+  {"modulo": "energia", "slug": "04-usina-detalhe", "titulo": "Detalhe de uma Usina", "path": "/energia/usinas/{pk}/",
+   "pk_from": {"app_label": "energia", "model_name": "UsinaFotovoltaica", "filters": {"empresa_id": 1}}},
+  {"modulo": "energia", "slug": "05-unidades-lista", "titulo": "Unidades Consumidoras", "path": "/energia/unidades/"},
+  {"modulo": "energia", "slug": "06-lancamentos-lista", "titulo": "Lançamentos Mensais", "path": "/energia/lancamentos/"},
+  {"modulo": "energia", "slug": "07-relatorios-usina", "titulo": "Relatórios de Usina", "path": "/energia/relatorios-usina/"},
+  {"modulo": "energia", "slug": "08-ocorrencias-lista", "titulo": "Ocorrências", "path": "/energia/ocorrencias/"},
+
+  {"modulo": "dashboard", "slug": "01-geral", "titulo": "Dashboard Geral", "path": "/dashboard/"},
+
+  {"modulo": "empresas", "slug": "01-lista", "titulo": "Lista de Empresas", "path": "/empresas/"},
+  {"modulo": "empresas", "slug": "02-painel-admin", "titulo": "Painel Admin", "path": "/empresas/painel-admin/"},
+  {"modulo": "empresas", "slug": "03-roles-lista", "titulo": "Funções/Roles", "path": "/empresas/roles/"},
+  {"modulo": "empresas", "slug": "04-planos-lista", "titulo": "Planos", "path": "/empresas/planos/"},
+  {"modulo": "empresas", "slug": "05-preferencias", "titulo": "Preferências da Empresa", "path": "/empresas/preferencias/"},
+
+  {"modulo": "usuarios", "slug": "01-lista", "titulo": "Lista de Usuários", "path": "/usuarios/"},
+  {"modulo": "usuarios", "slug": "02-tipos-lista", "titulo": "Tipos de Usuário", "path": "/usuarios/tipos/"},
+  {"modulo": "usuarios", "slug": "03-registros-login", "titulo": "Logs de Login", "path": "/usuarios/registros/"},
+  {"modulo": "usuarios", "slug": "04-meu-perfil", "titulo": "Meu Perfil", "path": "/usuarios/meu-perfil/"},
+
+  {"modulo": "metricas", "slug": "01-dashboard-executivo", "titulo": "Dashboard Executivo (KPIs)", "path": "/dashboard-executivo/"},
+  {"modulo": "metricas", "slug": "02-consumo-recursos", "titulo": "Consumo de Recursos", "path": "/dashboard-executivo/consumo/"},
+  {"modulo": "metricas", "slug": "03-alertas", "titulo": "Alertas", "path": "/dashboard-executivo/alertas/"}
+]

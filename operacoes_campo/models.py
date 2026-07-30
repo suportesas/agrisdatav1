@@ -779,6 +779,11 @@ class CarrocaoFrota(models.Model):
 class ViagemColheita(models.Model):
     """Viagem/carga de carroção. Registra pesagem bruto/tara/líquido com desconto."""
 
+    STATUS_CHOICES = [
+        ('AGUARDANDO_LIBERACAO', 'Aguardando Liberação'),
+        ('LIBERADA', 'Liberada'),
+    ]
+
     carrocao = models.ForeignKey(CarrocaoFrota, on_delete=models.CASCADE, related_name='viagens', verbose_name='Carroção')
     numero_viagem = models.PositiveSmallIntegerField('Nº da Viagem')
     hora_saida_campo = models.DateTimeField('Saída do Campo', null=True, blank=True)
@@ -793,6 +798,13 @@ class ViagemColheita(models.Model):
     foto_romaneio = models.ImageField('Foto do Romaneio/Ticket', upload_to='colheita/romaneios/%Y/%m/', null=True, blank=True)
     observacoes = models.CharField('Observações', max_length=200, blank=True)
     data_registro = models.DateTimeField('Registrado em', auto_now_add=True)
+    status = models.CharField('Status', max_length=25, choices=STATUS_CHOICES, default='AGUARDANDO_LIBERACAO')
+    hora_liberacao_retorno = models.DateTimeField('Liberado para Retorno em', null=True, blank=True)
+    liberado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='viagens_liberadas', verbose_name='Liberado por'
+    )
+    liberado_por_nome = models.CharField('Nome de quem liberou', max_length=120, blank=True)
 
     class Meta:
         db_table = 'cadastros_viagemcolheita'
@@ -820,6 +832,20 @@ class ViagemColheita(models.Model):
     def proximo_numero(cls, carrocao):
         ultimo = cls.objects.filter(carrocao=carrocao).order_by('-numero_viagem').first()
         return (ultimo.numero_viagem + 1) if ultimo else 1
+
+    def liberar_retorno(self, usuario):
+        self.status = 'LIBERADA'
+        self.hora_liberacao_retorno = timezone.now()
+        self.liberado_por = usuario
+        self.liberado_por_nome = usuario.get_full_name() or usuario.username
+        self.save(update_fields=['status', 'hora_liberacao_retorno', 'liberado_por', 'liberado_por_nome'])
+
+    def reverter_liberacao(self):
+        self.status = 'AGUARDANDO_LIBERACAO'
+        self.hora_liberacao_retorno = None
+        self.liberado_por = None
+        self.liberado_por_nome = ''
+        self.save(update_fields=['status', 'hora_liberacao_retorno', 'liberado_por', 'liberado_por_nome'])
 
 
 # ============================================================================

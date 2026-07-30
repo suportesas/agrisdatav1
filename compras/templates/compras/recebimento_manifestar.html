@@ -10,7 +10,7 @@
       <i class="bi bi-arrow-left"></i>
     </a>
     <div>
-      <h4 class="mb-0 fw-bold"><i class="bi bi-chat-square-check text-secondary me-2"></i>Manifestação do Destinatário (MD-e)</h4>
+      <h4 class="mb-0 fw-bold"><i class="bi bi-check2-square text-secondary me-2"></i>Manifestação do Destinatário (MD-e)</h4>
       <small class="text-muted">
         Recebimento {{ recebimento.numero }}
         {% if recebimento.fornecedor %} — {{ recebimento.fornecedor.get_nome_exibicao }}{% endif %}
@@ -83,7 +83,7 @@
 
         <div class="d-flex gap-2">
           <button type="submit" class="btn btn-secondary">
-            <i class="bi bi-chat-square-check me-1"></i>Registrar na SEFAZ
+            <i class="bi bi-check2-square me-1"></i>Registrar na SEFAZ
           </button>
           <a href="{% url 'compras:recebimento_detail' recebimento.pk %}" class="btn btn-outline-secondary">Cancelar</a>
         </div>

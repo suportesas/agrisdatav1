@@ -7,10 +7,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, F, Sum, Count
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 from django.utils import timezone
 from django.db import transaction
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from .models import (
     ContaPagar, ParcelaContaPagar, PagamentoContaPagar, AjusteContaPagar, FormaPagemento,
@@ -901,6 +902,59 @@ def parcela_pagar(request, parcela_pk):
     }
     
     return render(request, 'financeiro/pagamento_form.html', context)
+
+
+@login_required
+def parcela_atualizar_juros_multa(request, parcela_pk):
+    """Atualiza manualmente juros e multa de uma parcela em aberto (AJAX).
+
+    Cada fornecedor cobra atraso do seu jeito (valor fechado informado por telefone,
+    juros por dia, etc.), por isso o valor é digitado manualmente aqui em vez de
+    aplicar uma taxa automática única.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
+
+    empresa = request.user.empresa
+    parcela = get_object_or_404(
+        ParcelaContaPagar,
+        pk=parcela_pk,
+        conta_pagar__empresa=empresa
+    )
+
+    if parcela.status not in ('ABERTA', 'VENCIDA'):
+        return JsonResponse(
+            {'success': False, 'error': 'Só é possível editar juros/multa de parcelas em aberto ou vencidas.'},
+            status=400
+        )
+
+    def _parse_valor(nome):
+        bruto = (request.POST.get(nome) or '0').replace(',', '.').strip()
+        try:
+            valor = Decimal(bruto or '0')
+        except InvalidOperation:
+            raise ValueError(f'Valor informado para {nome} é inválido.')
+        if valor < 0:
+            raise ValueError(f'Valor de {nome} não pode ser negativo.')
+        return valor.quantize(Decimal('0.01'))
+
+    try:
+        juros = _parse_valor('juros')
+        multa = _parse_valor('multa')
+    except ValueError as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+
+    parcela.juros_parcela = juros
+    parcela.multa_parcela = multa
+    parcela.recalcular_total()
+    parcela.save(update_fields=['juros_parcela', 'multa_parcela', 'valor_total_parcela', 'dias_atraso', 'data_atualizacao'])
+
+    return JsonResponse({
+        'success': True,
+        'valor_total_parcela': str(parcela.valor_total_parcela),
+        'juros_parcela': str(parcela.juros_parcela),
+        'multa_parcela': str(parcela.multa_parcela),
+    })
 
 
 # ============================================

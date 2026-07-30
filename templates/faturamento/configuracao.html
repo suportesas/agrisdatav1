@@ -127,6 +127,16 @@
                 <label class="form-label">Observações Padrão Invoice</label>
                 {{ form.observacoes_padrao_invoice }}
               </div>
+              <div class="col-12">
+                <div class="form-check">
+                  {{ form.dfe_manifestar_ciencia_automatica }}
+                  <label class="form-check-label" for="{{ form.dfe_manifestar_ciencia_automatica.id_for_label }}">
+                    Manifestar "Ciência da Operação" automaticamente na Distribuição de DF-e
+                    <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip"
+                       title='Ao sincronizar (cron de 2h ou "Sincronizar agora"), registra automaticamente a Ciência da Operação para toda NF-e nova recebida de terceiros. Necessário para a SEFAZ liberar o download do XML completo. Não substitui a Confirmação/Desconhecimento/Operação Não Realizada, que continuam manuais.'></i>
+                  </label>
+                </div>
+              </div>
             </div>
 
             <!-- Dados Fiscais da Empresa (Emitente NF-e) -->

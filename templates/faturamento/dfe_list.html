@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+{% block title %}Distribuição de DF-e{% endblock %}
+{% block page_title %}Distribuição de DF-e{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon gray"><i class="bi bi-cloud-download"></i></span>
+          <div>
+              <h2>Distribuição de DF-e</h2>
+              <p class="text-muted mb-0">NF-e e eventos descobertos automaticamente na SEFAZ para o CNPJ da empresa</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <button class="btn btn-outline-secondary position-relative"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#filterCollapse"
+                  aria-expanded="{% if cnpj_emitente or chave_acesso or tipo or situacao or data_ini or data_fim %}true{% else %}false{% endif %}"
+                  title="Pesquisar / Filtrar">
+              <i class="bi bi-funnel"></i> Filtros
+              {% if cnpj_emitente or chave_acesso or tipo or situacao or data_ini or data_fim %}
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
+                  ●<span class="visually-hidden">filtro ativo</span>
+                </span>
+              {% endif %}
+          </button>
+          <form method="post" action="{% url 'faturamento:dfe_sincronizar_agora' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-secondary" title="Consulta a SEFAZ agora, sem esperar o cron de 2h">
+              <i class="bi bi-arrow-repeat"></i> Sincronizar agora
+            </button>
+          </form>
+          <a href="{% url 'faturamento:configuracao' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-gear"></i> Configuração
+          </a>
+      </div>
+  </div>
+
+  {% if not config.certificado_pfx %}
+  <div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle me-1"></i>
+    Nenhum certificado digital A1 cadastrado — a sincronização não vai funcionar.
+    <a href="{% url 'faturamento:configuracao' %}">Cadastre um em Configuração Fiscal</a>.
+  </div>
+  {% endif %}
+
+  <!-- Filtros (colapsável) -->
+  <div class="collapse {% if cnpj_emitente or chave_acesso or tipo or situacao or data_ini or data_fim %}show{% endif %} mb-4" id="filterCollapse">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">CNPJ do Emitente</label>
+        <input type="text" name="cnpj_emitente" value="{{ cnpj_emitente }}" class="form-control" placeholder="Só números ou formatado">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Chave de Acesso</label>
+        <input type="text" name="chave_acesso" value="{{ chave_acesso }}" class="form-control" placeholder="44 dígitos ou parte">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Tipo</label>
+        <select name="tipo" class="form-select">
+          <option value="">Todos</option>
+          {% for val, label in tipo_choices %}
+          <option value="{{ val }}" {% if tipo == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Situação</label>
+        <select name="situacao" class="form-select">
+          <option value="">Todas</option>
+          {% for val, label in situacao_choices %}
+          <option value="{{ val }}" {% if situacao == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Emissão de</label>
+        <input type="date" name="data_ini" value="{{ data_ini }}" class="form-control">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Até</label>
+        <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control">
+      </div>
+      <div class="filter-actions">
+          <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i> Filtrar
+          </button>
+          <a href="{% url 'faturamento:dfe_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-lg"></i> Limpar
+          </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Cards de resumo -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-gray mb-0"><i class="bi bi-file-earmark-text"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Total</div>
+          <div class="stat-value">{{ total }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-green mb-0"><i class="bi bi-check-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Autorizadas</div>
+          <div class="stat-value">{{ total_autorizadas }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-red mb-0"><i class="bi bi-x-circle"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Canceladas</div>
+          <div class="stat-value">{{ total_canceladas }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card d-flex align-items-center gap-3">
+        <div class="stat-icon stat-icon-orange mb-0"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+          <div class="stat-label text-uppercase">Pendente MD-e</div>
+          <div class="stat-value">{{ total_pendente_manifestacao }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabela -->
+  <form method="post" action="{% url 'faturamento:dfe_manifestar_lote' %}" id="loteForm">
+    {% csrf_token %}
+    <div class="d-none align-items-center gap-2 mb-2 p-2 bg-light border rounded-3" id="loteToolbar">
+      <span class="fw-semibold small text-muted"><span id="loteCount">0</span> selecionado(s)</span>
+      <button type="submit" formaction="{% url 'faturamento:dfe_manifestar_lote' %}"
+              class="btn btn-sm btn-secondary" title="Registra Ciência da Operação para os resNFe de terceiros ainda sem manifestação, entre os selecionados">
+        <i class="bi bi-check2-square"></i> Manifestar Ciência
+      </button>
+      <button type="submit" formaction="{% url 'faturamento:dfe_baixar_xml_lote' %}"
+              class="btn btn-sm btn-outline-secondary" title="Baixa em .zip os XMLs completos já disponíveis, entre os selecionados">
+        <i class="bi bi-file-earmark-zip"></i> Baixar XMLs (.zip)
+      </button>
+    </div>
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4" style="width:36px"><input type="checkbox" class="form-check-input" id="selectAll"></th>
+              <th>Tipo</th>
+              <th>Emitente</th>
+              <th>Emissão</th>
+              <th class="text-end">Valor</th>
+              <th class="text-center">Situação</th>
+              <th class="text-center">XML</th>
+              <th class="text-center">Manifestação</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for doc in page_obj %}
+            <tr>
+              <td class="ps-4"><input type="checkbox" name="ids" value="{{ doc.pk }}" class="form-check-input row-check"></td>
+              <td>
+                {% if doc.schema == 'resNFe' %}
+                  <span class="badge bg-secondary">NF-e</span>
+                {% else %}
+                  <span class="badge bg-info text-dark">Evento</span>
+                {% endif %}
+                <div class="text-muted" style="font-size:.7rem;letter-spacing:.04em">
+                  {{ doc.chave_acesso|slice:":22" }}…
+                </div>
+              </td>
+              <td>
+                {{ doc.nome_emitente|default:"—" }}
+                {% if doc.cnpj_emitente %}
+                <div class="text-muted" style="font-size:.7rem">{{ doc.cnpj_emitente }}{% if doc.cnpj_emitente == cnpj_empresa %} (própria empresa){% endif %}</div>
+                {% endif %}
+              </td>
+              <td class="text-mono text-nowrap">{{ doc.data_emissao|date:"d/m/Y"|default:"—" }}</td>
+              <td class="text-end text-mono text-nowrap">{% if doc.valor_total %}R$ {{ doc.valor_total|floatformat:"2g" }}{% else %}—{% endif %}</td>
+              <td class="text-center">
+                {% if doc.situacao == '1' %}
+                  <span class="badge bg-success">Autorizada</span>
+                {% elif doc.situacao == '2' %}
+                  <span class="badge bg-danger">Cancelada</span>
+                {% elif doc.situacao == '3' %}
+                  <span class="badge bg-dark">Denegada</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if doc.xml_url %}
+                <a href="{{ doc.xml_url }}" target="_blank" class="action-icon" title="Baixar XML completo">
+                  <i class="bi bi-file-earmark-arrow-down"></i>
+                </a>
+                {% else %}
+                <span class="text-muted small">pendente</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if doc.manifestacao_tipo %}
+                  <span class="badge" style="background:#2563eb">{{ doc.get_manifestacao_tipo_display }}</span>
+                  {% if doc.manifestacao_protocolo %}
+                  <div class="text-muted" style="font-size:.7rem"><code>{{ doc.manifestacao_protocolo }}</code></div>
+                  {% endif %}
+                {% elif doc.schema == 'resNFe' and doc.cnpj_emitente != cnpj_empresa %}
+                  <span class="badge bg-warning text-dark">Pendente</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                {% if doc.schema == 'resNFe' and doc.cnpj_emitente != cnpj_empresa and not doc.manifestacao_tipo %}
+                <a class="action-icon" href="{% url 'faturamento:dfe_manifestar' doc.pk %}" title="Registrar Manifestação MD-e">
+                    <i class="bi bi-check2-square"></i>
+                </a>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum documento encontrado.
+                <div class="small mt-1">
+                  Clique em "Sincronizar agora" para consultar a SEFAZ, ou aguarde a sincronização automática (a cada 2h).
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
+  </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('filterForm');
+  if (form) {
+    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+  }
+
+  const selectAll = document.getElementById('selectAll');
+  const rowChecks = Array.from(document.querySelectorAll('.row-check'));
+  const toolbar = document.getElementById('loteToolbar');
+  const countLabel = document.getElementById('loteCount');
+
+  function atualizarToolbar() {
+    const marcados = rowChecks.filter(c => c.checked).length;
+    countLabel.textContent = marcados;
+    toolbar.classList.toggle('d-none', marcados === 0);
+    toolbar.classList.toggle('d-flex', marcados > 0);
+    if (selectAll) {
+      selectAll.checked = marcados > 0 && marcados === rowChecks.length;
+      selectAll.indeterminate = marcados > 0 && marcados < rowChecks.length;
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function () {
+      rowChecks.forEach(c => { c.checked = selectAll.checked; });
+      atualizarToolbar();
+    });
+  }
+  rowChecks.forEach(c => c.addEventListener('change', atualizarToolbar));
+});
+</script>
+{% endblock %}

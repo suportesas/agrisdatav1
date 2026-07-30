@@ -400,6 +400,10 @@ SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY')
 SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 AUTH_MODE = os.getenv('AUTH_MODE', 'django')  # 'django', 'dual', 'supabase'
 
+# Segredo compartilhado do webhook de sincronização da Distribuição de DF-e
+# (faturamento:dfe_sync_webhook) — chamado pelo pg_cron/pg_net do Supabase a cada 2h.
+DFE_SYNC_SECRET = os.getenv('DFE_SYNC_SECRET', '')
+
 # Validação em produção
 if not DEBUG:
     if not SUPABASE_URL or not SUPABASE_ANON_KEY:

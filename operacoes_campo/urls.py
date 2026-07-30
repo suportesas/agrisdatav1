@@ -64,6 +64,8 @@ urlpatterns = [
     path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/carrocao/<int:carrocao_pk>/viagem/nova/', views_colheita.viagem_nova, name='colheita_viagem_nova'),
     path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/editar/', views_colheita.viagem_editar, name='colheita_viagem_editar'),
     path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/excluir/', views_colheita.viagem_excluir, name='colheita_viagem_excluir'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/liberar-retorno/', views_colheita.viagem_liberar_retorno, name='colheita_viagem_liberar_retorno'),
+    path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/viagem/<int:viagem_pk>/reverter-liberacao/', views_colheita.viagem_reverter_liberacao, name='colheita_viagem_reverter_liberacao'),
     path('ordens-servico/<int:os_pk>/colheita/<int:etapa_pk>/ajax/carrocoes/', views_colheita.ajax_carrocoes_disponiveis, name='colheita_ajax_carrocoes'),
 
     # ==================== PLUVIOMETRIA ====================

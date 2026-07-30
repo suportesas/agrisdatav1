@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-file-earmark-ruled"></i></span>
+        <h2>{{ title }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'faturamento:minuta_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-info-circle"></i></span>
+        <span class="title">Dados da Minuta</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Invoice <span class="req">*</span></label>
+            {{ form.invoice }}
+            {% if form.invoice.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.invoice.errors }}</div>{% endif %}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Data de Emissão <span class="req">*</span></label>
+            {{ form.data_emissao }}
+          </div>
+          <div class="field col-3">
+            <label class="form-label">Local de Emissão</label>
+            {{ form.local_emissao }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Cláusula de Frete</label>
+            {{ form.clausula_frete }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-people"></i></span>
+        <span class="title">Partes</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Shipper / Exportador</label>
+            {{ form.shipper }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Consignee</label>
+            {{ form.consignee }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Notify Party</label>
+            {{ form.notify_party }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-card-text"></i></span>
+        <span class="title">Observações</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12">
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'faturamento:minuta_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

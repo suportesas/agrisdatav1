@@ -178,6 +178,29 @@ def pedido_aprovar(request, pk):
 
 
 @login_required
+def pedido_pdf(request, pk):
+    """Gera um PDF de pré-visualização do pedido, para conferência antes de aprovar."""
+    empresa = request.user.empresa
+    pedido = get_object_or_404(PedidoVenda, pk=pk, empresa=empresa)
+    itens = pedido.itens.all()
+
+    from django.template.loader import get_template
+    from xhtml2pdf import pisa
+    from django.http import HttpResponse
+    import io
+
+    template = get_template('vendas/pedido_pdf.html')
+    html = template.render({'pedido': pedido, 'itens': itens, 'empresa': empresa})
+    result = io.BytesIO()
+    pdf = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), result)
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{pedido.numero}.pdf"'
+        return response
+    return HttpResponse('Erro ao gerar PDF', status=500)
+
+
+@login_required
 def pedido_emitir_documento(request, pk):
     """Emite NF-e ou Invoice + Conta a Receber e conclui o pedido."""
     if request.method != 'POST':

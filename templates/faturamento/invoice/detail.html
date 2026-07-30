@@ -23,6 +23,12 @@
       <a href="{% url 'faturamento:packing_list_create' %}?invoice={{ invoice.pk }}" class="btn btn-outline-info">
         <i class="bi bi-box-seam me-1"></i>Gerar Packing List
       </a>
+      <a href="{% url 'faturamento:instrucao_embarque_create' %}?invoice={{ invoice.pk }}" class="btn btn-outline-primary">
+        <i class="bi bi-truck me-1"></i>Gerar Instrução de Embarque
+      </a>
+      <a href="{% url 'faturamento:minuta_create' %}?invoice={{ invoice.pk }}" class="btn btn-outline-secondary">
+        <i class="bi bi-file-earmark-ruled me-1"></i>Gerar Minuta
+      </a>
       <a href="{% url 'faturamento:invoice_devolucao_registrar' invoice.pk %}" class="btn btn-outline-warning">
         <i class="bi bi-arrow-return-left me-1"></i>Registrar Devolução
       </a>
@@ -244,6 +250,109 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Instruções de Embarque Vinculadas -->
+    {% if invoice.instrucoes_embarque.exists %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Instruções de Embarque Vinculadas</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Número</th><th>Data</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for ie in invoice.instrucoes_embarque.all %}
+              <tr>
+                <td>{{ ie.numero }}</td>
+                <td>{{ ie.data_emissao|date:"d/m/Y" }}</td>
+                <td>
+                  {% if ie.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
+                  {% elif ie.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>
+                  {% else %}<span class="badge bg-danger">Cancelada</span>{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'faturamento:instrucao_embarque_detail' ie.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                  <a href="{% url 'faturamento:instrucao_embarque_pdf' ie.pk %}" class="btn btn-sm btn-outline-danger" target="_blank">PDF</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Minutas Vinculadas -->
+    {% if invoice.minutas.exists %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Minutas de Conhecimento Vinculadas</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Número</th><th>Data</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for mn in invoice.minutas.all %}
+              <tr>
+                <td>{{ mn.numero }}</td>
+                <td>{{ mn.data_emissao|date:"d/m/Y" }}</td>
+                <td>
+                  {% if mn.status == 'RASCUNHO' %}<span class="badge bg-secondary">Rascunho</span>
+                  {% elif mn.status == 'EMITIDA' %}<span class="badge bg-success">Emitida</span>
+                  {% else %}<span class="badge bg-danger">Cancelada</span>{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'faturamento:minuta_detail' mn.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
+                  <a href="{% url 'faturamento:minuta_pdf' mn.pk %}" class="btn btn-sm btn-outline-danger" target="_blank">PDF</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Cartas de Temperatura — reaproveita a tela existente por Ordem de Coleta -->
+    {% if invoice.booking and invoice.booking.ordens_coleta.exists %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header fw-semibold">Cartas de Temperatura (por Ordem de Coleta / Container)</div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Ordem de Coleta</th><th>Container</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for ordem in invoice.booking.ordens_coleta.all %}
+              <tr>
+                <td>{{ ordem.numero }}</td>
+                <td>{{ ordem.container.numero_container|default:"—" }}</td>
+                <td>
+                  <a href="{% url 'exportacao:ordem_coleta_carta_temperatura' ordem.pk %}" class="btn btn-sm btn-outline-info" target="_blank">
+                    <i class="bi bi-thermometer-half"></i> Carta de Temperatura
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% elif invoice.status == 'EMITIDA' %}
+    <div class="col-12">
+      <div class="alert alert-secondary mb-0">
+        <i class="bi bi-thermometer-half me-1"></i>
+        Carta de Temperatura é gerada a partir da Ordem de Coleta do Booking.
+        {% if not invoice.booking %}Esta invoice não está vinculada a um Booking.{% else %}Nenhuma Ordem de Coleta cadastrada neste Booking ainda.{% endif %}
       </div>
     </div>
     {% endif %}

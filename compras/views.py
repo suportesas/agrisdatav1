@@ -2088,12 +2088,24 @@ def recebimento_create(request, pedido_id):
             messages.error(request, 'Confirme pelo menos um item antes de registrar o recebimento.')
         elif form.is_valid():
             try:
+                # Busca cada item do pedido uma única vez e trava preço/desconto em zero
+                # quando o item já foi 100% faturado num recebimento anterior (divergência
+                # de quantidade "case A" — ver ItemPedidoCompra.ja_faturado_pedido_completo).
+                # O valor travado é usado tanto no total da NF quanto na criação do
+                # ItemRecebimento, então não depende do que veio no POST.
                 total_nf = Decimal('0')
+                itens_processados = []
                 for i in range(len(item_ids)):
+                    item_pedido = get_object_or_404(ItemPedidoCompra, pk=item_ids[i], pedido=pedido)
                     qty = Decimal(quantidades[i] or '0')
-                    preco = Decimal(precos[i]) if precos[i] else Decimal('0')
-                    desc = Decimal(descontos[i] or '0')
+                    if item_pedido.ja_faturado_pedido_completo:
+                        preco = Decimal('0')
+                        desc = Decimal('0')
+                    else:
+                        preco = Decimal(precos[i]) if precos[i] else Decimal('0')
+                        desc = Decimal(descontos[i] or '0')
                     total_nf += max(Decimal('0'), qty * preco - desc)
+                    itens_processados.append((item_pedido, qty, preco, desc))
 
                 recebimento = form.save(commit=False)
                 recebimento.empresa = empresa
@@ -2103,12 +2115,8 @@ def recebimento_create(request, pedido_id):
                 recebimento.valor_total_nf = total_nf
                 recebimento.save()
 
-                for i, item_id in enumerate(item_ids):
-                    item_pedido = get_object_or_404(ItemPedidoCompra, pk=item_id, pedido=pedido)
+                for i, (item_pedido, qty, preco, desc) in enumerate(itens_processados):
                     local = get_object_or_404(LocalEstocagem, pk=locais_ids[i], armazem__empresa=empresa)
-                    qty = Decimal(quantidades[i] or '0')
-                    preco_val = Decimal(precos[i]) if precos[i] else None
-                    desc_val = Decimal(descontos[i] or '0')
 
                     item_rec = ItemRecebimento(
                         recebimento=recebimento,
@@ -2117,8 +2125,8 @@ def recebimento_create(request, pedido_id):
                         unidade_medida=item_pedido.unidade_medida,
                         quantidade_recebida=qty,
                         local_estoque=local,
-                        preco_unitario=preco_val,
-                        valor_desconto=desc_val,
+                        preco_unitario=preco,
+                        valor_desconto=desc,
                         observacoes=obs_itens[i] if i < len(obs_itens) else '',
                     )
                     if i < len(datas_fab) and datas_fab[i]:
@@ -2910,7 +2918,18 @@ def recebimento_conferir(request, pk):
                         pass
                 
                 divergencia.save()
-            
+
+            valor_anterior = recebimento.valor_total_nf
+            recebimento.valor_total_nf = recebimento.valor_calculado_nf()
+            recebimento.save(update_fields=['valor_total_nf'])
+
+            if recebimento.valor_total_nf != valor_anterior:
+                messages.info(
+                    request,
+                    f'Valor da NF recalculado com base nas divergências: '
+                    f'R$ {recebimento.valor_total_nf:,.2f} (antes: R$ {valor_anterior:,.2f}).'
+                )
+
             messages.success(
                 request,
                 f'⚠️ Recebimento {recebimento.numero} registrado com {num_divergencias} divergência(s)!'

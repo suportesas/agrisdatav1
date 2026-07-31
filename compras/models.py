@@ -1170,6 +1170,25 @@ class ItemPedidoCompra(models.Model):
             return (self.quantidade_recebida / self.quantidade_pedida) * 100
         return 0
 
+    @property
+    def ja_faturado_pedido_completo(self):
+        """
+        True se algum recebimento anterior deste item já foi marcado, na
+        conferência, com uma divergência cujo tipo tem gera_valor_pedido_completo=True
+        — ou seja, o fornecedor já faturou (e já foi pago) pela quantidade PEDIDA
+        deste item, mesmo tendo entregue menos. Recebimentos seguintes deste mesmo
+        item não devem contribuir com novo valor financeiro.
+        """
+        recebimento_ids = self.recebimentos.values_list('recebimento_id', flat=True)
+        if not recebimento_ids:
+            return False
+        return DivergenciaRecebimento.objects.filter(
+            recebimento_id__in=recebimento_ids,
+            tipo_divergencia__gera_valor_pedido_completo=True
+        ).filter(
+            models.Q(item_recebimento__item_pedido=self) | models.Q(item_recebimento__isnull=True)
+        ).exists()
+
 
 class RecebimentoCompra(models.Model):
     """
@@ -1280,7 +1299,10 @@ class RecebimentoCompra(models.Model):
         'Valor Total da NF',
         max_digits=15,
         decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))]
+        validators=[MinValueValidator(Decimal('0'))],
+        help_text='Pode ser 0 quando este recebimento apenas completa fisicamente um pedido '
+                   'cujo valor já foi integralmente faturado em uma entrega anterior '
+                   '(divergência de quantidade "nota completa").'
     )
 
     valor_frete = models.DecimalField(
@@ -1413,8 +1435,40 @@ class RecebimentoCompra(models.Model):
             pedido.status = 'RECEBIDO'
         elif algum_recebido:
             pedido.status = 'PARCIALMENTE_RECEBIDO'
-        
+
         pedido.save(update_fields=['status'])
+
+    def valor_calculado_nf(self):
+        """
+        Recalcula o valor total da NF a partir dos itens recebidos.
+
+        Por padrão, cada item contribui com quantidade_recebida × preço − desconto
+        (a NF cobre exatamente o que chegou). Quando o item está coberto por uma
+        divergência cujo tipo tem `gera_valor_pedido_completo=True` (ex.: "entrega
+        curta, mas o fornecedor faturou o pedido cheio"), o item passa a contribuir
+        com o valor total do pedido (item_pedido.preco_total) em vez do recebido.
+        """
+        itens_com_valor_cheio = set(
+            DivergenciaRecebimento.objects.filter(
+                recebimento=self,
+                tipo_divergencia__gera_valor_pedido_completo=True
+            ).values_list('item_recebimento_id', flat=True)
+        )
+        afeta_todos_itens = None in itens_com_valor_cheio
+
+        total = Decimal('0')
+        for item in self.itens.select_related('item_pedido').all():
+            usa_valor_cheio = afeta_todos_itens or item.pk in itens_com_valor_cheio
+            if usa_valor_cheio and item.item_pedido:
+                total += item.item_pedido.preco_total
+            else:
+                preco = item.preco_unitario
+                if preco is None and item.item_pedido:
+                    preco = item.item_pedido.preco_unitario
+                preco = preco or Decimal('0')
+                desconto = item.valor_desconto or Decimal('0')
+                total += max(Decimal('0'), item.quantidade_recebida * preco - desconto)
+        return total
 
 
 class ItemRecebimento(models.Model):
@@ -1798,17 +1852,26 @@ class TipoDivergencia(models.Model):
         default=True,
         help_text='Desative para ocultar em seleções futuras'
     )
-    
+
+    gera_valor_pedido_completo = models.BooleanField(
+        'Fornecedor faturou o pedido completo',
+        default=False,
+        help_text='Marque quando este tipo de divergência significa que o fornecedor '
+                   'faturou a quantidade PEDIDA mesmo entregando menos — o financeiro '
+                   'deste recebimento deve ser gerado pelo valor do pedido completo, '
+                   'não pela quantidade recebida.'
+    )
+
     data_criacao = models.DateTimeField(
         'Data de Criação',
         auto_now_add=True
     )
-    
+
     data_atualizacao = models.DateTimeField(
         'Última Atualização',
         auto_now=True
     )
-    
+
     class Meta:
         verbose_name = 'Tipo de Divergência'
         verbose_name_plural = 'Tipos de Divergência'

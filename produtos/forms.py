@@ -1,7 +1,6 @@
 from decimal import Decimal, ROUND_HALF_UP
 
 from django import forms
-from django.core.exceptions import ValidationError
 from django.forms.widgets import Select
 from django.urls import reverse_lazy
 from core.widgets import Select2AjaxWidget, DateBRInput
@@ -308,6 +307,12 @@ class ProdutoForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
+        # Apenas a inferência de categoria_agricola acontece aqui. A validação
+        # de negócio (unidades, campos agrícolas obrigatórios etc.) fica a
+        # cargo de Produto.clean() — o próprio _post_clean() do ModelForm já
+        # chama instance.full_clean() automaticamente após este método, então
+        # chamar self.instance.clean() aqui de novo duplicava cada mensagem
+        # de erro (uma vinda daqui, outra do fluxo padrão do Django).
         categoria_agricola = cleaned_data.get('categoria_agricola')
         categoria = cleaned_data.get('categoria')
         if not categoria_agricola and categoria:
@@ -317,23 +322,6 @@ class ProdutoForm(forms.ModelForm):
                 cleaned_data['categoria_agricola'] = 'FERTILIZANTE'
             elif codigo.startswith('DEF') or 'defensiv' in nome:
                 cleaned_data['categoria_agricola'] = 'DEFENSIVO'
-
-        for campo, valor in cleaned_data.items():
-            setattr(self.instance, campo, valor)
-
-        try:
-            self.instance.clean()
-        except ValidationError as exc:
-            if hasattr(exc, 'message_dict'):
-                for campo, mensagens in exc.message_dict.items():
-                    if campo in self.fields:
-                        for mensagem in mensagens:
-                            self.add_error(campo, mensagem)
-                    else:
-                        for mensagem in mensagens:
-                            self.add_error(None, mensagem)
-            else:
-                self.add_error(None, exc)
 
         return cleaned_data
 

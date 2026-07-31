@@ -10,6 +10,10 @@ from .views_forma_pagamento import (
     forma_pagamento_list, forma_pagamento_create, forma_pagamento_edit,
     forma_pagamento_delete
 )
+from .views_tipo_divergencia import (
+    tipo_divergencia_list, tipo_divergencia_create, tipo_divergencia_edit,
+    tipo_divergencia_toggle
+)
 from .views_planejamento_embalagem import (
     planejamento_embalagem_list,
     planejamento_embalagem_create,
@@ -85,7 +89,13 @@ urlpatterns = [
     path('formas-pagamento/nova/', forma_pagamento_create, name='forma_pagamento_create'),
     path('formas-pagamento/<int:pk>/editar/', forma_pagamento_edit, name='forma_pagamento_edit'),
     path('formas-pagamento/<int:pk>/excluir/', forma_pagamento_delete, name='forma_pagamento_delete'),
-    
+
+    # Tipos de Divergência (Conferência de Recebimento) CRUD
+    path('tipos-divergencia/', tipo_divergencia_list, name='tipo_divergencia_list'),
+    path('tipos-divergencia/novo/', tipo_divergencia_create, name='tipo_divergencia_create'),
+    path('tipos-divergencia/<int:pk>/editar/', tipo_divergencia_edit, name='tipo_divergencia_edit'),
+    path('tipos-divergencia/<int:pk>/toggle/', tipo_divergencia_toggle, name='tipo_divergencia_toggle'),
+
     # API
     path('api/produto/<int:produto_id>/estoque/', views.get_produto_estoque, name='get_produto_estoque'),
     path('api/produto/<int:produto_id>/unidades/', views.get_produto_unidades, name='get_produto_unidades'),

@@ -131,12 +131,18 @@
                   data-produto="{{ item.produto.nome }}"
                   data-pendente="{{ item.quantidade_pendente|unlocalize }}"
                   data-unidade="{{ item.unidade_medida.sigla }}"
-                  data-preco="{{ item.preco_unitario|default:0|unlocalize }}"
-                  data-desconto="{{ item.valor_desconto|default:0|unlocalize }}">
+                  data-preco="{% if item.ja_faturado_pedido_completo %}0{% else %}{{ item.preco_unitario|default:0|unlocalize }}{% endif %}"
+                  data-desconto="{% if item.ja_faturado_pedido_completo %}0{% else %}{{ item.valor_desconto|default:0|unlocalize }}{% endif %}"
+                  data-faturado-completo="{% if item.ja_faturado_pedido_completo %}1{% else %}0{% endif %}">
                 <td>
                   <div class="fw-semibold">{{ item.produto.nome }}</div>
                   {% if item.produto.codigo %}
                   <small class="text-muted">Cód: {{ item.produto.codigo }}</small>
+                  {% endif %}
+                  {% if item.ja_faturado_pedido_completo %}
+                  <div><span class="badge bg-info text-dark mt-1" title="O fornecedor já faturou o pedido completo deste item em um recebimento anterior — esta entrega não gera novo valor financeiro">
+                    <i class="bi bi-receipt-cutoff"></i> Já faturado
+                  </span></div>
                   {% endif %}
                 </td>
                 <td class="text-end text-nowrap">
@@ -241,6 +247,13 @@
                                    style="background: #f8f9fa;" value="0,00">
                         </div>
                     </div>
+                    <div class="col-md-12" id="modalFaturadoAviso" style="display:none;">
+                        <div class="alert alert-info py-2 mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Este item já foi faturado integralmente em um recebimento anterior (divergência de
+                            quantidade) — esta entrega não gera novo valor financeiro.
+                        </div>
+                    </div>
                     <div class="col-md-4">
                         <label class="form-label">Data de Fabricação <small class="text-muted">(opcional)</small></label>
                         <input type="date" id="modalDataFab" class="form-control">
@@ -294,11 +307,25 @@ function abrirModal(btn) {
     document.getElementById('modalQtd').value    = prev ? prev.qtd    : tr.dataset.pendente;
     const ultimoLocal = localStorage.getItem('rec_ultimo_local') || '';
     document.getElementById('modalLocal').value  = prev ? prev.localId : ultimoLocal;
-    document.getElementById('modalPreco').value  = prev ? prev.preco  : (parseFloat(tr.dataset.preco) > 0 ? parseFloat(tr.dataset.preco).toFixed(2) : '');
-    document.getElementById('modalDesconto').value = prev ? prev.desconto : (parseFloat(tr.dataset.desconto) > 0 ? parseFloat(tr.dataset.desconto).toFixed(2) : '0');
     document.getElementById('modalDataFab').value  = prev ? prev.dataFab  : '';
     document.getElementById('modalDataVal').value  = prev ? prev.dataVal  : '';
     document.getElementById('modalObs').value      = prev ? prev.obs      : '';
+
+    const modalPreco = document.getElementById('modalPreco');
+    const modalDesconto = document.getElementById('modalDesconto');
+    const faturadoCompleto = tr.dataset.faturadoCompleto === '1';
+
+    modalPreco.disabled = faturadoCompleto;
+    modalDesconto.disabled = faturadoCompleto;
+    document.getElementById('modalFaturadoAviso').style.display = faturadoCompleto ? 'block' : 'none';
+
+    if (faturadoCompleto) {
+        modalPreco.value = '0';
+        modalDesconto.value = '0';
+    } else {
+        modalPreco.value  = prev ? prev.preco  : (parseFloat(tr.dataset.preco) > 0 ? parseFloat(tr.dataset.preco).toFixed(2) : '');
+        modalDesconto.value = prev ? prev.desconto : (parseFloat(tr.dataset.desconto) > 0 ? parseFloat(tr.dataset.desconto).toFixed(2) : '0');
+    }
 
     recalcularSubtotalModal();
     getModal().show();

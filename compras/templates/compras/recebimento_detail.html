@@ -56,7 +56,7 @@
                     Já faturado
                 </button>
                 {% endif %}
-                {% if recebimento.pedido and recebimento.valor_total_nf > 0 %}
+                {% if recebimento.pedido and recebimento.nota_fiscal %}
                     <form method="post" action="{% url 'compras:recebimento_entrada_estoque' recebimento.pk %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-primary">

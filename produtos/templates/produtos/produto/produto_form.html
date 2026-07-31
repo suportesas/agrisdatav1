@@ -72,7 +72,7 @@
             {{ form.codigo.label_tag }}
             {{ form.codigo }}
             <small class="form-text text-muted">{{ form.codigo.help_text }}</small>
-            {% if form.codigo.errors %}<div class="text-danger">{{ form.codigo.errors }}</div>{% endif %}
+            {% if form.codigo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-3 mb-3">
             {{ form.codigo_barras.label_tag }}
@@ -81,7 +81,7 @@
           <div class="col-md-6 mb-3">
             {{ form.nome.label_tag }}
             {{ form.nome }}
-            {% if form.nome.errors %}<div class="text-danger">{{ form.nome.errors }}</div>{% endif %}
+            {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|striptags }}</div>{% endif %}
           </div>
         </div>
         <div class="row">
@@ -103,7 +103,7 @@
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
-            {% if form.categoria.errors %}<div class="text-danger">{{ form.categoria.errors }}</div>{% endif %}
+            {% if form.categoria.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.categoria.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-4 mb-3">
             {{ form.subcategoria.label_tag }}
@@ -113,6 +113,7 @@
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
+            {% if form.subcategoria.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.subcategoria.errors|striptags }}</div>{% endif %}
           </div>
         </div>
         <h6 class="mb-3 mt-4"><i class="bi bi-rulers me-1"></i>Unidades</h6>
@@ -125,7 +126,7 @@
                 <i class="bi bi-plus-lg"></i>
               </button>
             </div>
-            {% if form.unidade_medida.errors %}<div class="text-danger">{{ form.unidade_medida.errors }}</div>{% endif %}
+            {% if form.unidade_medida.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_medida.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-3 mb-3">
             {{ form.unidade_compra.label_tag }}
@@ -155,13 +156,13 @@
             {{ form.peso_liquido_unitario.label_tag }}
             {{ form.peso_liquido_unitario }}
             <small class="form-text text-muted">{{ form.peso_liquido_unitario.help_text }}</small>
-            {% if form.peso_liquido_unitario.errors %}<div class="text-danger">{{ form.peso_liquido_unitario.errors }}</div>{% endif %}
+            {% if form.peso_liquido_unitario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_liquido_unitario.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-3 mb-3">
             {{ form.peso_bruto_unitario.label_tag }}
             {{ form.peso_bruto_unitario }}
             <small class="form-text text-muted">{{ form.peso_bruto_unitario.help_text }}</small>
-            {% if form.peso_bruto_unitario.errors %}<div class="text-danger">{{ form.peso_bruto_unitario.errors }}</div>{% endif %}
+            {% if form.peso_bruto_unitario.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_bruto_unitario.errors|striptags }}</div>{% endif %}
           </div>
         </div>
         <div class="row">
@@ -186,18 +187,18 @@
           <div class="col-md-4 mb-3 certificado-fields">
             {{ form.numero_certificado.label_tag }}
             {{ form.numero_certificado }}
-            {% if form.numero_certificado.errors %}<div class="text-danger">{{ form.numero_certificado.errors }}</div>{% endif %}
+            {% if form.numero_certificado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.numero_certificado.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-3 mb-3 certificado-fields">
             {{ form.data_vencimento_certificado.label_tag }}
             {{ form.data_vencimento_certificado }}
-            {% if form.data_vencimento_certificado.errors %}<div class="text-danger">{{ form.data_vencimento_certificado.errors }}</div>{% endif %}
+            {% if form.data_vencimento_certificado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data_vencimento_certificado.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-6 mb-3 certificado-fields">
             {{ form.arquivo_certificado.label_tag }}
             {{ form.arquivo_certificado }}
             <small class="form-text text-muted">Permitidos: PDF, PNG, JPG/JPEG (máximo 10MB).</small>
-            {% if form.arquivo_certificado.errors %}<div class="text-danger">{{ form.arquivo_certificado.errors }}</div>{% endif %}
+            {% if form.arquivo_certificado.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.arquivo_certificado.errors|striptags }}</div>{% endif %}
           </div>
         </div>
       </div>
@@ -223,7 +224,7 @@
                 <span class="badge bg-success ms-2 d-none" id="ncmCestBadge" style="font-size:.7rem; white-space:nowrap;"></span>
               </div>
             </div>
-            {% if form.ncm.errors %}<div class="text-danger">{{ form.ncm.errors }}</div>{% endif %}
+            {% if form.ncm.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ncm.errors|striptags }}</div>{% endif %}
           </div>
           <div class="col-md-6 mb-3">
             {{ form.cest.label_tag }}
@@ -458,7 +459,7 @@
               {% endfor %}
             </div>
             {% if form.classe_agronomica.errors %}
-              <div class="text-danger small mt-1">{{ form.classe_agronomica.errors|striptags }}</div>
+              <div class="error-msg">{{ form.classe_agronomica.errors|striptags }}</div>
             {% endif %}
           </div>
         </div>
@@ -725,7 +726,7 @@
             {{ form.tipo_fertilizante.label_tag }}
             {{ form.tipo_fertilizante }}
             {% if form.tipo_fertilizante.errors %}
-            <div class="text-danger">{{ form.tipo_fertilizante.errors }}</div>
+            <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_fertilizante.errors|striptags }}</div>
             {% endif %}
           </div>
           <div class="col-md-6 mb-3">
@@ -733,7 +734,7 @@
             {{ form.formula_npk }}
             <small class="text-muted d-block">Ex: 10-20-10</small>
             {% if form.formula_npk.errors %}
-            <div class="text-danger">{{ form.formula_npk.errors }}</div>
+            <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.formula_npk.errors|striptags }}</div>
             {% endif %}
           </div>
         </div>
@@ -745,7 +746,7 @@
             {{ form.nitrogenio_n }}
             <small class="text-muted d-block">Percentual de Nitrogênio</small>
             {% if form.nitrogenio_n.errors %}
-            <div class="text-danger">{{ form.nitrogenio_n.errors }}</div>
+            <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nitrogenio_n.errors|striptags }}</div>
             {% endif %}
           </div>
           <div class="col-md-4 mb-3">
@@ -753,7 +754,7 @@
             {{ form.fosforo_p2o5 }}
             <small class="text-muted d-block">Percentual de Fósforo (P₂O₅)</small>
             {% if form.fosforo_p2o5.errors %}
-            <div class="text-danger">{{ form.fosforo_p2o5.errors }}</div>
+            <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.fosforo_p2o5.errors|striptags }}</div>
             {% endif %}
           </div>
           <div class="col-md-4 mb-3">
@@ -761,7 +762,7 @@
             {{ form.potassio_k2o }}
             <small class="text-muted d-block">Percentual de Potássio (K₂O)</small>
             {% if form.potassio_k2o.errors %}
-            <div class="text-danger">{{ form.potassio_k2o.errors }}</div>
+            <div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.potassio_k2o.errors|striptags }}</div>
             {% endif %}
           </div>
         </div>

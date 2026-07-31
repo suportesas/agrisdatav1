@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-exclamation-triangle"></i></span>
+        <h2>{% if tipo %}Editar{% else %}Novo{% endif %} Tipo de Divergência</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'compras:tipo_divergencia_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label for="codigo" class="form-label">Código<span class="req">*</span></label>
+            <input type="text" class="form-control" id="codigo" name="codigo"
+                   value="{% if tipo %}{{ tipo.codigo }}{% else %}{{ form_data.codigo|default:'' }}{% endif %}"
+                   placeholder="Ex: DANO_EXT" required>
+          </div>
+          <div class="field col-8">
+            <label for="nome" class="form-label">Nome<span class="req">*</span></label>
+            <input type="text" class="form-control" id="nome" name="nome"
+                   value="{% if tipo %}{{ tipo.nome }}{% else %}{{ form_data.nome|default:'' }}{% endif %}"
+                   placeholder="Ex: Danos Externos" required>
+          </div>
+          <div class="field col-12">
+            <label for="descricao" class="form-label">Descrição</label>
+            <textarea class="form-control" id="descricao" name="descricao" rows="3"
+                      placeholder="Detalhe o que caracteriza este tipo de divergência">{% if tipo %}{{ tipo.descricao }}{% else %}{{ form_data.descricao|default:'' }}{% endif %}</textarea>
+          </div>
+          <div class="field col-4">
+            <label for="severidade" class="form-label">Nível de Severidade</label>
+            <select class="form-select" id="severidade" name="severidade">
+              {% firstof tipo.severidade form_data.severidade 'MEDIO' as sev %}
+              <option value="LEVE" {% if sev == 'LEVE' %}selected{% endif %}>Leve</option>
+              <option value="MEDIO" {% if sev == 'MEDIO' %}selected{% endif %}>Médio</option>
+              <option value="GRAVE" {% if sev == 'GRAVE' %}selected{% endif %}>Grave</option>
+            </select>
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="ativo" name="ativo" {% if tipo.ativo or not tipo %}checked{% endif %}>
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="ativo">Ativo</label>
+            </div>
+          </div>
+          <div class="field col-12">
+            <div class="switch-row">
+              <label class="switch">
+                <input type="checkbox" id="gera_valor_pedido_completo" name="gera_valor_pedido_completo" {% if tipo.gera_valor_pedido_completo %}checked{% endif %}>
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="gera_valor_pedido_completo">Fornecedor faturou o pedido completo</label>
+            </div>
+            <small class="text-muted d-block mt-1">
+              Marque quando esta divergência significa que o fornecedor faturou a quantidade PEDIDA mesmo entregando
+              menos — o financeiro do recebimento será gerado pelo valor do pedido completo, sem descontar a
+              quantidade que faltou. Deixe desmarcado para o caso de faturamento parcial real (o restante virá em
+              nota futura), onde o financeiro deve considerar apenas o que foi recebido.
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'compras:tipo_divergencia_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

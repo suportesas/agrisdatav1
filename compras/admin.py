@@ -160,17 +160,17 @@ class ItemRecebimentoAdmin(admin.ModelAdmin):
 @admin.register(TipoDivergencia)
 class TipoDivergenciaAdmin(admin.ModelAdmin):
     """Admin para CRUD de Tipos de Divergência"""
-    list_display = ['codigo', 'nome', 'severidade', 'ativo', 'empresa']
-    list_filter = ['severidade', 'ativo', 'empresa', 'data_criacao']
+    list_display = ['codigo', 'nome', 'severidade', 'gera_valor_pedido_completo', 'ativo', 'empresa']
+    list_filter = ['severidade', 'gera_valor_pedido_completo', 'ativo', 'empresa', 'data_criacao']
     search_fields = ['codigo', 'nome', 'descricao']
     readonly_fields = ['data_criacao', 'data_atualizacao']
-    
+
     fieldsets = (
         ('Identificação', {
             'fields': ('empresa', 'codigo', 'nome')
         }),
         ('Detalhes', {
-            'fields': ('descricao', 'severidade', 'ativo')
+            'fields': ('descricao', 'severidade', 'ativo', 'gera_valor_pedido_completo')
         }),
         ('Auditoria', {
             'fields': ('data_criacao', 'data_atualizacao'),

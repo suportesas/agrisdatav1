@@ -81,12 +81,12 @@
           <div class="field col-4">
             <label class="form-label">Preço Unitário</label>
             <div class="input-suffix">
-              <input type="text" inputmode="decimal" name="preco_unitario_{{ proposta.pk }}" value="{{ proposta.preco_unitario|floatformat:"2g" }}" class="form-control text-end preco-unitario" required autocomplete="off">
+              <input type="text" inputmode="decimal" name="preco_unitario_{{ proposta.pk }}" value="{{ proposta.preco_unitario|stringformat:'.2f' }}" class="form-control text-end preco-unitario money-mask-input" data-decimals="2" required autocomplete="off" id="preco_unitario_{{ proposta.pk }}">
             </div>
           </div>
           <div class="field col-4">
             <label class="form-label">Total</label>
-            <input type="text" name="preco_total_{{ proposta.pk }}" value="{{ proposta.preco_total|floatformat:"2g" }}" class="form-control text-end bg-light preco-total" required readonly id="preco_total_{{ proposta.pk }}" tabindex="-1">
+            <input type="text" name="preco_total_{{ proposta.pk }}" value="{{ proposta.preco_total|stringformat:'.2f' }}" class="form-control text-end bg-light preco-total money-mask-input" data-decimals="2" required readonly id="preco_total_{{ proposta.pk }}" tabindex="-1">
           </div>
           <div class="field col-4">
             <label class="form-label">Prazo (dias)</label>
@@ -120,43 +120,25 @@
   </form>
 </div>
 <script>
-// Cálculo automático do total
+// Cálculo automático do total, usando a máscara BR compartilhada (static/js/money-mask.js)
 document.addEventListener('DOMContentLoaded', function() {
     {% for proposta in propostas %}
-    const precoUnitInput{{ proposta.pk }} = document.querySelector('input[name="preco_unitario_{{ proposta.pk }}"]');
-    const totalInput{{ proposta.pk }} = document.getElementById('preco_total_{{ proposta.pk }}');
-    if (precoUnitInput{{ proposta.pk }} && totalInput{{ proposta.pk }}) {
-        function formatMoedaBR(valor) {
-            return valor.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }
-        function parseMoedaBR(valor) {
-            if (!valor) return 0;
-            valor = valor.replace(/[^\d,\.]/g, '');
-            // Se houver vírgula, assume decimal brasileiro
-            if (valor.indexOf(',') > -1) {
-                valor = valor.replace(/\./g, '').replace(/,/g, '.');
-            } else {
-                valor = valor.replace(/\./g, '');
-            }
-            return parseFloat(valor) || 0;
-        }
+    (function() {
+        const precoUnitId = 'preco_unitario_{{ proposta.pk }}';
+        const totalId = 'preco_total_{{ proposta.pk }}';
+        const quantidade = {{ item.quantidade|stringformat:'f' }};
+        const precoUnitInput = document.getElementById(precoUnitId);
+        if (!precoUnitInput) return;
+
         function atualizarTotal() {
-            let precoUnit = parseMoedaBR(precoUnitInput{{ proposta.pk }}.value);
-            const quantidade = parseMoedaBR("{{ item.quantidade|floatformat:"2g" }}");
-            let total = precoUnit * quantidade;
-            if (!isNaN(total)) {
-                totalInput{{ proposta.pk }}.value = formatMoedaBR(total);
-            } else {
-                totalInput{{ proposta.pk }}.value = '';
-            }
+            const precoUnit = window.MoneyMask.getValue(precoUnitId);
+            const total = precoUnit * quantidade;
+            window.MoneyMask.setValue(totalId, isNaN(total) ? 0 : total);
         }
-        // Eventos robustos para garantir atualização
-        ['input', 'change', 'blur', 'keyup'].forEach(function(evt) {
-            precoUnitInput{{ proposta.pk }}.addEventListener(evt, atualizarTotal);
-        });
-        // Inicialização
+
+        precoUnitInput.addEventListener('input', atualizarTotal);
         atualizarTotal();
-    }
+    })();
     {% endfor %}
 });
 </script>

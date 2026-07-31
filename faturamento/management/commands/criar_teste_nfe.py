@@ -260,7 +260,6 @@ class Command(BaseCommand):
                 serie=config.serie_nfe,
                 data_emissao=timezone.now().date(),
                 natureza_operacao=_TAG_NF_NAT_OP,
-                cfop='5102',
                 status='RASCUNHO',
                 modalidade_frete='SEM_FRETE',
                 presenca_comprador='9',

@@ -24,6 +24,9 @@
         de <strong>{{ plans.paginator.count }}</strong> planejamento{{ plans.paginator.count|pluralize }}
       {% endif %}
     </span>
+    <form method="get" class="row g-2 align-items-end" id="filterForm">
+      {% include 'partials/per_page_select.html' with col_class='' %}
+    </form>
   </div>
 
   <div class="card border-0 shadow-sm rounded-4">

@@ -369,10 +369,10 @@ class IntegranNotasClient:
             self._atribuir_numero(nf)
         payload = self._build_payload(nf)
         import json as _json
-        logger.info('IntegraNota: emitindo NF %s/%s — tipo_op=%s finalidade=%s cfop_nf=%s',
+        logger.info('IntegraNota: emitindo NF %s/%s — tipo_op=%s finalidade=%s entrada_saida=%s',
                     nf.numero, nf.serie,
                     payload.get('tipo_operacao'), payload.get('finalidade_emissao'),
-                    nf.cfop)
+                    nf.entrada_saida)
         logger.info('IntegraNota payload frete.transportadora: %s', payload.get('frete', {}).get('transportadora'))
         for _it in payload.get('itens', []):
             if _it.get('unidade_tributavel'):
@@ -623,9 +623,9 @@ class IntegranNotasClient:
         except Exception:
             config = None
 
-        # tipo_operacao: 0=entrada (CFOP 1xxx/2xxx/3xxx), 1=saída
-        cfop_str = str(nf.cfop or '5102')
-        tipo_operacao = '0' if cfop_str.startswith(('1', '2', '3')) else '1'
+        # tipo_operacao (tpNF): 0=entrada, 1=saída — vem de NotaFiscal.entrada_saida,
+        # derivado do CFOP real dos itens em calcular_totais() (não do CFOP de cabeçalho).
+        tipo_operacao = nf.entrada_saida or '1'
 
         payload: dict = {
             'natureza_operacao': nf.natureza_operacao,
@@ -671,7 +671,8 @@ class IntegranNotasClient:
         uf_embarque    = getattr(nf, 'embarque_uf', '').strip().upper()
         local_embarque = getattr(nf, 'embarque_local', '').strip()
         local_despacho = getattr(nf, 'embarque_local_despacho', '').strip()
-        if (uf_embarque or local_embarque) and cfop_str.startswith('7'):
+        eh_exportacao = nf.itens.filter(cfop__startswith='7').exists()
+        if (uf_embarque or local_embarque) and eh_exportacao:
             exporta: dict = {}
             if uf_embarque:
                 exporta['uf_local_embarque'] = uf_embarque

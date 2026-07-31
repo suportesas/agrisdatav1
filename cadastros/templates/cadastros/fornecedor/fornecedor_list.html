@@ -81,14 +81,7 @@
               </select>
             </div>
 
-            <div class="col-3 col-md-1">
-              <label class="form-label form-label-sm mb-1 fw-semibold">Por pág.</label>
-              <select name="per_page" class="form-select form-select-sm" id="perPageSelect">
-                {% for n in per_page_options %}
-                  <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
-                {% endfor %}
-              </select>
-            </div>
+            {% include 'partials/per_page_select.html' with col_class='col-3 col-md-1' %}
 
           </div>
 
@@ -255,12 +248,9 @@
 document.addEventListener('DOMContentLoaded', function () {
   const form = document.getElementById('filterForm');
 
-  // Auto-submit ao trocar select (exceto per_page que já é submetido pelo form)
-  form.querySelectorAll('select:not(#perPageSelect)').forEach(function (sel) {
+  // Auto-submit ao trocar select (per_page já tem seu próprio auto-submit no partial)
+  form.querySelectorAll('select:not(.js-per-page-select)').forEach(function (sel) {
     sel.addEventListener('change', function () { form.submit(); });
-  });
-  document.getElementById('perPageSelect')?.addEventListener('change', function () {
-    form.submit();
   });
 
   const deleteModal = document.getElementById('deleteModal');

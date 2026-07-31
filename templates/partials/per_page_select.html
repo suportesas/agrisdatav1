@@ -1,0 +1,21 @@
+{% comment %}
+Seletor "Por pág." padrão para páginas de listagem.
+Inclua dentro do <form method="get"> de filtros da listagem, no mesmo <div class="row">
+dos demais campos. Espera do contexto (via core.pagination.paginate): per_page (int atual)
+e per_page_options (lista de opções, ex. [10, 25, 50, 100]).
+Auto-submete o formulário ao mudar (reseta para a página 1, pois o form não carrega "page").
+Aceita 'col_class' opcional para ajustar a largura da coluna (default "col-6 col-md-1").
+{% endcomment %}
+<div class="{{ col_class|default:"col-6 col-md-1" }}">
+  <label class="form-label form-label-sm mb-1">Por pág.</label>
+  <select name="per_page" class="form-select form-select-sm js-per-page-select">
+    {% for n in per_page_options %}
+    <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
+    {% endfor %}
+  </select>
+</div>
+<script>
+document.querySelectorAll('.js-per-page-select').forEach(function (el) {
+  el.addEventListener('change', function () { this.form.submit(); });
+});
+</script>

@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.core.paginator import Paginator
 from django.db.models import Q
+from core.pagination import paginate
 import requests
 import re
 
@@ -52,15 +53,15 @@ def armador_list(request):
         queryset = queryset.filter(ativo=False)
     
     # Paginação
-    paginator = Paginator(queryset, 20)
-    page = request.GET.get('page', 1)
-    armadores = paginator.get_page(page)
-    
+    armadores, per_page, per_page_options = paginate(request, queryset)
+
     context = {
         'armadores': armadores,
         'search': search,
         'ativo_filter': ativo_filter,
-        'title': 'Armadores'
+        'title': 'Armadores',
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'cadastros/armador/list.html', context)
 
@@ -400,16 +401,16 @@ def navio_list(request):
         queryset = queryset.filter(ativo=False)
     
     # Paginação
-    paginator = Paginator(queryset, 20)
-    page = request.GET.get('page', 1)
-    navios = paginator.get_page(page)
-    
+    navios, per_page, per_page_options = paginate(request, queryset)
+
     context = {
         'navios': navios,
         'search': search,
         'status_filter': status_filter,
         'ativo_filter': ativo_filter,
-        'title': 'Navios'
+        'title': 'Navios',
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'cadastros/navio/list.html', context)
 

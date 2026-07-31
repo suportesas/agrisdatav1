@@ -112,6 +112,7 @@ from empresas.acesso import programa_required, usuario_tem_acesso
 from django.contrib import messages
 from django.db import transaction
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
@@ -164,9 +165,7 @@ def solicitacao_list(request):
     solicitacoes = solicitacoes.order_by('-data_cadastro')
 
     # Paginação
-    paginator = Paginator(solicitacoes, 20)
-    page_number = request.GET.get('page')
-    solicitacoes_page = paginator.get_page(page_number)
+    solicitacoes_page, per_page, per_page_options = paginate(request, solicitacoes)
 
     # Adiciona flag de nova mensagem para cada solicitação
     user = request.user
@@ -176,6 +175,8 @@ def solicitacao_list(request):
     context = {
         'solicitacoes': solicitacoes_page,
         'status_choices': SolicitacaoCompra.STATUS_CHOICES,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'compras/solicitacao_list.html', context)
 
@@ -520,10 +521,9 @@ def cotacao_list(request):
         cotacoes = cotacoes.filter(status=status)
     
     # Paginação
-    paginator = Paginator(cotacoes, 20)
-    page_number = request.GET.get('page')
-    cotacoes_page = paginator.get_page(page_number)
-    
+    cotacoes_page, per_page, per_page_options = paginate(request, cotacoes)
+
+
     # Card de cotações pendentes
     cotacoes_pendentes = Cotacao.objects.filter(empresa=request.user.empresa, status='EM_ANDAMENTO').count()
     
@@ -543,7 +543,9 @@ def cotacao_list(request):
         'cotacoes_pendentes': cotacoes_pendentes,
         'solicitacoes_pendentes': solicitacoes_pendentes,
         'percentual_pendentes': percentual_pendentes,
-        'solicitacoes_parcial': solicitacoes_parcial
+        'solicitacoes_parcial': solicitacoes_parcial,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'compras/cotacao/cotacao_list_tradicional.html', context)
 
@@ -891,10 +893,9 @@ def pedido_list(request):
         pedidos = pedidos.filter(fornecedor_id=fornecedor)
     
     # Paginação
-    paginator = Paginator(pedidos, 20)
-    page_number = request.GET.get('page')
-    pedidos_page = paginator.get_page(page_number)
-    
+    pedidos_page, per_page, per_page_options = paginate(request, pedidos)
+
+
     # Calcula status de recebimento para cada pedido na página
     pedidos_recebimento = []
     for pedido in pedidos_page:
@@ -919,6 +920,8 @@ def pedido_list(request):
         'pedidos_recebimento': pedidos_recebimento,
         'status_choices': PedidoCompra.STATUS_CHOICES,
         'pedidos': pedidos_page,  # mantém para compatibilidade
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'compras/pedido_list.html', context)
 
@@ -2631,9 +2634,7 @@ def mde_list(request):
         manifestacao_tipo__in=['desconhecimento_operacao', 'operacao_nao_realizada']
     ).count()
 
-    from django.core.paginator import Paginator
-    paginator = Paginator(qs, 30)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     fornecedores = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
 
@@ -2659,6 +2660,8 @@ def mde_list(request):
         'total_outros': total_outros,
         'fornecedores': fornecedores,
         'mde_status_choices': MDE_STATUS_CHOICES,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -2703,11 +2706,10 @@ def recebimento_list(request):
         ('cancelado', 'Cancelado', 'CANCELADO'),
     ]
     tab_data = {}
+    per_page = per_page_options = None
     for tab_key, tab_label, tab_status in tabs:
         tab_qs = recebimentos.filter(status=tab_status)
-        paginator = Paginator(tab_qs, 20)
-        page_number = request.GET.get(f'{tab_key}_page', 1)
-        page_obj = paginator.get_page(page_number)
+        page_obj, per_page, per_page_options = paginate(request, tab_qs, page_param=f'{tab_key}_page')
         tab_data[tab_key] = {
             'label': tab_label,
             'page_obj': page_obj,
@@ -2728,6 +2730,8 @@ def recebimento_list(request):
         'fornecedores': fornecedores,
         'fornecedor_filtro': request.GET.get('fornecedor', ''),
         'xml_import_enabled': is_feature_enabled('COMPRAS_XML_IMPORT'),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'compras/recebimento_list.html', context)
@@ -3804,7 +3808,6 @@ def devolucao_compra_create(request, pk):
                     chave_nfe_referenciada=recebimento.chave_nfe or '',
                     finalidade_nfe='4',
                     natureza_operacao='DEVOLUÇÃO DE MERCADORIA',
-                    cfop=cfop,
                     serie=int(serie),
                     status='RASCUNHO',
                     presenca_comprador='9',

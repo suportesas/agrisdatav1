@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import JsonResponse
 from django.db.models import Sum
 
@@ -60,16 +61,13 @@ def planejamento_custo_list(request):
         .order_by('-data_criacao')
     )
 
-    paginator = Paginator(plans, 20)
-    page = request.GET.get('page', 1)
-    try:
-        plans_page = paginator.page(page)
-    except Exception:
-        plans_page = paginator.page(1)
+    plans_page, per_page, per_page_options = paginate(request, plans)
 
     return render(request, 'cadastros/planejamento_custo/planejamento_custo_list.html', {
         'plans': plans_page,
         'title': 'Planejamento de Custo',
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

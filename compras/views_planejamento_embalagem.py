@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db import transaction
 from django.http import JsonResponse
 
@@ -45,8 +46,7 @@ def planejamento_embalagem_list(request):
     from cadastros.models import Safra
     safras = Safra.objects.filter(fazenda__empresa=empresa).order_by('-ano', 'nome')
 
-    paginator = Paginator(qs.order_by('-criado_em'), 20)
-    planejamentos = paginator.get_page(request.GET.get('page'))
+    planejamentos, per_page, per_page_options = paginate(request, qs.order_by('-criado_em'))
 
     return render(request, 'compras/planejamento_embalagem_list.html', {
         'planejamentos': planejamentos,
@@ -54,6 +54,8 @@ def planejamento_embalagem_list(request):
         'status_filtro': status_filtro,
         'safra_filtro': safra_filtro,
         'status_choices': PlanejamentoComprasEmbalagem.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

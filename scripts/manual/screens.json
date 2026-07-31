@@ -430,5 +430,85 @@
 
   {"modulo": "metricas", "slug": "01-dashboard-executivo", "titulo": "Dashboard Executivo (KPIs)", "path": "/dashboard-executivo/"},
   {"modulo": "metricas", "slug": "02-consumo-recursos", "titulo": "Consumo de Recursos", "path": "/dashboard-executivo/consumo/"},
-  {"modulo": "metricas", "slug": "03-alertas", "titulo": "Alertas", "path": "/dashboard-executivo/alertas/"}
+  {"modulo": "metricas", "slug": "03-alertas", "titulo": "Alertas", "path": "/dashboard-executivo/alertas/"},
+
+  {"modulo": "cadastros_agro", "slug": "11-fazenda-form", "titulo": "Formulário de Nova Fazenda", "path": "/cadastros/fazendas/nova/"},
+  {"modulo": "cadastros_agro", "slug": "12-area-form", "titulo": "Formulário de Nova Área", "path": "/cadastros/areas/nova/"},
+  {"modulo": "cadastros_agro", "slug": "13-talhao-form", "titulo": "Formulário de Novo Talhão", "path": "/cadastros/talhoes/novo/"},
+  {"modulo": "cadastros_agro", "slug": "14-cultura-form", "titulo": "Formulário de Nova Cultura", "path": "/cadastros/culturas/nova/"},
+  {"modulo": "cadastros_agro", "slug": "15-safra-form", "titulo": "Formulário de Nova Safra", "path": "/cadastros/safras/nova/"},
+  {"modulo": "cadastros_agro", "slug": "16-praga-form", "titulo": "Formulário de Nova Praga", "path": "/cadastros/pragas/nova/"},
+  {"modulo": "cadastros_agro", "slug": "17-poco-form", "titulo": "Formulário de Novo Poço", "path": "/cadastros/pocos/novo/"},
+
+  {"modulo": "operacoes_campo", "slug": "12-custo-maquina-form", "titulo": "Formulário de Custo/Hora de Máquina", "path": "/campo/custos-maquina/novo/"},
+  {"modulo": "operacoes_campo", "slug": "13-pluviometria-form", "titulo": "Formulário de Registro de Chuva", "path": "/campo/pluviometria/novo/"},
+  {"modulo": "operacoes_campo", "slug": "14-qualidade-campo-form", "titulo": "Formulário de Inspeção de Qualidade", "path": "/campo/qualidade-campo/nova/"},
+  {"modulo": "operacoes_campo", "slug": "15-caderno-campo-form", "titulo": "Formulário de Caderno de Campo", "path": "/campo/caderno-campo/novo/"},
+  {"modulo": "operacoes_campo", "slug": "16-planejamento-custo-form", "titulo": "Formulário de Planejamento de Custo", "path": "/campo/planejamento-custo/novo/"},
+
+  {"modulo": "mip", "slug": "04-monitoramento-form", "titulo": "Formulário de Novo Monitoramento MIP", "path": "/mip/monitoramento/novo/"},
+  {"modulo": "mip", "slug": "05-estagio-form", "titulo": "Formulário de Novo Estágio", "path": "/mip/estagios/novo/"},
+
+  {"modulo": "estufas", "slug": "05-estufa-form", "titulo": "Formulário de Nova Estufa", "path": "/estufas/nova/"},
+  {"modulo": "estufas", "slug": "06-lote-mudas-form", "titulo": "Formulário de Novo Lote de Mudas", "path": "/estufas/lotes/novo/"},
+
+  {"modulo": "cadastros_pessoas", "slug": "09-cliente-form", "titulo": "Formulário de Novo Cliente", "path": "/cadastros/clientes/novo/"},
+  {"modulo": "cadastros_pessoas", "slug": "10-produtor-form", "titulo": "Formulário de Novo Produtor", "path": "/cadastros/produtores/novo/"},
+  {"modulo": "cadastros_pessoas", "slug": "11-fornecedor-form", "titulo": "Formulário de Novo Fornecedor", "path": "/cadastros/fornecedores/novo/"},
+  {"modulo": "cadastros_pessoas", "slug": "12-transportadora-form", "titulo": "Formulário de Nova Transportadora", "path": "/cadastros/transportadoras/novo/"},
+  {"modulo": "cadastros_pessoas", "slug": "13-vendedor-form", "titulo": "Formulário de Novo Vendedor", "path": "/cadastros/vendedores/novo/"},
+
+  {"modulo": "frota", "slug": "12-veiculo-form", "titulo": "Formulário de Novo Veículo", "path": "/frota/veiculos/novo/"},
+  {"modulo": "frota", "slug": "13-motorista-form", "titulo": "Formulário de Novo Motorista", "path": "/frota/motoristas/criar/"},
+  {"modulo": "frota", "slug": "14-abastecimento-form", "titulo": "Formulário de Novo Abastecimento", "path": "/frota/abastecimentos/novo/"},
+  {"modulo": "frota", "slug": "15-manutencao-form", "titulo": "Formulário de Nova Manutenção", "path": "/frota/manutencoes/nova/"},
+
+  {"modulo": "rh", "slug": "11-funcionario-form", "titulo": "Formulário de Novo Funcionário", "path": "/rh/funcionarios/novo/"},
+  {"modulo": "rh", "slug": "12-funcao-form", "titulo": "Formulário de Nova Função", "path": "/rh/funcoes/novo/"},
+  {"modulo": "rh", "slug": "13-ferias-form", "titulo": "Formulário de Novas Férias", "path": "/rh/ferias/novo/"},
+  {"modulo": "rh", "slug": "14-afastamento-form", "titulo": "Formulário de Novo Afastamento", "path": "/rh/afastamentos/novo/"},
+
+  {"modulo": "patrimonio", "slug": "05-patrimonio-form", "titulo": "Formulário de Novo Patrimônio", "path": "/patrimonio/novo/"},
+
+  {"modulo": "estoque", "slug": "16-armazem-form", "titulo": "Formulário de Novo Armazém", "path": "/estoque/armazens/create/"},
+  {"modulo": "estoque", "slug": "17-lote-form", "titulo": "Formulário de Novo Lote", "path": "/estoque/lotes/create/"},
+  {"modulo": "estoque", "slug": "18-inventario-form", "titulo": "Formulário de Novo Inventário Cíclico", "path": "/estoque/inventario-ciclico/create/"},
+
+  {"modulo": "financeiro", "slug": "08-conta-pagar-form", "titulo": "Formulário de Nova Conta a Pagar", "path": "/financeiro/contas/criar/"},
+  {"modulo": "financeiro", "slug": "09-conta-receber-form", "titulo": "Formulário de Nova Conta a Receber", "path": "/financeiro/contas-receber/nova/"},
+
+  {"modulo": "plano_contas", "slug": "05-conta-form", "titulo": "Formulário de Nova Conta Contábil", "path": "/plano-contas/nova/"},
+  {"modulo": "plano_contas", "slug": "06-centro-custo-form", "titulo": "Formulário de Novo Centro de Custo", "path": "/plano-contas/centros/novo/"},
+
+  {"modulo": "bancario", "slug": "04-conta-form", "titulo": "Formulário de Nova Conta Bancária", "path": "/bancario/contas/nova/"},
+
+  {"modulo": "adiantamentos", "slug": "04-adiantamento-form", "titulo": "Formulário de Novo Adiantamento", "path": "/adiantamentos/novo/"},
+
+  {"modulo": "embalagem", "slug": "08-tipo-embalagem-form", "titulo": "Formulário de Novo Tipo de Embalagem", "path": "/embalagem/tipos/novo/"},
+  {"modulo": "embalagem", "slug": "09-ordem-form", "titulo": "Formulário de Nova Ordem de Embalagem", "path": "/embalagem/ordens/nova/"},
+  {"modulo": "embalagem", "slug": "10-romaneio-form", "titulo": "Formulário de Novo Romaneio", "path": "/embalagem/romaneios/novo/"},
+
+  {"modulo": "etiquetas_avulsas", "slug": "03-lote-form", "titulo": "Formulário de Novo Lote de Etiquetas", "path": "/etiquetas-avulsas/lotes/novo/"},
+
+  {"modulo": "exportacao", "slug": "05-solicitacao-form", "titulo": "Formulário de Nova Solicitação de Booking", "path": "/exportacao/solicitacoes/nova/"},
+  {"modulo": "exportacao", "slug": "06-booking-form", "titulo": "Formulário de Novo Booking", "path": "/exportacao/bookings/novo/"},
+  {"modulo": "exportacao", "slug": "07-ordem-coleta-form", "titulo": "Formulário de Nova Ordem de Coleta", "path": "/exportacao/ordens-coleta/nova/"},
+
+  {"modulo": "drawback", "slug": "03-ac-form", "titulo": "Formulário de Novo Ato Concessório", "path": "/drawback/ac/novo/"},
+
+  {"modulo": "faturamento", "slug": "15-nfe-form", "titulo": "Formulário de Nova NF-e", "path": "/faturamento/notas-fiscais/nova/"},
+  {"modulo": "faturamento", "slug": "16-invoice-form", "titulo": "Formulário de Nova Invoice", "path": "/faturamento/invoices/nova/"},
+  {"modulo": "faturamento", "slug": "17-cte-form", "titulo": "Formulário de Novo CT-e", "path": "/faturamento/cte/novo/"},
+  {"modulo": "faturamento", "slug": "18-mdfe-form", "titulo": "Formulário de Novo MDF-e", "path": "/faturamento/mdfe/novo/"},
+  {"modulo": "faturamento", "slug": "19-packing-list-form", "titulo": "Formulário de Nova Packing List", "path": "/faturamento/packing-lists/nova/"},
+
+  {"modulo": "energia", "slug": "09-usina-form", "titulo": "Formulário de Nova Usina", "path": "/energia/usinas/nova/"},
+  {"modulo": "energia", "slug": "10-unidade-form", "titulo": "Formulário de Nova Unidade Consumidora", "path": "/energia/unidades/nova/"},
+  {"modulo": "energia", "slug": "11-lancamento-form", "titulo": "Formulário de Novo Lançamento Mensal", "path": "/energia/lancamentos/novo/"},
+  {"modulo": "energia", "slug": "12-ocorrencia-form", "titulo": "Formulário de Nova Ocorrência", "path": "/energia/ocorrencias/nova/"},
+
+  {"modulo": "empresas", "slug": "06-empresa-form", "titulo": "Formulário de Nova Empresa", "path": "/empresas/nova/"},
+  {"modulo": "empresas", "slug": "07-role-form", "titulo": "Formulário de Nova Role", "path": "/empresas/roles/novo/"},
+
+  {"modulo": "usuarios", "slug": "05-usuario-form", "titulo": "Formulário de Novo Usuário", "path": "/usuarios/novo/"}
 ]

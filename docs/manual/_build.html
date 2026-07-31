@@ -113,6 +113,15 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 </tr>
 </tbody>
 </table>
+<h3 id="fluxo-passo-a-passo-estruturar-uma-fazenda-do-zero">Fluxo passo a passo — estruturar uma fazenda do zero</h3>
+<ol>
+<li>Cadastre a <strong>Fazenda</strong> (dados básicos + documentação + endereço).</li>
+<li>Dentro da fazenda, cadastre uma ou mais <strong>Áreas</strong> (blocos de produção).</li>
+<li>Dentro de cada Área, cadastre os <strong>Talhões</strong> (a menor unidade de plantio).</li>
+<li>Cadastre as <strong>Culturas</strong> que serão plantadas (se ainda não existirem no sistema).</li>
+<li>Abra a <strong>Safra</strong> do ciclo (vinculada à fazenda) e defina o planejamento (talhões/culturas do ciclo).</li>
+<li>Só a partir daqui é possível abrir Ordens de Serviço, Monitoramento MIP e outras operações — todas exigem talhão e, na maioria dos casos, safra.</li>
+</ol>
 <h3 id="tela-lista-de-fazendas">Tela: Lista de Fazendas</h3>
 <figure>
   <img src="screenshots/cadastros_agro/01-fazendas-lista.png" alt="Lista de Fazendas">
@@ -125,12 +134,63 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados gerais, endereços, contatos, contas bancárias e documentos vinculados à fazenda.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-fazenda">Tela: Formulário de Nova Fazenda</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/11-fazenda-form.png" alt="Formulário de Nova Fazenda">
+  <figcaption>Formulário dividido em 5 abas: Dados Básicos, Documentação, Dados da Propriedade, Contato, Observações.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Dados Básicos):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tipo de Pessoa</td>
+<td>Sim</td>
+<td>Pessoa Física ou Jurídica — define o formato exigido do documento abaixo</td>
+</tr>
+<tr>
+<td>CNPJ/CPF</td>
+<td>Sim</td>
+<td>Documento da fazenda/proprietário. Para Pessoa Jurídica, o botão <strong>Buscar</strong> preenche automaticamente Nome/Razão Social e endereço via API da Receita</td>
+</tr>
+<tr>
+<td>Nome da Fazenda/Razão Social</td>
+<td>Sim</td>
+<td>Nome oficial da propriedade</td>
+</tr>
+<tr>
+<td>Nome Fantasia</td>
+<td>Não</td>
+<td>Nome comercial, se diferente do oficial</td>
+</tr>
+<tr>
+<td>Fazenda Ativa</td>
+<td>Não (padrão ligado)</td>
+<td>Desligar em vez de excluir uma fazenda que parou de operar</td>
+</tr>
+</tbody>
+</table>
+<p>As demais abas cobrem: <strong>Documentação</strong> (inscrição estadual, documentos anexos), <strong>Dados da Propriedade</strong> (área total, matrícula, coordenadas), <strong>Contato</strong> (telefone/e-mail) e <strong>Observações</strong> (texto livre). Preencha ao menos a aba Dados Básicos para salvar; as demais podem ser completadas depois editando a fazenda.</p>
 <h3 id="tela-lista-de-areas">Tela: Lista de Áreas</h3>
 <figure>
   <img src="screenshots/cadastros_agro/03-areas-lista.png" alt="Lista de Áreas">
   <figcaption>Áreas cadastradas (`/cadastros/areas/`), sempre vinculadas a uma fazenda.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-area">Tela: Formulário de Nova Área</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/12-area-form.png" alt="Formulário de Nova Área">
+  <figcaption>Vincula a área a uma fazenda e registra o tipo de solo.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> escolha a <strong>Fazenda</strong> primeiro — o formulário não permite criar uma área "solta". Informe nome da área e, se souber, o tipo de solo (Arenoso, Argiloso, Siltoso, Humoso, Calcário, Gleissolo, Latossolo, Cambissolo).</p>
 <h3 id="tela-lista-de-talhoes">Tela: Lista de Talhões</h3>
 <figure>
   <img src="screenshots/cadastros_agro/04-talhoes-lista.png" alt="Lista de Talhões">
@@ -143,12 +203,58 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados do talhão e histórico de ocupação/cultivo.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-talhao">Tela: Formulário de Novo Talhão</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/13-talhao-form.png" alt="Formulário de Novo Talhão">
+  <figcaption>Formulário em 4 abas: Identificação, Medidas, Geolocalização & Características, Observações.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Identificação):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fazenda</td>
+<td>Sim</td>
+<td>Escolher primeiro — carrega as opções de Área disponíveis</td>
+</tr>
+<tr>
+<td>Área</td>
+<td>Não</td>
+<td>Filtrada pela fazenda escolhida</td>
+</tr>
+<tr>
+<td>Nome do Talhão</td>
+<td>Sim</td>
+<td>Identificação livre (ex: "Talhão 12")</td>
+</tr>
+<tr>
+<td>Código</td>
+<td>Não</td>
+<td>Código interno de referência</td>
+</tr>
+</tbody>
+</table>
+<p>Na aba <strong>Medidas</strong> informe a área em hectares (campo <code>Área (ha)</code>, aceita até 4 casas decimais). <strong>Geolocalização &amp; Características</strong> guarda coordenadas e tipo de solo específico do talhão, se diferente da área.</p>
 <h3 id="tela-lista-de-culturas">Tela: Lista de Culturas</h3>
 <figure>
   <img src="screenshots/cadastros_agro/06-culturas-lista.png" alt="Lista de Culturas">
   <figcaption>Culturas cadastradas (`/cadastros/culturas/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-cultura">Tela: Formulário de Nova Cultura</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/14-cultura-form.png" alt="Formulário de Nova Cultura">
+  <figcaption>Cadastro técnico da cultura: ciclo, espaçamento, irrigação e parâmetros de exportação.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> os campos obrigatórios básicos são <strong>Nome</strong> e <strong>Unidade de Medida</strong>. O restante é opcional mas recomendado para culturas que você monitora de perto: nome científico, variedade, ciclo de cultivo (dias), dias até colheita, espaçamento entre linhas/plantas, densidade de plantio, faixa de temperatura ideal, necessidade de água, produtividade esperada, preço médio e mercado destino. Se a cultura for exportada, preencha também temperatura/umidade/ventilação de exportação (usados em Packing List/Invoice).</p>
 <h3 id="tela-lista-de-safras">Tela: Lista de Safras</h3>
 <figure>
   <img src="screenshots/cadastros_agro/07-safras-lista.png" alt="Lista de Safras">
@@ -161,10 +267,60 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Planejamento da safra e talhões/culturas envolvidos no ciclo.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-safra">Tela: Formulário de Nova Safra</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/15-safra-form.png" alt="Formulário de Nova Safra">
+  <figcaption>Dados básicos da safra — o planejamento de talhões/culturas é feito depois, na tela de detalhe.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nome</td>
+<td>Sim</td>
+<td>Ex: "Safra 2026/27"</td>
+</tr>
+<tr>
+<td>Código</td>
+<td>Não</td>
+<td>Ex: <code>202627</code>, até 10 caracteres</td>
+</tr>
+<tr>
+<td>Fazenda</td>
+<td>Sim</td>
+<td>Busca com autocomplete</td>
+</tr>
+<tr>
+<td>Ano</td>
+<td>Sim</td>
+<td>Ano de referência da safra</td>
+</tr>
+<tr>
+<td>Imagem</td>
+<td>Não</td>
+<td>Foto/ilustração opcional</td>
+</tr>
+</tbody>
+</table>
+<p>Depois de salva, abra a Safra para adicionar o <strong>planejamento</strong> — quais culturas serão plantadas em quais talhões nesse ciclo. Sem esse planejamento, os formulários de OS e Monitoramento MIP não encontram opções de talhão/cultura para aquela safra.</p>
 <h3 id="tela-lista-de-pragas">Tela: Lista de Pragas</h3>
 <figure>
   <img src="screenshots/cadastros_agro/09-pragas-lista.png" alt="Lista de Pragas">
   <figcaption>Cadastro de pragas e doenças (`/cadastros/pragas/`), usado pelo módulo MIP.</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-nova-praga">Tela: Formulário de Nova Praga</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/16-praga-form.png" alt="Formulário de Nova Praga">
+  <figcaption>Cadastro simples: nome comum (obrigatório), nome científico, tipo de praga e foto.</figcaption>
 </figure>
 
 <h3 id="tela-lista-de-pocosbombas">Tela: Lista de Poços/Bombas</h3>
@@ -173,10 +329,17 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Pontos de captação de água (`/cadastros/pocos/`) usados na irrigação.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-poco">Tela: Formulário de Novo Poço</h3>
+<figure>
+  <img src="screenshots/cadastros_agro/17-poco-form.png" alt="Formulário de Novo Poço">
+  <figcaption>Vincula o poço a uma fazenda e às áreas que ele irriga.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> escolha a <strong>Fazenda</strong> e as <strong>Áreas</strong> atendidas (múltipla escolha), dê um nome/identificação, e — se disponível — o tipo de bomba, potência (CV), profundidade, capacidade (m³/h), leitura inicial do horímetro e coordenadas. Todos esses técnicos são opcionais, mas quanto mais completos, melhor o controle de manutenção da bomba.</p>
 <h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
 <ul>
-<li>Um Talhão sempre pertence a uma Área, que sempre pertence a uma Fazenda — cadastre nessa ordem.</li>
-<li>Uma Safra sem talhões/culturas associados não aparece nas opções de Ordem de Serviço nem no Planejamento de Custo.</li>
+<li>Um Talhão sempre pertence a uma Área, que sempre pertence a uma Fazenda — cadastre nessa ordem, senão os seletores em cascata dos outros formulários (OS, MIP) ficam vazios.</li>
+<li>Uma Safra sem talhões/culturas associados (planejamento) não aparece nas opções de Ordem de Serviço nem no Planejamento de Custo — o cadastro da safra sozinho não basta.</li>
 </ul>
 <h2 id="ordens-de-servico-campoordens-servico">Ordens de Serviço (<code>/campo/ordens-servico/</code>)</h2>
 <h3 id="visao-geral_1">Visão geral</h3>
@@ -201,9 +364,87 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 <h3 id="tela-nova-ordem-de-servico">Tela: Nova Ordem de Serviço</h3>
 <figure>
   <img src="screenshots/operacoes_campo/03-os-nova.png" alt="Formulário de Nova Ordem de Serviço">
-  <figcaption>Escolha de tipo/subtipo de serviço, talhão, safra e datas planejadas.</figcaption>
+  <figcaption>Formulário em 6 abas: Identificação, Serviço Externo, Mão de Obra, Maquinário, Custo Estimado, Evidência Fotográfica.</figcaption>
 </figure>
 
+<p><strong>Como preencher (aba Identificação):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tipo de Serviço</td>
+<td>Sim</td>
+<td>Ex: Colheita, Plantio, Pulverização — define as opções de Operação abaixo</td>
+</tr>
+<tr>
+<td>Operação</td>
+<td>Não</td>
+<td>Sub-tipo da operação; só habilita depois de escolher o Tipo de Serviço</td>
+</tr>
+<tr>
+<td>Modalidade de Execução</td>
+<td>Não</td>
+<td>Ex: manual, mecanizada</td>
+</tr>
+<tr>
+<td>Safra</td>
+<td>Não</td>
+<td>Auto-preenchida a partir do talhão, quando possível; senão escolha manualmente — filtra as opções de Cultura</td>
+</tr>
+<tr>
+<td>Cultura da Safra</td>
+<td>Não</td>
+<td>Filtrada pela Safra escolhida</td>
+</tr>
+<tr>
+<td>Talhão</td>
+<td>Sim</td>
+<td>Busca com autocomplete; ao escolher, mostra a "Cultura Atual" do talhão</td>
+</tr>
+<tr>
+<td>Responsável pela Execução</td>
+<td>Não</td>
+<td>Busca de funcionário</td>
+</tr>
+<tr>
+<td>Data Prevista</td>
+<td>Não</td>
+<td>Data planejada de execução</td>
+</tr>
+<tr>
+<td>Área Executada (ha)</td>
+<td>Não</td>
+<td>Preenchido na conclusão, se diferente da área total do talhão</td>
+</tr>
+<tr>
+<td>Requisição de Insumos</td>
+<td>Não</td>
+<td>Vincula uma requisição de estoque já aberta a esta OS</td>
+</tr>
+<tr>
+<td>Observações</td>
+<td>Não</td>
+<td>Texto livre</td>
+</tr>
+</tbody>
+</table>
+<p>Preencha a aba Identificação e salve; as demais abas (Mão de Obra, Maquinário, Custo Estimado) podem ser preenchidas depois, na tela de detalhe, conforme a execução avança — não é preciso ter tudo definido no momento da abertura da OS.</p>
+<h3 id="fluxo-passo-a-passo-abrir-e-concluir-uma-os">Fluxo passo a passo — abrir e concluir uma OS</h3>
+<ol>
+<li>Escolha o <strong>Tipo de Serviço</strong> (isso libera as opções de Operação).</li>
+<li>Escolha o <strong>Talhão</strong> (a Safra/Cultura são sugeridas automaticamente quando possível).</li>
+<li>Salve para criar a OS — ela nasce com status <strong>Aberta</strong>.</li>
+<li>Um aprovador aprova a OS → status <strong>Aprovada</strong>.</li>
+<li>Ao iniciar a execução, o status muda para <strong>Em Andamento</strong>; nesse momento aloque mão de obra, máquinas e insumos nas respectivas abas.</li>
+<li>Se necessário, a OS pode ser <strong>pausada</strong> e <strong>retomada</strong> durante a execução.</li>
+<li>Ao concluir, informe a área executada (e, se for colheita, a quantidade colhida) → status <strong>Concluída</strong>. Nesse momento o sistema desconta os insumos do estoque, recalcula os custos totais e — se a OS for de Plantio/Transplante — atualiza o lote de mudas de origem.</li>
+</ol>
 <h3 id="tela-painel-de-delegacao">Tela: Painel de Delegação</h3>
 <figure>
   <img src="screenshots/operacoes_campo/04-painel-delegacao.png" alt="Painel de Delegação">
@@ -222,11 +463,23 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Orçamento planejado de custos por safra/talhão, comparado ao custo real das OS.</figcaption>
 </figure>
 
-<p>O planejamento de custo permite lançar itens diretos (insumos, mão de obra, máquinas) e indiretos, e simular a formação de preço do produto final com base no custo projetado.</p>
+<h3 id="tela-formulario-de-planejamento-de-custo">Tela: Formulário de Planejamento de Custo</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/16-planejamento-custo-form.png" alt="Formulário de Planejamento de Custo">
+  <figcaption>Escolha de safra/talhão/cultura para orçar; itens diretos e indiretos são lançados depois, na tela de detalhe.</figcaption>
+</figure>
+
+<p>O planejamento permite lançar itens diretos (insumos, mão de obra, máquinas) e indiretos, e simular a formação de preço do produto final com base no custo projetado. Depois de criado, compare periodicamente o planejado com o realizado (Custo por Talhão/Safra) para identificar desvios.</p>
 <h3 id="tela-custohora-de-maquinas">Tela: Custo/Hora de Máquinas</h3>
 <figure>
   <img src="screenshots/operacoes_campo/07-custos-maquina.png" alt="Custo/Hora de Máquinas">
   <figcaption>Tabela de custo por hora de cada máquina, usada para ratear o custo de maquinário nas OS.</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-custohora-de-maquina">Tela: Formulário de Custo/Hora de Máquina</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/12-custo-maquina-form.png" alt="Formulário de Custo/Hora de Máquina">
+  <figcaption>Define o valor por hora usado para calcular o custo de maquinário quando a máquina é alocada numa OS.</figcaption>
 </figure>
 
 <h3 id="tela-pluviometria">Tela: Pluviometria</h3>
@@ -235,10 +488,22 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Registro de chuvas por fazenda/período.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-registro-de-chuva">Tela: Formulário de Registro de Chuva</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/13-pluviometria-form.png" alt="Formulário de Registro de Chuva">
+  <figcaption>Fazenda, data e volume (mm) registrado no pluviômetro.</figcaption>
+</figure>
+
 <h3 id="tela-qualidade-de-campo">Tela: Qualidade de Campo</h3>
 <figure>
   <img src="screenshots/operacoes_campo/09-qualidade-campo.png" alt="Qualidade de Campo">
   <figcaption>Inspeções de qualidade registradas em campo, com geração de PDF.</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-inspecao-de-qualidade">Tela: Formulário de Inspeção de Qualidade</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/14-qualidade-campo-form.png" alt="Formulário de Inspeção de Qualidade">
+  <figcaption>Talhão/safra inspecionado, critérios avaliados e resultado.</figcaption>
 </figure>
 
 <h3 id="tela-caderno-de-campo">Tela: Caderno de Campo</h3>
@@ -247,6 +512,13 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Registro formal de aplicações (insumos e mão de obra) por talhão, exigido para rastreabilidade agronômica.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-caderno-de-campo">Tela: Formulário de Caderno de Campo</h3>
+<figure>
+  <img src="screenshots/operacoes_campo/15-caderno-campo-form.png" alt="Formulário de Caderno de Campo">
+  <figcaption>Registro inicial; insumos e funcionários são adicionados depois, na tela de detalhe.</figcaption>
+</figure>
+
+<p>O Caderno de Campo existe para documentar formalmente, por talhão, o que foi aplicado (defensivo, fertilizante) e por quem — é o documento que sustenta uma auditoria de rastreabilidade agronômica ou uma certificação.</p>
 <h3 id="tela-lotes-de-producao">Tela: Lotes de Produção</h3>
 <figure>
   <img src="screenshots/operacoes_campo/11-lotes-producao.png" alt="Lotes de Produção">
@@ -258,6 +530,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 <li>Uma OS <strong>pausada</strong> não permite lançar novos custos até ser retomada por um administrador.</li>
 <li>Uma OS de tipo "Plantio" com subtipo Transplante ou Replantio atualiza automaticamente o status do lote de mudas de origem (em Estufas e Mudas) ao ser concluída — não é preciso atualizar o lote manualmente.</li>
 <li>O custo de uma OS só é considerado "final" após a conclusão; enquanto em andamento, os valores mostrados são parciais.</li>
+<li>Se o Talhão escolhido não tiver Safra/Cultura vinculada via planejamento, os campos de Safra e Cultura da OS ficam sem opções — volte ao cadastro da Safra e complete o planejamento primeiro.</li>
 </ul>
 <h2 id="mip-manejo-integrado-de-pragas-mip">MIP — Manejo Integrado de Pragas (<code>/mip/</code>)</h2>
 <h3 id="visao-geral_2">Visão geral</h3>
@@ -266,6 +539,12 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 <figure>
   <img src="screenshots/mip/01-estagios.png" alt="Estágios de Desenvolvimento">
   <figcaption>Estágios fenológicos da cultura (`/mip/estagios/`), usados para contextualizar o monitoramento.</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-novo-estagio">Tela: Formulário de Novo Estágio</h3>
+<figure>
+  <img src="screenshots/mip/05-estagio-form.png" alt="Formulário de Novo Estágio">
+  <figcaption>Cadastro do estágio fenológico associado a uma cultura.</figcaption>
 </figure>
 
 <h3 id="tela-lista-de-monitoramento-mip">Tela: Lista de Monitoramento MIP</h3>
@@ -280,10 +559,71 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Pragas monitoradas na visita, cada uma com seus pontos de amostragem e nível de incidência calculado.</figcaption>
 </figure>
 
-<p>A partir do detalhe é possível <strong>adicionar uma praga</strong> à visita, registrar os <strong>pontos de amostragem</strong> de cada praga, gerar o <strong>PDF</strong> do laudo, e — se a incidência justificar — <strong>gerar uma Ordem de Serviço</strong> de tratamento diretamente a partir do monitoramento.</p>
+<h3 id="tela-formulario-de-novo-monitoramento-mip">Tela: Formulário de Novo Monitoramento MIP</h3>
+<figure>
+  <img src="screenshots/mip/04-monitoramento-form.png" alt="Formulário de Novo Monitoramento MIP">
+  <figcaption>Formulário em 3 abas: Informações Básicas, Condições Climáticas, Observações.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Informações Básicas):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Safra Ativa</td>
+<td>Sim</td>
+<td>Só lista safras em andamento</td>
+</tr>
+<tr>
+<td>Cultura</td>
+<td>Sim</td>
+<td>Habilita depois de escolher a Safra</td>
+</tr>
+<tr>
+<td>Talhão</td>
+<td>Sim</td>
+<td>Habilita depois de escolher a Cultura</td>
+</tr>
+<tr>
+<td>Data do Monitoramento</td>
+<td>Sim</td>
+<td>Data da visita a campo</td>
+</tr>
+<tr>
+<td>Tipo de Monitoramento</td>
+<td>Sim</td>
+<td>Ex: "Monitoramento Regular"</td>
+</tr>
+<tr>
+<td>Responsável (Pragueiro)</td>
+<td>Sim</td>
+<td>Funcionário que fez a visita</td>
+</tr>
+<tr>
+<td>Quantidade de Pontos</td>
+<td>Sim</td>
+<td>Número de pontos de amostragem a percorrer no talhão (padrão sugerido: 20)</td>
+</tr>
+</tbody>
+</table>
+<p>A aba <strong>Condições Climáticas</strong> registra temperatura/umidade/vento do dia da visita (relevante para interpretar a incidência). Depois de criado o monitoramento, use a tela de detalhe para <strong>adicionar cada praga</strong> observada e, para cada uma, lançar os <strong>pontos de amostragem</strong>.</p>
+<h3 id="fluxo-passo-a-passo-monitorar-e-agir">Fluxo passo a passo — monitorar e agir</h3>
+<ol>
+<li>Crie o monitoramento informando safra/cultura/talhão/data/responsável.</li>
+<li>Na tela de detalhe, <strong>adicione cada praga</strong> encontrada na visita.</li>
+<li>Para cada praga, registre os <strong>pontos de amostragem</strong> (idealmente todos os pontos previstos) — é isso que alimenta o cálculo de incidência.</li>
+<li>Avalie o nível de incidência calculado; se justificar tratamento, use o botão <strong>Gerar OS</strong> para criar automaticamente uma Ordem de Serviço de tratamento com talhão/safra já preenchidos.</li>
+<li>Gere o <strong>PDF</strong> do laudo se precisar arquivar ou compartilhar o resultado.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
 <ul>
-<li>O nível de incidência é calculado a partir dos pontos de amostragem lançados — quanto mais pontos, mais preciso o cálculo.</li>
+<li>O nível de incidência é calculado a partir dos pontos de amostragem lançados — quanto mais pontos cobertos (idealmente os 20 previstos), mais preciso o cálculo.</li>
 <li>Gerar OS a partir do monitoramento evita ter que recriar manualmente os dados de talhão/safra na nova ordem de serviço.</li>
 </ul>
 <h2 id="estufas-e-mudas-estufas">Estufas e Mudas (<code>/estufas/</code>)</h2>
@@ -301,6 +641,12 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Estufas cadastradas (`/estufas/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-estufa">Tela: Formulário de Nova Estufa</h3>
+<figure>
+  <img src="screenshots/estufas/05-estufa-form.png" alt="Formulário de Nova Estufa">
+  <figcaption>Cadastro da estufa física (identificação, capacidade e fazenda vinculada).</figcaption>
+</figure>
+
 <h3 id="tela-lista-de-lotes-de-mudas">Tela: Lista de Lotes de Mudas</h3>
 <figure>
   <img src="screenshots/estufas/03-lotes-mudas-lista.png" alt="Lista de Lotes de Mudas">
@@ -313,7 +659,71 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Aplicações, perdas e monitoramentos registrados durante o cultivo do lote em estufa.</figcaption>
 </figure>
 
-<p>O lote de mudas avança por estágios até ficar pronto para o transplante. Quando uma Ordem de Serviço do tipo Plantio/Transplante referente a esse lote é concluída no módulo de Ordens de Serviço, o lote é automaticamente marcado como <strong>transplantado</strong> — não é necessário atualizar o status manualmente aqui.</p>
+<h3 id="tela-formulario-de-novo-lote-de-mudas">Tela: Formulário de Novo Lote de Mudas</h3>
+<figure>
+  <img src="screenshots/estufas/06-lote-mudas-form.png" alt="Formulário de Novo Lote de Mudas">
+  <figcaption>Estufa, cultura, cultivar, datas de semeadura e transplantio previsto.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Estufa</td>
+<td>Sim</td>
+<td>Onde o lote será cultivado</td>
+</tr>
+<tr>
+<td>Cultura</td>
+<td>Sim</td>
+<td>O que está sendo semeado</td>
+</tr>
+<tr>
+<td>Cultivar</td>
+<td>Não</td>
+<td>Variedade/híbrido específico (ex: "Híbrido BRS-12")</td>
+</tr>
+<tr>
+<td>Lote da Semente</td>
+<td>Não</td>
+<td>Código do lote de origem da semente, para rastreabilidade</td>
+</tr>
+<tr>
+<td>Data de Semeadura</td>
+<td>Sim</td>
+<td>Início do ciclo em estufa</td>
+</tr>
+<tr>
+<td>Quantidade Semeada</td>
+<td>Sim</td>
+<td>Total de sementes/mudas</td>
+</tr>
+<tr>
+<td>Data Prevista (Transplantio)</td>
+<td>Não</td>
+<td>Estimativa de quando o lote estará pronto para ir a campo</td>
+</tr>
+<tr>
+<td>Responsável</td>
+<td>Não</td>
+<td>Funcionário responsável pelo lote</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fluxo-passo-a-passo-da-semeadura-ao-transplante">Fluxo passo a passo — da semeadura ao transplante</h3>
+<ol>
+<li>Cadastre o lote com estufa, cultura e data de semeadura.</li>
+<li>Ao longo do ciclo, registre <strong>aplicações</strong> (defensivos/fertilizantes) e <strong>perdas</strong> na tela de detalhe do lote — isso mantém o custo do lote preciso.</li>
+<li>Quando pronto, abra uma <strong>Ordem de Serviço</strong> do tipo Plantio/Transplante referenciando este lote.</li>
+<li>Ao <strong>concluir</strong> essa OS, o sistema marca automaticamente o lote como <strong>transplantado</strong> — não é necessário voltar aqui para atualizar o status manualmente.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns_3">Dicas e erros comuns</h3>
 <ul>
 <li>Registrar perdas e aplicações ao longo do ciclo (não só no fim) mantém o custo do lote de mudas mais preciso quando ele é transferido para o custo do talhão no transplante.</li>
@@ -333,6 +743,55 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados gerais, endereços, contatos, contas bancárias e documentos do cliente.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-cliente">Tela: Formulário de Novo Cliente</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/09-cliente-form.png" alt="Formulário de Novo Cliente">
+  <figcaption>Formulário em 4 abas: Dados Básicos, Documentação Fiscal, Exportação/Importação, Dados Comerciais.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Dados Básicos):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Razão Social / Nome</td>
+<td>Sim</td>
+<td>Nome oficial do cliente</td>
+</tr>
+<tr>
+<td>Nome Comercial</td>
+<td>Não</td>
+<td>Nome fantasia, se houver</td>
+</tr>
+<tr>
+<td>CNPJ/CPF</td>
+<td>Sim</td>
+<td>O botão <strong>Buscar</strong> preenche dados automaticamente para CNPJ</td>
+</tr>
+<tr>
+<td>Tipo Cliente</td>
+<td>Não</td>
+<td>Nacional ou Internacional — se Internacional, habilita a aba Exportação/Importação com dados de câmbio/país</td>
+</tr>
+<tr>
+<td>Tipo Pessoa</td>
+<td>Não</td>
+<td>Física ou Jurídica</td>
+</tr>
+<tr>
+<td>Contato Principal (nome/telefone/e-mail)</td>
+<td>Não</td>
+<td>Contato de referência rápida</td>
+</tr>
+</tbody>
+</table>
+<p>A aba <strong>Documentação Fiscal</strong> guarda inscrição estadual e regime tributário; <strong>Exportação/Importação</strong> só é relevante para clientes internacionais (moeda padrão, país, INCOTERM); <strong>Dados Comerciais</strong> guarda condições de pagamento e vendedor responsável padrão.</p>
 <h3 id="tela-lista-de-produtores">Tela: Lista de Produtores</h3>
 <figure>
   <img src="screenshots/cadastros_pessoas/03-produtores-lista.png" alt="Lista de Produtores">
@@ -345,7 +804,13 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados do produtor; a partir daqui é possível criar acesso ao Portal do Produtor.</figcaption>
 </figure>
 
-<p>Produtores (e Fornecedores) podem receber um <strong>acesso de portal</strong> próprio — um login restrito onde eles acompanham suas próprias operações (entregas, pagamentos, empréstimos) sem precisar de um usuário completo do sistema interno. O acesso é criado e pode ser bloqueado a partir da própria ficha do produtor/fornecedor.</p>
+<h3 id="tela-formulario-de-novo-produtor">Tela: Formulário de Novo Produtor</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/10-produtor-form.png" alt="Formulário de Novo Produtor">
+  <figcaption>Dados cadastrais do produtor rural.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> os campos obrigatórios são nome/razão social e CPF/CNPJ; o restante (endereço, contato, dados bancários) pode ser complementado depois. Depois de salvo, use o botão <strong>Criar Acesso Portal</strong> na tela de detalhe para gerar um login de autoatendimento para esse produtor.</p>
 <h3 id="tela-lista-de-fornecedores">Tela: Lista de Fornecedores</h3>
 <figure>
   <img src="screenshots/cadastros_pessoas/05-fornecedores-lista.png" alt="Lista de Fornecedores">
@@ -358,22 +823,43 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados cadastrais, histórico de compras e acesso ao Portal do Fornecedor.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-fornecedor">Tela: Formulário de Novo Fornecedor</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/11-fornecedor-form.png" alt="Formulário de Novo Fornecedor">
+  <figcaption>Estrutura em abas equivalente ao Cliente: dados básicos, documentação fiscal, categoria de fornecimento.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> obrigatório é Razão Social/Nome e CNPJ/CPF (com o mesmo botão de busca automática). Vale já classificar a <strong>categoria</strong> do fornecedor (ex: insumos, serviços, transporte) — isso é usado nos relatórios de ranking de fornecedores por categoria.</p>
 <h3 id="tela-lista-de-transportadoras">Tela: Lista de Transportadoras</h3>
 <figure>
   <img src="screenshots/cadastros_pessoas/07-transportadoras-lista.png" alt="Lista de Transportadoras">
   <figcaption>Transportadoras cadastradas (`/cadastros/transportadoras/`), usadas em CT-e e MDF-e.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-transportadora">Tela: Formulário de Nova Transportadora</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/12-transportadora-form.png" alt="Formulário de Nova Transportadora">
+  <figcaption>Dados cadastrais e tabela de frete da transportadora.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> além dos dados cadastrais básicos (nome, CNPJ, RNTRC), a transportadora pode ter uma <strong>tabela de frete</strong> própria, editável depois na tela de detalhe (botão "Atualizar Frete") — usada para sugerir valores automaticamente ao gerar um CT-e a partir de um romaneio.</p>
 <h3 id="tela-lista-de-vendedores">Tela: Lista de Vendedores</h3>
 <figure>
   <img src="screenshots/cadastros_pessoas/08-vendedores-lista.png" alt="Lista de Vendedores">
   <figcaption>Vendedores internos (`/cadastros/vendedores/`), vinculados aos pedidos de venda.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-vendedor">Tela: Formulário de Novo Vendedor</h3>
+<figure>
+  <img src="screenshots/cadastros_pessoas/13-vendedor-form.png" alt="Formulário de Novo Vendedor">
+  <figcaption>Cadastro simples: nome, contato e comissão padrão.</figcaption>
+</figure>
+
 <h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
 <ul>
 <li>Um cliente/fornecedor <strong>inativo</strong> não é excluído — apenas some das buscas de uso corrente, preservando o histórico de documentos já emitidos.</li>
 <li>Bloquear o acesso ao portal de um produtor/fornecedor não apaga o cadastro dele, só impede o login externo.</li>
+<li>Use sempre a <strong>busca por CNPJ</strong> ao cadastrar pessoa jurídica — evita erro de digitação em razão social/endereço.</li>
 </ul>
 <h2 id="frota-frota">Frota (<code>/frota/</code>)</h2>
 <h3 id="visao-geral_1">Visão geral</h3>
@@ -396,16 +882,65 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados do veículo, histórico de placas, valor e documentos vinculados.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-veiculo">Tela: Formulário de Novo Veículo</h3>
+<figure>
+  <img src="screenshots/frota/12-veiculo-form.png" alt="Formulário de Novo Veículo">
+  <figcaption>Formulário em 6 abas, com caixa de ajuda explicando as regras de preenchimento.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Identificação)</strong> — o próprio formulário traz uma caixa de ajuda com estas três regras:</p>
+<table>
+<thead>
+<tr>
+<th>Regra</th>
+<th>Explicação</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Origem</td>
+<td>Se <strong>Terceiro</strong>, é obrigatório informar a transportadora dona do veículo. Se <strong>Próprio</strong> (frota da empresa), a transportadora não é necessária</td>
+</tr>
+<tr>
+<td>Placas</td>
+<td>São opcionais neste formulário — para veículos com placa (carros, caminhões), cadastre a placa <strong>depois</strong>, na tela de detalhe do veículo já criado</td>
+</tr>
+<tr>
+<td>Implementos/tratores sem placa</td>
+<td>Use apenas os campos "Nome/Descrição" e/ou "Código de Patrimônio" para identificá-los, já que não têm placa</td>
+</tr>
+</tbody>
+</table>
+<p>Demais campos da aba Identificação: <strong>Tipo</strong> (Leve, Pesado, Máquina/Implemento), Marca, Modelo, Cor — todos opcionais, mas recomendados. As abas seguintes cobrem Documentação Técnica (RENAVAM, ano/fabricação), Vínculo e Status (transportadora/motorista padrão), Valorização (valor de aquisição, para o histórico de valor), Especificações Físicas e Observações.</p>
+<h3 id="fluxo-passo-a-passo-cadastrar-um-veiculo-com-placa">Fluxo passo a passo — cadastrar um veículo com placa</h3>
+<ol>
+<li>Preencha a aba Identificação (Origem, Tipo, Marca/Modelo) e salve.</li>
+<li>Abra o veículo recém-criado e adicione a <strong>placa</strong> na seção correspondente da tela de detalhe.</li>
+<li>Se for veículo de terceiro, confirme que a Transportadora está corretamente vinculada — é ela quem aparece nos documentos fiscais de frete.</li>
+</ol>
 <h3 id="tela-combustivelabastecimentos">Tela: Combustível/Abastecimentos</h3>
 <figure>
   <img src="screenshots/frota/04-abastecimentos.png" alt="Abastecimentos">
   <figcaption>Registros de abastecimento (`/frota/abastecimentos/`), com opção de importação em lote via CSV.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-abastecimento">Tela: Formulário de Novo Abastecimento</h3>
+<figure>
+  <img src="screenshots/frota/14-abastecimento-form.png" alt="Formulário de Novo Abastecimento">
+  <figcaption>Veículo, data, litros, valor e odômetro no momento do abastecimento.</figcaption>
+</figure>
+
+<p>Para abastecimentos em volume (ex: frota grande), use o botão <strong>Importar CSV</strong> na lista em vez de lançar um a um.</p>
 <h3 id="tela-manutencoes">Tela: Manutenções</h3>
 <figure>
   <img src="screenshots/frota/05-manutencoes.png" alt="Manutenções">
   <figcaption>Manutenções preventivas/corretivas (`/frota/manutencoes/`), com itens e alertas programados.</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-nova-manutencao">Tela: Formulário de Nova Manutenção</h3>
+<figure>
+  <img src="screenshots/frota/15-manutencao-form.png" alt="Formulário de Nova Manutenção">
+  <figcaption>Veículo, tipo (preventiva/corretiva), data e itens de serviço realizados.</figcaption>
 </figure>
 
 <h3 id="tela-pedagios">Tela: Pedágios</h3>
@@ -438,6 +973,13 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Motoristas cadastrados (`/frota/motoristas/`); podem receber PIN de acesso ao Portal do Motorista.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-motorista">Tela: Formulário de Novo Motorista</h3>
+<figure>
+  <img src="screenshots/frota/13-motorista-form.png" alt="Formulário de Novo Motorista">
+  <figcaption>Dados pessoais, CNH e categoria de habilitação.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> nome, CPF e número/categoria da CNH são obrigatórios. Depois de criado, use <strong>Portal-Acesso</strong> na tela de detalhe para gerar o PIN de login do Portal do Motorista.</p>
 <h3 id="tela-vinculos-motorista-x-frota">Tela: Vínculos Motorista x Frota</h3>
 <figure>
   <img src="screenshots/frota/11-vinculos-lista.png" alt="Vínculos Motorista x Frota">
@@ -448,6 +990,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 <ul>
 <li>O histórico de <strong>vínculos</strong> é o que permite saber, numa data específica, qual motorista estava com qual veículo — útil para investigar multas ou ocorrências antigas.</li>
 <li>Documentos de veículo/motorista vencidos disparam <strong>alertas</strong>; vale revisar essa tela periodicamente.</li>
+<li>Veículo de terceiro sem transportadora vinculada trava a emissão de documentos fiscais de frete — cadastre a transportadora antes do veículo, se possível.</li>
 </ul>
 <h2 id="rh-rh">RH (<code>/rh/</code>)</h2>
 <h3 id="visao-geral_2">Visão geral</h3>
@@ -470,10 +1013,62 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados cadastrais, função, documentos e PIN de acesso ao Portal do Campo.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-funcionario">Tela: Formulário de Novo Funcionário</h3>
+<figure>
+  <img src="screenshots/rh/11-funcionario-form.png" alt="Formulário de Novo Funcionário">
+  <figcaption>Formulário em 8 abas: Dados Pessoais, Contato, Endereço, Dados Profissionais, Dados Bancários, Contato de Emergência, Observações e Foto, Documentos.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Dados Pessoais):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nome Completo</td>
+<td>Sim</td>
+<td></td>
+</tr>
+<tr>
+<td>Código da Matrícula</td>
+<td>Não</td>
+<td>Se vazio, pode ser gerado automaticamente (ex: MAT-0001)</td>
+</tr>
+<tr>
+<td>CPF</td>
+<td>Sim</td>
+<td></td>
+</tr>
+<tr>
+<td>RG, Data de Nascimento, Gênero, Estado Civil</td>
+<td>Não</td>
+<td>Complementares</td>
+</tr>
+</tbody>
+</table>
+<p>A aba <strong>Dados Profissionais</strong> (na sequência) é onde se define a <strong>Função/Cargo</strong> — obrigatória para o funcionário ser corretamente rateado em custo de mão de obra nas Ordens de Serviço. As demais abas (Contato, Endereço, Dados Bancários, Contato de Emergência, Documentos) podem ser completadas depois.</p>
+<h3 id="fluxo-passo-a-passo-admitir-um-funcionario">Fluxo passo a passo — admitir um funcionário</h3>
+<ol>
+<li>Preencha Dados Pessoais e salve (ou avance pelas abas antes de salvar, se preferir preencher tudo de uma vez).</li>
+<li>Na aba Dados Profissionais, defina a <strong>Função</strong> — sem isso, o custo de mão de obra do funcionário não é corretamente calculado nas OS.</li>
+<li>Se o funcionário vai atuar em campo com apontamento próprio, gere o <strong>PIN de acesso ao Portal do Campo</strong> na tela de detalhe.</li>
+<li>Registre o <strong>Vínculo Contratual</strong> correspondente (CLT, temporário, etc.) no submenu Vínculos.</li>
+</ol>
 <h3 id="tela-funcoescargos">Tela: Funções/Cargos</h3>
 <figure>
   <img src="screenshots/rh/04-funcoes-lista.png" alt="Funções/Cargos">
   <figcaption>Cadastro de funções (`/rh/funcoes/`), com faixa salarial de referência.</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-nova-funcao">Tela: Formulário de Nova Função</h3>
+<figure>
+  <img src="screenshots/rh/12-funcao-form.png" alt="Formulário de Nova Função">
+  <figcaption>Nome da função e salário de referência (usado para sugerir salário ao vincular um funcionário).</figcaption>
 </figure>
 
 <h3 id="tela-ferias">Tela: Férias</h3>
@@ -482,10 +1077,22 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Controle de períodos de férias, com relatório de previsão em PDF.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novas-ferias">Tela: Formulário de Novas Férias</h3>
+<figure>
+  <img src="screenshots/rh/13-ferias-form.png" alt="Formulário de Novas Férias">
+  <figcaption>Funcionário, período aquisitivo e datas de gozo.</figcaption>
+</figure>
+
 <h3 id="tela-afastamentos">Tela: Afastamentos</h3>
 <figure>
   <img src="screenshots/rh/06-afastamentos-lista.png" alt="Afastamentos">
   <figcaption>Afastamentos registrados (licença, atestado, etc.).</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-novo-afastamento">Tela: Formulário de Novo Afastamento</h3>
+<figure>
+  <img src="screenshots/rh/14-afastamento-form.png" alt="Formulário de Novo Afastamento">
+  <figcaption>Funcionário, motivo/tipo de afastamento e período.</figcaption>
 </figure>
 
 <h3 id="tela-riscos-ambientais">Tela: Riscos Ambientais</h3>
@@ -532,7 +1139,20 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados do bem, valor, depreciação acumulada e movimentações (transferência de local/responsável).</figcaption>
 </figure>
 
-<p>Um veículo da Frota pode ser <strong>exportado como Patrimônio</strong>, evitando recadastrar os dados básicos já existentes no cadastro de veículo.</p>
+<h3 id="tela-formulario-de-novo-patrimonio">Tela: Formulário de Novo Patrimônio</h3>
+<figure>
+  <img src="screenshots/patrimonio/05-patrimonio-form.png" alt="Formulário de Novo Patrimônio">
+  <figcaption>Identificação do bem, valor de aquisição e taxa/método de depreciação.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe nome/descrição do bem, categoria, valor de aquisição e data de aquisição — a partir desses dados o sistema calcula a depreciação acumulada automaticamente conforme o método configurado. Um veículo da Frota pode ser <strong>exportado como Patrimônio</strong> (botão na tela de veículo), evitando redigitar os dados básicos já existentes no cadastro de veículo.</p>
+<h3 id="fluxo-passo-a-passo-controlar-e-auditar-patrimonio">Fluxo passo a passo — controlar e auditar patrimônio</h3>
+<ol>
+<li>Cadastre o bem (manualmente ou exportando de um veículo da Frota).</li>
+<li>Periodicamente, crie uma <strong>Auditoria</strong> informando quais bens serão conferidos fisicamente.</li>
+<li>Para cada item da auditoria, confirme se o bem foi encontrado no local esperado — divergências ficam registradas no resultado da auditoria.</li>
+<li><strong>Finalize</strong> a auditoria depois de conferir todos os itens.</li>
+</ol>
 <h3 id="tela-auditorias">Tela: Auditorias</h3>
 <figure>
   <img src="screenshots/patrimonio/03-auditorias-lista.png" alt="Auditorias">
@@ -571,7 +1191,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 </tr>
 <tr>
 <td>Unidade de Medida</td>
-<td>Unidade em que o produto é comprado/vendido/estocado (kg, un, litro, etc.)</td>
+<td>Unidade em que o produto é estocado; pode ser diferente da unidade de compra/venda (o <strong>Fator de Conversão</strong> faz a ponte entre elas)</td>
 </tr>
 <tr>
 <td>Marca</td>
@@ -610,10 +1230,67 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 <h3 id="tela-novo-produto">Tela: Novo Produto</h3>
 <figure>
   <img src="screenshots/produtos/04-novo.png" alt="Formulário de Novo Produto">
-  <figcaption>Cadastro de produto: dados gerais, categoria/subcategoria, unidade, dados fiscais (NCM/tributação).</figcaption>
+  <figcaption>Formulário em 6 abas: Geral, Fiscal, Tributações, Financeiro, Estoque, Fornecedores.</figcaption>
 </figure>
 
-<p>Ao escolher a <strong>Categoria</strong>, a lista de <strong>Subcategoria</strong> é filtrada automaticamente para mostrar só as subcategorias daquela categoria — não é possível salvar uma subcategoria "solta", sem categoria pai.</p>
+<p><strong>Como preencher (aba Geral):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Código</td>
+<td>Não</td>
+<td>Deixe em branco para o sistema gerar automaticamente</td>
+</tr>
+<tr>
+<td>Código de Barras</td>
+<td>Não</td>
+<td>EAN/GTIN, se houver</td>
+</tr>
+<tr>
+<td>Nome</td>
+<td>Sim</td>
+<td>Nome completo do produto</td>
+</tr>
+<tr>
+<td>Nome Resumido</td>
+<td>Não</td>
+<td>Usado onde o espaço é curto (ex: etiquetas)</td>
+</tr>
+<tr>
+<td>Categoria</td>
+<td>Sim</td>
+<td>Escolher primeiro — filtra as opções de Subcategoria</td>
+</tr>
+<tr>
+<td>Subcategoria</td>
+<td>Não</td>
+<td>Só aparece depois de escolher a Categoria; o botão <strong>+</strong> ao lado cria uma nova subcategoria sem sair do formulário</td>
+</tr>
+<tr>
+<td>Unidade de Medida / Unidade de Compra / Unidade de Venda</td>
+<td>Sim (medida)</td>
+<td>Se a compra/venda usa unidade diferente da de estoque, preencha o <strong>Fator de Conversão</strong></td>
+</tr>
+<tr>
+<td>Peso líquido / bruto por unidade</td>
+<td>Não</td>
+<td>Usado em cálculos de packing list e frete</td>
+</tr>
+<tr>
+<td>Ativo</td>
+<td>Não (padrão ligado)</td>
+<td>Desligar em vez de excluir um produto já usado em documentos</td>
+</tr>
+</tbody>
+</table>
+<p>A aba <strong>Fiscal</strong> define NCM, CFOP padrão e origem da mercadoria; <strong>Tributações</strong> guarda alíquotas por operação; <strong>Financeiro</strong> define preço de custo, preço de venda e margem; <strong>Estoque</strong> define estoque mínimo/máximo e se o produto <strong>controla estoque</strong> (produtos de serviço, por exemplo, não controlam); <strong>Fornecedores</strong> vincula fornecedores habituais e seus preços de referência.</p>
 <h3 id="telas-de-apoio-ao-catalogo">Telas de apoio ao catálogo</h3>
 <figure>
   <img src="screenshots/produtos/05-tipos-produto.png" alt="Tipos de Produto">
@@ -645,11 +1322,19 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Naturezas de Operação (`/produtos/naturezas/`) — classificação fiscal usada nas notas fiscais.</figcaption>
 </figure>
 
-<p>Essas seis telas de apoio (Tipos de Produto, Categorias, Subcategorias, Marcas, Unidades e Naturezas de Operação) seguem o mesmo padrão simples: uma lista com busca/status e um formulário curto de criação/edição. São cadastradas uma vez e reutilizadas por todos os produtos.</p>
+<p>Essas seis telas de apoio (Tipos de Produto, Categorias, Subcategorias, Marcas, Unidades e Naturezas de Operação) seguem o mesmo padrão simples: uma lista com busca/status e um formulário curto (nome + código, em geral 1-2 campos obrigatórios). São cadastradas uma vez e reutilizadas por todos os produtos — e podem ser criadas "on the fly" pelo botão <strong>+</strong> direto no formulário de produto, sem precisar navegar até a tela dedicada.</p>
+<h3 id="fluxo-passo-a-passo-cadastrar-um-produto-novo">Fluxo passo a passo — cadastrar um produto novo</h3>
+<ol>
+<li>Garanta que a <strong>Categoria</strong> (e Subcategoria, se aplicável) já existe — ou crie na hora, pelo botão <strong>+</strong>.</li>
+<li>Garanta que a <strong>Unidade de Medida</strong> existe.</li>
+<li>Preencha a aba Geral (nome, categoria, unidade) e salve — ou navegue pelas demais abas antes de salvar, se já tiver os dados fiscais/financeiros em mãos.</li>
+<li>Complete a aba <strong>Fiscal</strong> antes do produto ser usado numa nota fiscal — NCM incorreto ou ausente bloqueia a emissão.</li>
+<li>Se o produto for comprado de fornecedores específicos, vincule-os na aba <strong>Fornecedores</strong> — isso acelera a criação de cotações no módulo de Compras.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
 <ul>
 <li>Um produto <strong>inativo</strong> (<code>ativo=False</code>) continua existindo no histórico (notas, movimentações antigas) mas some das buscas de uso corrente — é a forma correta de "excluir" um produto que já foi usado.</li>
-<li>Sem uma <strong>Subcategoria</strong> compatível com a Categoria escolhida, o formulário não deixa salvar — cadastre a subcategoria que falta antes de criar o produto.</li>
+<li>Sem uma <strong>Subcategoria</strong> compatível com a Categoria escolhida, o formulário não deixa salvar — cadastre a subcategoria que falta antes de criar o produto (ou use o botão <strong>+</strong>).</li>
 <li>Produtos do tipo Defensivo Agrícola sem os campos de registro/classe toxicológica preenchidos aparecem incompletos nas recomendações do módulo MIP.</li>
 </ul>
 <h2 id="estoque-estoque">Estoque (<code>/estoque/</code>)</h2>
@@ -690,7 +1375,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 </tr>
 </tbody>
 </table>
-<p>Toda movimentação que envolve lote (saída, transferência, ajuste) fica com status pendente até ser <strong>executada</strong> — a execução valida a quantidade disponível no lote de origem antes de efetivar a baixa. Já a entrada simples (sem lote) atualiza o estoque assim que é salva, sem etapa de execução.</p>
+<p>Status de uma Movimentação: <strong>Pendente</strong> (criada, aguardando execução) → <strong>Executada</strong> (estoque atualizado). Toda movimentação que envolve lote (saída, transferência, ajuste) fica pendente até ser <strong>executada</strong> — a execução valida a quantidade disponível no lote de origem antes de efetivar a baixa. Já a entrada simples (sem lote) atualiza o estoque assim que é salva.</p>
 <h3 id="tela-dashboard-de-estoque">Tela: Dashboard de Estoque</h3>
 <figure>
   <img src="screenshots/estoque/01-dashboard.png" alt="Dashboard de Estoque">
@@ -707,6 +1392,12 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
 <figure>
   <img src="screenshots/estoque/03-armazens-lista.png" alt="Lista de Armazéns">
   <figcaption>Armazéns cadastrados (`/estoque/armazens/`).</figcaption>
+</figure>
+
+<h3 id="tela-formulario-de-novo-armazem">Tela: Formulário de Novo Armazém</h3>
+<figure>
+  <img src="screenshots/estoque/16-armazem-form.png" alt="Formulário de Novo Armazém">
+  <figcaption>Nome, tipo de armazém e se controla localização interna (locais de estocagem).</figcaption>
 </figure>
 
 <h3 id="tela-detalhe-do-armazem">Tela: Detalhe do Armazém</h3>
@@ -727,6 +1418,13 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Lotes ativos (`/estoque/lotes/`), com validade e quantidade atual.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-lote">Tela: Formulário de Novo Lote</h3>
+<figure>
+  <img src="screenshots/estoque/17-lote-form.png" alt="Formulário de Novo Lote">
+  <figcaption>Produto, armazém/local, quantidade inicial, número do lote e validade.</figcaption>
+</figure>
+
+<p>Normalmente um lote <strong>não é criado manualmente aqui</strong> — ele nasce automaticamente de um Recebimento de Compra ou de uma Entrada de Estoque com lote. Este formulário é usado só para casos excepcionais, como um saldo inicial de migração.</p>
 <h3 id="tela-detalhe-do-lote">Tela: Detalhe do Lote</h3>
 <figure>
   <img src="screenshots/estoque/07-lote-detalhe.png" alt="Detalhe de um Lote">
@@ -745,33 +1443,80 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Dados da movimentação e, quando pendente, o botão para executá-la ou cancelá-la.</figcaption>
 </figure>
 
-<h3 id="telas-entrada-saida-e-transferencia-rapidas">Telas: Entrada, Saída e Transferência rápidas</h3>
+<h3 id="tela-entrada-de-estoque">Tela: Entrada de Estoque</h3>
 <figure>
   <img src="screenshots/estoque/10-entrada.png" alt="Registrar Entrada">
-  <figcaption>Formulário de entrada rápida (`/estoque/entrada/`).</figcaption>
+  <figcaption>Formulário em 4 abas (Tipo e Origem, Produto e Quantidade, Lote, Informações Adicionais), com painel de dicas embutido.</figcaption>
 </figure>
 
+<p><strong>Como preencher (aba Tipo e Origem)</strong> — o próprio formulário traz um painel de dicas:</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tipo</td>
+<td>Sim</td>
+<td>Entrada, Saída, Transferência ou Ajuste</td>
+</tr>
+<tr>
+<td>Origem</td>
+<td>Sim</td>
+<td>Motivo da movimentação — ex: compra, produção própria, devolução de cliente</td>
+</tr>
+</tbody>
+</table>
+<p>O painel de dicas do sistema resume: use Entrada para <strong>compras, produção própria e devoluções de clientes</strong>; a entrada <strong>aumenta a quantidade do lote selecionado</strong> (quando houver lote); informe o <strong>documento de referência</strong> (NF, OP, etc.) na aba Informações Adicionais. Nas abas seguintes: <strong>Produto e Quantidade</strong> (o quê e quanto), <strong>Lote</strong> (se o produto controla lote, informe número/validade — ou deixe em branco para o fluxo direto).</p>
+<h3 id="tela-saida-de-estoque">Tela: Saída de Estoque</h3>
 <figure>
   <img src="screenshots/estoque/11-saida.png" alt="Registrar Saída">
-  <figcaption>Formulário de saída (`/estoque/saida/`).</figcaption>
+  <figcaption>Mesma estrutura da Entrada, mas reduz a quantidade do lote/produto.</figcaption>
 </figure>
 
+<h3 id="tela-transferencia-de-estoque">Tela: Transferência de Estoque</h3>
 <figure>
   <img src="screenshots/estoque/12-transferencia.png" alt="Registrar Transferência">
-  <figcaption>Formulário de transferência entre armazéns/locais (`/estoque/transferencia/`).</figcaption>
+  <figcaption>Move quantidade de um armazém/local/lote de origem para um de destino.</figcaption>
 </figure>
 
+<p><strong>Como preencher:</strong> escolha o lote/produto de <strong>origem</strong>, o armazém/local de <strong>destino</strong>, e a quantidade a mover. Diferente de entrada/saída simples, a transferência sempre precisa ser <strong>executada</strong> depois de criada — ela move saldo entre dois pontos, então o sistema valida disponibilidade na origem antes de efetivar.</p>
+<h3 id="fluxo-passo-a-passo-registrar-uma-movimentacao-de-estoque">Fluxo passo a passo — registrar uma movimentação de estoque</h3>
+<ol>
+<li>Escolha o <strong>Tipo</strong> (Entrada/Saída/Transferência/Ajuste) e a <strong>Origem/motivo</strong>.</li>
+<li>Informe o <strong>produto e a quantidade</strong>.</li>
+<li>Se o produto controla lote, preencha os dados do <strong>lote</strong> (ou selecione um lote existente, no caso de saída/transferência).</li>
+<li>Salve — movimentações <strong>sem lote</strong> já atualizam o estoque na hora; movimentações <strong>com lote</strong> (saída/transferência/ajuste) ficam <strong>Pendentes</strong> até você abrir o detalhe e clicar em <strong>Executar</strong>.</li>
+<li>Confirme no <strong>Estoque de Produtos</strong> ou no <strong>Detalhe do Lote</strong> que a quantidade foi atualizada como esperado.</li>
+</ol>
 <h3 id="tela-inventario-ciclico">Tela: Inventário Cíclico</h3>
 <figure>
   <img src="screenshots/estoque/13-inventario-ciclico.png" alt="Inventário Cíclico">
   <figcaption>Contagens programadas (`/estoque/inventario-ciclico/`), com registro de contagem e conciliação de divergências.</figcaption>
 </figure>
 
-<p>O inventário cíclico permite programar contagens periódicas por armazém/categoria, registrar a contagem física, comparar com o saldo do sistema e conciliar (gerando ajuste) as divergências encontradas.</p>
+<h3 id="tela-formulario-de-novo-inventario-ciclico">Tela: Formulário de Novo Inventário Cíclico</h3>
+<figure>
+  <img src="screenshots/estoque/18-inventario-form.png" alt="Formulário de Novo Inventário Cíclico">
+  <figcaption>Escopo da contagem: armazém, categoria de produto e data programada.</figcaption>
+</figure>
+
+<h3 id="fluxo-passo-a-passo-inventario-ciclico">Fluxo passo a passo — inventário cíclico</h3>
+<ol>
+<li>Crie o inventário definindo o escopo (armazém e/ou categoria de produto) e a data.</li>
+<li>No dia da contagem, abra o inventário e <strong>registre a contagem física</strong> de cada item.</li>
+<li>O sistema compara a contagem com o saldo do sistema e aponta as <strong>divergências</strong>.</li>
+<li><strong>Concilie</strong> as divergências — isso gera automaticamente os ajustes de estoque necessários.</li>
+<li><strong>Finalize</strong> o inventário. O relatório de acurácia (menu Relatórios) usa esses dados para medir a precisão do estoque ao longo do tempo.</li>
+</ol>
 <h3 id="tela-relatorio-de-alertas-de-estoque">Tela: Relatório de Alertas de Estoque</h3>
 <figure>
   <img src="screenshots/estoque/14-relatorio-alertas.png" alt="Relatório de Alertas de Estoque">
-  <figcaption>Produtos em estado crítico (saldo ≤ estoque mínimo) e em excesso, com opção de gerar solicitação de compra em lote.</figcaption>
+  <figcaption>Produtos em estado crítico (saldo ≤ estoque mínimo) e em excesso, paginados, com opção de gerar solicitação de compra em lote.</figcaption>
 </figure>
 
 <p>Um produto crítico que ainda não tem solicitação de compra em aberto pode ser marcado direto nesta tela para gerar uma nova Solicitação de Compra, unificando o alerta com a ação de repor o estoque.</p>
@@ -862,7 +1607,49 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Formulário de criação de uma SC: itens, quantidades, data de necessidade e urgência.</figcaption>
 </figure>
 
-<p>Formulário para abrir uma nova solicitação. Campos principais: descrição do que está sendo pedido, quantidade, unidade, data em que o material é necessário e, opcionalmente, a marcação de <strong>emergencial</strong> (com campo de justificativa obrigatório).</p>
+<p><strong>Como preencher:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Itens (produto, quantidade, unidade)</td>
+<td>Sim (≥1 item)</td>
+<td>Cada linha é um item a comprar</td>
+</tr>
+<tr>
+<td>Data de Necessidade</td>
+<td>Sim</td>
+<td>Quando o material precisa estar disponível</td>
+</tr>
+<tr>
+<td>Emergencial</td>
+<td>Não</td>
+<td>Se marcado, exige <strong>Justificativa Emergencial</strong> e pula a etapa de aprovação formal</td>
+</tr>
+<tr>
+<td>Observações</td>
+<td>Não</td>
+<td>Contexto adicional para quem aprova/cota</td>
+</tr>
+</tbody>
+</table>
+<h3 id="fluxo-passo-a-passo-do-pedido-ao-estoque">Fluxo passo a passo — do pedido ao estoque</h3>
+<ol>
+<li>Um usuário abre uma <strong>Solicitação de Compra</strong> informando o que precisa e para quando.</li>
+<li>Um aprovador aprova a SC (ou ela nasce aprovada, se marcada como emergencial).</li>
+<li>O comprador seleciona os itens que quer cotar agora — não precisa ser todos de uma vez — e cria uma <strong>Cotação</strong>.</li>
+<li>As propostas de cada fornecedor são lançadas item a item; o comprador escolhe o vencedor por item.</li>
+<li>Ao concluir a cotação, o pedido de compra é gerado a partir dos itens vencedores.</li>
+<li>O pedido é enviado ao fornecedor (e-mail, WhatsApp ou PDF).</li>
+<li>Quando a mercadoria chega, o <strong>Recebimento</strong> é conferido contra o pedido; divergências (falta, sobra, avaria) são registradas.</li>
+<li>Confirmado o recebimento, o estoque é atualizado automaticamente (gera lote, se aplicável) e — se houver NF vinculada — o lançamento financeiro (Conta a Pagar) é criado.</li>
+</ol>
 <h3 id="tela-lista-de-cotacoes">Tela: Lista de Cotações</h3>
 <figure>
   <img src="screenshots/compras/05-cotacoes-lista.png" alt="Lista de Cotações">
@@ -876,7 +1663,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Comparativo de propostas de fornecedores por item, com seleção do vencedor.</figcaption>
 </figure>
 
-<p>Esta é a tela onde o comprador lança as propostas recebidas de cada fornecedor por item (preço, prazo de entrega, condição de pagamento) e marca a proposta vencedora. Ao selecionar um vencedor para todos os itens da cotação e concluir, os itens envolvidos passam para <code>COTADO</code> e o % cotado da SC de origem é recalculado automaticamente.</p>
+<p><strong>Como preencher:</strong> para cada item da cotação, use <strong>Adicionar Proposta</strong> e informe o fornecedor, preço, prazo de entrega e condição de pagamento. Repita para cada fornecedor consultado. Depois de lançadas as propostas, clique em <strong>Selecionar</strong> na proposta vencedora de cada item — isso desmarca automaticamente as demais propostas daquele item. Ao <strong>Concluir</strong> a cotação, o Pedido de Compra é gerado a partir dos itens com vencedor definido.</p>
 <h3 id="tela-lista-de-pedidos-de-compra">Tela: Lista de Pedidos de Compra</h3>
 <figure>
   <img src="screenshots/compras/07-pedidos-lista.png" alt="Lista de Pedidos de Compra">
@@ -896,7 +1683,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Formulário de compra rápida: fornecedor, produtos, quantidades e preços, sem cotação.</figcaption>
 </figure>
 
-<p>Atalho para compras simples: gera um Pedido de Compra diretamente, sem passar por solicitação nem cotação. Indicado para reposições rotineiras de baixo risco.</p>
+<p><strong>Como preencher:</strong> escolha o <strong>Fornecedor</strong>, adicione os <strong>itens</strong> (produto, quantidade, preço unitário) e salve — o Pedido de Compra é criado diretamente, sem passar por SC nem cotação. Use para reposições rotineiras de baixo risco, quando comparar preços de vários fornecedores não compensa o tempo gasto.</p>
 <h3 id="tela-lista-de-recebimentos">Tela: Lista de Recebimentos</h3>
 <figure>
   <img src="screenshots/compras/10-recebimentos-lista.png" alt="Lista de Recebimentos">
@@ -909,7 +1696,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Conferência de itens recebidos, registro de divergências e vínculo com a nota fiscal do fornecedor.</figcaption>
 </figure>
 
-<p>Ao confirmar o recebimento, o sistema gera automaticamente o(s) lote(s) de estoque e atualiza a quantidade disponível do produto. Se houver nota fiscal vinculada, o lançamento no financeiro (Conta a Pagar) também é criado a partir daqui.</p>
+<p><strong>Como preencher:</strong> para cada item do pedido, confira e informe a <strong>quantidade efetivamente recebida</strong> — se for diferente do pedido, registre o tipo de <strong>divergência</strong> (falta, sobra, avaria). Depois de conferir todos os itens, clique em <strong>Entrada em Estoque</strong> para gerar o(s) lote(s) e atualizar o saldo. Se houver nota fiscal do fornecedor, use <strong>Faturar</strong> para vincular a NF e gerar automaticamente a Conta a Pagar no Financeiro.</p>
 <h3 id="tela-entrada-direta-de-nf-e">Tela: Entrada Direta de NF-e</h3>
 <figure>
   <img src="screenshots/compras/12-entrada-direta-nf.png" alt="Entrada Direta de NF-e">
@@ -923,7 +1710,7 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Lista de notas fiscais recebidas de fornecedores pendentes de manifestação junto à SEFAZ.</figcaption>
 </figure>
 
-<p>Toda NF-e emitida contra o CNPJ da empresa precisa ser "manifestada" perante a SEFAZ (confirmar ciência, confirmar a operação, ou declarar desconhecimento/operação não realizada). Esta tela reúne as notas pendentes dessa manifestação.</p>
+<p>Toda NF-e emitida contra o CNPJ da empresa precisa ser "manifestada" perante a SEFAZ (confirmar ciência, confirmar a operação, ou declarar desconhecimento/operação não realizada). Esta tela reúne as notas pendentes dessa manifestação — o mesmo conjunto de notas que aparece na Distribuição de DF-e do módulo Faturamento.</p>
 <h3 id="tela-planejamento-de-embalagens">Tela: Planejamento de Embalagens</h3>
 <figure>
   <img src="screenshots/compras/14-planejamento-embalagem.png" alt="Planejamento de Embalagens">
@@ -936,17 +1723,6 @@ blockquote { border-left: 3px solid #1a7a3c; margin: 16px 0; padding: 4px 16px; 
   <figcaption>Visão consolidada de compras por período, fornecedor e status.</figcaption>
 </figure>
 
-<h3 id="fluxo-passo-a-passo-do-pedido-ao-estoque">Fluxo passo a passo — do pedido ao estoque</h3>
-<ol>
-<li>Um usuário abre uma <strong>Solicitação de Compra</strong> informando o que precisa e para quando.</li>
-<li>Um aprovador aprova a SC (ou ela nasce aprovada, se marcada como emergencial).</li>
-<li>O comprador seleciona os itens que quer cotar agora — não precisa ser todos de uma vez — e cria uma <strong>Cotação</strong>.</li>
-<li>As propostas de cada fornecedor são lançadas item a item; o comprador escolhe o vencedor por item.</li>
-<li>Ao concluir a cotação, o pedido de compra é gerado a partir dos itens vencedores.</li>
-<li>O pedido é enviado ao fornecedor (e-mail, WhatsApp ou PDF).</li>
-<li>Quando a mercadoria chega, o <strong>Recebimento</strong> é conferido contra o pedido; divergências (falta, sobra, avaria) são registradas.</li>
-<li>Confirmado o recebimento, o estoque é atualizado automaticamente e — se houver NF vinculada — o lançamento financeiro (Conta a Pagar) é criado.</li>
-</ol>
 <h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
 <ul>
 <li>Uma SC com <strong>% Cotado</strong> menor que 100% ainda tem itens pendentes de uma rodada de cotação — não é um erro, é esperado em cotação seletiva com múltiplas rodadas.</li>
@@ -987,7 +1763,7 @@ ContaReceber
 <h3 id="conceitos-e-status">Conceitos e status</h3>
 <p>Uma <strong>Conta a Pagar</strong> segue o ciclo <code>ABERTA → APROVADA → PAGA</code> (ou <code>CANCELADA</code>/<code>RENEGOCIADA</code>). Se marcada como <code>requer_aprovacao</code>, fica bloqueada para pagamento até ser aprovada. Cada parcela tem seu próprio status (<code>ABERTA | VENCIDA | PAGA | RENEGOCIADA | CANCELADA</code>) e os juros/multa de atraso <strong>não são recalculados automaticamente</strong> — é preciso acionar o recálculo (botão na tela da conta) para atualizar o valor devido antes de registrar o pagamento.</p>
 <p>Uma <strong>Conta a Receber</strong> pode nascer de um Pedido de Venda, de uma Nota Fiscal, de uma Invoice de Exportação, ou ser lançada manualmente — e suporta moeda estrangeira (valor na moeda + taxa de câmbio, convertido para BRL).</p>
-<p>A maior parte das Contas a Pagar nasce automaticamente do módulo de <strong>Compras</strong>, no momento em que a nota fiscal do fornecedor é registrada no Recebimento — por isso este módulo funciona como o destino natural do fluxo de compras.</p>
+<p>A maior parte das Contas a Pagar nasce automaticamente do módulo de <strong>Compras</strong>, no momento em que a nota fiscal do fornecedor é registrada no Recebimento (botão <strong>Faturar</strong>) — por isso este módulo funciona como o destino natural do fluxo de compras. Mesmo assim, é possível lançar uma Conta a Pagar manualmente (despesas que não vêm de uma compra de produto, como serviços ou aluguel).</p>
 <h3 id="tela-dashboard-financeiro">Tela: Dashboard Financeiro</h3>
 <figure>
   <img src="screenshots/financeiro/01-dashboard.png" alt="Dashboard Financeiro">
@@ -1006,14 +1782,60 @@ ContaReceber
   <figcaption>Parcelas, pagamentos registrados, e ações de aprovação, recálculo de juros e quitação de saldo.</figcaption>
 </figure>
 
-<p>Uma conta com saldo residual pequeno pode ser <strong>quitada</strong> diretamente (ação de renegociação), ajustando o valor e mudando o status para <code>RENEGOCIADA</code>, em vez de manter uma parcela pendente por centavos.</p>
+<h3 id="tela-formulario-de-nova-conta-a-pagar">Tela: Formulário de Nova Conta a Pagar</h3>
+<figure>
+  <img src="screenshots/financeiro/08-conta-pagar-form.png" alt="Formulário de Nova Conta a Pagar">
+  <figcaption>Formulário em 5 abas: Identificação, Valores, Parcelamento Automático, Configurações, Observações.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Identificação):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Número</td>
+<td>Sim</td>
+<td>Número/referência da conta (ex: número da NF ou do contrato)</td>
+</tr>
+<tr>
+<td>Fornecedor</td>
+<td>Sim</td>
+<td>Busca com autocomplete</td>
+</tr>
+<tr>
+<td>Data de Emissão</td>
+<td>Sim</td>
+<td>Pré-preenchida com a data atual</td>
+</tr>
+<tr>
+<td>Empresa</td>
+<td>Sim</td>
+<td>Pré-preenchida com a empresa do usuário logado</td>
+</tr>
+</tbody>
+</table>
+<p>Na aba <strong>Valores</strong>, informe o valor total da conta e, se aplicável, conta contábil/centro de custo (classificação gerencial manual). Na aba <strong>Parcelamento Automático</strong>, defina em quantas parcelas dividir e a periodicidade — o sistema gera as <code>ParcelaContaPagar</code> automaticamente a partir dessa regra, sem precisar criar cada parcela manualmente. <strong>Configurações</strong> define se a conta <code>requer_aprovacao</code> antes de poder ser paga. <strong>Observações</strong> é texto livre.</p>
+<h3 id="fluxo-passo-a-passo-lancar-e-pagar-uma-conta-manualmente">Fluxo passo a passo — lançar e pagar uma conta manualmente</h3>
+<ol>
+<li>Preencha Identificação + Valores e defina o parcelamento (ex: 3x mensal).</li>
+<li>Salve — a conta nasce <strong>Aberta</strong>, com as parcelas já geradas conforme o parcelamento.</li>
+<li>Se a conta exige aprovação, um aprovador precisa <strong>aprovar</strong> antes do próximo passo.</li>
+<li>Na <strong>Agenda de Pagamentos</strong>, localize a parcela e registre o <strong>pagamento</strong> (valor, data, conta bancária de origem, forma de pagamento).</li>
+<li>Quando todas as parcelas estiverem pagas, a conta muda automaticamente para <strong>Paga</strong>.</li>
+</ol>
 <h3 id="tela-agenda-de-pagamentos">Tela: Agenda de Pagamentos</h3>
 <figure>
   <img src="screenshots/financeiro/04-parcelas-lista.png" alt="Agenda de Pagamentos">
   <figcaption>Lista de parcelas (`/financeiro/parcelas/`) — diferente da lista de Contas a Pagar, que mostra os documentos, não as parcelas individuais.</figcaption>
 </figure>
 
-<p>Esta é a tela do dia a dia de quem paga contas: mostra cada parcela isoladamente, com data de vencimento, para decidir o que pagar primeiro.</p>
+<p>Esta é a tela do dia a dia de quem paga contas: mostra cada parcela isoladamente, com data de vencimento, para decidir o que pagar primeiro. Clique numa parcela para <strong>registrar o pagamento</strong> — se ela estiver vencida, use antes o botão de <strong>recalcular juros/multa</strong> para atualizar o valor devido.</p>
 <h3 id="tela-contas-a-receber">Tela: Contas a Receber</h3>
 <figure>
   <img src="screenshots/financeiro/05-contas-receber-lista.png" alt="Contas a Receber">
@@ -1026,6 +1848,13 @@ ContaReceber
   <figcaption>Parcelas e recebimentos registrados; suporta valores em moeda estrangeira convertidos para BRL.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-conta-a-receber">Tela: Formulário de Nova Conta a Receber</h3>
+<figure>
+  <img src="screenshots/financeiro/09-conta-receber-form.png" alt="Formulário de Nova Conta a Receber">
+  <figcaption>Cliente, valor (com suporte a moeda estrangeira) e parcelamento.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> estrutura equivalente à Conta a Pagar, trocando Fornecedor por <strong>Cliente</strong>. Se o valor for em moeda estrangeira, informe a <strong>taxa de câmbio</strong> — o sistema calcula o valor em BRL automaticamente e é esse valor convertido que deve ser usado em qualquer agregação/relatório.</p>
 <h3 id="tela-fluxo-de-caixa">Tela: Fluxo de Caixa</h3>
 <figure>
   <img src="screenshots/financeiro/07-fluxo-caixa.png" alt="Fluxo de Caixa">
@@ -1037,6 +1866,7 @@ ContaReceber
 <li>Antes de pagar uma parcela em atraso, use o recálculo de juros/multa — o valor exibido pode estar desatualizado até esse passo.</li>
 <li>Sempre use o valor em <strong>BRL</strong> ao somar contas a receber em moeda estrangeira; o valor na moeda original não é comparável entre contas de moedas diferentes.</li>
 <li>Uma Conta a Pagar com <code>requer_aprovacao=True</code> não deixa registrar pagamento antes de ser aprovada.</li>
+<li>Prefira o <strong>Parcelamento Automático</strong> a criar parcelas uma a uma — reduz erro de digitação nas datas de vencimento.</li>
 </ul>
 <h2 id="plano-de-contas-plano-contas">Plano de Contas (<code>/plano-contas/</code>)</h2>
 <h3 id="visao-geral_2">Visão geral</h3>
@@ -1047,6 +1877,13 @@ ContaReceber
   <figcaption>Lista de contas cadastradas (`/plano-contas/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-conta-contabil">Tela: Formulário de Nova Conta Contábil</h3>
+<figure>
+  <img src="screenshots/plano_contas/05-conta-form.png" alt="Formulário de Nova Conta Contábil">
+  <figcaption>Código, nome, tipo (Receita/Despesa/Ativo/Passivo) e conta pai (para montar a hierarquia).</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe o <strong>código</strong> (segue a convenção contábil da empresa), <strong>nome</strong> da conta, <strong>tipo</strong> e, se for uma subconta, a <strong>conta pai</strong> — é essa hierarquia que aparece na Árvore do Plano de Contas.</p>
 <h3 id="tela-arvore-do-plano-de-contas">Tela: Árvore do Plano de Contas</h3>
 <figure>
   <img src="screenshots/plano_contas/02-arvore.png" alt="Árvore do Plano de Contas">
@@ -1065,9 +1902,16 @@ ContaReceber
   <figcaption>Centros de custo cadastrados (`/plano-contas/centros/`), usados para segmentar o resultado por área/projeto.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-centro-de-custo">Tela: Formulário de Novo Centro de Custo</h3>
+<figure>
+  <img src="screenshots/plano_contas/06-centro-custo-form.png" alt="Formulário de Novo Centro de Custo">
+  <figcaption>Código e nome do centro de custo.</figcaption>
+</figure>
+
 <h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
 <ul>
 <li>O plano de contas padrão pode ser gerado via comando <code>seed_plano_contas</code> (101 contas de referência) e depois ajustado conforme a necessidade da empresa.</li>
+<li>Defina o plano de contas e os centros de custo <strong>antes</strong> de começar a lançar Contas a Pagar/Receber em volume — reclassificar depois é trabalhoso.</li>
 </ul>
 <h2 id="contas-bancarias-bancario">Contas Bancárias (<code>/bancario/</code>)</h2>
 <h3 id="visao-geral_3">Visão geral</h3>
@@ -1078,13 +1922,27 @@ ContaReceber
   <figcaption>Contas bancárias cadastradas (`/bancario/contas/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-conta-bancaria">Tela: Formulário de Nova Conta Bancária</h3>
+<figure>
+  <img src="screenshots/bancario/04-conta-form.png" alt="Formulário de Nova Conta Bancária">
+  <figcaption>Banco, agência, número da conta e saldo inicial.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe o banco, agência, número da conta e o <strong>saldo inicial</strong> (data de referência) — a partir daí, todo pagamento/recebimento vinculado a essa conta e cada item de extrato conciliado ajustam o saldo corrente.</p>
 <h3 id="tela-detalhe-da-conta-bancaria">Tela: Detalhe da Conta Bancária</h3>
 <figure>
   <img src="screenshots/bancario/02-conta-detalhe.png" alt="Detalhe de uma Conta Bancária">
   <figcaption>Extrato importado e histórico de conciliação da conta.</figcaption>
 </figure>
 
-<p>A importação do extrato (botão na própria conta) aceita arquivos OFX/CNAB; após importar, a <strong>conciliação</strong> compara cada linha do extrato com os lançamentos do sistema e sugere pares prováveis, que podem ser confirmados, ignorados ou desfeitos.</p>
+<h3 id="fluxo-passo-a-passo-conciliacao-bancaria">Fluxo passo a passo — conciliação bancária</h3>
+<ol>
+<li>Na tela da conta, use <strong>Importar Extrato</strong> e selecione o arquivo OFX/CNAB do banco.</li>
+<li>Abra a <strong>Conciliação</strong> dessa importação — o sistema já sugere pares prováveis entre linhas do extrato e lançamentos do sistema.</li>
+<li>Para cada sugestão, <strong>confirme</strong> (se estiver correta) ou <strong>ignore</strong> (se não houver correspondência real).</li>
+<li>Itens sem sugestão automática podem ser conciliados <strong>manualmente</strong>, buscando o lançamento correspondente.</li>
+<li>Um item confirmado por engano pode ser <strong>desfeito</strong>, voltando para pendente.</li>
+</ol>
 <h3 id="tela-relatorio-de-conciliacao">Tela: Relatório de Conciliação</h3>
 <figure>
   <img src="screenshots/bancario/03-relatorio-conciliacao.png" alt="Relatório de Conciliação">
@@ -1108,13 +1966,82 @@ ContaReceber
   <figcaption>Adiantamentos registrados (`/adiantamentos/`), por cliente e safra de referência.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-adiantamento">Tela: Formulário de Novo Adiantamento</h3>
+<figure>
+  <img src="screenshots/adiantamentos/04-adiantamento-form.png" alt="Formulário de Novo Adiantamento">
+  <figcaption>Cliente, safra de referência, valor em moeda estrangeira e regra de desconto por embarque.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cliente</td>
+<td>Sim</td>
+<td>Cliente internacional</td>
+</tr>
+<tr>
+<td>Safra (Referência)</td>
+<td>Sim</td>
+<td>Texto livre, ex: "2026/2027"</td>
+</tr>
+<tr>
+<td>Número de Referência/Contrato</td>
+<td>Sim</td>
+<td>Identificação do adiantamento</td>
+</tr>
+<tr>
+<td>Data do Adiantamento</td>
+<td>Sim</td>
+<td></td>
+</tr>
+<tr>
+<td>Moeda / Valor Estrangeiro</td>
+<td>Sim</td>
+<td>Valor recebido na moeda original</td>
+</tr>
+<tr>
+<td>Taxa de Câmbio Acordada</td>
+<td>Sim</td>
+<td>Usada para calcular o Valor em BRL</td>
+</tr>
+<tr>
+<td>Tipo de Regra de Desconto</td>
+<td>Sim</td>
+<td>Valor Fixo por Embarque ou Percentual do Valor da Invoice</td>
+</tr>
+<tr>
+<td>Valor/Percentual de Desconto</td>
+<td>Sim (conforme regra)</td>
+<td>Quanto descontar a cada embarque</td>
+</tr>
+<tr>
+<td>Data Prevista de Reembolso</td>
+<td>Não</td>
+<td>Estimativa de quando o adiantamento será totalmente descontado</td>
+</tr>
+</tbody>
+</table>
 <h3 id="tela-detalhe-do-adiantamento">Tela: Detalhe do Adiantamento</h3>
 <figure>
   <img src="screenshots/adiantamentos/02-detalhe.png" alt="Detalhe de um Adiantamento">
   <figcaption>Valor em moeda estrangeira e convertido, regra de desconto e histórico de descontos aplicados por embarque.</figcaption>
 </figure>
 
-<p>A cada embarque/invoice do cliente, é possível <strong>aplicar o desconto</strong> programado (valor fixo ou percentual) ou <strong>pular</strong> o desconto daquele embarque específico, mantendo o saldo do adiantamento para os próximos.</p>
+<h3 id="fluxo-passo-a-passo-usar-um-adiantamento-ate-a-quitacao">Fluxo passo a passo — usar um adiantamento até a quitação</h3>
+<ol>
+<li>Registre o adiantamento recebido, com a regra de desconto (fixo ou percentual).</li>
+<li>A cada embarque/invoice do cliente, abra o adiantamento e <strong>aplique o desconto</strong> programado — ou <strong>pule</strong> o desconto daquele embarque específico, mantendo o saldo para os próximos.</li>
+<li>Acompanhe o status: de <code>EM_ANDAMENTO</code> evolui para <code>PARCIALMENTE_QUITADO</code> conforme os descontos são aplicados, até <code>QUITADO</code>.</li>
+<li>Se a safra terminar com saldo não descontado, use <strong>Migrar</strong> para transferir o saldo para a safra seguinte em vez de deixar em aberto indefinidamente.</li>
+</ol>
 <h3 id="tela-relatorio-de-adiantamentos">Tela: Relatório de Adiantamentos</h3>
 <figure>
   <img src="screenshots/adiantamentos/03-relatorio.png" alt="Relatório de Adiantamentos">
@@ -1141,22 +2068,31 @@ ContaReceber
   <figcaption>Itens do pedido, valores, e ações de aprovação, emissão de documento fiscal e cancelamento.</figcaption>
 </figure>
 
-<p>Um pedido aprovado pode <strong>emitir o documento fiscal</strong> correspondente diretamente a partir do detalhe, integrando com o módulo de Faturamento.</p>
 <h3 id="tela-novo-pedido-de-venda">Tela: Novo Pedido de Venda</h3>
 <figure>
   <img src="screenshots/vendas/03-pedido-novo.png" alt="Novo Pedido de Venda">
   <figcaption>Formulário de novo pedido: cliente, vendedor, itens e condição comercial.</figcaption>
 </figure>
 
+<p><strong>Como preencher:</strong> escolha o <strong>Cliente</strong> (a Tabela de Preço vinculada a ele, se houver, sugere os preços automaticamente), o <strong>Vendedor</strong> responsável, e adicione os <strong>itens</strong> (produto, quantidade, preço). Informe a condição de pagamento e, se aplicável, o romaneio de embalagem de origem.</p>
+<h3 id="fluxo-passo-a-passo-de-pedido-a-nota-fiscal">Fluxo passo a passo — de pedido a nota fiscal</h3>
+<ol>
+<li>Crie o Pedido de Venda com cliente, itens e condição comercial.</li>
+<li>Um aprovador <strong>aprova</strong> o pedido.</li>
+<li>Use <strong>Emitir Documento</strong> no detalhe do pedido para gerar a NF-e (ou Invoice, se exportação) diretamente no módulo Faturamento, já com os dados do pedido preenchidos.</li>
+<li>Acompanhe o restante do ciclo fiscal em Faturamento.</li>
+</ol>
 <h3 id="tela-tabelas-de-preco">Tela: Tabelas de Preço</h3>
 <figure>
   <img src="screenshots/vendas/04-tabelas-preco.png" alt="Tabelas de Preço">
   <figcaption>Tabelas de preço (`/vendas/tabelas-preco/`) usadas para sugerir preços por cliente/produto no pedido.</figcaption>
 </figure>
 
+<p><strong>Como preencher:</strong> dê um nome à tabela, defina o período de vigência e adicione os itens (produto + preço). Depois, associe a tabela ao(s) cliente(s) que devem usá-la (no cadastro do cliente, aba Dados Comerciais).</p>
 <h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
 <ul>
 <li>Em operações de fruta/hortifruti, é comum o <strong>romaneio de embalagem</strong> nascer antes do pedido de venda estar fechado — o pedido é ajustado depois com o que efetivamente foi embalado. Veja a seção Embalagem abaixo.</li>
+<li>Um pedido sem Tabela de Preço vinculada ao cliente exige digitar o preço manualmente item a item — vale cadastrar a tabela antes se o cliente compra com frequência.</li>
 </ul>
 <h2 id="embalagem-embalagem">Embalagem (<code>/embalagem/</code>)</h2>
 <h3 id="visao-geral_1">Visão geral</h3>
@@ -1173,6 +2109,12 @@ ContaReceber
   <figcaption>Tipos de embalagem cadastrados (`/embalagem/tipos/`) — caixa, pallet, etc.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-tipo-de-embalagem">Tela: Formulário de Novo Tipo de Embalagem</h3>
+<figure>
+  <img src="screenshots/embalagem/08-tipo-embalagem-form.png" alt="Formulário de Novo Tipo de Embalagem">
+  <figcaption>Nome, capacidade (unidades por embalagem) e peso.</figcaption>
+</figure>
+
 <h3 id="tela-ordens-de-embalagem">Tela: Ordens de Embalagem</h3>
 <figure>
   <img src="screenshots/embalagem/03-ordens-lista.png" alt="Ordens de Embalagem">
@@ -1185,12 +2127,20 @@ ContaReceber
   <figcaption>Itens embalados; a partir daqui é possível gerar os pallets e imprimir etiquetas.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-ordem-de-embalagem">Tela: Formulário de Nova Ordem de Embalagem</h3>
+<figure>
+  <img src="screenshots/embalagem/09-ordem-form.png" alt="Formulário de Nova Ordem de Embalagem">
+  <figcaption>Produto, tipo de embalagem e quantidade a embalar.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> escolha o produto, o tipo de embalagem e a quantidade planejada. Depois de salva, use <strong>Gerar Pallets</strong> na tela de detalhe para criar os pallets a partir da ordem, e <strong>Etiquetas (PDF)</strong> para imprimir as etiquetas de identificação.</p>
 <h3 id="tela-lista-de-pallets">Tela: Lista de Pallets</h3>
 <figure>
   <img src="screenshots/embalagem/05-pallets-lista.png" alt="Lista de Pallets">
   <figcaption>Pallets gerados a partir das ordens de embalagem, incluindo pallets mistos (múltiplos produtos).</figcaption>
 </figure>
 
+<p>Um <strong>pallet misto</strong> (mais de um produto) é criado a partir de uma ordem de embalagem (botão "Pallet Misto"), permitindo adicionar itens de produtos diferentes até <strong>finalizar</strong> o pallet.</p>
 <h3 id="tela-romaneios-de-venda">Tela: Romaneios de Venda</h3>
 <figure>
   <img src="screenshots/embalagem/06-romaneios-lista.png" alt="Romaneios de Venda">
@@ -1203,7 +2153,22 @@ ContaReceber
   <figcaption>Pallets incluídos no romaneio, com rateio de frete e ICMS por carga (maior resto) quando aplicável.</figcaption>
 </figure>
 
-<p>Quando o romaneio envolve frete e ICMS a ratear entre os itens da carga, o sistema usa o método do <strong>maior resto</strong> para distribuir o valor sem deixar diferenças de arredondamento, e pode gerar automaticamente um pré-CT-e a partir dos dados do romaneio.</p>
+<h3 id="tela-formulario-de-novo-romaneio">Tela: Formulário de Novo Romaneio</h3>
+<figure>
+  <img src="screenshots/embalagem/10-romaneio-form.png" alt="Formulário de Novo Romaneio">
+  <figcaption>Cliente/destino, veículo/transportadora e pallets a incluir na carga.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe o destino (cliente), a transportadora/veículo, e adicione os <strong>pallets</strong> que compõem essa carga. Se houver frete e ICMS a ratear entre os itens, o sistema usa o método do <strong>maior resto</strong> para distribuir o valor sem deixar diferenças de arredondamento, e pode gerar automaticamente um pré-CT-e a partir dos dados do romaneio.</p>
+<h3 id="fluxo-passo-a-passo-do-produto-embalado-ao-romaneio">Fluxo passo a passo — do produto embalado ao romaneio</h3>
+<ol>
+<li>Crie a <strong>Ordem de Embalagem</strong> (produto + tipo de embalagem + quantidade).</li>
+<li><strong>Gere os pallets</strong> a partir da ordem (ou monte um pallet misto, se necessário).</li>
+<li>Crie o <strong>Romaneio</strong>, adicionando os pallets que vão para aquela carga/cliente.</li>
+<li>Se houver frete/ICMS a ratear, confirme o rateio antes de fechar o romaneio.</li>
+<li>O Pedido de Venda é ajustado (ou criado) com base no que foi efetivamente romaneado.</li>
+<li>A partir do romaneio, gere o pré-CT-e se o transporte for por conta da empresa.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns_1">Dicas e erros comuns</h3>
 <ul>
 <li>Gerar os pallets a partir da Ordem de Embalagem evita ter que cadastrá-los manualmente no Romaneio depois.</li>
@@ -1218,6 +2183,13 @@ ContaReceber
   <figcaption>Lotes gerados (`/etiquetas-avulsas/lotes/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-lote-de-etiquetas">Tela: Formulário de Novo Lote de Etiquetas</h3>
+<figure>
+  <img src="screenshots/etiquetas_avulsas/03-lote-form.png" alt="Formulário de Novo Lote de Etiquetas">
+  <figcaption>Produto e quantidade de etiquetas a gerar.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> escolha o produto e a quantidade de etiquetas; depois de criado o lote, use <strong>Adicionar Pallets</strong> para vincular pallets específicos, e <strong>Concluir</strong> para fechar o lote e liberar a impressão.</p>
 <h3 id="tela-detalhe-do-lote-de-etiquetas">Tela: Detalhe do Lote de Etiquetas</h3>
 <figure>
   <img src="screenshots/etiquetas_avulsas/02-lote-detalhe.png" alt="Detalhe de um Lote de Etiquetas">
@@ -1240,24 +2212,52 @@ ContaReceber
   <figcaption>Solicitações de reserva de espaço no navio (`/exportacao/solicitacoes/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-solicitacao-de-booking">Tela: Formulário de Nova Solicitação de Booking</h3>
+<figure>
+  <img src="screenshots/exportacao/05-solicitacao-form.png" alt="Formulário de Nova Solicitação de Booking">
+  <figcaption>Cliente, porto de embarque/destino, previsão de quantidade e data.</figcaption>
+</figure>
+
 <h3 id="tela-lista-de-bookings">Tela: Lista de Bookings</h3>
 <figure>
   <img src="screenshots/exportacao/02-bookings-lista.png" alt="Lista de Bookings">
   <figcaption>Bookings confirmados (`/exportacao/bookings/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-booking">Tela: Formulário de Novo Booking</h3>
+<figure>
+  <img src="screenshots/exportacao/06-booking-form.png" alt="Formulário de Novo Booking">
+  <figcaption>Formulário em 7 abas: Solicitação, Identificação, Rotas, Datas e Prazos, Agentes de Exportação, Financeiro, Observações.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> um Booking normalmente <strong>nasce de uma Solicitação</strong> já aprovada — escolha-a na primeira aba para herdar cliente e carga previstos. Complete Identificação (armador, navio), Rotas (porto de embarque/destino), Datas e Prazos (ETD/ETA, prazo de cut-off) e Agentes de Exportação (agente responsável pela documentação).</p>
 <h3 id="tela-detalhe-do-booking">Tela: Detalhe do Booking</h3>
 <figure>
   <img src="screenshots/exportacao/03-booking-detalhe.png" alt="Detalhe de um Booking">
   <figcaption>Containers vinculados ao booking, com opção de transferir carga entre containers e ver o histórico.</figcaption>
 </figure>
 
+<p><strong>Como preencher (containers):</strong> use <strong>Adicionar Container</strong> informando número, tipo/tamanho e a carga alocada. Se for preciso remanejar carga entre containers já criados, use <strong>Transferir</strong>. Quando o booking está com todos os containers carregados, use <strong>Confirmar</strong> e, no embarque efetivo, <strong>Embarcar</strong>.</p>
 <h3 id="tela-ordens-de-coleta">Tela: Ordens de Coleta</h3>
 <figure>
   <img src="screenshots/exportacao/04-ordens-coleta.png" alt="Ordens de Coleta">
   <figcaption>Ordens de coleta da carga para o porto de embarque.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-ordem-de-coleta">Tela: Formulário de Nova Ordem de Coleta</h3>
+<figure>
+  <img src="screenshots/exportacao/07-ordem-coleta-form.png" alt="Formulário de Nova Ordem de Coleta">
+  <figcaption>Booking de referência, local de coleta e data/veículo designado.</figcaption>
+</figure>
+
+<h3 id="fluxo-passo-a-passo-de-solicitacao-a-embarque">Fluxo passo a passo — de solicitação a embarque</h3>
+<ol>
+<li>Registre a <strong>Solicitação de Booking</strong> com o cliente e a carga prevista.</li>
+<li>Depois de aprovada/confirmada com o armador, crie o <strong>Booking</strong> referenciando essa solicitação.</li>
+<li>Adicione os <strong>containers</strong> e aloque a carga (transferindo entre containers se necessário).</li>
+<li>Emita a <strong>Ordem de Coleta</strong> para buscar a carga e levá-la ao porto.</li>
+<li><strong>Confirme</strong> o booking quando os containers estiverem prontos, e marque <strong>Embarcado</strong> após o navio zarpar.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns_3">Dicas e erros comuns</h3>
 <ul>
 <li>Um booking só deve ser marcado como <strong>embarcado</strong> depois que todos os containers previstos estiverem devidamente carregados.</li>
@@ -1271,6 +2271,13 @@ ContaReceber
   <figcaption>Atos Concessórios cadastrados, com saldo de insumos disponível para uso.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-ato-concessorio">Tela: Formulário de Novo Ato Concessório</h3>
+<figure>
+  <img src="screenshots/drawback/03-ac-form.png" alt="Formulário de Novo Ato Concessório">
+  <figcaption>Número do AC, datas de validade e produtos autorizados.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe o número do Ato Concessório emitido pelo órgão competente, a data de validade e os produtos/insumos autorizados no regime. Depois de criado, use as ações <strong>Nova Entrada</strong>/<strong>Nova Saída</strong> (ou importação via planilha XLSX) para registrar a movimentação de insumos e produtos exportados sob esse AC.</p>
 <h3 id="tela-detalhe-do-ato-concessorio">Tela: Detalhe do Ato Concessório</h3>
 <figure>
   <img src="screenshots/drawback/02-ac-detalhe.png" alt="Detalhe de um Ato Concessório">
@@ -1278,6 +2285,14 @@ ContaReceber
 </figure>
 
 <p>Entradas e saídas podem ser importadas em lote via planilha (XLSX), ou vinculadas diretamente a um Recebimento de Compra / item de NF-e já existente no sistema, evitando digitação duplicada.</p>
+<h3 id="fluxo-passo-a-passo-operar-um-ato-concessorio">Fluxo passo a passo — operar um Ato Concessório</h3>
+<ol>
+<li>Cadastre o <strong>AC</strong> com os produtos/insumos autorizados.</li>
+<li>Registre as <strong>entradas</strong> de insumo (importado ou adquirido no mercado interno), vinculando a um recebimento de compra sempre que possível.</li>
+<li>Registre as <strong>saídas</strong> conforme os produtos são exportados, vinculando à NF-e de exportação correspondente.</li>
+<li>Acompanhe o <strong>saldo</strong> disponível por produto no detalhe do AC — é ele que mostra quanto insumo ainda pode ser usado dentro do regime.</li>
+<li>Gere o <strong>relatório</strong> do AC quando precisar prestar contas do regime.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns_4">Dicas e erros comuns</h3>
 <ul>
 <li>Uma entrada ou saída <strong>anulada</strong> não conta mais no saldo do AC — use com cuidado, pois pode ser necessário para corrigir um lançamento incorreto.</li>
@@ -1304,7 +2319,73 @@ ContaReceber
   <figcaption>Itens, status de autorização na SEFAZ, e ações (emitir, cancelar, consultar, DANFE, XML, carta de correção).</figcaption>
 </figure>
 
-<p>Uma NF-e passa por: <strong>rascunho → emissão</strong> (envio à SEFAZ) <strong>→ autorizada</strong> (ou rejeitada/denegada). Após autorizada, ainda é possível emitir <strong>carta de correção</strong> para ajustes que não alteram valores, ou <strong>cancelar</strong> dentro do prazo legal.</p>
+<h3 id="tela-formulario-de-nova-nf-e">Tela: Formulário de Nova NF-e</h3>
+<figure>
+  <img src="screenshots/faturamento/15-nfe-form.png" alt="Formulário de Nova NF-e">
+  <figcaption>Formulário extenso, em 11 abas: Dados Gerais, Itens, Pagamentos, Duplicatas, Referências, Complementares, Transporte, Exportação, Entrega, Retirada, Agropecuário, Produtor Rural.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Dados Gerais):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cliente</td>
+<td>Sim (exceto notas sem destinatário definido)</td>
+<td>Busca com autocomplete</td>
+</tr>
+<tr>
+<td>Data de Emissão</td>
+<td>Sim</td>
+<td>Pré-preenchida com a data atual</td>
+</tr>
+<tr>
+<td>Tipo de Operação</td>
+<td>Sim</td>
+<td>Ex: "Venda Direta" — cada tipo mostra uma explicação de quando usá-lo</td>
+</tr>
+<tr>
+<td>Natureza da Operação</td>
+<td>Sim</td>
+<td>Ex: "VENDA DE MERCADORIA"</td>
+</tr>
+<tr>
+<td>Finalidade NF-e</td>
+<td>Sim</td>
+<td>Normal, Complementar, Ajuste, Devolução</td>
+</tr>
+<tr>
+<td>CFOP Padrão</td>
+<td>Sim</td>
+<td>Sugerido pela Natureza da Operação, pode ser ajustado</td>
+</tr>
+<tr>
+<td>Presença do Comprador</td>
+<td>Sim</td>
+<td>Presencial, não presencial pela internet, etc.</td>
+</tr>
+<tr>
+<td>Indicador de Intermediador</td>
+<td>Condicional</td>
+<td>Obrigatório para certos indicadores de presença (o próprio campo avisa quando)</td>
+</tr>
+</tbody>
+</table>
+<p>O painel lateral <strong>Resumo de Valores</strong> (frete, seguro, desconto, IPI, ICMS ST) é recalculado automaticamente conforme os <strong>Itens</strong> são adicionados na aba seguinte. As demais abas só precisam ser preenchidas quando aplicável ao caso: <strong>Transporte</strong> (se houver frete destacado), <strong>Exportação</strong> (NF-e vinculada a uma exportação), <strong>Agropecuário</strong>/<strong>Produtor Rural</strong> (operações com produtor rural pessoa física).</p>
+<h3 id="fluxo-passo-a-passo-emitir-uma-nf-e">Fluxo passo a passo — emitir uma NF-e</h3>
+<ol>
+<li>Preencha Dados Gerais (cliente, tipo/natureza da operação).</li>
+<li>Adicione os <strong>Itens</strong> — o resumo de valores é recalculado automaticamente.</li>
+<li>Complete as abas relevantes ao caso (Transporte, Exportação, etc.) — a nota fica <strong>Rascunho</strong> até aqui.</li>
+<li>Clique em <strong>Emitir</strong> — a nota é transmitida à SEFAZ; se autorizada, o status muda para <strong>Autorizada</strong> e o DANFE fica disponível.</li>
+<li>Se necessário corrigir algo não-fiscal depois de autorizada, use <strong>Carta de Correção</strong>; para cancelar dentro do prazo legal, use <strong>Cancelar</strong>.</li>
+</ol>
 <h3 id="tela-remessas-pendentes">Tela: Remessas Pendentes</h3>
 <figure>
   <img src="screenshots/faturamento/04-remessas-pendentes.png" alt="Remessas Pendentes">
@@ -1317,6 +2398,13 @@ ContaReceber
   <figcaption>Invoices comerciais de exportação (`/faturamento/invoices/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-invoice">Tela: Formulário de Nova Invoice</h3>
+<figure>
+  <img src="screenshots/faturamento/16-invoice-form.png" alt="Formulário de Nova Invoice">
+  <figcaption>Cliente internacional, itens, moeda e INCOTERM.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> escolha o <strong>Cliente</strong> internacional, a <strong>moeda</strong> e o <strong>INCOTERM</strong> da operação, e adicione os itens (produto, quantidade, preço na moeda da invoice). Se houver adiantamento internacional para esse cliente/safra, ele pode ser vinculado e descontado a partir daqui.</p>
 <h3 id="tela-detalhe-da-invoice">Tela: Detalhe da Invoice</h3>
 <figure>
   <img src="screenshots/faturamento/06-invoice-detalhe.png" alt="Detalhe de uma Invoice">
@@ -1329,12 +2417,26 @@ ContaReceber
   <figcaption>Packing Lists (`/faturamento/packing-lists/`) — detalhamento físico da carga de exportação.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-packing-list">Tela: Formulário de Nova Packing List</h3>
+<figure>
+  <img src="screenshots/faturamento/19-packing-list-form.png" alt="Formulário de Nova Packing List">
+  <figcaption>Invoice de referência e detalhamento de volumes/pallets da carga.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> vincule a <strong>Invoice</strong> correspondente e detalhe os volumes (pallets, caixas, pesos líquido/bruto) — normalmente espelhando os pallets já romaneados em Embalagem.</p>
 <h3 id="tela-ct-e-conhecimento-de-transporte">Tela: CT-e (Conhecimento de Transporte)</h3>
 <figure>
   <img src="screenshots/faturamento/08-cte-lista.png" alt="Lista de CT-e">
   <figcaption>CT-e emitidos (`/faturamento/cte/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-ct-e">Tela: Formulário de Novo CT-e</h3>
+<figure>
+  <img src="screenshots/faturamento/17-cte-form.png" alt="Formulário de Novo CT-e">
+  <figcaption>Transportadora, veículo, documentos transportados (NF-e) e valor do frete.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe a transportadora e o veículo, e vincule as <strong>NF-e transportadas</strong> — o botão de vínculo automático (NF-e → CT-e) evita redigitar dados da carga quando o CT-e nasce de notas já emitidas. Informe o valor do frete e a forma de pagamento (pago, a pagar, etc.).</p>
 <h3 id="tela-detalhe-do-ct-e">Tela: Detalhe do CT-e</h3>
 <figure>
   <img src="screenshots/faturamento/09-cte-detalhe.png" alt="Detalhe de um CT-e">
@@ -1348,36 +2450,54 @@ ContaReceber
   <figcaption>MDF-e emitidos (`/faturamento/mdfe/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-mdf-e">Tela: Formulário de Novo MDF-e</h3>
+<figure>
+  <img src="screenshots/faturamento/18-mdfe-form.png" alt="Formulário de Novo MDF-e">
+  <figcaption>Veículo, condutor(es) e documentos fiscais (NF-e/CT-e) incluídos na viagem.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe o veículo (e reboque, se houver) e o(s) condutor(es), depois use o vínculo automático <strong>CT-e → MDF-e</strong> (ou NF-e → MDF-e) para trazer os documentos fiscais da viagem sem redigitar.</p>
 <h3 id="tela-detalhe-do-mdf-e">Tela: Detalhe do MDF-e</h3>
 <figure>
   <img src="screenshots/faturamento/11-mdfe-detalhe.png" alt="Detalhe de um MDF-e">
   <figcaption>Condutor(es), veículo(s) e documentos fiscais (NF-e/CT-e) incluídos no manifesto; deve ser encerrado ao fim da viagem.</figcaption>
 </figure>
 
+<h3 id="fluxo-passo-a-passo-encadear-nf-e-ct-e-mdf-e">Fluxo passo a passo — encadear NF-e → CT-e → MDF-e</h3>
+<ol>
+<li>Emita a(s) <strong>NF-e</strong> da venda/remessa.</li>
+<li>Ao criar o <strong>CT-e</strong> do frete, use o vínculo automático para trazer as NF-e já emitidas.</li>
+<li>Ao criar o <strong>MDF-e</strong> da viagem, use o vínculo automático para trazer o(s) CT-e (ou NF-e diretamente, se não houver CT-e).</li>
+<li>Emita o MDF-e antes da saída do veículo.</li>
+<li>Ao final da viagem, <strong>encerre</strong> o MDF-e — um manifesto aberto indefinidamente distorce relatórios de carga em trânsito.</li>
+</ol>
 <h3 id="tela-cotacoes-bcb">Tela: Cotações BCB</h3>
 <figure>
   <img src="screenshots/faturamento/12-cotacoes-bcb.png" alt="Cotações BCB">
   <figcaption>Cotações de câmbio do Banco Central, usadas para converter valores em Invoice/Adiantamentos.</figcaption>
 </figure>
 
+<p>Use <strong>Buscar Hoje</strong> para importar a cotação do dia diretamente do Banco Central, em vez de digitar manualmente.</p>
 <h3 id="tela-configuracao-fiscal">Tela: Configuração Fiscal</h3>
 <figure>
   <img src="screenshots/faturamento/13-configuracao-fiscal.png" alt="Configuração Fiscal">
   <figcaption>Certificado digital, ambiente SEFAZ (homologação/produção) e parâmetros gerais de emissão.</figcaption>
 </figure>
 
+<p><strong>Como preencher:</strong> faça upload do <strong>certificado digital</strong> (A1) da empresa, confirme o <strong>ambiente</strong> (comece em Homologação para testes, mude para Produção só quando validado) e revise a numeração/série inicial dos documentos. Sem essa configuração completa, nenhum documento fiscal pode ser emitido.</p>
 <h3 id="tela-distribuicao-de-df-e">Tela: Distribuição de DF-e</h3>
 <figure>
   <img src="screenshots/faturamento/14-distribuicao-dfe.png" alt="Distribuição de DF-e">
   <figcaption>Notas e eventos de terceiros recebidos automaticamente da SEFAZ, com contadores de autorizadas/canceladas e manifestação pendente.</figcaption>
 </figure>
 
-<p>Toda vez que um fornecedor emite uma NF-e contra o CNPJ da empresa, ela aparece aqui automaticamente (sincronização periódica com a SEFAZ). Cada NF-e recebida precisa ser <strong>manifestada</strong> (Ciência da Operação, Confirmação, Desconhecimento ou Operação não Realizada) — o botão de ação na coluna Manifestação permite isso individualmente ou em lote. Este fluxo se conecta ao módulo de Compras: uma NF-e manifestada com Ciência pode ser usada para abrir uma Entrada Direta / Recebimento.</p>
+<p>Toda vez que um fornecedor emite uma NF-e contra o CNPJ da empresa, ela aparece aqui automaticamente (sincronização periódica com a SEFAZ, ou manualmente pelo botão <strong>Sincronizar Agora</strong>). Cada NF-e recebida precisa ser <strong>manifestada</strong> (Ciência da Operação, Confirmação, Desconhecimento ou Operação não Realizada) — o botão de ação na coluna Manifestação permite isso individualmente ou em lote (<strong>Manifestar em Lote</strong>). Este fluxo se conecta ao módulo de Compras: uma NF-e manifestada com Ciência pode ser usada para abrir uma Entrada Direta / Recebimento.</p>
 <h3 id="dicas-e-erros-comuns_5">Dicas e erros comuns</h3>
 <ul>
 <li>Uma NF-e <strong>autorizada</strong> com erro só pode ser corrigida por carta de correção (dados não fiscais) ou cancelamento dentro do prazo — nunca editada diretamente.</li>
 <li>Verifique a <strong>Distribuição de DF-e</strong> regularmente: notas de fornecedor não manifestadas por muito tempo podem gerar problemas fiscais para a empresa.</li>
 <li>O MDF-e precisa ser <strong>encerrado</strong> ao final da viagem — um manifesto aberto indefinidamente distorce relatórios de carga em trânsito.</li>
+<li>Sempre teste emissões novas em ambiente de <strong>Homologação</strong> antes de migrar a Configuração Fiscal para Produção.</li>
 </ul></section><section class="chapter"><h1 id="infraestrutura">Infraestrutura</h1>
 <h2 id="energia-solar-energia">Energia Solar (<code>/energia/</code>)</h2>
 <h3 id="visao-geral">Visão geral</h3>
@@ -1427,6 +2547,54 @@ ContaReceber
   <figcaption>Usinas fotovoltaicas cadastradas (`/energia/usinas/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-usina">Tela: Formulário de Nova Usina</h3>
+<figure>
+  <img src="screenshots/energia/09-usina-form.png" alt="Formulário de Nova Usina">
+  <figcaption>Código, nome, capacidade instalada e geração acordada.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Código</td>
+<td>Sim</td>
+<td>Identificador único da usina na empresa</td>
+</tr>
+<tr>
+<td>Nome/Descrição</td>
+<td>Sim</td>
+<td></td>
+</tr>
+<tr>
+<td>Capacidade (kWp)</td>
+<td>Sim</td>
+<td>Potência instalada</td>
+</tr>
+<tr>
+<td>Geração Acordada Mensal/Anual (kWh)</td>
+<td>Não</td>
+<td>Valor contratado/esperado, usado como referência para comparar com a geração real</td>
+</tr>
+<tr>
+<td>Prognóstico Mensal (kWh)</td>
+<td>Não</td>
+<td>Estimativa técnica de geração, mais granular que o valor acordado</td>
+</tr>
+<tr>
+<td>Data de Instalação</td>
+<td>Não</td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <h3 id="tela-detalhe-da-usina">Tela: Detalhe da Usina</h3>
 <figure>
   <img src="screenshots/energia/04-usina-detalhe.png" alt="Detalhe de uma Usina">
@@ -1439,12 +2607,26 @@ ContaReceber
   <figcaption>Unidades consumidoras (`/energia/unidades/`), classificadas como geradora, beneficiária ou convencional.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-unidade-consumidora">Tela: Formulário de Nova Unidade Consumidora</h3>
+<figure>
+  <img src="screenshots/energia/10-unidade-form.png" alt="Formulário de Nova Unidade Consumidora">
+  <figcaption>Número da UC (concessionária), tipo e, se beneficiária, a usina de origem dos créditos.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> informe o número da unidade consumidora (conforme a concessionária de energia), o <strong>Tipo</strong> (Geradora/Beneficiária/Convencional) e, se Beneficiária, a usina que fornece os créditos de compensação.</p>
 <h3 id="tela-lancamentos-mensais">Tela: Lançamentos Mensais</h3>
 <figure>
   <img src="screenshots/energia/06-lancamentos-lista.png" alt="Lançamentos Mensais">
   <figcaption>Lançamentos de geração/consumo por mês (`/energia/lancamentos/`).</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-lancamento-mensal">Tela: Formulário de Novo Lançamento Mensal</h3>
+<figure>
+  <img src="screenshots/energia/11-lancamento-form.png" alt="Formulário de Novo Lançamento Mensal">
+  <figcaption>Usina/unidade, mês de referência, geração e consumo do período.</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> escolha a usina ou unidade consumidora, o <strong>mês de referência</strong>, e informe a geração e/ou consumo (kWh) do período, normalmente lidos da fatura da concessionária ou do sistema de monitoramento da usina.</p>
 <h3 id="tela-relatorios-de-usina">Tela: Relatórios de Usina</h3>
 <figure>
   <img src="screenshots/energia/07-relatorios-usina.png" alt="Relatórios de Usina">
@@ -1457,6 +2639,21 @@ ContaReceber
   <figcaption>Ocorrências registradas por usina (`/energia/ocorrencias/`), com opção de marcar como resolvida.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-nova-ocorrencia">Tela: Formulário de Nova Ocorrência</h3>
+<figure>
+  <img src="screenshots/energia/12-ocorrencia-form.png" alt="Formulário de Nova Ocorrência">
+  <figcaption>Usina afetada, tipo de ocorrência, data e descrição.</figcaption>
+</figure>
+
+<h3 id="fluxo-passo-a-passo-acompanhar-a-geracao-mensal">Fluxo passo a passo — acompanhar a geração mensal</h3>
+<ol>
+<li>Cadastre a <strong>Usina</strong> com capacidade e geração acordada.</li>
+<li>Vincule as <strong>Unidades Consumidoras</strong> beneficiárias à usina.</li>
+<li>Todo mês, registre o <strong>Lançamento Mensal</strong> de geração (da usina) e consumo (de cada unidade).</li>
+<li>Compare no <strong>Consolidado</strong> a geração real contra o acordado/prognóstico.</li>
+<li>Se houver queda de geração ou falha, registre uma <strong>Ocorrência</strong> — isso mantém o histórico de problemas rastreável, em vez de só observar no lançamento mensal.</li>
+<li>Marque a ocorrência como <strong>resolvida</strong> quando o problema for sanado.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
 <ul>
 <li>Uma queda de geração recorrente numa usina deve ser registrada como <strong>ocorrência</strong>, não só observada no lançamento mensal — isso mantém o histórico de problemas rastreável.</li>
@@ -1480,6 +2677,7 @@ ContaReceber
   <figcaption>Empresas visíveis para o usuário logado — um administrador de empresa vê apenas a própria; um superusuário vê todas.</figcaption>
 </figure>
 
+<p>Criar uma nova empresa (botão <strong>Nova Empresa</strong>) é uma ação restrita a <strong>superusuários</strong> — um administrador comum de empresa não vê esse formulário, mesmo estando logado como Administrador da própria empresa.</p>
 <h3 id="tela-painel-admin">Tela: Painel Admin</h3>
 <figure>
   <img src="screenshots/empresas/02-painel-admin.png" alt="Painel Admin">
@@ -1492,7 +2690,20 @@ ContaReceber
   <figcaption>Perfis de permissão (`/empresas/roles/`) que podem ser atribuídos a usuários, com permissões granulares por módulo.</figcaption>
 </figure>
 
-<p>Uma Role pode ser <strong>clonada</strong> ou <strong>personalizada</strong> (fork) a partir de um template existente, em vez de configurar as permissões do zero a cada nova função.</p>
+<h3 id="tela-formulario-de-nova-role">Tela: Formulário de Nova Role</h3>
+<figure>
+  <img src="screenshots/empresas/07-role-form.png" alt="Formulário de Nova Role">
+  <figcaption>Nome, descrição e templates de função sugeridos (Gerente de Compras, Supervisor de Estoque, Operador de Sistema, Analista Financeiro).</figcaption>
+</figure>
+
+<p><strong>Como preencher:</strong> dê um <strong>Nome</strong> descritivo (ex: "Gerente de Compras") e, opcionalmente, uma <strong>Descrição</strong> das responsabilidades. A tela sugere alguns <strong>templates prontos</strong> — clicar em um deles pré-preenche nome/descrição com um papel comum. A função criada é exclusiva da sua empresa (outras empresas não têm acesso a ela).</p>
+<h3 id="fluxo-passo-a-passo-criar-e-usar-uma-funcao-personalizada">Fluxo passo a passo — criar e usar uma função personalizada</h3>
+<ol>
+<li>Crie a Role com nome e descrição (ou parta de um template sugerido).</li>
+<li>Salve — o próximo passo é <strong>configurar as permissões</strong> específicas da função (quais módulos/ações ela permite).</li>
+<li>Se uma função existente for parecida com o que você precisa, use <strong>Clonar</strong> ou <strong>Personalizar</strong> em vez de criar do zero.</li>
+<li>Atribua a função ao(s) usuário(s) desejado(s) em Usuários → editar usuário → campo Funções.</li>
+</ol>
 <h3 id="tela-planos">Tela: Planos</h3>
 <figure>
   <img src="screenshots/empresas/04-planos-lista.png" alt="Planos">
@@ -1508,6 +2719,7 @@ ContaReceber
 <h3 id="dicas-e-erros-comuns">Dicas e erros comuns</h3>
 <ul>
 <li>Antes de criar uma Role do zero, veja se um <strong>template de permissões</strong> existente já cobre a maior parte do que é preciso — é mais rápido clonar e ajustar.</li>
+<li>Precisa de uma nova empresa cadastrada no sistema? Isso exige um superusuário — solicite ao administrador da plataforma.</li>
 </ul>
 <h2 id="usuarios-usuarios">Usuários (<code>/usuarios/</code>)</h2>
 <h3 id="visao-geral_2">Visão geral</h3>
@@ -1518,6 +2730,62 @@ ContaReceber
   <figcaption>Usuários cadastrados (`/usuarios/`), com tipo de acesso e status.</figcaption>
 </figure>
 
+<h3 id="tela-formulario-de-novo-usuario">Tela: Formulário de Novo Usuário</h3>
+<figure>
+  <img src="screenshots/usuarios/05-usuario-form.png" alt="Formulário de Novo Usuário">
+  <figcaption>Formulário em 3 abas: Conta, Dados Pessoais, Senha.</figcaption>
+</figure>
+
+<p><strong>Como preencher (aba Conta):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Obrigatório</th>
+<th>Descrição</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Empresa</td>
+<td>Sim</td>
+<td>Pré-preenchida; só é editável para superusuário</td>
+</tr>
+<tr>
+<td>Usuário</td>
+<td>Sim</td>
+<td>Nome de login único</td>
+</tr>
+<tr>
+<td>E-mail</td>
+<td>Sim</td>
+<td></td>
+</tr>
+<tr>
+<td>Tipo de Usuário</td>
+<td>Sim</td>
+<td>Ex: Funcionário, Administrador, Vendedor — define o escopo geral de acesso</td>
+</tr>
+<tr>
+<td>Funções</td>
+<td>Não</td>
+<td>Lista de múltipla escolha combinando funções <strong>específicas da empresa</strong> (ex: "Gerente de Compras (AGRICOLA SALUTARIS S.A)") e funções <strong>globais</strong> disponíveis a qualquer empresa (ex: "Financeiro (Global)", "Vendedor (Global)") — controla as permissões granulares por módulo</td>
+</tr>
+<tr>
+<td>Ativo</td>
+<td>Não (padrão ligado)</td>
+<td>Desligar em vez de excluir um usuário que saiu da empresa</td>
+</tr>
+</tbody>
+</table>
+<p>A aba <strong>Dados Pessoais</strong> guarda nome completo/telefone; <strong>Senha</strong> define a senha inicial (o usuário pode trocá-la depois em Meu Perfil).</p>
+<h3 id="fluxo-passo-a-passo-criar-um-novo-usuario-com-o-acesso-certo">Fluxo passo a passo — criar um novo usuário com o acesso certo</h3>
+<ol>
+<li>Preencha Usuário, E-mail e <strong>Tipo de Usuário</strong>.</li>
+<li>Atribua as <strong>Funções</strong> necessárias — combine uma função específica da empresa (se existir uma sob medida) com funções globais genéricas, conforme o que a pessoa vai operar no sistema.</li>
+<li>Defina a senha inicial na aba Senha.</li>
+<li>Oriente o novo usuário a ativar o <strong>2FA</strong> no primeiro acesso, em Meu Perfil.</li>
+</ol>
 <h3 id="tela-tipos-de-usuario">Tela: Tipos de Usuário</h3>
 <figure>
   <img src="screenshots/usuarios/02-tipos-lista.png" alt="Tipos de Usuário">
@@ -1527,7 +2795,7 @@ ContaReceber
 <h3 id="tela-logs-de-login">Tela: Logs de Login</h3>
 <figure>
   <img src="screenshots/usuarios/03-registros-login.png" alt="Logs de Login">
-  <figcaption>Histórico de acessos ao sistema (`/usuarios/registros/`), útil para auditoria de segurança.</figcaption>
+  <figcaption>Histórico de acessos ao sistema (`/usuarios/registros/`), com abas de Registros, Anomalias e Alertas — útil para auditoria de segurança.</figcaption>
 </figure>
 
 <h3 id="tela-meu-perfil">Tela: Meu Perfil</h3>
@@ -1540,6 +2808,7 @@ ContaReceber
 <ul>
 <li>Um usuário do tipo <code>PROD</code> (produtor) ou os tipos de portal são automaticamente restritos ao respectivo portal — não têm acesso ao painel administrativo interno.</li>
 <li>Ativar o 2FA em <strong>Meu Perfil</strong> gera códigos de backup — guarde-os, pois são a única forma de recuperar acesso se o dispositivo de autenticação for perdido.</li>
+<li>Um usuário sem nenhuma <strong>Função</strong> atribuída pode logar mas não enxerga a maioria dos módulos — o Tipo de Usuário sozinho não concede permissões granulares.</li>
 </ul>
 <h2 id="dashboard-executivo-metricas-dashboard-executivo">Dashboard Executivo / Métricas (<code>/dashboard-executivo/</code>)</h2>
 <h3 id="visao-geral_3">Visão geral</h3>
@@ -1592,6 +2861,13 @@ ContaReceber
 </tbody>
 </table>
 <p>Estruturalmente equivalente aos demais portais satélites do sistema — <strong>Portal do Fornecedor</strong> e <strong>Portal do Produtor</strong> (acessados a partir do botão "criar acesso" na ficha do fornecedor/produtor, em Cadastros) e <strong>Portal do Motorista</strong> / <strong>Portal do Campo</strong> (a partir de Frota e Ordens de Serviço, respectivamente) — cada um com login e escopo de dados próprios, isolados do painel administrativo interno.</p>
+<h3 id="fluxo-passo-a-passo-dar-acesso-de-portal-a-um-clientefornecedorprodutor">Fluxo passo a passo — dar acesso de portal a um cliente/fornecedor/produtor</h3>
+<ol>
+<li>Abra a ficha do cliente/fornecedor/produtor em Cadastros.</li>
+<li>Use o botão <strong>Criar Acesso Portal</strong> — isso gera um login vinculado àquele cadastro.</li>
+<li>Envie o link/credencial ao parceiro externo.</li>
+<li>Se precisar revogar, use <strong>Bloquear Portal</strong> na mesma ficha — o cadastro continua existindo, só o login externo é desativado.</li>
+</ol>
 <h3 id="dicas-e-erros-comuns_2">Dicas e erros comuns</h3>
 <ul>
 <li>O acesso ao portal de um cliente/fornecedor/produtor pode ser <strong>bloqueado</strong> a qualquer momento a partir da ficha correspondente no sistema interno, sem excluir o cadastro.</li>

@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db import transaction
 from django.db.models import Case, Count, Q, Value, When
 from django.http import HttpResponse, JsonResponse
@@ -67,12 +68,13 @@ def tipo_embalagem_list(request):
     if q:
         qs = qs.filter(nome__icontains=q)
 
-    paginator = Paginator(qs.order_by('nome'), 25)
-    tipos = paginator.get_page(request.GET.get('page'))
+    tipos, per_page, per_page_options = paginate(request, qs.order_by('nome'))
 
     return render(request, 'embalagem/tipo_embalagem/list.html', {
         'tipos': tipos,
         'q': q,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -129,11 +131,13 @@ def ordem_list(request):
         qs = qs.filter(data__gte=data_ini)
     if data_fim:
         qs = qs.filter(data__lte=data_fim)
-    paginator = Paginator(qs.order_by('-criado_em'), 25)
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-criado_em'))
     return render(request, 'embalagem/ordem/list.html', {
-        'page_obj': paginator.get_page(request.GET.get('page')),
+        'page_obj': page_obj,
         'filtros': {'q': q, 'status': status_f, 'data_ini': data_ini, 'data_fim': data_fim},
         'status_choices': OrdemEmbalagem.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -334,13 +338,15 @@ def pallet_list(request):
         'reservados': _stats['reservados'] or 0,
         'carregados': _stats['carregados'] or 0,
     }
-    paginator = Paginator(qs.order_by('-criado_em'), 50)
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-criado_em'))
     return render(request, 'embalagem/pallet/list.html', {
-        'page_obj': paginator.get_page(request.GET.get('page')),
+        'page_obj': page_obj,
         'status_choices': PalletEmbalado.STATUS,
         'filtros': {'q': q, 'status': status_f, 'armazem': armazem_f, 'data_ini': data_ini, 'data_fim': data_fim},
         'armazens': armazens,
         'stats': stats,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -451,9 +457,11 @@ def romaneio_etiquetas_pdf(request, pk):
 def carga_frete_list(request):
     empresa = _get_empresa(request)
     qs = CargaFrete.objects.filter(empresa=empresa, ativo=True).select_related('transportadora')
-    paginator = Paginator(qs.order_by('-data_embarque'), 25)
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data_embarque'))
     return render(request, 'embalagem/carga_frete/list.html', {
-        'page_obj': paginator.get_page(request.GET.get('page')),
+        'page_obj': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -540,12 +548,14 @@ def romaneio_list(request):
         qs = qs.filter(data__gte=data_ini)
     if data_fim:
         qs = qs.filter(data__lte=data_fim)
-    paginator = Paginator(qs.order_by('-criado_em'), 25)
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-criado_em'))
     return render(request, 'embalagem/romaneio/list.html', {
-        'page_obj': paginator.get_page(request.GET.get('page')),
+        'page_obj': page_obj,
         'status_choices': RomaneioVenda.STATUS,
         'tipo_choices': RomaneioVenda.TIPO,
         'filtros': {'q': q, 'status': status_f, 'tipo': tipo_f, 'data_ini': data_ini, 'data_fim': data_fim},
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -39,8 +40,7 @@ def conta_list(request):
         for tipo_key, tipo_label in TIPO_CONTA_CHOICES
     ]
 
-    paginator = Paginator(contas, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, contas)
 
     return render(request, 'plano_contas/conta_list.html', {
         'page_obj': page_obj,
@@ -49,6 +49,8 @@ def conta_list(request):
         'ativo_filter': ativo_filter,
         'tipos': TIPO_CONTA_CHOICES,
         'totais_lista': totais_lista,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -238,13 +240,14 @@ def centro_list(request):
     else:
         centros = centros.filter(ativo=True)
 
-    paginator = Paginator(centros, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, centros)
 
     return render(request, 'plano_contas/centro_list.html', {
         'page_obj': page_obj,
         'q': q,
         'ativo_filter': ativo_filter,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

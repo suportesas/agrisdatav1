@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 
@@ -127,13 +128,14 @@ def empresa_list(request):
         html = render_to_string('empresas/_empresa_table.html', {'empresas': empresas}, request=request)
         return JsonResponse({'html': html})
 
-    paginator = Paginator(empresas.order_by('nome'), 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, empresas.order_by('nome'))
 
     return render(request, 'empresas/empresa_list.html', {
         'empresas': page_obj,
         'status': status,
         'q': q,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -831,10 +833,13 @@ def plano_list(request):
     for plano in planos:
         plano.total_empresas_ativas = plano.empresas.filter(ativa=True).count()
 
-    paginator = Paginator(planos, 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, planos)
 
-    return render(request, 'empresas/plano_list.html', {'planos': page_obj})
+    return render(request, 'empresas/plano_list.html', {
+        'planos': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
 
 
 @login_required

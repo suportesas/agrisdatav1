@@ -49,6 +49,7 @@
           <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
           <input type="search" name="busca" class="form-control" placeholder="Buscar empresa..." value="{{ busca }}">
         </div>
+        {% include 'partials/per_page_select.html' with col_class='filter-field' %}
         <div class="filter-actions">
             <button type="submit" class="btn btn-primary">
                 <i class="bi bi-search"></i> Filtrar

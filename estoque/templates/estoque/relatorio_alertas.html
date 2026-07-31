@@ -55,6 +55,12 @@
         </div>
     </div>
 
+    <div class="d-flex justify-content-end mb-3">
+      <form method="get" class="row g-2 align-items-end" id="filterForm">
+        {% include 'partials/per_page_select.html' with col_class='' %}
+      </form>
+    </div>
+
     <!-- Alertas Críticos -->
     {% if alertas_criticos %}
     <div class="card shadow-sm border-0 rounded-4 mb-4">
@@ -137,6 +143,11 @@
                 </div>
                 {% endif %}
             </form>
+            {% if alertas_criticos.paginator %}
+            <div class="card-footer">
+                {% include 'partials/pagination.html' with page_obj=alertas_criticos page_param='page_criticos' %}
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}
@@ -184,6 +195,11 @@
                     </tbody>
                 </table>
             </div>
+            {% if alertas_excesso.paginator %}
+            <div class="card-footer">
+                {% include 'partials/pagination.html' with page_obj=alertas_excesso page_param='page_excesso' %}
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}

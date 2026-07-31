@@ -122,7 +122,7 @@
                 <td class="text-mono">{{ nf.data_emissao|date:"d/m/Y" }}</td>
                 <td>{{ nf.cliente.razao_social }}</td>
                 <td class="text-end text-mono">R$ {{ nf.valor_total|floatformat:"2g" }}</td>
-                <td><span class="badge bg-secondary">{{ nf.cfop }}</span></td>
+                <td><span class="badge bg-secondary">{{ nf.get_entrada_saida_display }}</span></td>
                 <td class="text-center"><span class="badge bg-warning text-dark">Pendente</span></td>
                 <td>
                   {% if nf.chave_acesso %}

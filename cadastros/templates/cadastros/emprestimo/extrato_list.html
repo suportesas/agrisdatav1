@@ -105,6 +105,7 @@
             <label class="form-check-label" for="{{ form.apenas_mensagens_nao_lidas.id_for_label }}">Apenas com mensagens não lidas</label>
           </div>
         </div>
+        {% include 'partials/per_page_select.html' with col_class='col-md-3' %}
         <div class="col-md-9 text-end">
           <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>Filtrar</button>
           <a href="{% url 'emprestimos:emprestimo_extrato' %}" class="btn btn-outline-secondary">Limpar</a>

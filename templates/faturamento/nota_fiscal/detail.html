@@ -24,7 +24,7 @@
             {% else %}—{% endif %}
           </span>
           <span><i class="bi bi-calendar3 me-1"></i>{{ nf.data_emissao|date:"d/m/Y" }}</span>
-          <span>CFOP {{ nf.cfop }}</span>
+          <span>{{ nf.get_entrada_saida_display }}</span>
         </p>
       </div>
     </div>
@@ -320,7 +320,7 @@
               </dd>
             </div>
             <div class="kv-row"><dt>Natureza da Operação</dt><dd>{{ nf.natureza_operacao }}</dd></div>
-            <div class="kv-row"><dt>CFOP</dt><dd>{{ nf.cfop }}</dd></div>
+            <div class="kv-row"><dt>Tipo de Operação</dt><dd>{{ nf.get_entrada_saida_display }}</dd></div>
             <div class="kv-row"><dt>Data Emissão</dt><dd>{{ nf.data_emissao|date:"d/m/Y" }}</dd></div>
             <div class="kv-row"><dt>Data Saída</dt><dd>{{ nf.data_saida|date:"d/m/Y"|default:"—" }}</dd></div>
             <div class="kv-row"><dt>Frete</dt><dd>{{ nf.get_modalidade_frete_display }}</dd></div>

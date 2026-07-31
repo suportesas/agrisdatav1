@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -92,10 +93,12 @@ def lote_list(request):
     q = request.GET.get('q', '')
     if q:
         qs = qs.filter(numero_lote__icontains=q)
-    paginator = Paginator(qs.order_by('-criado_em'), 25)
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-criado_em'))
     return render(request, 'etiquetas_avulsas/lote/list.html', {
-        'page_obj': paginator.get_page(request.GET.get('page')),
+        'page_obj': page_obj,
         'q': q,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

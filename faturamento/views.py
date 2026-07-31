@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -356,8 +357,7 @@ def nota_fiscal_list(request):
         qs = qs.filter(data_emissao__lte=data_fim)
 
     qs = qs.order_by('-data_emissao', '-numero')
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'faturamento/nota_fiscal/list.html', {
         'page_obj': page_obj,
@@ -366,6 +366,8 @@ def nota_fiscal_list(request):
         'data_ini': data_ini,
         'data_fim': data_fim,
         'status_choices': NotaFiscal.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -454,7 +456,6 @@ def nota_fiscal_create(request):
         initial = {}
         if config:
             initial['natureza_operacao'] = config.natureza_operacao_padrao
-            initial['cfop'] = config.cfop_venda_interna
             initial['informacoes_complementares'] = config.observacoes_padrao_nfe
         form = NotaFiscalForm(empresa=empresa, initial=initial)
         formset = ItemNotaFiscalFormSet(prefix='itens',
@@ -1874,8 +1875,6 @@ def nota_fiscal_devolucao(request, pk):
         nf_dev.natureza_operacao       = 'DEVOLUÇÃO DE VENDA'
         nf_dev.nota_mae                = None
         nf_dev.status_faturamento      = 'NAO_APLICA'
-        # CFOP cabeçalho: converte via tabela SEFAZ (7127→3211, 6101→2201, etc.)
-        nf_dev.cfop = _cfop_devolucao(nf_dev.cfop)
         # Não preenche chave_nfe_referenciada nem NFeReferenciada (NFref de
         # cabeçalho): a regra VC02-14 (NT 2025.002-RTC v1.50) proíbe o NFref
         # de cabeçalho em devolução de mercadoria — o referenciamento é feito
@@ -1911,6 +1910,10 @@ def nota_fiscal_devolucao(request, pk):
                     item.di_uf_desembaraco = nf_orig.embarque_uf
                 # di_numero_drawback deixado em branco — usuário preenche com o ato concessório real
             item.save()
+
+        # nf_dev foi clonada de nf_orig (que é uma saída autorizada) — sem isso,
+        # entrada_saida ficaria herdado como Saída mesmo sendo devolução (Entrada).
+        nf_dev.calcular_totais()
 
     messages.info(
         request,
@@ -2297,8 +2300,7 @@ def invoice_list(request):
         qs = qs.filter(data_emissao__lte=data_fim)
 
     qs = qs.order_by('-data_emissao')
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'faturamento/invoice/list.html', {
         'page_obj': page_obj,
@@ -2307,6 +2309,8 @@ def invoice_list(request):
         'data_ini': data_ini,
         'data_fim': data_fim,
         'status_choices': InvoiceExportacao.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -2606,14 +2610,15 @@ def packing_list_list(request):
         qs = qs.filter(Q(numero__icontains=q) | Q(invoice__numero__icontains=q))
 
     qs = qs.order_by('-data_emissao')
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'faturamento/packing_list/list.html', {
         'page_obj': page_obj,
         'status_filter': status_filter,
         'q': q,
         'status_choices': PackingList.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -2773,14 +2778,15 @@ def instrucao_embarque_list(request):
         qs = qs.filter(Q(numero__icontains=q) | Q(invoice__numero__icontains=q))
 
     qs = qs.order_by('-data_emissao')
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'faturamento/instrucao_embarque/list.html', {
         'page_obj': page_obj,
         'status_filter': status_filter,
         'q': q,
         'status_choices': InstrucaoEmbarque.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -2929,14 +2935,15 @@ def minuta_list(request):
         qs = qs.filter(Q(numero__icontains=q) | Q(invoice__numero__icontains=q))
 
     qs = qs.order_by('-data_emissao')
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'faturamento/minuta/list.html', {
         'page_obj': page_obj,
         'status_filter': status_filter,
         'q': q,
         'status_choices': Minuta.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -3270,8 +3277,7 @@ def dfe_list(request):
         schema='resNFe', situacao='1', manifestacao_tipo='',
     ).exclude(cnpj_emitente=_SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or '')).count()
 
-    paginator = Paginator(qs, 30)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'faturamento/dfe_list.html', {
         'config': config,
@@ -3289,6 +3295,8 @@ def dfe_list(request):
         'total_canceladas': total_canceladas,
         'total_pendente_manifestacao': total_pendente_manifestacao,
         'cnpj_empresa': _SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or ''),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -3562,6 +3570,27 @@ def ajax_produto_detail(request, pk):
     # Unidade tributável = unidade_medida quando difere da unidade_venda; caso contrário KG (fallback peso)
     un_trib = un_med_sigla if (un_med_sigla and un_med_sigla != un_venda_sigla) else ''
 
+    # Resolve a tributação correta a partir do cadastro do cliente — mesma
+    # regra do Pedido de Venda (produtos.tributacao.resolver_tributacao_venda):
+    # dentro do estado / fora do estado (interestadual) / exportação. O tipo
+    # de venda não é escolhido manualmente nem depende do CFOP digitado no
+    # cabeçalho — vem direto do cadastro do cliente (uf_fiscal() retorna 'EX'
+    # para cliente do exterior). Só se aplica a NF-e de saída (com cliente);
+    # NF-e de entrada (fornecedor) mantém a seleção manual/por CFOP.
+    tributacao_sugerida_cfop = None
+    tributacao_sugerida_erro = None
+    cliente_id = request.GET.get('cliente_id')
+    if cliente_id:
+        from cadastros.models import Cliente
+        from produtos.tributacao import resolver_tributacao_venda
+        cliente = Cliente.objects.filter(pk=cliente_id, empresa=empresa).first()
+        tipo_venda = 'EXPORTACAO' if (cliente and cliente.uf_fiscal() == 'EX') else 'MERCADO_INTERNO'
+        resultado = resolver_tributacao_venda(produto, empresa, cliente, tipo_venda)
+        if resultado.ok:
+            tributacao_sugerida_cfop = resultado.cfop_codigo
+        else:
+            tributacao_sugerida_erro = resultado.mensagem
+
     return JsonResponse({
         'nome': produto.nome,
         'ncm': produto.ncm.codigo if produto.ncm_id else '',
@@ -3574,6 +3603,8 @@ def ajax_produto_detail(request, pk):
         'fator_conversao': fator,
         'unidade_tributavel': un_trib,
         'tributacoes': tributacoes,
+        'tributacao_sugerida_cfop': tributacao_sugerida_cfop,
+        'tributacao_sugerida_erro': tributacao_sugerida_erro,
     })
 
 
@@ -3804,6 +3835,99 @@ def ajax_cotacao_bcb(request):
     })
 
 
+@login_required
+def ajax_gerar_infcpl(request):
+    """
+    Gera o texto de "Informações Complementares" da NF-e a partir do
+    texto-base configurado em ConfiguracaoFiscal + dados de rastreabilidade
+    (mercado interno) ou de embarque/drawback/PTAX (exportação).
+
+    Query params:
+        tipo               — 'interna' ou 'exportacao'
+        rastreabilidade    — número de rastreabilidade digitado na NF
+        data_emissao        — data ISO da NF (usada para buscar o PTAX do dia útil anterior)
+        produtos            — nomes dos produtos dos itens da NF, já concatenados (só exportação)
+        ordem_coleta_id     — pk de exportacao.OrdemColeta (só exportação)
+        ato_id              — pk de drawback.AtoConcessorio (só exportação)
+    """
+    from datetime import date
+
+    from drawback.models import AtoConcessorio
+    from exportacao.models import OrdemColeta
+
+    from .services.infcpl import montar_texto_infcpl_exportacao, montar_texto_infcpl_interna
+
+    empresa = _get_empresa(request)
+
+    try:
+        config = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+        texto_base = config.texto_isencao_icms if config else ''
+
+        tipo = request.GET.get('tipo', 'interna')
+        rastreabilidade = request.GET.get('rastreabilidade', '').strip()
+
+        if tipo != 'exportacao':
+            texto = montar_texto_infcpl_interna(texto_base=texto_base, numero_rastreabilidade=rastreabilidade)
+            return JsonResponse({'texto': texto})
+
+        ordem_coleta_id = request.GET.get('ordem_coleta_id', '').strip()
+        ato_id = request.GET.get('ato_id', '').strip()
+        ordem_coleta = OrdemColeta.objects.filter(
+            empresa=empresa, pk=ordem_coleta_id,
+        ).select_related('booking', 'container').first() if ordem_coleta_id else None
+        ato_concessorio = AtoConcessorio.objects.filter(
+            empresa=empresa, pk=ato_id,
+        ).first() if ato_id else None
+
+        booking = navio = numero_container = lacre_fiscal = lacre_g7 = numero_tale = ''
+        tara_container = None
+        if ordem_coleta:
+            if ordem_coleta.booking:
+                booking = ordem_coleta.booking.codigo
+                navio = ordem_coleta.booking.rota_navio
+            lacre_fiscal = ordem_coleta.lacre_fiscal
+            lacre_g7 = ordem_coleta.lacre_g7
+            if ordem_coleta.container:
+                numero_container = ordem_coleta.container.numero_container
+                tara_container = ordem_coleta.container.tara_container
+                numero_tale = ordem_coleta.container.numero_tale
+                lacre_fiscal = lacre_fiscal or ordem_coleta.container.lacre_fiscal
+                lacre_g7 = lacre_g7 or ordem_coleta.container.lacre_g7
+
+        ptax_eur = ptax_data = None
+        data_param = request.GET.get('data_emissao', '')
+        try:
+            data_emissao = date.fromisoformat(data_param) if data_param else date.today()
+        except ValueError:
+            data_emissao = date.today()
+        try:
+            from .bcb import buscar_cotacoes
+            resultado = buscar_cotacoes(moedas=['EUR'], referencia=data_emissao)
+            ptax_eur = resultado['cotacoes']['EUR']['venda']
+            ptax_data = resultado['data']
+        except Exception:
+            pass
+
+        texto = montar_texto_infcpl_exportacao(
+            texto_base=texto_base,
+            ato_concessorio=ato_concessorio,
+            produtos_desc=request.GET.get('produtos', '').strip(),
+            booking=booking,
+            navio=navio,
+            numero_container=numero_container,
+            lacre_fiscal=lacre_fiscal,
+            tara_container=tara_container,
+            lacre_g7=lacre_g7,
+            numero_tale=numero_tale,
+            numero_rastreabilidade=rastreabilidade,
+            ptax_eur=ptax_eur,
+            ptax_data=ptax_data,
+        )
+        return JsonResponse({'texto': texto})
+    except Exception as e:
+        return JsonResponse({'erro': f'Erro ao gerar informações complementares: {e}'}, status=500)
+
+
 # ───────────────────────── Histórico de Cotações BCB ─────────────────────
 
 @login_required
@@ -3840,14 +3964,15 @@ def cotacoes_bcb_list(request):
         for d in sorted(por_data.keys(), reverse=True)
     ]
 
-    paginator = Paginator(linhas, 30)
-    linhas_page = paginator.get_page(request.GET.get('page'))
+    linhas_page, per_page, per_page_options = paginate(request, linhas)
 
     return render(request, 'faturamento/cotacoes_bcb/list.html', {
         'linhas': linhas_page,
         'data_ini': data_ini_str,
         'data_fim': data_fim_str,
         'total': len(linhas),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -3915,11 +4040,12 @@ def cte_list(request):
             Q(destinatario__razao_social__icontains=q) |
             Q(chave_acesso__icontains=q)
         )
-    paginator = Paginator(qs, 20)
-    page = paginator.get_page(request.GET.get('page'))
+    page, per_page, per_page_options = paginate(request, qs)
     return render(request, 'faturamento/cte/list.html', {
         'page_obj': page, 'status_filtro': status, 'q': q,
         'status_choices': ConhecimentoTransporte.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -5212,11 +5338,12 @@ def mdfe_list(request):
     q = request.GET.get('q', '')
     if q:
         qs = qs.filter(Q(motorista__nome__icontains=q) | Q(chave_acesso__icontains=q))
-    paginator = Paginator(qs, 20)
-    page = paginator.get_page(request.GET.get('page'))
+    page, per_page, per_page_options = paginate(request, qs)
     return render(request, 'faturamento/mdfe/list.html', {
         'page_obj': page, 'status_filtro': status, 'q': q,
         'status_choices': ManifestoDocumentoFiscal.STATUS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

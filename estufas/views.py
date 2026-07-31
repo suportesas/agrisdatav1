@@ -4,6 +4,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Count, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -41,18 +42,15 @@ def estufa_list(request):
 
     fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True)
 
-    paginator = Paginator(estufas.order_by('nome'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        estufas_page = paginator.page(page)
-    except Exception:
-        estufas_page = paginator.page(1)
+    estufas_page, per_page, per_page_options = paginate(request, estufas.order_by('nome'))
 
     return render(request, 'cadastros/estufas/estufa_list.html', {
         'estufas': estufas_page,
         'fazendas': fazendas,
         'fazenda_selecionada': fazenda_id,
         'title': 'Estufas',
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -151,12 +149,7 @@ def lote_muda_list(request):
         .annotate(total=Count('id'))
     )
 
-    paginator = Paginator(qs.order_by('-data_semeadura'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        lotes_page = paginator.page(page)
-    except Exception:
-        lotes_page = paginator.page(1)
+    lotes_page, per_page, per_page_options = paginate(request, qs.order_by('-data_semeadura'))
 
     return render(request, 'cadastros/estufas/lote_muda_list.html', {
         'lotes': lotes_page,
@@ -168,6 +161,8 @@ def lote_muda_list(request):
         'cultura_selecionada': cultura_id,
         'contagem_status': contagem_status,
         'title': 'Lotes de Mudas',
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

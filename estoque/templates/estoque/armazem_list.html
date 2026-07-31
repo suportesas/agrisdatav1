@@ -41,6 +41,9 @@
         de <strong>{{ armazens.paginator.count }}</strong> armaz{{ armazens.paginator.count|pluralize:"ém,éns" }}
       {% endif %}
     </span>
+    <form method="get" class="row g-2 align-items-end" id="filterForm">
+      {% include 'partials/per_page_select.html' with col_class='' %}
+    </form>
   </div>
 
   <!-- Lista -->

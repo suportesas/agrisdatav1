@@ -127,6 +127,14 @@
                 <label class="form-label">Observações Padrão Invoice</label>
                 {{ form.observacoes_padrao_invoice }}
               </div>
+              <div class="col-md-6">
+                <label class="form-label">Texto Padrão Isenção ICMS (NF-e)</label>
+                {{ form.texto_isencao_icms }}
+                <div class="form-text">
+                  Usado pelo botão "Gerar automaticamente" das Informações Complementares da NF-e,
+                  tanto para mercado interno quanto para exportação.
+                </div>
+              </div>
               <div class="col-12">
                 <div class="form-check">
                   {{ form.dfe_manifestar_ciencia_automatica }}

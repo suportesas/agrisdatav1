@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -30,8 +31,7 @@ def produtor_list(request):
     if status in {'ATIVO', 'INATIVO'}:
         produtores = produtores.filter(status=status)
 
-    paginator = Paginator(produtores.order_by('razao_social'), 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, produtores.order_by('razao_social'))
 
     from decimal import Decimal
     from emprestimos.models import EmprestimoProdutor
@@ -52,6 +52,8 @@ def produtor_list(request):
             'emprestimo_total_entrada': total_entrada,
             'emprestimo_total_saida': total_saida,
             'emprestimo_total_saldo': total_entrada - total_saida,
+            'per_page': per_page,
+            'per_page_options': per_page_options,
         },
     )
 

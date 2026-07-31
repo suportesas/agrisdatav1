@@ -129,7 +129,7 @@
                   <div class="row g-2 align-items-center">
                     <div class="col-md-4">
                       <label class="form-label fw-semibold mb-1">
-                        <i class="bi bi-diagram-3 me-1" style="color:var(--color-primary-dark);"></i>Tipo de Operação
+                        <i class="bi bi-diagram-3 me-1" style="color:var(--color-primary-dark);"></i>Fluxo de Faturamento
                       </label>
                       {{ form.tipo_operacao }}
                       {% if form.tipo_operacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_operacao.errors|striptags }}</div>{% endif %}
@@ -168,8 +168,7 @@
                 {{ form.finalidade_nfe }}
               </div>
               <div class="field col-3">
-                <label class="form-label">CFOP Padrão
-                  <span id="badge-tp-nf" class="badge ms-1 bg-secondary" style="font-size:.7rem;" title="Tipo NF derivado do CFOP (tpNF)">—</span>
+                <label class="form-label">Tipo de Operação
                   <span id="icon-cfop-devolucao-ext" style="display:none"
                         data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="right" data-bs-html="true"
                         data-bs-title="<i class='bi bi-info-circle-fill text-primary me-1'></i>Retorno de Exportação"
@@ -177,7 +176,7 @@
                     <i class="bi bi-question-circle-fill text-primary" style="cursor:pointer;font-size:.9rem"></i>
                   </span>
                 </label>
-                {{ form.cfop }}
+                {{ form.entrada_saida }}
               </div>
               <div class="field col-3">
                 <label class="form-label">Data de Saída</label>
@@ -331,6 +330,17 @@
               <div class="col-md-5">
                 <label class="form-label mb-1 small fw-semibold">Local do Despacho <small class="text-muted">(opcional)</small></label>
                 {{ form.embarque_local_despacho }}
+              </div>
+            </div>
+            <div class="row g-2 align-items-end mt-1">
+              <div class="col-md-6">
+                <label class="form-label mb-1 small fw-semibold">Ordem de Coleta</label>
+                {{ form.ordem_coleta }}
+                <div class="form-text">Fonte de booking, navio, container, lacres e tara para o texto automático.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label mb-1 small fw-semibold">Ato Concessório (Drawback)</label>
+                {{ form.ato_concessorio }}
               </div>
             </div>
           </div>
@@ -1455,12 +1465,22 @@
           <div class="form-section-body">
             <div class="form-grid">
               <div class="field col-6">
-                <label class="form-label small text-muted mb-1">Inf. Complementares (infCpl)</label>
+                <label class="form-label small text-muted mb-1 d-flex justify-content-between align-items-center">
+                  <span>Inf. Complementares (infCpl)</span>
+                  <button type="button" class="btn btn-link btn-sm p-0 text-success" id="btn-gerar-infcpl"
+                          title="Gerar automaticamente a partir do texto padrão, rastreabilidade e (se exportação) ordem de coleta/drawback/PTAX">
+                    <i class="bi bi-magic me-1"></i>Gerar automaticamente
+                  </button>
+                </label>
                 {{ form.informacoes_complementares }}
               </div>
               <div class="field col-6">
                 <label class="form-label small text-muted mb-1">Inf. para o Fisco (infAdFisco)</label>
                 {{ form.informacoes_fisco }}
+              </div>
+              <div class="field col-3">
+                <label class="form-label small text-muted mb-1">Nº de Rastreabilidade</label>
+                {{ form.numero_rastreabilidade }}
               </div>
             </div>
           </div>
@@ -1871,8 +1891,13 @@ function calcIpi(mainRow, fiscalRow) {
     const vu  = parseFloat(mainRow.querySelector('input[name$="-valor_unitario"]')?.value) || 0;
     const qtEl = fiscalRow?.querySelector('input[name$="-quantidade_tributavel"]');
     const vuEl = fiscalRow?.querySelector('input[name$="-valor_unitario_tributavel"]');
-    if (qtEl) qtEl.value = (qtd * fator).toFixed(4);
-    if (vuEl) vuEl.value = (fator > 0 ? vu / fator : 0).toFixed(4);
+    const setVal = (el, val) => {
+      if (!el) return;
+      if (window.MoneyMask && el.classList.contains('money-mask-input')) MoneyMask.setValue(el, val);
+      else el.value = val;
+    };
+    setVal(qtEl, (qtd * fator).toFixed(4));
+    setVal(vuEl, (fator > 0 ? vu / fator : 0).toFixed(4));
   }
 
   function toggleColTributavel() {
@@ -1987,7 +2012,7 @@ function calcIpi(mainRow, fiscalRow) {
   }
 
   // ── Seletor de tributação (múltiplas regras) ──────────────────────
-  function injectTributacaoSelector(fiscalRow, tributacoes, onSelect, selectedIdx) {
+  function injectTributacaoSelector(fiscalRow, tributacoes, onSelect, selectedIdx, sugeridaCfop) {
     fiscalRow.querySelector('.trib-selector-wrap')?.remove();
     if (!tributacoes || tributacoes.length <= 1) return;
 
@@ -1995,13 +2020,14 @@ function calcIpi(mainRow, fiscalRow) {
     const wrap  = document.createElement('div');
     wrap.className = 'trib-selector-wrap col-12 mb-2 px-1';
 
-    const cfopHeader = document.getElementById('id_cfop')?.value?.trim();
-    const matched    = tributacoes[idx]?.cfop === cfopHeader;
-    const labelHtml  = cfopHeader
-      ? (matched
-          ? `<i class="bi bi-check-circle-fill text-success me-1"></i>Regra fiscal para CFOP <strong>${cfopHeader}</strong> aplicada automaticamente`
-          : `<i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>CFOP <strong>${cfopHeader}</strong> sem regra cadastrada — selecione manualmente`)
-      : `<i class="bi bi-collection me-1"></i>Selecione a regra fiscal do produto`;
+    let labelHtml;
+    if (sugeridaCfop) {
+      // Resolvida a partir da UF do cliente (produtos.tributacao.resolver_tributacao_venda) —
+      // fonte de verdade; não depende de CFOP de cabeçalho (esse campo não existe mais).
+      labelHtml = `<i class="bi bi-check-circle-fill text-success me-1"></i>Regra fiscal para CFOP <strong>${sugeridaCfop}</strong> aplicada a partir do cliente`;
+    } else {
+      labelHtml = `<i class="bi bi-collection me-1"></i>Selecione a regra fiscal do produto`;
+    }
 
     wrap.innerHTML = `
       <div class="alert alert-light border py-1 px-2 mb-1 small d-flex align-items-center gap-2" style="font-size:.8rem;">
@@ -2019,11 +2045,12 @@ function calcIpi(mainRow, fiscalRow) {
     if (inner) inner.prepend(wrap);
   }
 
-  // ── Retorna a tributação que melhor casa com o CFOP do cabeçalho ──
-  function escolherTributacao(tributacoes) {
+  // ── Retorna a tributação a aplicar: prioriza a resolvida pela UF do
+  // cliente (sugeridaCfop, vinda do servidor); cai para a tributação
+  // marcada como padrão e, por fim, para a primeira ──
+  function escolherTributacao(tributacoes, sugeridaCfop) {
     if (!tributacoes || tributacoes.length === 0) return { trib: null, idx: -1 };
-    const cfopHeader = document.getElementById('id_cfop')?.value?.trim() || '';
-    let idx = cfopHeader ? tributacoes.findIndex(t => t.cfop === cfopHeader) : -1;
+    let idx = sugeridaCfop ? tributacoes.findIndex(t => t.cfop === sugeridaCfop) : -1;
     if (idx < 0) idx = tributacoes.findIndex(t => t.padrao);   // fallback: tributação padrão
     if (idx < 0) idx = 0;                                        // fallback: primeira
     return { trib: tributacoes[idx], idx };
@@ -2201,88 +2228,119 @@ function calcIpi(mainRow, fiscalRow) {
     calcIpi(row, fiscalRow);
   }
 
+  // ── AJAX: carrega dados/tributação do produto selecionado ──────────
+  // Reaproveitada tanto na troca do <select> de produto quanto na
+  // revalidação de itens já preenchidos (troca de cliente/CFOP), já que a
+  // tributação sugerida é resolvida no servidor a partir da UF do cliente
+  // (produtos.tributacao.resolver_tributacao_venda) e depende desses campos.
+  function carregarTributacaoProduto(mainRow, rowFiscal, pk) {
+    if (!pk) { updateFiscalBadge(mainRow, rowFiscal); return; }
+
+    // Tipo de venda (interno/interestadual/exportação) não é escolhido aqui —
+    // o servidor deriva do cadastro do cliente (uf_fiscal()), não do CFOP
+    // digitado no cabeçalho.
+    const clienteId = document.getElementById('id_cliente')?.value || '';
+    const params = new URLSearchParams();
+    if (clienteId) params.set('cliente_id', clienteId);
+
+    fetch(`/faturamento/ajax/produto/${pk}/?${params.toString()}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.erro) return;
+
+        const desc = rowFiscal?.querySelector('input[name$="-descricao"]');
+        if (desc) desc.value = data.nome || '';
+        const un = mainRow.querySelector('input[name$="-unidade"]');
+        if (un) un.value = data.unidade || '';
+        const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
+        if (vu) vu.value = data.preco_venda || '';
+
+        mainRow._pesoLiq        = parseFloat(data.peso_liquido_unitario) || 0;
+        mainRow._pesoBruto      = parseFloat(data.peso_bruto_unitario)   || 0;
+        mainRow._fatorConversao = parseFloat(data.fator_conversao) || 1;
+        mainRow._unidadeTrib    = data.unidade_tributavel || '';
+
+        // Preenche unidade tributável a partir do cadastro do produto
+        const utEl = rowFiscal?.querySelector('input[name$="-unidade_tributavel"]');
+        if (utEl && data.unidade_tributavel) utEl.value = data.unidade_tributavel;
+
+        recalcularTotais();
+        atualizarTributavel(mainRow);
+        toggleColTributavel();
+
+        const setF = (sel, val) => {
+          const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
+          if (el && val !== undefined && val !== null) el.value = val;
+        };
+        setF('input[name$="-ncm"]',                data.ncm);
+        setF('input[name$="-cest"]',               data.cest);
+        setF('select[name$="-origem_mercadoria"]',  data.origem_mercadoria);
+
+        const tributacoes  = data.tributacoes || [];
+        const sugeridaCfop = data.tributacao_sugerida_cfop || null;
+        const sugeridaErro = data.tributacao_sugerida_erro || null;
+        rowFiscal?.querySelector('.trib-no-data-warn')?.remove();
+        rowFiscal?.querySelector('.trib-selector-wrap')?.remove();
+
+        // Guardar tributações e sugestão no row para re-aplicar quando o
+        // CFOP do cabeçalho ou o cliente mudarem
+        mainRow._tributacoes = tributacoes;
+        mainRow._tributacaoSugeridaCfop = sugeridaCfop;
+
+        if (tributacoes.length === 0) {
+          if (rowFiscal) {
+            rowFiscal.style.display = '';
+            mainRow.querySelector('.btn-toggle-fiscal i').className = 'bi bi-chevron-up';
+            if (!rowFiscal.querySelector('.trib-no-data-warn')) {
+              const warn = document.createElement('div');
+              warn.className = 'trib-no-data-warn px-1 mb-2';
+              warn.innerHTML = '<div class="alert alert-warning py-1 px-2 small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Produto sem tributação cadastrada — preencha os campos manualmente.</div>';
+              rowFiscal.querySelector('td > div')?.prepend(warn);
+            }
+          }
+        } else {
+          // Quando a resolução por cliente falhou (UF ausente, mais de uma
+          // regra sem "padrão" marcada etc.), avisa com a mensagem específica
+          // mas ainda aplica um fallback (CFOP do cabeçalho/padrão) para não
+          // deixar os campos fiscais vazios.
+          if (sugeridaErro && rowFiscal) {
+            rowFiscal.style.display = '';
+            mainRow.querySelector('.btn-toggle-fiscal i').className = 'bi bi-chevron-up';
+            if (!rowFiscal.querySelector('.trib-no-data-warn')) {
+              const warn = document.createElement('div');
+              warn.className = 'trib-no-data-warn px-1 mb-2';
+              warn.innerHTML = `<div class="alert alert-warning py-1 px-2 small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>${sugeridaErro}</div>`;
+              rowFiscal.querySelector('td > div')?.prepend(warn);
+            }
+          }
+          const { trib, idx } = escolherTributacao(tributacoes, sugeridaErro ? null : sugeridaCfop);
+          applyTributacao(mainRow, rowFiscal, trib);
+          // Resolvida automaticamente pelo cadastro do cliente (exterior/
+          // interno/interestadual) — aplica direto, sem pedir pro usuário
+          // escolher. O seletor manual só aparece quando não dá pra resolver
+          // com confiança (sem cliente, sem UF, ou mais de uma regra "padrão").
+          if (rowFiscal && (!sugeridaCfop || sugeridaErro)) {
+            injectTributacaoSelector(rowFiscal, tributacoes, t => applyTributacao(mainRow, rowFiscal, t), idx, null);
+          }
+        }
+
+        updateFiscalBadge(mainRow, rowFiscal);
+        recalcularTotais();
+      })
+      .catch(() => {});
+  }
+
   // ── AJAX: produto selecionado ─────────────────────────────────────
+  // A troca do <select> de produto é ouvida via delegação jQuery no bloco
+  // extra_js (evento 'select2:select'/'select2:clear', não 'change' nativo —
+  // o Select2 dispara a troca só via $.trigger('change'), que NÃO chama o
+  // addEventListener nativo por não existir elem.change() na <select>; ver
+  // window.__nfCarregarTributacaoProduto mais abaixo).
   function attachProdutoAjax(mainRow) {
     const fiscalRow = mainRow.nextElementSibling;
     const rowFiscal = fiscalRow?.classList.contains('item-fiscal-row') ? fiscalRow : null;
     const prodSel   = mainRow.querySelector('select[name$="-produto"]');
     if (!prodSel) return;
-
-    // Inicializa Select2 se já carregado (extra_js), caso contrário aguarda
-    if (typeof window.initSelect2Produto === 'function') {
-      window.initSelect2Produto(prodSel);
-    } else {
-      document.addEventListener('select2:ready', () => window.initSelect2Produto(prodSel), { once: true });
-    }
-
-    prodSel.addEventListener('change', function () {
-      const pk = this.value;
-      if (!pk) { updateFiscalBadge(mainRow, rowFiscal); return; }
-
-      fetch(`/faturamento/ajax/produto/${pk}/`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.erro) return;
-
-          const desc = rowFiscal?.querySelector('input[name$="-descricao"]');
-          if (desc) desc.value = data.nome || '';
-          const un = mainRow.querySelector('input[name$="-unidade"]');
-          if (un) un.value = data.unidade || '';
-          const vu = mainRow.querySelector('input[name$="-valor_unitario"]');
-          if (vu) vu.value = data.preco_venda || '';
-
-          mainRow._pesoLiq        = parseFloat(data.peso_liquido_unitario) || 0;
-          mainRow._pesoBruto      = parseFloat(data.peso_bruto_unitario)   || 0;
-          mainRow._fatorConversao = parseFloat(data.fator_conversao) || 1;
-          mainRow._unidadeTrib    = data.unidade_tributavel || '';
-
-          // Preenche unidade tributável a partir do cadastro do produto
-          const utEl = rowFiscal?.querySelector('input[name$="-unidade_tributavel"]');
-          if (utEl && data.unidade_tributavel) utEl.value = data.unidade_tributavel;
-
-          recalcularTotais();
-          atualizarTributavel(mainRow);
-          toggleColTributavel();
-
-          const setF = (sel, val) => {
-            const el = (rowFiscal && rowFiscal.querySelector(sel)) || mainRow.querySelector(sel);
-            if (el && val !== undefined && val !== null) el.value = val;
-          };
-          setF('input[name$="-ncm"]',                data.ncm);
-          setF('input[name$="-cest"]',               data.cest);
-          setF('select[name$="-origem_mercadoria"]',  data.origem_mercadoria);
-
-          const tributacoes = data.tributacoes || [];
-          rowFiscal?.querySelector('.trib-no-data-warn')?.remove();
-          rowFiscal?.querySelector('.trib-selector-wrap')?.remove();
-
-          // Guardar tributações no row para re-aplicar quando CFOP do cabeçalho mudar
-          mainRow._tributacoes = tributacoes;
-
-          if (tributacoes.length === 0) {
-            if (rowFiscal) {
-              rowFiscal.style.display = '';
-              mainRow.querySelector('.btn-toggle-fiscal i').className = 'bi bi-chevron-up';
-              if (!rowFiscal.querySelector('.trib-no-data-warn')) {
-                const warn = document.createElement('div');
-                warn.className = 'trib-no-data-warn px-1 mb-2';
-                warn.innerHTML = '<div class="alert alert-warning py-1 px-2 small mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Produto sem tributação cadastrada — preencha os campos manualmente.</div>';
-                rowFiscal.querySelector('td > div')?.prepend(warn);
-              }
-            }
-          } else {
-            const { trib, idx } = escolherTributacao(tributacoes);
-            applyTributacao(mainRow, rowFiscal, trib);
-            if (rowFiscal) {
-              injectTributacaoSelector(rowFiscal, tributacoes, t => applyTributacao(mainRow, rowFiscal, t), idx);
-            }
-          }
-
-          updateFiscalBadge(mainRow, rowFiscal);
-          recalcularTotais();
-        })
-        .catch(() => {});
-    });
 
     // Badge ao editar manualmente
     ['[name$="-ncm"]','[name$="-cfop"]','[name$="-cst_icms"]'].forEach(sel => {
@@ -2329,23 +2387,23 @@ function calcIpi(mainRow, fiscalRow) {
   });
   recalcularTotais();
 
-  // ── Quando o CFOP do cabeçalho muda, re-aplicar regra fiscal em todos os itens ──
-  document.getElementById('id_cfop')?.addEventListener('change', function () {
+  // ── Quando o cliente muda, revalidar a tributação de todos os itens já
+  // preenchidos — a resolução por cliente (UF) precisa buscar de novo no
+  // servidor, não só reaplicar o que já tinha em cache.
+  function revalidarTributacaoItens() {
     body.querySelectorAll('.item-row').forEach(mainRow => {
       if (mainRow.style.display === 'none') return;
-      const tributacoes = mainRow._tributacoes;
-      if (!tributacoes || tributacoes.length === 0) return;
+      const prodSel = mainRow.querySelector('select[name$="-produto"]');
+      if (!prodSel || !prodSel.value) return;
       const fiscalRow = mainRow.nextElementSibling?.classList.contains('item-fiscal-row')
         ? mainRow.nextElementSibling : null;
-      const { trib, idx } = escolherTributacao(tributacoes);
-      applyTributacao(mainRow, fiscalRow, trib);
-      if (fiscalRow) {
-        injectTributacaoSelector(fiscalRow, tributacoes, t => applyTributacao(mainRow, fiscalRow, t), idx);
-      }
-      updateFiscalBadge(mainRow, fiscalRow);
+      carregarTributacaoProduto(mainRow, fiscalRow, prodSel.value);
     });
-    recalcularTotais();
-  });
+  }
+  // id_cliente é Select2 (Select2AjaxWidget) — mesmo motivo do produto acima,
+  // a troca é ouvida via jQuery no bloco extra_js, não addEventListener nativo.
+  window.__nfCarregarTributacaoProduto = carregarTributacaoProduto;
+  window.__nfRevalidarTributacaoItens = revalidarTributacaoItens;
 
   // ── Adicionar novo item ───────────────────────────────────────────
   document.getElementById('add-item').addEventListener('click', function () {
@@ -2414,19 +2472,21 @@ function calcIpi(mainRow, fiscalRow) {
       if (newFiscal) MoneyMask.init(newFiscal);
     }
 
-    // Limpa estado Select2 copiado do clone: remove container fantasma,
-    // mostra o <select> oculto e apaga o flag para que initSelect2Produto funcione.
+    // Limpa estado Select2 copiado do clone: remove container fantasma e
+    // mostra o <select> oculto — cloneNode(true) duplica o markup do Select2
+    // (o <span class="select2-container">) mas não o cache interno do jQuery,
+    // então AgrisSelect2.initFromDataAttrs() reinicializa normalmente.
     const clonedSel = newMain.querySelector('select[name$="-produto"]');
     if (clonedSel) {
       clonedSel.parentElement.querySelectorAll('.select2-container').forEach(el => el.remove());
       clonedSel.style.display = '';
-      delete clonedSel.dataset.s2init;
     }
 
     attachToggleFiscal(newMain);
     attachRemove(newMain);
     attachCalcListeners(newMain);
     attachProdutoAjax(newMain);
+    if (window.AgrisSelect2) AgrisSelect2.initFromDataAttrs(newMain);
     renumerarItens();
     newMain.querySelector('select[name$="-produto"]')?.focus();
   });
@@ -2958,20 +3018,93 @@ function calcIpi(mainRow, fiscalRow) {
   toggleSection();
 })();
 
-// ── Exportação — aba sempre acessível; badge indica quando o CFOP é 7xxx ──
+// ── CFOP agora só existe por item (cabeçalho não tem mais campo de CFOP) —
+// helper compartilhado pra checar se algum item da nota tem CFOP com um
+// certo prefixo (usado pra detectar exportação/devolução de exportação).
+function algumItemComCfop(prefixo) {
+  return Array.from(document.querySelectorAll('#items-body input[name$="-cfop"]'))
+    .some(el => el.value.trim().startsWith(prefixo));
+}
+
+// ── Exportação — aba sempre acessível; hint indica quando algum item é CFOP 7xxx ──
 (function () {
-  const cfopInput   = document.getElementById('id_cfop');
   const exportLink  = document.querySelector('#nf-section-nav a[data-tab="exportacao-section"]');
-  if (!cfopInput || !exportLink) return;
+  const itemsBody   = document.getElementById('items-body');
+  if (!exportLink || !itemsBody) return;
 
   function toggleExportacaoHint() {
-    const cfop = cfopInput.value.trim();
-    exportLink.classList.toggle('has-hint', cfop.startsWith('7'));
+    exportLink.classList.toggle('has-hint', algumItemComCfop('7'));
   }
 
-  cfopInput.addEventListener('input',  toggleExportacaoHint);
-  cfopInput.addEventListener('change', toggleExportacaoHint);
+  itemsBody.addEventListener('input', function (e) {
+    if (e.target.matches('input[name$="-cfop"]')) toggleExportacaoHint();
+  });
   toggleExportacaoHint(); // estado inicial (edição de NF já salva)
+  window.__nfToggleExportacaoHint = toggleExportacaoHint;
+})();
+
+// ── Gerar automaticamente as Informações Complementares (infCpl) ──────────
+(function () {
+  const btn = document.getElementById('btn-gerar-infcpl');
+  const textarea = document.getElementById('id_informacoes_complementares');
+  if (!btn || !textarea) return;
+
+  function produtosSelecionados() {
+    const nomes = new Set();
+    document.querySelectorAll('#items-body .item-row select[name$="-produto"]').forEach(sel => {
+      if (sel.selectedIndex >= 0 && sel.value) {
+        const texto = sel.options[sel.selectedIndex].textContent.trim();
+        if (texto) nomes.add(texto);
+      }
+    });
+    return Array.from(nomes).join('/');
+  }
+
+  btn.addEventListener('click', function () {
+    const ordemColetaVal = document.getElementById('id_ordem_coleta')?.value || '';
+    const atoVal = document.getElementById('id_ato_concessorio')?.value || '';
+    // Considera exportação se algum item tem CFOP 7xxx OU se já há Ordem de
+    // Coleta/Ato Concessório selecionados.
+    const exportacao = algumItemComCfop('7') || !!ordemColetaVal || !!atoVal;
+    const rastreabilidade = document.getElementById('id_numero_rastreabilidade')?.value || '';
+    const dataEmissao = document.getElementById('id_data_emissao')?.value || '';
+
+    const params = new URLSearchParams({
+      tipo: exportacao ? 'exportacao' : 'interna',
+      rastreabilidade: rastreabilidade,
+      data_emissao: dataEmissao,
+    });
+    if (exportacao) {
+      params.set('ordem_coleta_id', ordemColetaVal);
+      params.set('ato_id', atoVal);
+      params.set('produtos', produtosSelecionados());
+    }
+
+    btn.disabled = true;
+    const htmlOriginal = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    fetch('/faturamento/ajax/gerar-infcpl/?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        if (data.erro) {
+          alert('Não foi possível gerar o texto automaticamente: ' + data.erro);
+          return;
+        }
+        if (data.texto) {
+          textarea.value = data.texto;
+        } else {
+          alert('Nenhum texto foi gerado — confira se há um texto padrão configurado em Configuração Fiscal e, para exportação, se a Ordem de Coleta/Ato Concessório foram selecionados.');
+        }
+      })
+      .catch(err => {
+        alert('Erro ao chamar a geração automática: ' + err);
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = htmlOriginal;
+      });
+  });
 })();
 
 // ── Navegação por abas (Principal/Transporte/Exportação/Entrega/Retirada/Agropecuário/Produtor Rural) ──
@@ -3009,32 +3142,27 @@ function calcIpi(mainRow, fiscalRow) {
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{% static 'js/select2-ajax.js' %}?v=8"></script>
 <script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
+
 <script>
-(function ($) {
-  window.initSelect2Produto = function (sel) {
-    if (!sel || sel.dataset.s2init) return;
-    sel.dataset.s2init = '1';
-    $(sel).select2({
-      theme: 'bootstrap-5',
-      width: '100%',
-      placeholder: 'Buscar produto...',
-      allowClear: true,
-      minimumInputLength: 2,
-      language: {
-        inputTooShort: () => 'Digite ao menos 2 caracteres para buscar',
-        noResults:     () => 'Nenhum produto encontrado',
-      },
-    }).on('select2:select select2:clear', function () {
-      this.dispatchEvent(new Event('change', { bubbles: true }));
-    });
-  };
-
-  $('[name$="-produto"]').each(function () {
-    window.initSelect2Produto(this);
+// Select2 (jQuery) só dispara 'change' via $.trigger — que não chega a
+// addEventListener nativo, pois <select> não tem um método .change() para
+// jQuery invocar. Por isso a troca de produto (linhas de item) e de cliente
+// (cabeçalho) precisa ser ouvida aqui, via delegação jQuery nos eventos
+// próprios do Select2, chamando de volta as funções expostas em
+// window.__nf* (definidas no bloco de conteúdo, onde vivem os helpers de
+// tributação/recalculo por causa do fechamento/closure delas).
+$(function () {
+  $(document).on('select2:select select2:clear', '#items-body select[name$="-produto"]', function () {
+    const mainRow = this.closest('.item-row');
+    if (!mainRow) return;
+    const fiscalRow = mainRow.nextElementSibling;
+    const rowFiscal = fiscalRow && fiscalRow.classList.contains('item-fiscal-row') ? fiscalRow : null;
+    if (window.__nfCarregarTributacaoProduto) window.__nfCarregarTributacaoProduto(mainRow, rowFiscal, this.value);
   });
-
-  document.dispatchEvent(new Event('select2:ready'));
-})(jQuery);
+  $(document).on('select2:select select2:clear', '#id_cliente', function () {
+    if (window.__nfRevalidarTributacaoItens) window.__nfRevalidarTributacaoItens();
+  });
+});
 </script>
 
 <script>
@@ -3091,19 +3219,18 @@ function calcIpi(mainRow, fiscalRow) {
   }, true); // capture = true, roda antes do listener de fetch
 })();
 
-// ── Toggle Cliente / Fornecedor conforme finalidade_nfe e CFOP ──────────
+// ── Toggle Cliente / Fornecedor conforme finalidade_nfe e Tipo de Operação ──
 (function () {
   const finalidadeSel  = document.getElementById('id_finalidade_nfe');
-  const cfopInput      = document.getElementById('id_cfop');
+  const entradaSaidaSel = document.getElementById('id_entrada_saida');
   const campoCliente   = document.getElementById('campo-cliente');
   const campoFornecedor = document.getElementById('campo-fornecedor');
   if (!finalidadeSel || !campoCliente || !campoFornecedor) return;
 
   function usaFornecedor() {
     const isDevolucao = finalidadeSel.value === '4';
-    const cfop = ((cfopInput ? cfopInput.value : '') || '').replace(/\D/g, '');
-    // Entrada (CFOP 1xxx/2xxx/3xxx) ou devolução → destinatário é Fornecedor
-    const isEntrada = /^[123]/.test(cfop);
+    // Entrada ('0') ou devolução → destinatário é Fornecedor
+    const isEntrada = entradaSaidaSel && entradaSaidaSel.value === '0';
     return isDevolucao || isEntrada;
   }
 
@@ -3129,7 +3256,7 @@ function calcIpi(mainRow, fiscalRow) {
         hint.textContent = 'Destinatário em NF-e de devolução de compra (finalidade 4).';
       } else {
         badge.textContent = 'Entrada';
-        hint.textContent = 'Destinatário em NF-e de entrada (CFOP 1xxx/2xxx/3xxx) — ex: compra de produtor rural sem nota fiscal.';
+        hint.textContent = 'Destinatário em NF-e de entrada — ex: compra de produtor rural sem nota fiscal.';
       }
     }
   }
@@ -3137,63 +3264,35 @@ function calcIpi(mainRow, fiscalRow) {
   finalidadeSel.addEventListener('change', function () {
     toggleDestinatario();
   });
-  if (cfopInput) {
-    cfopInput.addEventListener('change', toggleDestinatario);
-    cfopInput.addEventListener('input',  toggleDestinatario);
+  if (entradaSaidaSel) {
+    entradaSaidaSel.addEventListener('change', toggleDestinatario);
   }
   // Não chama toggleDestinatario() na inicialização — o estado inicial
   // já vem correto via atributo style do Django template (nf.fornecedor_id).
 })();
 </script>
 
-<!-- Badge tpNF dinâmico no campo CFOP -->
-<script>
-(function () {
-  const cfopInput  = document.getElementById('id_cfop');
-  const badgeTpNf  = document.getElementById('badge-tp-nf');
-  if (!cfopInput || !badgeTpNf) return;
-  function atualizarTpNf() {
-    const v = (cfopInput.value || '').trim().replace(/\D/g, '');
-    if (/^[12]/.test(v)) {
-      badgeTpNf.className = 'badge ms-1 bg-info text-dark';
-      badgeTpNf.textContent = '↓ Entrada';
-      badgeTpNf.title = 'tpNF=0 (Entrada) — CFOP iniciado em 1 ou 2';
-    } else if (/^[567]/.test(v)) {
-      badgeTpNf.className = 'badge ms-1 bg-success';
-      badgeTpNf.textContent = '↑ Saída';
-      badgeTpNf.title = 'tpNF=1 (Saída) — CFOP iniciado em 5, 6 ou 7';
-    } else {
-      badgeTpNf.className = 'badge ms-1 bg-secondary';
-      badgeTpNf.textContent = '—';
-      badgeTpNf.title = 'Tipo NF derivado do CFOP (tpNF)';
-    }
-  }
-  cfopInput.addEventListener('input', atualizarTpNf);
-  atualizarTpNf();
-})();
-</script>
-
 <!-- Ícone orientação CFOP devolução exportação -->
 <script>
 (function () {
-  const cfopInput   = document.getElementById('id_cfop');
   const finalidade  = document.getElementById('id_finalidade_nfe');
   const iconDev     = document.getElementById('icon-cfop-devolucao-ext');
+  const itemsBody   = document.getElementById('items-body');
   if (!iconDev) return;
 
   // Inicializa o popover Bootstrap
   new bootstrap.Popover(iconDev, { sanitize: false });
 
   function toggleIcone() {
-    const cfop = (cfopInput ? cfopInput.value : '').replace(/\D/g, '');
     const isDev = finalidade && finalidade.value === '4';
-    const isExt = /^3/.test(cfop);
+    const isExt = algumItemComCfop('3');
     iconDev.style.display = (isDev && isExt) ? '' : 'none';
   }
 
-  if (cfopInput) {
-    cfopInput.addEventListener('input', toggleIcone);
-    cfopInput.addEventListener('change', toggleIcone);
+  if (itemsBody) {
+    itemsBody.addEventListener('input', function (e) {
+      if (e.target.matches('input[name$="-cfop"]')) toggleIcone();
+    });
   }
   if (finalidade) finalidade.addEventListener('change', toggleIcone);
   toggleIcone();

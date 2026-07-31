@@ -28,6 +28,7 @@
         {% endfor %}
       </select>
     </div>
+    {% include 'partials/per_page_select.html' with col_class='col-auto' %}
     <div class="col-auto">
       <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrar</button>
       <a href="{% url 'empresas:programa_list' %}" class="btn btn-sm btn-link">Limpar</a>

@@ -3,6 +3,7 @@ import io
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db import transaction
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q
 from django.http import HttpResponse, JsonResponse
@@ -49,8 +50,7 @@ def solicitacao_booking_list(request):
     if embarque_ate:
         qs = qs.filter(data_prevista_embarque__lte=embarque_ate)
 
-    paginator = Paginator(qs, 20)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'exportacao/solicitacao_booking_list.html', {
         'solicitacoes': page_obj,
@@ -61,6 +61,8 @@ def solicitacao_booking_list(request):
         'embarque_ate': embarque_ate,
         'status_choices': SolicitacaoBooking.STATUS,
         'request': request,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -135,12 +137,13 @@ def booking_list(request):
         )
         .order_by('-data_embarque_previsto')
     )
-    paginator = Paginator(bookings_qs, 25)
-    bookings = paginator.get_page(request.GET.get('page'))
+    bookings, per_page, per_page_options = paginate(request, bookings_qs)
 
     return render(request, 'exportacao/booking_list.html', {
         'bookings': bookings,
-        'request': request
+        'request': request,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -295,13 +298,14 @@ def container_list(request, booking_pk=None):
         booking = get_object_or_404(Booking, pk=booking_pk, empresa=request.user.empresa)
         containers_qs = containers_qs.filter(booking=booking)
 
-    paginator = Paginator(containers_qs, 25)
-    containers = paginator.get_page(request.GET.get('page'))
+    containers, per_page, per_page_options = paginate(request, containers_qs)
 
     return render(request, 'exportacao/container_list.html', {
         'containers': containers,
         'booking': booking,
-        'request': request
+        'request': request,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -465,12 +469,13 @@ def ordem_coleta_list(request):
         .prefetch_related('fotos')
         .order_by('-data_prevista')
     )
-    paginator = Paginator(ordens_qs, 25)
-    ordens = paginator.get_page(request.GET.get('page'))
+    ordens, per_page, per_page_options = paginate(request, ordens_qs)
 
     return render(request, 'exportacao/ordem_coleta_list.html', {
         'ordens': ordens,
-        'request': request
+        'request': request,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -49,16 +50,16 @@ def motorista_list(request):
         motoristas = motoristas.filter(transportadora_id=transportadora)
     
     # Paginação
-    paginator = Paginator(motoristas, 20)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
+    page_obj, per_page, per_page_options = paginate(request, motoristas)
+
     context = {
         'page_obj': page_obj,
         'motoristas': page_obj.object_list,
         'search': search,
         'tipo': tipo,
         'is_paginated': page_obj.has_other_pages(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     
     return render(request, 'cadastros/motorista/list.html', context)
@@ -146,9 +147,7 @@ def motorista_vinculo_list(request):
     elif status == 'ENCERRADO':
         vinculos = vinculos.filter(ativo=False)
 
-    paginator = Paginator(vinculos, 20)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, vinculos)
 
     context = {
         'page_obj': page_obj,
@@ -156,6 +155,8 @@ def motorista_vinculo_list(request):
         'search': search,
         'status': status,
         'is_paginated': page_obj.has_other_pages(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'cadastros/motorista_vinculo/list.html', context)

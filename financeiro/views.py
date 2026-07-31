@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, F, Sum, Count
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import JsonResponse
 from django.utils import timezone
 from django.db import transaction
@@ -283,9 +284,7 @@ def conta_pagar_list(request):
     contas = contas.order_by(order_by)
 
     # Paginação
-    paginator = Paginator(contas, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, contas)
 
     # Estatísticas
     stats = {
@@ -328,6 +327,8 @@ def conta_pagar_list(request):
         'semana_proxima': iso_semana_proxima,
         'num_semana_ano': num_semana_ano,
         'ano_semana': ano_semana,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'financeiro/conta_pagar_list.html', context)
@@ -710,9 +711,7 @@ def parcela_list(request):
     parcelas = parcelas.order_by(order_by)
     
     # Paginação
-    paginator = Paginator(parcelas, 30)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, parcelas)
     agregados = ParcelaContaPagar.objects.filter(conta_pagar__empresa=empresa).aggregate(
         total=Count('id'),
         abertas=Count('id', filter=Q(status='ABERTA')),
@@ -730,8 +729,10 @@ def parcela_list(request):
         'parcelas_vencidas': agregados['vencidas'],
         'parcelas_pagas': agregados['pagas'],
         'is_paginated': page_obj.has_other_pages(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
-    
+
     return render(request, 'financeiro/parcela_list.html', context)
 
 
@@ -1158,8 +1159,7 @@ def conta_receber_list(request):
         total_recebido=Sum('recebimentos__valor_recebido_brl'),
     )
 
-    paginator = Paginator(qs.order_by('-data_emissao'), 20)
-    page = paginator.get_page(request.GET.get('page'))
+    page, per_page, per_page_options = paginate(request, qs.order_by('-data_emissao'))
 
     return render(request, 'financeiro/conta_receber/list.html', {
         'page_obj': page,
@@ -1167,6 +1167,8 @@ def conta_receber_list(request):
         'moeda_choices': ContaReceber.MOEDA_CHOICES,
         'filtros': {'status': status_f, 'moeda': moeda_f, 'q': q, 'data_ini': data_ini, 'data_fim': data_fim},
         'totais': totais,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

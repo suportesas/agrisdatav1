@@ -4,6 +4,7 @@ from io import BytesIO
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -47,12 +48,7 @@ def caderno_campo_list(request):
     safras = Safra.objects.filter(fazenda__empresa=empresa)
 
     total = qs.count()
-    paginator = Paginator(qs.order_by('-data_atividade'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        registros_page = paginator.page(page)
-    except Exception:
-        registros_page = paginator.page(1)
+    registros_page, per_page, per_page_options = paginate(request, qs.order_by('-data_atividade'))
 
     context = {
         'registros': registros_page,
@@ -66,6 +62,8 @@ def caderno_campo_list(request):
         'tipo_choices': RegistroCadernoCampo.TIPO_ATIVIDADE_CHOICES,
         'total': total,
         'title': 'Caderno de Campo',
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'cadastros/caderno_campo/caderno_campo_list.html', context)
 

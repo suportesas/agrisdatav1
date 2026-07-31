@@ -85,6 +85,7 @@
         <label class="form-label form-label-sm mb-0 fw-semibold small">Até</label>
         <input type="date" name="data_fim" value="{{ data_fim }}" class="form-control">
       </div>
+      {% include 'partials/per_page_select.html' with col_class='filter-field' %}
       <div class="filter-actions">
           <button type="submit" class="btn btn-primary">
               <i class="bi bi-search"></i> Filtrar
@@ -260,7 +261,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   const form = document.getElementById('filterForm');
   if (form) {
-    form.querySelectorAll('select').forEach(s => s.addEventListener('change', () => form.submit()));
+    form.querySelectorAll('select:not(.js-per-page-select)').forEach(s => s.addEventListener('change', () => form.submit()));
   }
 
   const selectAll = document.getElementById('selectAll');

@@ -26,6 +26,7 @@ from .forms import (
 )
 from frota.models import Vehicle
 from rh.models import Funcionario
+from core.pagination import paginate
 
 
 @login_required
@@ -55,11 +56,8 @@ def patrimonio_list(request):
         )
     
     # Paginação
-    from django.core.paginator import Paginator
-    paginator = Paginator(patrimonios, 20)
-    page = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page)
-    
+    page_obj, per_page, per_page_options = paginate(request, patrimonios)
+
     # Estatísticas
     total_valor = patrimonios.aggregate(Sum('valor_inicial'))['valor_inicial__sum'] or Decimal('0.00')
     total_ativo = patrimonios.aggregate(Sum('valor_atual'))['valor_atual__sum'] or Decimal('0.00')
@@ -78,8 +76,10 @@ def patrimonio_list(request):
         'total_ativo': total_ativo,
         'total_depreciacao': total_depreciacao,
         'total_patrimonios': patrimonios.count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
-    
+
     return render(request, 'patrimonio/patrimonio_list.html', context)
 
 
@@ -288,10 +288,7 @@ def patrimonio_relatorio(request):
     ).order_by('-valor_inicial')[:10]
 
     # Lista detalhada com paginação
-    from django.core.paginator import Paginator
-    paginator = Paginator(qs.order_by('-data_aquisicao', '-data_cadastro'), 25)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data_aquisicao', '-data_cadastro'))
     query_params = request.GET.copy()
     query_params.pop('page', None)
     querystring = query_params.urlencode()
@@ -309,8 +306,10 @@ def patrimonio_relatorio(request):
         'responsaveis': Funcionario.objects.filter(empresa=empresa).order_by('nome_completo'),
         'filtros': filtros,
         'querystring': querystring,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
-    
+
     return render(request, 'patrimonio/relatorio.html', context)
 
 
@@ -509,16 +508,16 @@ def patrimonio_relatorio_excel(request):
 @login_required
 def patrimonio_auditoria_list(request):
     """Lista auditorias anuais"""
-    from django.core.paginator import Paginator
     empresa = request.user.empresa
     auditorias = PatrimonioAuditoria.objects.filter(empresa=empresa).order_by('-ano')
 
-    paginator = Paginator(auditorias, 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, auditorias)
 
     context = {
         'auditorias': page_obj,
         'page_obj': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'patrimonio/auditoria_list.html', context)
 

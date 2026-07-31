@@ -52,7 +52,7 @@
     <div class="label">Série: {{ nf.serie }} &nbsp;|&nbsp; Emissão: {{ nf.data_emissao|date:"d/m/Y" }}</div>
     <div class="label">Natureza da Operação</div>
     <div class="value">{{ nf.natureza_operacao }}</div>
-    <div class="label">CFOP: {{ nf.cfop }}</div>
+    <div class="label">Tipo: {{ nf.get_entrada_saida_display }}</div>
     {% if nf.protocolo_autorizacao %}
     <div class="label" style="margin-top:4px">Protocolo: {{ nf.protocolo_autorizacao }}</div>
     {% endif %}

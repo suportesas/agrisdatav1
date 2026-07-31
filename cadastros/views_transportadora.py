@@ -3,6 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Max, Q
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from .models import Transportadora, Viagem
 from .forms import TransportadoraForm
 from django.contrib import messages
@@ -49,9 +50,7 @@ def transportadora_list(request):
     # Annotate with counts and last viagem
     qs = qs.annotate(total_viagens=Count('viagens'), ultima_viagem=Max('viagens__data'))
 
-    paginator = Paginator(qs, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     UFS = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SE','SP','TO']
 
@@ -61,6 +60,8 @@ def transportadora_list(request):
         'filtro_tipo': tipo,
         'filtro_uf': uf,
         'ufs': UFS,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'cadastros/transportadora/transportadora_list.html', context)
 

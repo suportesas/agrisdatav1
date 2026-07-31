@@ -4,6 +4,7 @@ import csv
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -43,8 +44,7 @@ def vehicle_list(request):
     if sort in allowed_sort:
         veiculos = veiculos.order_by(sort)
 
-    paginator = Paginator(veiculos, 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, veiculos)
 
     from cadastros.models import Transportadora
     transportadoras = Transportadora.objects.filter(empresa=request.user.empresa).order_by('razao_social')
@@ -85,6 +85,8 @@ def vehicle_list(request):
         'transportadoras': transportadoras,
         'sort_links': sort_links,
         'tipo_counts': tipo_counts,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

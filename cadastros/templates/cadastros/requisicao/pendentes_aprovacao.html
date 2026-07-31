@@ -21,9 +21,10 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <input type="text" name="search" class="form-control" placeholder="Buscar por número, safra, fazenda, talhão, código ou solicitante..." value="{{ search }}">
                 </div>
+                {% include 'partials/per_page_select.html' with col_class='col-md-2' %}
                 <div class="col-md-4">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-search"></i> Buscar

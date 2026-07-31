@@ -31,6 +31,9 @@
         de <strong>{{ page_obj.paginator.count }}</strong> carga{{ page_obj.paginator.count|pluralize }}
       {% endif %}
     </span>
+    <form method="get" class="row g-2 align-items-end" id="filterForm">
+      {% include 'partials/per_page_select.html' with col_class='' %}
+    </form>
   </div>
 
   <div class="card shadow-sm border-0 rounded-4">

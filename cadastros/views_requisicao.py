@@ -8,6 +8,7 @@ from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import JsonResponse
 
 from emprestimos.utils import enviar_whatsapp_emprestimo
@@ -74,9 +75,7 @@ def requisicao_list(request):
 
     qs = qs.select_related('safra', 'fazenda', 'talhao', 'funcionario_destino', 'produtor').order_by('-data_requisicao')
 
-    paginator = Paginator(qs, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'cadastros/requisicao/list.html', {
         'requisicoes': page_obj,
@@ -85,6 +84,8 @@ def requisicao_list(request):
         'search': search,
         'status': status,
         'tipo': tipo,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -118,9 +119,7 @@ def requisicao_pendentes_aprovacao(request):
 
     qs = qs.select_related('safra', 'fazenda', 'talhao', 'funcionario_destino', 'solicitante').order_by('-data_requisicao')
 
-    paginator = Paginator(qs, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'cadastros/requisicao/pendentes_aprovacao.html', {
         'requisicoes': page_obj,
@@ -128,6 +127,8 @@ def requisicao_pendentes_aprovacao(request):
         'is_paginated': page_obj.has_other_pages(),
         'search': search,
         'total_pendentes': Requisicao.objects.filter(empresa=empresa, status='PENDENTE').count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -156,9 +157,7 @@ def requisicao_pendentes_atendimento(request):
 
     qs = qs.select_related('safra', 'fazenda', 'talhao', 'funcionario_destino', 'solicitante').order_by('-data_aprovacao')
 
-    paginator = Paginator(qs, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, qs)
 
     return render(request, 'cadastros/requisicao/pendentes_atendimento.html', {
         'requisicoes': page_obj,
@@ -166,6 +165,8 @@ def requisicao_pendentes_atendimento(request):
         'is_paginated': page_obj.has_other_pages(),
         'search': search,
         'total_aguardando': Requisicao.objects.filter(empresa=empresa, status='APROVADA').count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

@@ -100,6 +100,7 @@
           <label class="form-label">Data de Aquisição (Até)</label>
           <input type="date" name="data_aquisicao_ate" class="form-control" value="{{ filtros.data_aquisicao_ate }}">
         </div>
+        {% include 'partials/per_page_select.html' with col_class='col-md-3' %}
         <div class="col-md-6 d-flex align-items-end gap-2">
           <button type="submit" class="btn btn-primary">
             <i class="bi bi-search"></i> Pesquisar

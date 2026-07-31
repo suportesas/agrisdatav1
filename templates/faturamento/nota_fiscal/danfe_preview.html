@@ -245,7 +245,7 @@ td, th { padding: 1px 2px; vertical-align: top; }
         <div class="danfe-sub">Documento Auxiliar da<br>Nota Fiscal Eletrônica</div>
         <div class="io-opts">
           0 - ENTRADA<br>
-          1 - SAÍDA <span class="io-box">{{ nf.cfop|slice:":1"|default:"1" }}</span>
+          1 - SAÍDA <span class="io-box">{{ nf.entrada_saida|default:"1" }}</span>
         </div>
         <div class="nf-num">Nº. {{ nf.numero|stringformat:"09d" }}</div>
         <div class="nf-ser">Série {{ nf.serie|stringformat:"03d" }}</div>

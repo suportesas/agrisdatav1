@@ -114,6 +114,8 @@
               </select>
             </div>
 
+            {% include 'partials/per_page_select.html' %}
+
           </div>
 
           <div class="d-flex gap-2 mt-3 pt-3 border-top">
@@ -248,7 +250,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const form = document.getElementById('filterForm');
-  form.querySelectorAll('select').forEach(function (sel) {
+  form.querySelectorAll('select:not(.js-per-page-select)').forEach(function (sel) {
     sel.addEventListener('change', function () { form.submit(); });
   });
 

@@ -1,15 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from financeiro.models import FormaPagemento
 from django.contrib.auth.decorators import login_required
 
 @login_required
 def forma_pagamento_list(request):
     formas_qs = FormaPagemento.objects.filter(empresa=request.user.empresa).order_by('ordem_exibicao')
-    paginator = Paginator(formas_qs, 20)
-    formas = paginator.get_page(request.GET.get('page'))
-    return render(request, 'compras/forma_pagamento_list.html', {'formas': formas})
+    formas, per_page, per_page_options = paginate(request, formas_qs)
+    return render(request, 'compras/forma_pagamento_list.html', {
+        'formas': formas,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
 
 @login_required
 def forma_pagamento_create(request):

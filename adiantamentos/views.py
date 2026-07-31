@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import JsonResponse
@@ -51,8 +52,7 @@ def adiantamento_list(request):
         'migrados': qs.filter(status='MIGRADO').count(),
     }
 
-    paginator = Paginator(qs.order_by('-criado_em'), 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-criado_em'))
 
     return render(request, 'adiantamentos/adiantamento_list.html', {
         'adiantamentos': page_obj,
@@ -66,6 +66,8 @@ def adiantamento_list(request):
         'status_choices': AdiantamentoInternacional.STATUS,
         'moeda_choices': AdiantamentoInternacional.MOEDA,
         'stats': stats,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -404,8 +406,7 @@ def relatorio_adiantamentos(request):
         total_brl=Sum('valor_brl'),
     )
 
-    paginator = Paginator(qs.order_by('-data_adiantamento'), 25)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data_adiantamento'))
 
     return render(request, 'adiantamentos/relatorio_adiantamentos.html', {
         'adiantamentos': page_obj,
@@ -423,6 +424,8 @@ def relatorio_adiantamentos(request):
             'total_eur': agg['total_eur'] or Decimal('0'),
             'total_brl': agg['total_brl'] or Decimal('0'),
         },
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

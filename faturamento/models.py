@@ -65,6 +65,12 @@ class ConfiguracaoFiscal(models.Model):
     natureza_operacao_padrao = models.CharField('Natureza da Operação Padrão', max_length=100, default='VENDA DE MERCADORIA')
     observacoes_padrao_nfe = models.TextField('Obs. Padrão NF-e', blank=True)
     observacoes_padrao_invoice = models.TextField('Obs. Padrão Invoice', blank=True)
+    texto_isencao_icms = models.TextField(
+        'Texto Padrão Isenção ICMS (NF-e)',
+        blank=True,
+        help_text='Texto-base usado pelo botão "Gerar automaticamente" das Informações Complementares '
+                  'da NF-e, tanto para mercado interno quanto para exportação.',
+    )
 
     # ── Faturamento Agrupado — configurações ─────────────────────────────────
     FINANCEIRO_REMESSA_CHOICES = [
@@ -277,7 +283,13 @@ class NotaFiscal(FaturamentoBaseModel):
     )
     data_emissao = models.DateField('Data de Emissão', default=timezone.now)
     data_saida = models.DateField('Data de Saída', blank=True, null=True)
-    cfop = models.CharField('CFOP', max_length=10, default='5102')
+    ENTRADA_SAIDA_CHOICES = [('0', 'Entrada'), ('1', 'Saída')]
+    entrada_saida = models.CharField(
+        'Tipo de Operação (Entrada/Saída — tpNF)', max_length=1,
+        choices=ENTRADA_SAIDA_CHOICES, default='1',
+        help_text='Escolha inicial do usuário; recalculado automaticamente a partir do '
+                  'CFOP dos itens assim que eles são salvos (calcular_totais()).',
+    )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     modalidade_frete = models.CharField('Modalidade de Frete', max_length=20, choices=MODALIDADE_FRETE, default='SEM_FRETE')
     transportadora = models.ForeignKey(
@@ -448,6 +460,27 @@ class NotaFiscal(FaturamentoBaseModel):
         'Local do Despacho', max_length=60, blank=True,
         help_text='Local de despacho aduaneiro, quando diferente do embarque (ex: Recinto Alfandegado).',
     )
+    numero_rastreabilidade = models.CharField(
+        'Nº de Rastreabilidade', max_length=100, blank=True,
+        help_text='Número(s) de rastreabilidade do lote, usado nas Informações Complementares da NF-e.',
+    )
+    ordem_coleta = models.ForeignKey(
+        'exportacao.OrdemColeta',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='notas_fiscais',
+        verbose_name='Ordem de Coleta',
+        help_text='Ordem de coleta do container vinculada a esta NF-e de exportação (booking, navio, lacres, tara).',
+    )
+    ato_concessorio = models.ForeignKey(
+        'drawback.AtoConcessorio',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='notas_fiscais',
+        verbose_name='Ato Concessório (Drawback)',
+    )
 
     # ── Endereço de Entrega (grupo G da NF-e — local diferente do destinatário) ──
     entrega_ativo = models.BooleanField(
@@ -552,9 +585,16 @@ class NotaFiscal(FaturamentoBaseModel):
             # duplicaria o valor devido. Revisitar quando o cronograma de
             # transição começar a extinguir os tributos antigos.
         )
+        # tpNF (Entrada/Saída): deriva do CFOP real dos itens (é o que de fato vai
+        # no XML da NF-e). Sem itens com CFOP ainda, mantém a escolha manual do
+        # usuário no campo entrada_saida — não há cabeçalho de CFOP para cair.
+        cfops = [i.cfop for i in items if i.cfop]
+        if cfops:
+            self.entrada_saida = '0' if all(str(c).startswith(('1', '2', '3')) for c in cfops) else '1'
         self.save(update_fields=[
             'valor_produtos', 'valor_icms', 'valor_icms_st', 'valor_ipi',
             'valor_pis', 'valor_cofins', 'valor_ibs', 'valor_cbs', 'valor_total',
+            'entrada_saida',
         ])
 
 

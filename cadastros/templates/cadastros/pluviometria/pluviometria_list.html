@@ -112,6 +112,7 @@
           <option value="12" {% if mes_selecionado == "12" %}selected{% endif %}>Dezembro</option>
         </select>
       </div>
+      {% include 'partials/per_page_select.html' with col_class='filter-field' %}
       <div class="filter-actions">
         <button type="submit" class="btn btn-primary">
           <i class="bi bi-search"></i> Filtrar

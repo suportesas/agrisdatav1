@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Count, Q, Sum
 from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -169,8 +170,7 @@ def emprestimo_extrato(request):
 
     agrupados_lista = _agrupar_emprestimos(emprestimos_qs)
 
-    paginator = Paginator(agrupados_lista, 25)
-    pagina_obj = paginator.get_page(request.GET.get('page'))
+    pagina_obj, per_page, per_page_options = paginate(request, agrupados_lista)
 
     query_params = request.GET.copy()
     query_params.pop('page', None)
@@ -196,6 +196,8 @@ def emprestimo_extrato(request):
         'query_string': query_string,
         'totais': totais,
         'today': date.today(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

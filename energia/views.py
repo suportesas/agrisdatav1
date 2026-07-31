@@ -2,6 +2,7 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Sum, Avg, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -145,10 +146,10 @@ def usina_list(request):
     q = request.GET.get('q', '')
     if q:
         qs = qs.filter(Q(nome__icontains=q) | Q(codigo__icontains=q))
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_obj, per_page, per_page_options = paginate(request, qs)
     return render(request, 'energia/usina_list.html', {
         'page_obj': page_obj, 'q': q, 'total': qs.count(),
+        'per_page': per_page, 'per_page_options': per_page_options,
     })
 
 
@@ -210,11 +211,11 @@ def uc_list(request):
     if usina_id:
         qs = qs.filter(usina_id=usina_id)
     usinas = UsinaFotovoltaica.objects.filter(empresa=empresa, ativa=True)
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_obj, per_page, per_page_options = paginate(request, qs)
     return render(request, 'energia/uc_list.html', {
         'page_obj': page_obj, 'q': q, 'usinas': usinas,
         'usina_id': usina_id, 'total': qs.count(),
+        'per_page': per_page, 'per_page_options': per_page_options,
     })
 
 
@@ -282,11 +283,11 @@ def lancamento_list(request):
         faturado=Sum('valor_faturado_rs'),
         economizado=Sum('valor_economizado_rs'),
     )
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_obj, per_page, per_page_options = paginate(request, qs)
     return render(request, 'energia/lancamento_list.html', {
         'page_obj': page_obj, 'mes': mes, 'uc_id': uc_id,
         'ucs': ucs, 'totais': totais, 'total': qs.count(),
+        'per_page': per_page, 'per_page_options': per_page_options,
     })
 
 
@@ -347,11 +348,11 @@ def relatorio_usina_list(request):
         except ValueError:
             pass
     usinas = UsinaFotovoltaica.objects.filter(empresa=empresa, ativa=True)
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_obj, per_page, per_page_options = paginate(request, qs)
     return render(request, 'energia/relatorio_usina_list.html', {
         'page_obj': page_obj, 'usinas': usinas,
         'usina_id': usina_id, 'mes': mes, 'total': qs.count(),
+        'per_page': per_page, 'per_page_options': per_page_options,
     })
 
 
@@ -420,8 +421,7 @@ def ocorrencia_list(request):
     if tipo:
         qs = qs.filter(tipo=tipo)
     usinas = UsinaFotovoltaica.objects.filter(empresa=empresa, ativa=True)
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_obj, per_page, per_page_options = paginate(request, qs)
     return render(request, 'energia/ocorrencia_list.html', {
         'page_obj': page_obj,
         'usinas': usinas,
@@ -431,6 +431,8 @@ def ocorrencia_list(request):
         'tipo_choices': OcorrenciaUsina.TIPO_CHOICES,
         'total': qs.count(),
         'pendentes': OcorrenciaUsina.objects.filter(empresa=empresa, resolvido=False).count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

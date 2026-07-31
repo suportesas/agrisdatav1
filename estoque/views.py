@@ -21,6 +21,7 @@ from .forms import (
     EntradaEstoqueForm, SaidaEstoqueForm, TransferenciaEstoqueForm
 )
 from produtos.models import Produto
+from core.pagination import paginate
 from django.template.loader import get_template
 import io
 from xhtml2pdf import pisa
@@ -119,9 +120,12 @@ def get_produto_unidade(request, produto_id):
 def armazem_list(request):
     """Lista de armazéns"""
     armazens_qs = Armazem.objects.filter(empresa=request.user.empresa).order_by('nome')
-    paginator = Paginator(armazens_qs, 20)
-    armazens = paginator.get_page(request.GET.get('page'))
-    return render(request, 'estoque/armazem_list.html', {'armazens': armazens})
+    armazens, per_page, per_page_options = paginate(request, armazens_qs)
+    return render(request, 'estoque/armazem_list.html', {
+        'armazens': armazens,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
 
 
 @login_required
@@ -196,9 +200,12 @@ def armazem_delete(request, pk):
 def local_list(request):
     """Lista de locais"""
     locais_qs = LocalEstocagem.objects.filter(armazem__empresa=request.user.empresa).select_related('armazem').order_by('armazem__nome', 'codigo')
-    paginator = Paginator(locais_qs, 20)
-    locais = paginator.get_page(request.GET.get('page'))
-    return render(request, 'estoque/local_list.html', {'locais': locais})
+    locais, per_page, per_page_options = paginate(request, locais_qs)
+    return render(request, 'estoque/local_list.html', {
+        'locais': locais,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
 
 
 @login_required
@@ -302,8 +309,7 @@ def lote_list(request):
     if armazem_id:
         lotes_qs = lotes_qs.filter(armazem_id=armazem_id)
 
-    paginator = Paginator(lotes_qs, 30)
-    lotes = paginator.get_page(request.GET.get('page'))
+    lotes, per_page, per_page_options = paginate(request, lotes_qs)
 
     armazens = Armazem.objects.filter(empresa=request.user.empresa).order_by('nome')
     produto_filtrado = None
@@ -318,6 +324,8 @@ def lote_list(request):
         'produto_filtrado': produto_filtrado,
         'status_filtro': status_filtro,
         'armazem_id': armazem_id,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -410,9 +418,7 @@ def movimentacao_list(request):
     if status:
         movimentacoes = movimentacoes.filter(status=status)
 
-    paginator = Paginator(movimentacoes, 30)
-    page_number = request.GET.get('page')
-    movimentacoes_page = paginator.get_page(page_number)
+    movimentacoes_page, per_page, per_page_options = paginate(request, movimentacoes)
 
     context = {
         'movimentacoes': movimentacoes_page,
@@ -422,6 +428,8 @@ def movimentacao_list(request):
         'status_choices': MovimentacaoEstoque.STATUS_CHOICES,
         'tipo_filtro': tipo,
         'status_filtro': status,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'estoque/movimentacao_list.html', context)
 
@@ -752,8 +760,7 @@ def estoque_produtos_list(request):
     elif filtro_estoque == 'zerado':
         produtos = [p for p in produtos if p.estoque_total <= 0]
 
-    paginator = Paginator(produtos, 30)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, produtos)
 
     context = {
         'produtos': page_obj,
@@ -769,6 +776,8 @@ def estoque_produtos_list(request):
         'can_choose_fazenda': can_choose_fazenda,
         'fazendas': Fazenda.objects.filter(empresa=empresa) if can_choose_fazenda else [],
         'fazenda_filtro': fazenda_filtro,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'estoque/estoque_produtos_list.html', context)
 
@@ -1339,14 +1348,15 @@ def relatorio_auditoria(request):
     if data_fim:
         movimentacoes = movimentacoes.filter(data_movimentacao__date__lte=data_fim)
 
-    paginator = Paginator(movimentacoes, 50)
-    movimentacoes_page = paginator.get_page(request.GET.get('page'))
+    movimentacoes_page, per_page, per_page_options = paginate(request, movimentacoes)
 
     context = {
         'movimentacoes': movimentacoes_page,
         'tipos_movimento': MovimentacaoEstoque.TIPO_CHOICES,
         'title': 'Auditoria de Transações',
         'filtros_ativos': bool(tipo or usuario or data_inicio or data_fim),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'estoque/relatorio_auditoria.html', context)
@@ -1526,8 +1536,7 @@ def relatorio_validacao_disponibilidade(request):
                 'diferenca': diferenca,
             })
 
-    paginator = Paginator(divergencias, 30)
-    divergencias_page = paginator.get_page(request.GET.get('page'))
+    divergencias_page, per_page, per_page_options = paginate(request, divergencias)
 
     context = {
         'title': 'Validação de Disponibilidade',
@@ -1536,6 +1545,8 @@ def relatorio_validacao_disponibilidade(request):
         'divergencias': divergencias_page,
         'total_produtos': produtos.count(),
         'total_divergencias': len(divergencias),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'estoque/relatorio_validacao_disponibilidade.html', context)
 
@@ -1640,6 +1651,9 @@ def relatorio_alertas_estoque(request):
     alertas_criticos.sort(key=lambda x: x['saldo'])
     alertas_excesso.sort(key=lambda x: x['saldo'], reverse=True)
 
+    total_criticos = len(alertas_criticos)
+    total_excesso = len(alertas_excesso)
+
     # Verificar se é exportação
     export_format = request.GET.get('export')
 
@@ -1648,24 +1662,29 @@ def relatorio_alertas_estoque(request):
     elif export_format == 'pdf':
         return exportar_alertas_pdf(empresa, alertas_criticos, alertas_excesso)
 
+    page_criticos, per_page, per_page_options = paginate(request, alertas_criticos, page_param='page_criticos')
+    page_excesso, per_page, per_page_options = paginate(request, alertas_excesso, page_param='page_excesso')
+
     produtos_ja_solicitados = set(ItemSolicitacaoCompra.objects.filter(
-        produto_id__in=[a['produto'].id for a in alertas_criticos],
+        produto_id__in=[a['produto'].id for a in page_criticos],
     ).exclude(
         solicitacao__status__in=['CANCELADA', 'CONCLUIDA']
     ).values_list('produto_id', flat=True))
 
-    for alerta in alertas_criticos:
+    for alerta in page_criticos:
         alerta['ja_solicitado'] = alerta['produto'].id in produtos_ja_solicitados
         alerta['pode_comprar'] = alerta['produto'].controla_estoque and not alerta['ja_solicitado']
 
     context = {
-        'alertas_criticos': alertas_criticos,
-        'alertas_excesso': alertas_excesso,
-        'total_criticos': len(alertas_criticos),
-        'total_excesso': len(alertas_excesso),
-        'total_alertas': len(alertas_criticos) + len(alertas_excesso),
+        'alertas_criticos': page_criticos,
+        'alertas_excesso': page_excesso,
+        'total_criticos': total_criticos,
+        'total_excesso': total_excesso,
+        'total_alertas': total_criticos + total_excesso,
         'pode_gerar_compra': usuario_tem_acesso(request, 'compras:central_alertas_gerar_solicitacao'),
-        'tem_criticos_compraveis': any(a['pode_comprar'] for a in alertas_criticos),
+        'tem_criticos_compraveis': any(a['pode_comprar'] for a in page_criticos),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'estoque/relatorio_alertas.html', context)
@@ -1839,8 +1858,7 @@ def inventario_ciclico_list(request):
     empresa = request.user.empresa
     inventarios_qs = InventarioCiclico.objects.filter(empresa=empresa).select_related('armazem', 'responsavel').order_by('-data_contagem')
 
-    paginator = Paginator(inventarios_qs, 20)
-    inventarios = paginator.get_page(request.GET.get('page'))
+    inventarios, per_page, per_page_options = paginate(request, inventarios_qs)
 
     context = {
         'inventarios': inventarios,
@@ -1848,6 +1866,8 @@ def inventario_ciclico_list(request):
         'total_em_contagem': inventarios_qs.filter(status='EM_CONTAGEM').count(),
         'total_finalizados': inventarios_qs.filter(status='FINALIZADO').count(),
         'total_inventarios': inventarios_qs.count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'estoque/inventario_ciclico_list.html', context)

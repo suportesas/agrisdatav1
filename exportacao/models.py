@@ -306,6 +306,10 @@ class BookingContainer(ExportacaoBaseModel):
         help_text='Ex.: "20 cbm/hour", "Closed", "Auto".')
     umidade_setpoint_pct = models.DecimalField('Umidade Setpoint (%)', max_digits=5, decimal_places=2, blank=True, null=True)
     drain_position = models.CharField('Posição do Dreno (Drain)', max_length=10, choices=DRAIN_CHOICES, blank=True)
+    numero_tale = models.CharField(
+        'Nº TALE', max_length=50, blank=True,
+        help_text='Número de série do equipamento de monitoramento térmico (Temperature/Trip Alarm Logger Equipment).',
+    )
     porto_origem = models.ForeignKey(
         'cadastros.Porto',
         on_delete=models.SET_NULL,

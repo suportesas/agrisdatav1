@@ -263,6 +263,7 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'natureza_operacao_padrao',
             'observacoes_padrao_nfe',
             'observacoes_padrao_invoice',
+            'texto_isencao_icms',
             'dfe_manifestar_ciencia_automatica',
         ]
         widgets = {
@@ -278,6 +279,8 @@ class ConfiguracaoFiscalForm(forms.ModelForm):
             'natureza_operacao_padrao': forms.TextInput(attrs={'class': 'form-control'}),
             'observacoes_padrao_nfe': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'observacoes_padrao_invoice': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'texto_isencao_icms': forms.Textarea(attrs={'class': 'form-control', 'rows': 3,
+                'placeholder': 'Ex: PRODUTO ISENTO DE ICMS CONFORME O ARTIGO 6 DO DECRETO 16.640/97.'}),
             'dfe_manifestar_ciencia_automatica': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
@@ -292,7 +295,7 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'finalidade_nfe',
             'data_emissao',
             'data_saida',
-            'cfop',
+            'entrada_saida',
             'presenca_comprador',
             'modalidade_frete',
             'transportadora',
@@ -320,6 +323,9 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'embarque_uf',
             'embarque_local',
             'embarque_local_despacho',
+            'numero_rastreabilidade',
+            'ordem_coleta',
+            'ato_concessorio',
             # Endereço de entrega
             'entrega_ativo',
             'entrega_cnpj_cpf',
@@ -374,7 +380,7 @@ class NotaFiscalForm(FaturamentoBaseForm):
             'finalidade_nfe': forms.Select(attrs={'class': 'form-select'}),
             'data_emissao': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'data_saida': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
-            'cfop': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '5102'}),
+            'entrada_saida': forms.Select(attrs={'class': 'form-select', 'id': 'id_entrada_saida'}),
             'presenca_comprador': forms.Select(attrs={'class': 'form-select'}),
             'modalidade_frete': forms.Select(attrs={'class': 'form-select'}),
             'transportadora': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_transportadoras'), placeholder='Buscar transportadora...'),
@@ -404,6 +410,9 @@ class NotaFiscalForm(FaturamentoBaseForm):
                                                    'style': 'text-transform:uppercase;'}),
             'embarque_local': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: Porto Mucuripe'}),
             'embarque_local_despacho': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: Recinto Alfandegado (opcional)'}),
+            'numero_rastreabilidade': forms.TextInput(attrs={**_fc, 'placeholder': 'Ex: 117007017'}),
+            'ordem_coleta': forms.Select(attrs={'class': 'form-select form-select-sm'}),
+            'ato_concessorio': forms.Select(attrs={'class': 'form-select form-select-sm'}),
             # Endereço de entrega
             'entrega_ativo': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_entrega_ativo'}),
             'entrega_cnpj_cpf': forms.TextInput(attrs={**_fc, 'placeholder': 'Somente dígitos (CNPJ 14 / CPF 11)', 'maxlength': '14'}),
@@ -457,11 +466,15 @@ class NotaFiscalForm(FaturamentoBaseForm):
         super().__init__(*args, empresa=empresa, **kwargs)
         if empresa:
             from cadastros.models import Cliente, Fornecedor, Transportadora
+            from drawback.models import AtoConcessorio
+            from exportacao.models import OrdemColeta
             self.fields['cliente'].queryset = Cliente.objects.filter(empresa=empresa, status='ATIVO').order_by('razao_social')
             self.fields['fornecedor'].queryset = Fornecedor.objects.filter(empresa=empresa, ativa=True).order_by('nome')
             self.fields['transportadora'].queryset = Transportadora.objects.filter(empresa=empresa).order_by('razao_social')
             self.fields['transportadora'].required = False
             self.fields['informacoes_fisco'].required = False
+            self.fields['ordem_coleta'].queryset = OrdemColeta.objects.filter(empresa=empresa).select_related('booking', 'container').order_by('-data_realizada', '-data_prevista')
+            self.fields['ato_concessorio'].queryset = AtoConcessorio.objects.filter(empresa=empresa, status='ATIVO').order_by('numero_ac')
         # Cliente e Fornecedor são mutuamente exclusivos — nenhum é obrigatório individualmente
         self.fields['cliente'].required = False
         self.fields['fornecedor'].required = False
@@ -472,6 +485,7 @@ class NotaFiscalForm(FaturamentoBaseForm):
             self.fields[f].required = False
         # Campos de exportação e entrega são sempre opcionais
         for f in ('embarque_uf', 'embarque_local', 'embarque_local_despacho',
+                  'numero_rastreabilidade', 'ordem_coleta', 'ato_concessorio',
                   'entrega_cnpj_cpf', 'entrega_logradouro', 'entrega_numero',
                   'entrega_complemento', 'entrega_bairro',
                   'entrega_codigo_municipio', 'entrega_nome_municipio', 'entrega_uf',
@@ -780,7 +794,7 @@ class ItemNotaFiscalForm(forms.ModelForm):
         widgets = {
             'numero_item': forms.HiddenInput(),
             'descricao': forms.TextInput(attrs=_sm),
-            'produto': forms.Select(attrs=_sm_sel),
+            'produto': Select2AjaxWidget(attrs=_sm_sel, ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'ncm': forms.TextInput(attrs={**_sm, 'maxlength': '8', 'placeholder': '00000000'}),
             'cest': forms.TextInput(attrs={**_sm, 'maxlength': '7', 'placeholder': '0000000'}),
             'ean': forms.TextInput(attrs={**_sm, 'placeholder': 'Vazio = SEM GTIN'}),

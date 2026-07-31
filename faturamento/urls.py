@@ -140,6 +140,7 @@ urlpatterns = [
     path('ajax/produto/<int:pk>/', views.ajax_produto_detail, name='ajax_produto_detail'),
     path('ajax/booking/<int:pk>/', views.ajax_booking_preview, name='ajax_booking_preview'),
     path('ajax/cotacao-bcb/', views.ajax_cotacao_bcb, name='ajax_cotacao_bcb'),
+    path('ajax/gerar-infcpl/', views.ajax_gerar_infcpl, name='ajax_gerar_infcpl'),
     path('ajax/nfe-para-cte/', views.ajax_nfe_para_cte, name='ajax_nfe_para_cte'),
     path('ajax/nfe-para-mdfe/', views.ajax_nfe_para_mdfe, name='ajax_nfe_para_mdfe'),
     path('ajax/cte-para-mdfe/', views.ajax_cte_para_mdfe, name='ajax_cte_para_mdfe'),

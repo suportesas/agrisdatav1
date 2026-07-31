@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.db.models import Count, Q, Sum, Avg
 from django.utils import timezone
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from datetime import timedelta
 from decimal import Decimal
 import json
@@ -263,20 +264,20 @@ def consumo_recursos_list(request):
     empresas_criticas = len(consumos_criticos)
     
     # Paginação
-    paginator = Paginator(ultimosPorEmpresa, 20)  # 20 registros por página
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
+    page_obj, per_page, per_page_options = paginate(request, ultimosPorEmpresa)
+
     context = {
         'page_title': 'Consumo de Recursos',
         'page_obj': page_obj,
-        'paginator': paginator,
+        'paginator': page_obj.paginator,
         'filtro': filtro,
         'busca': busca,
         'empresas_total': empresas_total,
         'empresas_com_alerta': empresas_com_alerta,
         'media_uso': media_uso,
         'empresas_criticas': empresas_criticas,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     
     return render(request, 'metricas/consumo_recursos_list.html', context)
@@ -368,15 +369,13 @@ def alertas_list(request):
     alertas_lidos = Alerta.objects.filter(lido=True).count()
     
     # Paginação
-    paginator = Paginator(alertas, 20)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
+    page_obj, per_page, per_page_options = paginate(request, alertas)
+
     context = {
         'page_title': 'Alertas do Sistema',
         'alertas': page_obj.object_list if page_obj else [],
         'page_obj': page_obj,
-        'paginator': paginator,
+        'paginator': page_obj.paginator,
         'is_paginated': page_obj.has_other_pages() if page_obj else False,
         'status': status,
         'tipo': tipo,
@@ -387,6 +386,8 @@ def alertas_list(request):
         'alertas_lidos': alertas_lidos,
         'tipo_choices': Alerta.TIPOS,
         'severidade_choices': Alerta.SEVERIDADE,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     
     return render(request, 'metricas/alertas_list.html', context)

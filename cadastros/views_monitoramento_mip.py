@@ -12,6 +12,7 @@ from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.db.models import Q
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from decimal import Decimal
 from django.utils import timezone
 
@@ -47,17 +48,15 @@ def estagio_list(request):
     if tipo_estagio:
         estagios = estagios.filter(tipo_estagio=tipo_estagio)
     
-    # Paginação (25 estágios por página)
-    paginator = Paginator(estagios, 25)
-    page = request.GET.get('page')
-    estagios = paginator.get_page(page)
-    
+    # Paginação
+    estagios, per_page, per_page_options = paginate(request, estagios)
+
     pragas = Praga.objects.filter(empresa=empresa, ativa=True)
     fases_criticas = EstagioDesenvolvimento.objects.filter(
         empresa=empresa, eh_fase_critica=True
     ).count()
     pragas_count = pragas.count()
-    
+
     return render(request, 'cadastros/monitoramento_mip/estagio_list.html', {
         'estagios': estagios,
         'pragas': pragas,
@@ -65,6 +64,8 @@ def estagio_list(request):
         'tipo_estagio': tipo_estagio,
         'fases_criticas': fases_criticas,
         'pragas_count': pragas_count,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -181,15 +182,13 @@ def monitoramento_mip_list(request):
         )
     
     # Paginação
-    paginator = Paginator(monitoramentos, 15)
-    page = request.GET.get('page')
-    monitoramentos = paginator.get_page(page)
-    
+    monitoramentos, per_page, per_page_options = paginate(request, monitoramentos)
+
     # Dados para filtros
     talhoes = Talhao.objects.filter(
         area__fazenda__empresa=empresa
     ).distinct()
-    
+
     return render(request, 'cadastros/monitoramento_mip/monitoramento_mip_list.html', {
         'monitoramentos': monitoramentos,
         'talhoes': talhoes,
@@ -197,6 +196,8 @@ def monitoramento_mip_list(request):
         'status': status,
         'data_inicio': data_inicio,
         'data_fim': data_fim,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

@@ -416,11 +416,10 @@ def historico_precos_list(request):
             pass
     
     # Paginação
-    from django.core.paginator import Paginator
-    paginator = Paginator(historico, 50)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
+    from core.pagination import paginate
+    page_obj, per_page, per_page_options = paginate(request, historico)
+
+
     # Fornecedores para filtro
     fornecedores = Fornecedor.objects.filter(
         empresa=empresa,
@@ -445,8 +444,10 @@ def historico_precos_list(request):
         'preco_medio': preco_medio,
         'preco_minimo': preco_minimo,
         'preco_maximo': preco_maximo,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
-    
+
     return render(request, 'compras/historico_precos_list.html', context)
 
 

@@ -4,6 +4,7 @@ from io import BytesIO
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -45,12 +46,7 @@ def qualidade_campo_list(request):
     safras = Safra.objects.filter(fazenda__empresa=empresa)
 
     total = qs.count()
-    paginator = Paginator(qs.order_by('-data_inspecao'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        inspecoes_page = paginator.page(page)
-    except Exception:
-        inspecoes_page = paginator.page(1)
+    inspecoes_page, per_page, per_page_options = paginate(request, qs.order_by('-data_inspecao'))
 
     context = {
         'inspecoes': inspecoes_page,
@@ -66,6 +62,8 @@ def qualidade_campo_list(request):
         'tipo_choices': InspecaoQualidadeCampo.TIPO_CHOICES,
         'title': 'Qualidade de Campo',
         'total': total,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'cadastros/qualidade_campo/qualidade_campo_list.html', context)
 

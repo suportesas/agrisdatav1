@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Sum, Count, Avg
 from django.forms import inlineformset_factory
 from django.http import HttpResponse, JsonResponse
@@ -180,8 +181,7 @@ def abastecimento_list(request):
 
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
-    paginator = Paginator(qs.order_by('-data', '-criado_em'), 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data', '-criado_em'))
 
     return render(request, 'cadastros/frota/abastecimento_list.html', {
         'title': 'Abastecimentos',
@@ -195,6 +195,8 @@ def abastecimento_list(request):
         'data_inicio': data_inicio,
         'data_fim': data_fim,
         'tipo_selecionado': tipo,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -409,8 +411,7 @@ def manutencao_list(request):
     alertas_count = AlertaManutencao.objects.filter(empresa=empresa, status='PENDENTE').count()
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
-    paginator = Paginator(qs.order_by('-data_abertura'), 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data_abertura'))
 
     return render(request, 'cadastros/frota/manutencao_list.html', {
         'title': 'Manutenções',
@@ -423,6 +424,8 @@ def manutencao_list(request):
         'vehicle_selecionado': vehicle_id,
         'status_selecionado': status,
         'tipo_selecionado': tipo,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -758,8 +761,7 @@ def pedagio_list(request):
     total_valor = qs.aggregate(t=Sum('valor'))['t'] or 0
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
-    paginator = Paginator(qs.order_by('-data', '-criado_em'), 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data', '-criado_em'))
 
     return render(request, 'cadastros/frota/pedagio_list.html', {
         'title': 'Pedágios',
@@ -770,6 +772,8 @@ def pedagio_list(request):
         'vehicle_selecionado': vehicle_id,
         'data_inicio': data_inicio,
         'data_fim': data_fim,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -835,8 +839,7 @@ def viagem_list(request):
     if status:
         qs = qs.filter(status=status)
 
-    paginator = Paginator(qs.order_by('-data'), 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data'))
 
     return render(request, 'cadastros/frota/viagem_list.html', {
         'title': 'Viagens',
@@ -844,6 +847,8 @@ def viagem_list(request):
         'page_obj': page_obj,
         'status_choices': Viagem.STATUS_CHOICES,
         'status_selecionado': status,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -925,8 +930,7 @@ def telemetria_list(request):
 
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
-    paginator = Paginator(qs.order_by('-data_hora'), 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data_hora'))
 
     return render(request, 'cadastros/frota/telemetria_list.html', {
         'title': 'Telemetria',
@@ -934,6 +938,8 @@ def telemetria_list(request):
         'page_obj': page_obj,
         'veiculos': veiculos,
         'vehicle_selecionado': vehicle_id,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

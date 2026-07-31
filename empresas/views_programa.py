@@ -13,6 +13,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -51,8 +52,7 @@ def programa_list(request):
     if app_filtro:
         programas = programas.filter(app_label=app_filtro)
 
-    paginator = Paginator(programas, 50)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, programas)
 
     apps_disponiveis = sorted(
         Programa.objects.filter(ativo=True).values_list('app_label', flat=True).distinct()
@@ -64,6 +64,8 @@ def programa_list(request):
         'app_filtro': app_filtro,
         'apps_disponiveis': [(a, APP_LABELS_PT.get(a, a.replace('_', ' ').title())) for a in apps_disponiveis],
         'app_labels_pt': APP_LABELS_PT,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'empresas/programa_list.html', context)
 

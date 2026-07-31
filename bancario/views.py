@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import JsonResponse
@@ -28,15 +29,18 @@ def conta_bancaria_list(request):
     empresa = request.user.empresa
     contas_qs = ContaBancaria.objects.filter(empresa=empresa).order_by('-conta_principal', 'banco')
 
-    paginator = Paginator(contas_qs, 20)
-    contas = paginator.get_page(request.GET.get('page'))
+    contas, per_page, per_page_options = paginate(request, contas_qs)
 
     # Anota última importação de cada conta
     for conta in contas:
         ultima = conta.importacoes.order_by('-importado_em').first()
         conta.ultima_importacao = ultima
 
-    return render(request, 'bancario/conta_list.html', {'contas': contas})
+    return render(request, 'bancario/conta_list.html', {
+        'contas': contas,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
 
 
 @login_required
@@ -215,8 +219,7 @@ def importacao_detail(request, pk):
     importacao = get_object_or_404(ImportacaoExtrato, pk=pk, empresa=empresa)
     lancamentos = importacao.lancamentos.order_by('data_lancamento', 'tipo')
 
-    paginator = Paginator(lancamentos, 50)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj, per_page, per_page_options = paginate(request, lancamentos)
 
     return render(request, 'bancario/importacao_detail.html', {
         'importacao': importacao,
@@ -225,6 +228,8 @@ def importacao_detail(request, pk):
         'total_pendentes': lancamentos.filter(status_conciliacao='PENDENTE').count(),
         'total_conciliados': lancamentos.filter(status_conciliacao='CONCILIADO').count(),
         'total_ignorados': lancamentos.filter(status_conciliacao='IGNORADO').count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -471,16 +476,18 @@ def relatorio_conciliacao(request):
 
     contas = ContaBancaria.objects.filter(empresa=empresa, ativa=True)
 
-    conciliados_paginator = Paginator(conciliados, 25)
-    pendentes_paginator = Paginator(pendentes, 25)
-    ignorados_paginator = Paginator(ignorados, 25)
+    conciliados_page, per_page, per_page_options = paginate(request, conciliados, page_param='conciliados_page')
+    pendentes_page, per_page, per_page_options = paginate(request, pendentes, page_param='pendentes_page')
+    ignorados_page, per_page, per_page_options = paginate(request, ignorados, page_param='ignorados_page')
 
     return render(request, 'bancario/relatorio_conciliacao.html', {
-        'conciliados': conciliados_paginator.get_page(request.GET.get('conciliados_page')),
-        'pendentes': pendentes_paginator.get_page(request.GET.get('pendentes_page')),
-        'ignorados': ignorados_paginator.get_page(request.GET.get('ignorados_page')),
+        'conciliados': conciliados_page,
+        'pendentes': pendentes_page,
+        'ignorados': ignorados_page,
         'contas': contas,
         'filtros': {'data_inicio': data_inicio, 'data_fim': data_fim, 'conta_id': conta_id},
+        'per_page': per_page,
+        'per_page_options': per_page_options,
         'stats': {
             'qtd_conciliados': conciliados.count(),
             'qtd_pendentes': pendentes.count(),

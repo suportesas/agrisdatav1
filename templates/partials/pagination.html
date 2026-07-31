@@ -1,6 +1,7 @@
-{% comment %}Compact pagination with ellipses and query param preservation. Always visible while there's at least 1 record, even on a single page.{% endcomment %}
+{% comment %}Compact pagination with ellipses and query param preservation. Always visible while there's at least 1 record, even on a single page. Pass page_param to override the query string key when a page has more than one paginated list (defaults to "page").{% endcomment %}
 {% load pagination_extras %}
 {% if page_obj.paginator.count > 0 %}
+{% with page_param=page_param|default:"page" %}
 <nav aria-label="Navegação de páginas" class="d-flex align-items-center justify-content-between">
   <div>
     <small class="text-muted">Mostrando <strong>{{ page_obj.start_index }}</strong> - <strong>{{ page_obj.end_index }}</strong> de <strong>{{ page_obj.paginator.count }}</strong></small>
@@ -9,7 +10,7 @@
     <ul class="pagination mb-0">
       <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
         {% if page_obj.has_previous %}
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Anterior</a>
+          <a class="page-link" href="?{{ page_param }}={{ page_obj.previous_page_number }}{% for k,v in request.GET.items %}{% if k != page_param %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Anterior</a>
         {% else %}
           <span class="page-link">Anterior</span>
         {% endif %}
@@ -21,7 +22,7 @@
           {% if item == '...' %}
             <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
           {% else %}
-            <li class="page-item {% if page_obj.number == item %}active{% endif %}"><a class="page-link" href="?page={{ item }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">{{ item }}</a></li>
+            <li class="page-item {% if page_obj.number == item %}active{% endif %}"><a class="page-link" href="?{{ page_param }}={{ item }}{% for k,v in request.GET.items %}{% if k != page_param %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">{{ item }}</a></li>
           {% endif %}
         {% endfor %}
       {% else %}
@@ -30,7 +31,7 @@
 
       <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
         {% if page_obj.has_next %}
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Próximo</a>
+          <a class="page-link" href="?{{ page_param }}={{ page_obj.next_page_number }}{% for k,v in request.GET.items %}{% if k != page_param %}&{{ k }}={{ v|urlencode }}{% endif %}{% endfor %}">Próximo</a>
         {% else %}
           <span class="page-link">Próximo</span>
         {% endif %}
@@ -38,4 +39,5 @@
     </ul>
   </div>
 </nav>
+{% endwith %}
 {% endif %}

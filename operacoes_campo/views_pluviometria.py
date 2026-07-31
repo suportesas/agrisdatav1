@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 
@@ -41,12 +42,7 @@ def pluviometria_list(request):
     total_mm = qs.aggregate(t=Sum('mm_chuva'))['t'] or 0
 
     # Paginação
-    paginator = Paginator(qs.order_by('-data'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        registros_page = paginator.page(page)
-    except Exception:
-        registros_page = paginator.page(1)
+    registros_page, per_page, per_page_options = paginate(request, qs.order_by('-data'))
 
     context = {
         'registros': registros_page,
@@ -58,6 +54,8 @@ def pluviometria_list(request):
         'chart_labels': chart_labels,
         'chart_data': chart_data,
         'title': 'Pluviometria',
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
     return render(request, 'cadastros/pluviometria/pluviometria_list.html', context)
 

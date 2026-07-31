@@ -12,6 +12,7 @@ from django.template.loader import render_to_string
 from django.db.models import Count, Q
 from django.db import transaction
 from django.core.paginator import Paginator
+from core.pagination import paginate, resolve_per_page, PER_PAGE_OPTIONS
 from django.utils import timezone
 from django.urls import reverse
 from datetime import timedelta
@@ -429,14 +430,8 @@ def usuario_list(request):
         usuarios = usuarios.order_by(ordem)
 
     # Paginação com controle de registros por página
-    per_page = request.GET.get('per_page', '25')
-    try:
-        per_page = int(per_page)
-        if per_page not in [10, 20, 25, 50, 100]:
-            per_page = 25
-    except (ValueError, TypeError):
-        per_page = 25
-    
+    per_page = resolve_per_page(request)
+
     page_obj = None
     grouped_empresas = []
 
@@ -503,7 +498,9 @@ def usuario_list(request):
         'empresa_filtro_obj': empresa_filtro_obj,
         'grouped_empresas': grouped_empresas,
         'view_mode': view_mode,
-        'title': 'Usuários'
+        'title': 'Usuários',
+        'per_page': per_page,
+        'per_page_options': list(PER_PAGE_OPTIONS),
     }
     return render(request, 'usuarios/usuario_list.html', context)
 
@@ -1428,18 +1425,22 @@ def login_registros(request):
     # 🚨 Obter anomalias recentes
     anomalias_recentes = LoginAnomalia.objects.select_related('usuario').filter(
         confirmada=False  # Apenas não confirmadas
-    ).order_by('-data_deteccao')[:10]
-    
+    ).order_by('-data_deteccao')
+
     if not request.user.is_superuser and empresa_filtro:
         anomalias_recentes = anomalias_recentes.filter(usuario__empresa=empresa_filtro)
-    
+
+    anomalias_recentes = anomalias_recentes[:10]
+
     # 🔔 Obter alertas recentes
     alertas_recentes = AlertaSeguranca.objects.select_related('usuario').filter(
         status__in=['NOVO', 'EM_INVESTIGACAO']
-    ).order_by('-data_criacao')[:10]
-    
+    ).order_by('-data_criacao')
+
     if not request.user.is_superuser and empresa_filtro:
         alertas_recentes = alertas_recentes.filter(empresa=empresa_filtro)
+
+    alertas_recentes = alertas_recentes[:10]
     
     # Paginação
     paginator = Paginator(registros, 50)

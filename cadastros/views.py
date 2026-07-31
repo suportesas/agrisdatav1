@@ -41,6 +41,7 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q, Count, Sum, Avg, Case, When, Value, IntegerField
 from django.db import transaction
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from decimal import Decimal
@@ -149,10 +150,7 @@ def vehicle_list(request):
     if sort in allowed_sort:
         veiculos = veiculos.order_by(sort)
 
-    # Pagination: show 10 items per page for a compact list view
-    paginator = Paginator(veiculos, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, veiculos)
 
     # Prepare extra context for template
     transportadoras = []
@@ -198,6 +196,8 @@ def vehicle_list(request):
 
     return render(request, 'cadastros/vehicle/vehicle_list.html', {
         'page_obj': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
         'total': veiculos.count(),
         'active_count': active_count,
         'transportadoras_count': transportadoras_count,
@@ -555,18 +555,8 @@ def ncm_list(request):
         else:
             qs = qs.filter(descricao__icontains=desc_q)
 
-    # Respect per_page query parameter to control items per page (sanitized)
-    try:
-        per_page = int(request.GET.get('per_page', 25))
-    except (TypeError, ValueError):
-        per_page = 25
-    # Allow only sensible choices
-    if per_page not in (10, 25, 50, 100):
-        per_page = 25
-
-    paginator = Paginator(qs.order_by('codigo'), per_page)
-    page_obj = paginator.get_page(request.GET.get('page'))
-    return render(request, 'cadastros/ncm/ncm_list.html', {'page_obj': page_obj, 'q': q, 'descricao': desc_q, 'per_page': per_page})
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('codigo'))
+    return render(request, 'cadastros/ncm/ncm_list.html', {'page_obj': page_obj, 'q': q, 'descricao': desc_q, 'per_page': per_page, 'per_page_options': per_page_options})
 
 
 @login_required
@@ -748,17 +738,8 @@ def cfop_list(request):
     if desc_q:
         qs = qs.filter(descricao__icontains=desc_q)
 
-    # per_page support
-    try:
-        per_page = int(request.GET.get('per_page', 25))
-    except (TypeError, ValueError):
-        per_page = 25
-    if per_page not in (10, 25, 50, 100):
-        per_page = 25
-
-    paginator = Paginator(qs.order_by('codigo'), per_page)
-    page_obj = paginator.get_page(request.GET.get('page'))
-    return render(request, 'cadastros/cfop/cfop_list.html', {'page_obj': page_obj, 'q': q, 'descricao': desc_q, 'per_page': per_page})
+    page_obj, per_page, per_page_options = paginate(request, qs.order_by('codigo'))
+    return render(request, 'cadastros/cfop/cfop_list.html', {'page_obj': page_obj, 'q': q, 'descricao': desc_q, 'per_page': per_page, 'per_page_options': per_page_options})
 
 
 @login_required
@@ -1168,13 +1149,13 @@ def fazenda_list(request):
         fazendas = fazendas.filter(ativa=False)
     
     # Paginação
-    paginator = Paginator(fazendas, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
+    page_obj, per_page, per_page_options = paginate(request, fazendas)
+
     # Informações adicionais
     context = {
         'page_obj': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
         'total_fazendas': fazendas.count(),
         'limite_plano': request.user.empresa.limite_fazendas,
         'pode_adicionar': fazendas.filter(ativa=True).count() < request.user.empresa.limite_fazendas,
@@ -1340,14 +1321,15 @@ def porto_list(request):
     if tipo_atual:
         portos_qs = portos_qs.filter(tipo=tipo_atual)
 
-    paginator = Paginator(portos_qs, 25)
-    portos = paginator.get_page(request.GET.get('page'))
+    portos, per_page, per_page_options = paginate(request, portos_qs)
 
     return render(request, 'cadastros/porto/porto_list.html', {
         'portos': portos,
         'q': q,
         'tipo_atual': tipo_atual,
         'total_portos': portos_qs.count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -1431,8 +1413,7 @@ def agente_exportacao_list(request):
     if tipo_atual:
         agentes_qs = agentes_qs.filter(tipo=tipo_atual)
 
-    paginator = Paginator(agentes_qs, 25)
-    agentes = paginator.get_page(request.GET.get('page'))
+    agentes, per_page, per_page_options = paginate(request, agentes_qs)
 
     return render(request, 'cadastros/agente_exportacao/list.html', {
         'agentes': agentes,
@@ -1440,6 +1421,8 @@ def agente_exportacao_list(request):
         'tipo_atual': tipo_atual,
         'tipo_choices': AgenteExportacao.TIPO_CHOICES,
         'total_agentes': agentes_qs.count(),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -2184,13 +2167,13 @@ def cultura_list(request):
         culturas = culturas.filter(ativa=False)
     
     # Paginação
-    paginator = Paginator(culturas, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
+    page_obj, per_page, per_page_options = paginate(request, culturas)
+
     # Informações adicionais
     context = {
         'page_obj': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
         'total_culturas': culturas.count(),
         'limite_plano': request.user.empresa.limite_produtos,
         'pode_adicionar': culturas.filter(ativa=True).count() < request.user.empresa.limite_produtos,
@@ -2339,12 +2322,12 @@ def praga_list(request):
         pragas = pragas.filter(ativa=False)
     
     # Paginação
-    paginator = Paginator(pragas, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
+    page_obj, per_page, per_page_options = paginate(request, pragas)
+
     context = {
         'page_obj': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
         'total_pragas': pragas.count(),
     }
     
@@ -2460,16 +2443,13 @@ def prazo_pagamento_list(request):
         prazos = prazos.filter(ativo=False)
     
     total_prazos = prazos.count()
-    paginator = Paginator(prazos, 20)
-    page = request.GET.get('page', 1)
-    try:
-        prazos_page = paginator.page(page)
-    except Exception:
-        prazos_page = paginator.page(1)
+    prazos_page, per_page, per_page_options = paginate(request, prazos)
 
     context = {
         'prazos': prazos_page,
         'total_prazos': total_prazos,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'cadastros/prazo_pagamento/prazo_pagamento_list.html', context)
@@ -2658,13 +2638,13 @@ def safra_list(request):
         safras = safras.distinct()
 
     # Paginação
-    paginator = Paginator(safras.order_by('-ano', 'nome'), 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page_obj, per_page, per_page_options = paginate(request, safras.order_by('-ano', 'nome'))
 
     context = {
         'safras': page_obj.object_list,
         'page_obj': page_obj,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
         'fazendas': Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome'),
         'culturas': Cultura.objects.filter(empresa=empresa, ativa=True).order_by('nome'),
     }
@@ -3101,12 +3081,7 @@ def area_list(request):
     total_areas = areas.count()
 
     # Paginação
-    paginator = Paginator(areas, 20)
-    page = request.GET.get('page', 1)
-    try:
-        areas_page = paginator.page(page)
-    except Exception:
-        areas_page = paginator.page(1)
+    areas_page, per_page, per_page_options = paginate(request, areas)
 
     # Adiciona estatísticas (apenas para os itens da página atual)
     for area in areas_page:
@@ -3124,6 +3099,8 @@ def area_list(request):
         'areas': areas_page,
         'fazendas': fazendas,
         'total_areas': total_areas,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'cadastros/area/area_list.html', context)
@@ -3321,12 +3298,7 @@ def talhao_list(request):
     }
 
     # Paginação
-    paginator = Paginator(talhoes, 20)
-    page = request.GET.get('page', 1)
-    try:
-        talhoes_page = paginator.page(page)
-    except Exception:
-        talhoes_page = paginator.page(1)
+    talhoes_page, per_page, per_page_options = paginate(request, talhoes)
 
     # 🔥 NOVO: Adiciona informação da safra ativa para cada talhão (apenas da página atual)
     for talhao in talhoes_page:
@@ -3356,8 +3328,10 @@ def talhao_list(request):
         'fazendas': fazendas,
         'areas': areas,
         'stats': stats,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
-    
+
     return render(request, 'cadastros/talhao/talhao_list.html', context)
 
 
@@ -3875,8 +3849,7 @@ def vendedor_list(request):
         total_exportacao = vendedores.filter(tipo_mercado__in=['EXTERNO', 'AMBOS']).count()
 
         vendedores = vendedores.order_by('nome_completo')
-        paginator = Paginator(vendedores, 20)
-        page_obj = paginator.get_page(request.GET.get('page'))
+        page_obj, per_page, per_page_options = paginate(request, vendedores)
 
         context = {
             'vendedores': page_obj,
@@ -3886,6 +3859,8 @@ def vendedor_list(request):
             'total_ativos': total_ativos,
             'total_mercado_interno': total_mercado_interno,
             'total_exportacao': total_exportacao,
+            'per_page': per_page,
+            'per_page_options': per_page_options,
         }
 
         logger.debug('About to render vendedor_list with %d vendedores', total_vendedores)
@@ -3968,21 +3943,7 @@ def fornecedor_list(request):
     }
     fornecedores = fornecedores.distinct().order_by(sort_map.get(sort_by, 'nome'))
 
-    # pagination
-    per_page = request.GET.get('per_page', '20')
-    try:
-        per_page = int(per_page)
-        if per_page not in [10, 20]:
-            per_page = 20
-    except ValueError:
-        per_page = 20
-
-    paginator = Paginator(fornecedores, per_page)
-    page = request.GET.get('page')
-    try:
-        fornecedores_page = paginator.get_page(page)
-    except Exception:
-        fornecedores_page = paginator.get_page(1)
+    fornecedores_page, per_page, per_page_options = paginate(request, fornecedores)
 
     # categorias para o filtro
     from .models import CategoriaFornecedor
@@ -3996,9 +3957,9 @@ def fornecedor_list(request):
         'categoria_atual': categoria,
         'tipo_atual': tipo,
         'categorias': categorias,
-        'paginator': paginator,
+        'paginator': fornecedores_page.paginator,
         'per_page': per_page,
-        'per_page_options': [10, 20],
+        'per_page_options': per_page_options,
         'sort_by': sort_by,
     }
     return render(request, 'cadastros/fornecedor/fornecedor_list.html', context)
@@ -4249,11 +4210,7 @@ def cliente_list(request):
     clientes_qs = clientes_qs.order_by('razao_social')
 
     # Paginação
-    paginator = Paginator(clientes_qs, 20)
-    try:
-        clientes = paginator.page(page)
-    except Exception:
-        clientes = paginator.page(1)
+    clientes, per_page, per_page_options = paginate(request, clientes_qs)
 
     # Lista de vendedores para filtro
     vendedores = Vendedor.objects.filter(empresa=empresa)
@@ -4276,6 +4233,8 @@ def cliente_list(request):
         'vendedores': vendedores,
         'vendedor_atual': vendedor_atual,
         'stats': stats,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'cadastros/cliente/cliente_list.html', context)
@@ -5673,18 +5632,15 @@ def comissao_list(request):
         total=Sum('valor_comissao')
     )['total'] or 0
 
-    paginator = Paginator(comissoes, 20)
-    page = request.GET.get('page', 1)
-    try:
-        comissoes_page = paginator.page(page)
-    except Exception:
-        comissoes_page = paginator.page(1)
+    comissoes_page, per_page, per_page_options = paginate(request, comissoes)
 
     context = {
         'comissoes': comissoes_page,
         'total_pendente': total_pendente,
         'total_pago': total_pago,
         'vendedores': Vendedor.objects.filter(empresa=empresa, status='ATIVO'),
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     }
 
     return render(request, 'cadastros/comissao/comissao_list.html', context)
@@ -5785,17 +5741,14 @@ def poco_list(request):
     fazendas = Fazenda.objects.filter(empresa=empresa, ativa=True).order_by('nome')
 
     total = pocos.count()
-    paginator = Paginator(pocos.order_by('nome'), 20)
-    page = request.GET.get('page', 1)
-    try:
-        pocos_page = paginator.page(page)
-    except Exception:
-        pocos_page = paginator.page(1)
+    pocos_page, per_page, per_page_options = paginate(request, pocos.order_by('nome'))
 
     return render(request, 'cadastros/poco/poco_list.html', {
         'pocos': pocos_page,
         'fazendas': fazendas,
         'total': total,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

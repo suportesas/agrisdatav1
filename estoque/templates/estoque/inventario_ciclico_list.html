@@ -72,6 +72,9 @@
           de <strong>{{ inventarios.paginator.count }}</strong> invent{{ inventarios.paginator.count|pluralize:"ário,ários" }}
         {% endif %}
       </span>
+      <form method="get" class="row g-2 align-items-end" id="filterForm">
+        {% include 'partials/per_page_select.html' with col_class='' %}
+      </form>
     </div>
 
     <!-- Lista -->

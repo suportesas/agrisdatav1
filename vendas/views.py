@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.db.models import Q, Sum, Count
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.utils import timezone
 from decimal import Decimal
 
@@ -62,14 +63,15 @@ def pedido_list(request):
     if data_fim:
         qs = qs.filter(data_pedido__lte=data_fim)
 
-    paginator = Paginator(qs.order_by('-criado_em'), 20)
-    page = paginator.get_page(request.GET.get('page'))
+    page, per_page, per_page_options = paginate(request, qs.order_by('-criado_em'))
 
     return render(request, 'vendas/list.html', {
         'page_obj': page,
         'status_choices': PedidoVenda.STATUS_CHOICES,
         'tipo_choices': PedidoVenda.TIPO_VENDA_CHOICES,
         'filtros': {'status': status_f, 'tipo': tipo_f, 'q': q, 'data_ini': data_ini, 'data_fim': data_fim},
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 
@@ -235,7 +237,6 @@ def pedido_emitir_documento(request, pk):
                 natureza_operacao=pedido.natureza_operacao or (cfg.natureza_operacao_padrao if cfg else 'VENDA'),
                 cliente=pedido.cliente,
                 data_emissao=timezone.now().date(),
-                cfop=cfg.cfop_venda_interna if cfg else '5102',
                 status='RASCUNHO',
                 modalidade_frete='SEM_FRETE',
                 informacoes_complementares=pedido.observacoes_fiscais,
@@ -278,6 +279,89 @@ def pedido_emitir_documento(request, pk):
                     aliquota_pis=aliquota_pis, valor_pis=valor_pis,
                     aliquota_cofins=aliquota_cofins, valor_cofins=valor_cofins,
                 )
+            nf.calcular_totais()
+            nf.save()
+            pedido.nota_fiscal = nf
+            messages.info(request, f'NF-e {nf.numero} criada como rascunho.')
+
+        # --- Gerar NF-e (Exportação) ---
+        if pedido.gerar_nota_fiscal and pedido.tipo_venda == 'EXPORTACAO' and not pedido.nota_fiscal_id and romaneio and romaneio.nota_fiscal_id:
+            pedido.nota_fiscal = romaneio.nota_fiscal
+            messages.info(request, f'Romaneio {romaneio.numero} já possui NF-e {romaneio.nota_fiscal.numero} — reaproveitada.')
+        elif pedido.gerar_nota_fiscal and pedido.tipo_venda == 'EXPORTACAO' and not pedido.nota_fiscal_id:
+            from faturamento.models import NotaFiscal, ItemNotaFiscal, ConfiguracaoFiscal
+            from faturamento.services.infcpl import montar_texto_infcpl_exportacao
+            cfg = ConfiguracaoFiscal.objects.filter(empresa=empresa).first()
+            from django.db.models import Max as _Max
+            max_num = NotaFiscal.objects.filter(empresa=empresa).aggregate(m=_Max('numero'))['m'] or 0
+            nf = NotaFiscal.objects.create(
+                empresa=empresa,
+                numero=max_num + 1,
+                serie=cfg.serie_nfe if cfg else 1,
+                natureza_operacao=pedido.natureza_operacao or (cfg.natureza_operacao_padrao if cfg else 'VENDA'),
+                cliente=pedido.cliente,
+                data_emissao=timezone.now().date(),
+                status='RASCUNHO',
+                modalidade_frete='SEM_FRETE',
+                criado_por=request.user,
+                atualizado_por=request.user,
+            )
+            for item in pedido.itens.all():
+                trib = item.tributacao
+                if trib:
+                    # Itens legados (criados antes desta tributação automática) não têm
+                    # `tributacao` — caem no fallback zerado abaixo, como já era antes.
+                    base_icms = item.preco_total * (trib.icms_base_calculo / Decimal('100')) * (Decimal('1') - trib.icms_reducao_base / Decimal('100'))
+                    aliquota_icms, aliquota_ipi = trib.icms_aliquota, trib.ipi_aliquota
+                    aliquota_pis, aliquota_cofins = trib.pis_aliquota, trib.cofins_aliquota
+                    valor_icms = (base_icms * aliquota_icms / Decimal('100')).quantize(Decimal('0.01'))
+                    valor_ipi = (item.preco_total * aliquota_ipi / Decimal('100')).quantize(Decimal('0.01'))
+                    valor_pis = (item.preco_total * (trib.pis_base_calculo / Decimal('100')) * aliquota_pis / Decimal('100')).quantize(Decimal('0.01'))
+                    valor_cofins = (item.preco_total * (trib.cofins_base_calculo / Decimal('100')) * aliquota_cofins / Decimal('100')).quantize(Decimal('0.01'))
+                    cst_icms, cst_pis, cst_cofins = trib.icms_situacao_tributaria, trib.pis_situacao_tributaria, trib.cofins_situacao_tributaria
+                else:
+                    cst_icms, cst_pis, cst_cofins = '00', '01', '01'
+                    aliquota_icms = aliquota_ipi = aliquota_pis = aliquota_cofins = Decimal('0.00')
+                    valor_icms = valor_ipi = valor_pis = valor_cofins = Decimal('0.00')
+
+                ItemNotaFiscal.objects.create(
+                    nota_fiscal=nf,
+                    numero_item=item.pk,
+                    descricao=item.descricao,
+                    produto=item.produto,
+                    ncm=item.ncm or '00000000',
+                    cfop=item.cfop or (cfg.cfop_venda_exportacao if cfg else '7101'),
+                    cst_icms=cst_icms, cst_pis=cst_pis, cst_cofins=cst_cofins,
+                    unidade=item.unidade,
+                    quantidade=item.quantidade,
+                    valor_unitario=item.preco_unitario,
+                    valor_total=item.preco_total,
+                    valor_desconto=item.desconto_item,
+                    aliquota_icms=aliquota_icms, valor_icms=valor_icms,
+                    aliquota_ipi=aliquota_ipi, valor_ipi=valor_ipi,
+                    aliquota_pis=aliquota_pis, valor_pis=valor_pis,
+                    aliquota_cofins=aliquota_cofins, valor_cofins=valor_cofins,
+                )
+
+            produtos_desc = '/'.join(dict.fromkeys(
+                item.produto.nome for item in pedido.itens.all() if item.produto
+            ))
+            ptax_eur = ptax_data = None
+            try:
+                from faturamento.bcb import buscar_cotacoes
+                resultado = buscar_cotacoes(moedas=['EUR'], referencia=nf.data_emissao)
+                ptax_eur = resultado['cotacoes']['EUR']['venda']
+                ptax_data = resultado['data']
+            except Exception:
+                pass  # PTAX é best-effort — não pode travar a emissão do pedido
+
+            nf.informacoes_complementares = montar_texto_infcpl_exportacao(
+                texto_base=cfg.texto_isencao_icms if cfg else '',
+                produtos_desc=produtos_desc,
+                ptax_eur=ptax_eur,
+                ptax_data=ptax_data,
+                numero_rastreabilidade='',
+            )
             nf.calcular_totais()
             nf.save()
             pedido.nota_fiscal = nf
@@ -408,12 +492,13 @@ def tabela_preco_list(request):
     if ativo_f in ('1', '0'):
         qs = qs.filter(ativo=(ativo_f == '1'))
 
-    paginator = Paginator(qs.order_by('-vigencia_inicio'), 25)
-    page = paginator.get_page(request.GET.get('page'))
+    page, per_page, per_page_options = paginate(request, qs.order_by('-vigencia_inicio'))
 
     return render(request, 'vendas/tabela_preco/list.html', {
         'page_obj': page,
         'filtros': {'q': q, 'ativo': ativo_f},
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

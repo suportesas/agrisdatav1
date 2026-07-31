@@ -5,6 +5,7 @@ Views para CRUD de Tipos de Produto
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from core.pagination import paginate
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -31,15 +32,15 @@ def tipo_produto_list(request):
     
     qs = qs.order_by('nome')
     
-    paginator = Paginator(qs, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
+    page_obj, per_page, per_page_options = paginate(request, qs)
+
     return render(request, 'produtos/tipo_produto/list.html', {
         'tipos': page_obj,
         'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
         'search': search,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
     })
 
 

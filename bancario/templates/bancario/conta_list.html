@@ -32,6 +32,9 @@
         de <strong>{{ contas.paginator.count }}</strong> conta{{ contas.paginator.count|pluralize }} banc{{ contas.paginator.count|pluralize:"ária,árias" }}
       {% endif %}
     </span>
+    <form method="get" class="row g-2 align-items-end" id="filterForm">
+      {% include 'partials/per_page_select.html' with col_class='' %}
+    </form>
   </div>
 
   <!-- Lista -->

@@ -12,7 +12,7 @@ O catálogo de produtos é a base de todo o sistema: praticamente todos os outro
 |---|---|
 | Categoria → Subcategoria | Classificação hierárquica do produto; a subcategoria só aparece no formulário depois de escolhida a categoria pai |
 | Tipo de Produto | Classificação livre adicional (ex: matéria-prima, revenda, insumo) |
-| Unidade de Medida | Unidade em que o produto é comprado/vendido/estocado (kg, un, litro, etc.) |
+| Unidade de Medida | Unidade em que o produto é estocado; pode ser diferente da unidade de compra/venda (o **Fator de Conversão** faz a ponte entre elas) |
 | Marca | Fabricante/marca comercial do produto |
 | Natureza de Operação | Natureza fiscal usada nas notas fiscais que envolvem o produto |
 | Variantes / Atributos | Permitem um mesmo produto-base ter variações (ex: tamanho, cor) sem duplicar o cadastro |
@@ -46,10 +46,24 @@ A listagem (`/produtos/`) mostra contadores no topo (total, ativos, inativos, es
 
 <figure>
   <img src="screenshots/produtos/04-novo.png" alt="Formulário de Novo Produto">
-  <figcaption>Cadastro de produto: dados gerais, categoria/subcategoria, unidade, dados fiscais (NCM/tributação).</figcaption>
+  <figcaption>Formulário em 6 abas: Geral, Fiscal, Tributações, Financeiro, Estoque, Fornecedores.</figcaption>
 </figure>
 
-Ao escolher a **Categoria**, a lista de **Subcategoria** é filtrada automaticamente para mostrar só as subcategorias daquela categoria — não é possível salvar uma subcategoria "solta", sem categoria pai.
+**Como preencher (aba Geral):**
+
+| Campo | Obrigatório | Descrição |
+|---|---|---|
+| Código | Não | Deixe em branco para o sistema gerar automaticamente |
+| Código de Barras | Não | EAN/GTIN, se houver |
+| Nome | Sim | Nome completo do produto |
+| Nome Resumido | Não | Usado onde o espaço é curto (ex: etiquetas) |
+| Categoria | Sim | Escolher primeiro — filtra as opções de Subcategoria |
+| Subcategoria | Não | Só aparece depois de escolher a Categoria; o botão **+** ao lado cria uma nova subcategoria sem sair do formulário |
+| Unidade de Medida / Unidade de Compra / Unidade de Venda | Sim (medida) | Se a compra/venda usa unidade diferente da de estoque, preencha o **Fator de Conversão** |
+| Peso líquido / bruto por unidade | Não | Usado em cálculos de packing list e frete |
+| Ativo | Não (padrão ligado) | Desligar em vez de excluir um produto já usado em documentos |
+
+A aba **Fiscal** define NCM, CFOP padrão e origem da mercadoria; **Tributações** guarda alíquotas por operação; **Financeiro** define preço de custo, preço de venda e margem; **Estoque** define estoque mínimo/máximo e se o produto **controla estoque** (produtos de serviço, por exemplo, não controlam); **Fornecedores** vincula fornecedores habituais e seus preços de referência.
 
 ### Telas de apoio ao catálogo
 
@@ -83,12 +97,20 @@ Ao escolher a **Categoria**, a lista de **Subcategoria** é filtrada automaticam
   <figcaption>Naturezas de Operação (`/produtos/naturezas/`) — classificação fiscal usada nas notas fiscais.</figcaption>
 </figure>
 
-Essas seis telas de apoio (Tipos de Produto, Categorias, Subcategorias, Marcas, Unidades e Naturezas de Operação) seguem o mesmo padrão simples: uma lista com busca/status e um formulário curto de criação/edição. São cadastradas uma vez e reutilizadas por todos os produtos.
+Essas seis telas de apoio (Tipos de Produto, Categorias, Subcategorias, Marcas, Unidades e Naturezas de Operação) seguem o mesmo padrão simples: uma lista com busca/status e um formulário curto (nome + código, em geral 1-2 campos obrigatórios). São cadastradas uma vez e reutilizadas por todos os produtos — e podem ser criadas "on the fly" pelo botão **+** direto no formulário de produto, sem precisar navegar até a tela dedicada.
+
+### Fluxo passo a passo — cadastrar um produto novo
+
+1. Garanta que a **Categoria** (e Subcategoria, se aplicável) já existe — ou crie na hora, pelo botão **+**.
+2. Garanta que a **Unidade de Medida** existe.
+3. Preencha a aba Geral (nome, categoria, unidade) e salve — ou navegue pelas demais abas antes de salvar, se já tiver os dados fiscais/financeiros em mãos.
+4. Complete a aba **Fiscal** antes do produto ser usado numa nota fiscal — NCM incorreto ou ausente bloqueia a emissão.
+5. Se o produto for comprado de fornecedores específicos, vincule-os na aba **Fornecedores** — isso acelera a criação de cotações no módulo de Compras.
 
 ### Dicas e erros comuns
 
 - Um produto **inativo** (`ativo=False`) continua existindo no histórico (notas, movimentações antigas) mas some das buscas de uso corrente — é a forma correta de "excluir" um produto que já foi usado.
-- Sem uma **Subcategoria** compatível com a Categoria escolhida, o formulário não deixa salvar — cadastre a subcategoria que falta antes de criar o produto.
+- Sem uma **Subcategoria** compatível com a Categoria escolhida, o formulário não deixa salvar — cadastre a subcategoria que falta antes de criar o produto (ou use o botão **+**).
 - Produtos do tipo Defensivo Agrícola sem os campos de registro/classe toxicológica preenchidos aparecem incompletos nas recomendações do módulo MIP.
 
 ## Estoque (`/estoque/`)
@@ -110,7 +132,7 @@ O módulo de Estoque controla armazéns, locais de estocagem, lotes e movimenta�
 | Movimentação de Estoque | Registro de entrada, saída, transferência ou ajuste; pode precisar de execução explícita |
 | Inventário Cíclico | Contagem periódica programada para conferir o saldo físico contra o sistema |
 
-Toda movimentação que envolve lote (saída, transferência, ajuste) fica com status pendente até ser **executada** — a execução valida a quantidade disponível no lote de origem antes de efetivar a baixa. Já a entrada simples (sem lote) atualiza o estoque assim que é salva, sem etapa de execução.
+Status de uma Movimentação: **Pendente** (criada, aguardando execução) → **Executada** (estoque atualizado). Toda movimentação que envolve lote (saída, transferência, ajuste) fica pendente até ser **executada** — a execução valida a quantidade disponível no lote de origem antes de efetivar a baixa. Já a entrada simples (sem lote) atualiza o estoque assim que é salva.
 
 ### Tela: Dashboard de Estoque
 
@@ -131,6 +153,13 @@ Toda movimentação que envolve lote (saída, transferência, ajuste) fica com s
 <figure>
   <img src="screenshots/estoque/03-armazens-lista.png" alt="Lista de Armazéns">
   <figcaption>Armazéns cadastrados (`/estoque/armazens/`).</figcaption>
+</figure>
+
+### Tela: Formulário de Novo Armazém
+
+<figure>
+  <img src="screenshots/estoque/16-armazem-form.png" alt="Formulário de Novo Armazém">
+  <figcaption>Nome, tipo de armazém e se controla localização interna (locais de estocagem).</figcaption>
 </figure>
 
 ### Tela: Detalhe do Armazém
@@ -154,6 +183,15 @@ Toda movimentação que envolve lote (saída, transferência, ajuste) fica com s
   <figcaption>Lotes ativos (`/estoque/lotes/`), com validade e quantidade atual.</figcaption>
 </figure>
 
+### Tela: Formulário de Novo Lote
+
+<figure>
+  <img src="screenshots/estoque/17-lote-form.png" alt="Formulário de Novo Lote">
+  <figcaption>Produto, armazém/local, quantidade inicial, número do lote e validade.</figcaption>
+</figure>
+
+Normalmente um lote **não é criado manualmente aqui** — ele nasce automaticamente de um Recebimento de Compra ou de uma Entrada de Estoque com lote. Este formulário é usado só para casos excepcionais, como um saldo inicial de migração.
+
 ### Tela: Detalhe do Lote
 
 <figure>
@@ -175,22 +213,45 @@ Toda movimentação que envolve lote (saída, transferência, ajuste) fica com s
   <figcaption>Dados da movimentação e, quando pendente, o botão para executá-la ou cancelá-la.</figcaption>
 </figure>
 
-### Telas: Entrada, Saída e Transferência rápidas
+### Tela: Entrada de Estoque
 
 <figure>
   <img src="screenshots/estoque/10-entrada.png" alt="Registrar Entrada">
-  <figcaption>Formulário de entrada rápida (`/estoque/entrada/`).</figcaption>
+  <figcaption>Formulário em 4 abas (Tipo e Origem, Produto e Quantidade, Lote, Informações Adicionais), com painel de dicas embutido.</figcaption>
 </figure>
+
+**Como preencher (aba Tipo e Origem)** — o próprio formulário traz um painel de dicas:
+
+| Campo | Obrigatório | Descrição |
+|---|---|---|
+| Tipo | Sim | Entrada, Saída, Transferência ou Ajuste |
+| Origem | Sim | Motivo da movimentação — ex: compra, produção própria, devolução de cliente |
+
+O painel de dicas do sistema resume: use Entrada para **compras, produção própria e devoluções de clientes**; a entrada **aumenta a quantidade do lote selecionado** (quando houver lote); informe o **documento de referência** (NF, OP, etc.) na aba Informações Adicionais. Nas abas seguintes: **Produto e Quantidade** (o quê e quanto), **Lote** (se o produto controla lote, informe número/validade — ou deixe em branco para o fluxo direto).
+
+### Tela: Saída de Estoque
 
 <figure>
   <img src="screenshots/estoque/11-saida.png" alt="Registrar Saída">
-  <figcaption>Formulário de saída (`/estoque/saida/`).</figcaption>
+  <figcaption>Mesma estrutura da Entrada, mas reduz a quantidade do lote/produto.</figcaption>
 </figure>
+
+### Tela: Transferência de Estoque
 
 <figure>
   <img src="screenshots/estoque/12-transferencia.png" alt="Registrar Transferência">
-  <figcaption>Formulário de transferência entre armazéns/locais (`/estoque/transferencia/`).</figcaption>
+  <figcaption>Move quantidade de um armazém/local/lote de origem para um de destino.</figcaption>
 </figure>
+
+**Como preencher:** escolha o lote/produto de **origem**, o armazém/local de **destino**, e a quantidade a mover. Diferente de entrada/saída simples, a transferência sempre precisa ser **executada** depois de criada — ela move saldo entre dois pontos, então o sistema valida disponibilidade na origem antes de efetivar.
+
+### Fluxo passo a passo — registrar uma movimentação de estoque
+
+1. Escolha o **Tipo** (Entrada/Saída/Transferência/Ajuste) e a **Origem/motivo**.
+2. Informe o **produto e a quantidade**.
+3. Se o produto controla lote, preencha os dados do **lote** (ou selecione um lote existente, no caso de saída/transferência).
+4. Salve — movimentações **sem lote** já atualizam o estoque na hora; movimentações **com lote** (saída/transferência/ajuste) ficam **Pendentes** até você abrir o detalhe e clicar em **Executar**.
+5. Confirme no **Estoque de Produtos** ou no **Detalhe do Lote** que a quantidade foi atualizada como esperado.
 
 ### Tela: Inventário Cíclico
 
@@ -199,13 +260,26 @@ Toda movimentação que envolve lote (saída, transferência, ajuste) fica com s
   <figcaption>Contagens programadas (`/estoque/inventario-ciclico/`), com registro de contagem e conciliação de divergências.</figcaption>
 </figure>
 
-O inventário cíclico permite programar contagens periódicas por armazém/categoria, registrar a contagem física, comparar com o saldo do sistema e conciliar (gerando ajuste) as divergências encontradas.
+### Tela: Formulário de Novo Inventário Cíclico
+
+<figure>
+  <img src="screenshots/estoque/18-inventario-form.png" alt="Formulário de Novo Inventário Cíclico">
+  <figcaption>Escopo da contagem: armazém, categoria de produto e data programada.</figcaption>
+</figure>
+
+### Fluxo passo a passo — inventário cíclico
+
+1. Crie o inventário definindo o escopo (armazém e/ou categoria de produto) e a data.
+2. No dia da contagem, abra o inventário e **registre a contagem física** de cada item.
+3. O sistema compara a contagem com o saldo do sistema e aponta as **divergências**.
+4. **Concilie** as divergências — isso gera automaticamente os ajustes de estoque necessários.
+5. **Finalize** o inventário. O relatório de acurácia (menu Relatórios) usa esses dados para medir a precisão do estoque ao longo do tempo.
 
 ### Tela: Relatório de Alertas de Estoque
 
 <figure>
   <img src="screenshots/estoque/14-relatorio-alertas.png" alt="Relatório de Alertas de Estoque">
-  <figcaption>Produtos em estado crítico (saldo ≤ estoque mínimo) e em excesso, com opção de gerar solicitação de compra em lote.</figcaption>
+  <figcaption>Produtos em estado crítico (saldo ≤ estoque mínimo) e em excesso, paginados, com opção de gerar solicitação de compra em lote.</figcaption>
 </figure>
 
 Um produto crítico que ainda não tem solicitação de compra em aberto pode ser marcado direto nesta tela para gerar uma nova Solicitação de Compra, unificando o alerta com a ação de repor o estoque.
@@ -291,7 +365,25 @@ Aqui ficam os itens da solicitação, cada um com seu próprio status (`PENDENTE
   <figcaption>Formulário de criação de uma SC: itens, quantidades, data de necessidade e urgência.</figcaption>
 </figure>
 
-Formulário para abrir uma nova solicitação. Campos principais: descrição do que está sendo pedido, quantidade, unidade, data em que o material é necessário e, opcionalmente, a marcação de **emergencial** (com campo de justificativa obrigatório).
+**Como preencher:**
+
+| Campo | Obrigatório | Descrição |
+|---|---|---|
+| Itens (produto, quantidade, unidade) | Sim (≥1 item) | Cada linha é um item a comprar |
+| Data de Necessidade | Sim | Quando o material precisa estar disponível |
+| Emergencial | Não | Se marcado, exige **Justificativa Emergencial** e pula a etapa de aprovação formal |
+| Observações | Não | Contexto adicional para quem aprova/cota |
+
+### Fluxo passo a passo — do pedido ao estoque
+
+1. Um usuário abre uma **Solicitação de Compra** informando o que precisa e para quando.
+2. Um aprovador aprova a SC (ou ela nasce aprovada, se marcada como emergencial).
+3. O comprador seleciona os itens que quer cotar agora — não precisa ser todos de uma vez — e cria uma **Cotação**.
+4. As propostas de cada fornecedor são lançadas item a item; o comprador escolhe o vencedor por item.
+5. Ao concluir a cotação, o pedido de compra é gerado a partir dos itens vencedores.
+6. O pedido é enviado ao fornecedor (e-mail, WhatsApp ou PDF).
+7. Quando a mercadoria chega, o **Recebimento** é conferido contra o pedido; divergências (falta, sobra, avaria) são registradas.
+8. Confirmado o recebimento, o estoque é atualizado automaticamente (gera lote, se aplicável) e — se houver NF vinculada — o lançamento financeiro (Conta a Pagar) é criado.
 
 ### Tela: Lista de Cotações
 
@@ -309,7 +401,7 @@ Cada cotação nasce de uma seleção de itens dentro de uma SC. Uma mesma SC po
   <figcaption>Comparativo de propostas de fornecedores por item, com seleção do vencedor.</figcaption>
 </figure>
 
-Esta é a tela onde o comprador lança as propostas recebidas de cada fornecedor por item (preço, prazo de entrega, condição de pagamento) e marca a proposta vencedora. Ao selecionar um vencedor para todos os itens da cotação e concluir, os itens envolvidos passam para `COTADO` e o % cotado da SC de origem é recalculado automaticamente.
+**Como preencher:** para cada item da cotação, use **Adicionar Proposta** e informe o fornecedor, preço, prazo de entrega e condição de pagamento. Repita para cada fornecedor consultado. Depois de lançadas as propostas, clique em **Selecionar** na proposta vencedora de cada item — isso desmarca automaticamente as demais propostas daquele item. Ao **Concluir** a cotação, o Pedido de Compra é gerado a partir dos itens com vencedor definido.
 
 ### Tela: Lista de Pedidos de Compra
 
@@ -334,7 +426,7 @@ A partir daqui é possível enviar o pedido ao fornecedor (e-mail ou WhatsApp), 
   <figcaption>Formulário de compra rápida: fornecedor, produtos, quantidades e preços, sem cotação.</figcaption>
 </figure>
 
-Atalho para compras simples: gera um Pedido de Compra diretamente, sem passar por solicitação nem cotação. Indicado para reposições rotineiras de baixo risco.
+**Como preencher:** escolha o **Fornecedor**, adicione os **itens** (produto, quantidade, preço unitário) e salve — o Pedido de Compra é criado diretamente, sem passar por SC nem cotação. Use para reposições rotineiras de baixo risco, quando comparar preços de vários fornecedores não compensa o tempo gasto.
 
 ### Tela: Lista de Recebimentos
 
@@ -350,7 +442,7 @@ Atalho para compras simples: gera um Pedido de Compra diretamente, sem passar po
   <figcaption>Conferência de itens recebidos, registro de divergências e vínculo com a nota fiscal do fornecedor.</figcaption>
 </figure>
 
-Ao confirmar o recebimento, o sistema gera automaticamente o(s) lote(s) de estoque e atualiza a quantidade disponível do produto. Se houver nota fiscal vinculada, o lançamento no financeiro (Conta a Pagar) também é criado a partir daqui.
+**Como preencher:** para cada item do pedido, confira e informe a **quantidade efetivamente recebida** — se for diferente do pedido, registre o tipo de **divergência** (falta, sobra, avaria). Depois de conferir todos os itens, clique em **Entrada em Estoque** para gerar o(s) lote(s) e atualizar o saldo. Se houver nota fiscal do fornecedor, use **Faturar** para vincular a NF e gerar automaticamente a Conta a Pagar no Financeiro.
 
 ### Tela: Entrada Direta de NF-e
 
@@ -368,7 +460,7 @@ Usada quando a compra já foi feita fora do fluxo de solicitação/pedido. Basta
   <figcaption>Lista de notas fiscais recebidas de fornecedores pendentes de manifestação junto à SEFAZ.</figcaption>
 </figure>
 
-Toda NF-e emitida contra o CNPJ da empresa precisa ser "manifestada" perante a SEFAZ (confirmar ciência, confirmar a operação, ou declarar desconhecimento/operação não realizada). Esta tela reúne as notas pendentes dessa manifestação.
+Toda NF-e emitida contra o CNPJ da empresa precisa ser "manifestada" perante a SEFAZ (confirmar ciência, confirmar a operação, ou declarar desconhecimento/operação não realizada). Esta tela reúne as notas pendentes dessa manifestação — o mesmo conjunto de notas que aparece na Distribuição de DF-e do módulo Faturamento.
 
 ### Tela: Planejamento de Embalagens
 
@@ -383,17 +475,6 @@ Toda NF-e emitida contra o CNPJ da empresa precisa ser "manifestada" perante a S
   <img src="screenshots/compras/15-relatorio-geral.png" alt="Relatório Geral de Compras">
   <figcaption>Visão consolidada de compras por período, fornecedor e status.</figcaption>
 </figure>
-
-### Fluxo passo a passo — do pedido ao estoque
-
-1. Um usuário abre uma **Solicitação de Compra** informando o que precisa e para quando.
-2. Um aprovador aprova a SC (ou ela nasce aprovada, se marcada como emergencial).
-3. O comprador seleciona os itens que quer cotar agora — não precisa ser todos de uma vez — e cria uma **Cotação**.
-4. As propostas de cada fornecedor são lançadas item a item; o comprador escolhe o vencedor por item.
-5. Ao concluir a cotação, o pedido de compra é gerado a partir dos itens vencedores.
-6. O pedido é enviado ao fornecedor (e-mail, WhatsApp ou PDF).
-7. Quando a mercadoria chega, o **Recebimento** é conferido contra o pedido; divergências (falta, sobra, avaria) são registradas.
-8. Confirmado o recebimento, o estoque é atualizado automaticamente e — se houver NF vinculada — o lançamento financeiro (Conta a Pagar) é criado.
 
 ### Dicas e erros comuns
 

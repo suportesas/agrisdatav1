@@ -8,6 +8,15 @@
     <h5 class="fw-bold text-secondary mb-0"><i class="bi bi-wrench text-warning"></i> {{ obj.vehicle }} — {{ obj.descricao|truncatechars:40 }}</h5>
     <div class="d-flex gap-2">
       <a href="{% url 'frota:manutencao_list' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Voltar</a>
+      {% if obj.status == 'PENDENTE_APROVACAO' and request.user.pode_aprovar_manutencao %}
+      <form method="post" action="{% url 'frota:manutencao_aprovar' obj.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-success btn-sm"><i class="bi bi-check-circle"></i> Aprovar</button>
+      </form>
+      <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#reprovarModal">
+        <i class="bi bi-x-circle"></i> Reprovar
+      </button>
+      {% endif %}
       <a href="{% url 'frota:manutencao_update' obj.pk %}" class="btn btn-outline-warning btn-sm"><i class="bi bi-pencil"></i> Editar</a>
       {% if not obj.conta_pagar and obj.fornecedor_externo %}
       <form method="post" action="{% url 'frota:manutencao_gerar_conta_pagar' obj.pk %}" class="d-inline">
@@ -33,6 +42,8 @@
             <div class="col-md-4"><div class="small text-muted">Status</div>
               {% if obj.status == 'CONCLUIDA' %}<span class="badge bg-success">{{ obj.get_status_display }}</span>
               {% elif obj.status == 'ABERTA' %}<span class="badge bg-warning text-dark">{{ obj.get_status_display }}</span>
+              {% elif obj.status == 'PENDENTE_APROVACAO' %}<span class="badge bg-info text-dark">{{ obj.get_status_display }}</span>
+              {% elif obj.status == 'REPROVADA' or obj.status == 'CANCELADA' %}<span class="badge bg-danger">{{ obj.get_status_display }}</span>
               {% else %}<span class="badge bg-primary">{{ obj.get_status_display }}</span>{% endif %}
             </div>
             <div class="col-md-4"><div class="small text-muted">Oficina</div>
@@ -47,6 +58,18 @@
             <div class="col-md-4"><div class="small text-muted">Valor Serviço</div><div class="fw-bold">R$ {{ obj.valor_servico|floatformat:"2g" }}</div></div>
             <div class="col-md-4"><div class="small text-muted">Valor Total</div><div class="fw-bold text-warning fs-5">R$ {{ obj.valor_total|floatformat:"2g" }}</div></div>
           </div>
+          {% if obj.status == 'REPROVADA' %}
+          <hr>
+          <div class="alert alert-danger py-2 small mb-0">
+            <i class="bi bi-x-circle"></i> <strong>Reprovada{% if obj.aprovado_por %} por {{ obj.aprovado_por.get_full_name|default:obj.aprovado_por.username }}{% endif %}{% if obj.data_aprovacao %} em {{ obj.data_aprovacao|date:"d/m/Y H:i" }}{% endif %}:</strong><br>
+            {{ obj.motivo_reprovacao }}
+          </div>
+          {% elif obj.aprovado_por %}
+          <hr>
+          <div class="small text-muted">
+            <i class="bi bi-check-circle text-success"></i> Aprovada por {{ obj.aprovado_por.get_full_name|default:obj.aprovado_por.username }} em {{ obj.data_aprovacao|date:"d/m/Y H:i" }}
+          </div>
+          {% endif %}
           {% if obj.observacoes %}<hr><div class="small text-muted">{{ obj.observacoes }}</div>{% endif %}
         </div>
       </div>
@@ -179,4 +202,29 @@
     </div>
   </div>
 </div>
+
+{% if obj.status == 'PENDENTE_APROVACAO' and request.user.pode_aprovar_manutencao %}
+<div class="modal fade" id="reprovarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" action="{% url 'frota:manutencao_reprovar' obj.pk %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-x-circle text-danger me-2"></i>Reprovar Solicitação</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label small fw-semibold">Motivo da reprovação <span class="text-danger">*</span></label>
+          <textarea name="motivo_reprovacao" class="form-control" rows="3" required
+                    placeholder="Explique para o motorista por que a solicitação foi reprovada..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> Reprovar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -122,6 +122,11 @@ def frota_dashboard(request):
         empresa=empresa, status='PENDENTE'
     ).select_related('vehicle', 'manutencao_origem').order_by('data_alerta')
 
+    # Solicitações de manutenção do motorista aguardando aprovação da gerência
+    aprovacoes_pendentes = ManutencaoVeiculo.objects.filter(
+        empresa=empresa, status='PENDENTE_APROVACAO'
+    ).select_related('vehicle', 'motorista_solicitante').order_by('data_abertura')
+
     # Veículos ativos
     total_veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).count()
 
@@ -188,6 +193,7 @@ def frota_dashboard(request):
         'docs_vencendo': docs_vencendo,
         'docs_vencidos': docs_vencidos,
         'alertas': alertas,
+        'aprovacoes_pendentes': aprovacoes_pendentes,
         'total_veiculos': total_veiculos,
         'abastecimentos_recentes': abastecimentos_recentes,
         'gasto_combustivel_mes': gasto_combustivel_mes,
@@ -456,6 +462,7 @@ def manutencao_list(request):
         qs = qs.filter(tipo=tipo)
 
     alertas_count = AlertaManutencao.objects.filter(empresa=empresa, status='PENDENTE').count()
+    aprovacoes_pendentes_count = ManutencaoVeiculo.objects.filter(empresa=empresa, status='PENDENTE_APROVACAO').count()
     veiculos = Vehicle.objects.filter(empresa=empresa, ativo=True).order_by('descricao', 'modelo')
 
     page_obj, per_page, per_page_options = paginate(request, qs.order_by('-data_abertura'))
@@ -465,6 +472,7 @@ def manutencao_list(request):
         'manutencoes': page_obj,
         'page_obj': page_obj,
         'alertas_count': alertas_count,
+        'aprovacoes_pendentes_count': aprovacoes_pendentes_count,
         'veiculos': veiculos,
         'status_choices': ManutencaoVeiculo.STATUS_CHOICES,
         'tipo_choices': ManutencaoVeiculo.TIPO_CHOICES,
@@ -619,6 +627,40 @@ def manutencao_delete(request, pk):
         messages.success(request, 'Manutenção excluída.')
         return redirect('frota:manutencao_list')
     return render(request, 'cadastros/frota/manutencao_confirm_delete.html', {'obj': obj})
+
+
+@login_required
+def manutencao_aprovar(request, pk):
+    obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
+    if not request.user.pode_aprovar_manutencao():
+        messages.error(request, 'Você não tem permissão para aprovar solicitações de manutenção.')
+        return redirect('frota:manutencao_detail', pk=pk)
+    if obj.status != 'PENDENTE_APROVACAO':
+        messages.warning(request, 'Esta solicitação não está mais aguardando aprovação.')
+        return redirect('frota:manutencao_detail', pk=pk)
+    if request.method == 'POST':
+        obj.aprovar(request.user)
+        messages.success(request, 'Solicitação de manutenção aprovada.')
+    return redirect('frota:manutencao_detail', pk=pk)
+
+
+@login_required
+def manutencao_reprovar(request, pk):
+    obj = get_object_or_404(ManutencaoVeiculo, pk=pk, empresa=request.user.empresa)
+    if not request.user.pode_aprovar_manutencao():
+        messages.error(request, 'Você não tem permissão para reprovar solicitações de manutenção.')
+        return redirect('frota:manutencao_detail', pk=pk)
+    if obj.status != 'PENDENTE_APROVACAO':
+        messages.warning(request, 'Esta solicitação não está mais aguardando aprovação.')
+        return redirect('frota:manutencao_detail', pk=pk)
+    if request.method == 'POST':
+        motivo = request.POST.get('motivo_reprovacao', '').strip()
+        if not motivo:
+            messages.error(request, 'Informe o motivo da reprovação.')
+            return redirect('frota:manutencao_detail', pk=pk)
+        obj.reprovar(request.user, motivo)
+        messages.success(request, 'Solicitação de manutenção reprovada.')
+    return redirect('frota:manutencao_detail', pk=pk)
 
 
 @login_required

@@ -459,6 +459,10 @@ class Usuario(AbstractUser):
             self.tipo in ['ADMIN', 'GERENTE']
         )
     
+    def pode_aprovar_manutencao(self):
+        """Verifica se pode aprovar/reprovar solicitações de manutenção de frota feitas pelo motorista"""
+        return self.is_superuser or self.is_admin_empresa() or self.tipo == 'GERENTE'
+
     def pode_acessar_financeiro(self):
         """Verifica se tem acesso ao financeiro"""
         tipo_config = self.get_tipo_config()

@@ -21,10 +21,21 @@
           <div class="fw-bold small">{{ m.vehicle }}</div>
           <div class="small text-muted">{{ m.get_tipo_display }}</div>
         </div>
-        <span class="badge {% if m.status == 'CONCLUIDA' %}bg-success{% elif m.status == 'EM_ANDAMENTO' %}bg-warning text-dark{% elif m.status == 'CANCELADA' %}bg-danger{% else %}bg-secondary{% endif %}">
+        <span class="badge {% if m.status == 'CONCLUIDA' %}bg-success{% elif m.status == 'EM_ANDAMENTO' %}bg-warning text-dark{% elif m.status == 'CANCELADA' %}bg-danger{% elif m.status == 'PENDENTE_APROVACAO' %}bg-info text-dark{% elif m.status == 'REPROVADA' %}bg-danger{% else %}bg-secondary{% endif %}">
           {{ m.get_status_display }}
         </span>
       </div>
+
+      {% if m.status == 'PENDENTE_APROVACAO' %}
+      <div class="alert alert-info py-2 px-2 mb-2" style="font-size:0.75rem;">
+        <i class="bi bi-hourglass-split"></i> Aguardando aprovação da gerência.
+      </div>
+      {% elif m.status == 'REPROVADA' %}
+      <div class="alert alert-danger py-2 px-2 mb-2" style="font-size:0.75rem;">
+        <i class="bi bi-x-circle"></i> <strong>Solicitação reprovada.</strong>
+        {% if m.motivo_reprovacao %}<br>Motivo: {{ m.motivo_reprovacao }}{% endif %}
+      </div>
+      {% endif %}
 
       <!-- Descrição e datas -->
       <div class="small mb-1">{{ m.descricao }}</div>

@@ -12,6 +12,11 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0"><i class="bi bi-wrench me-2"></i>{{ title }}</h2>
     <div class="d-flex gap-2 align-items-center">
+      {% if aprovacoes_pendentes_count > 0 and request.user.pode_aprovar_manutencao %}
+      <a href="{% url 'frota:manutencao_list' %}?status=PENDENTE_APROVACAO" class="btn btn-info text-dark">
+        <i class="bi bi-hourglass-split"></i> {{ aprovacoes_pendentes_count }} Aguardando Aprovação
+      </a>
+      {% endif %}
       {% if alertas_count > 0 %}
       <a href="{% url 'frota:alertas_manutencao_list' %}" class="btn btn-warning">
         <i class="bi bi-exclamation-triangle"></i> {{ alertas_count }} Alertas Pendentes
@@ -119,11 +124,22 @@
               {% if m.status == 'ABERTA' %}<span class="badge bg-warning text-dark">{{ m.get_status_display }}</span>
               {% elif m.status == 'EM_ANDAMENTO' %}<span class="badge bg-primary">{{ m.get_status_display }}</span>
               {% elif m.status == 'CONCLUIDA' %}<span class="badge bg-success">{{ m.get_status_display }}</span>
+              {% elif m.status == 'PENDENTE_APROVACAO' %}<span class="badge bg-info text-dark">{{ m.get_status_display }}</span>
+              {% elif m.status == 'REPROVADA' or m.status == 'CANCELADA' %}<span class="badge bg-danger">{{ m.get_status_display }}</span>
               {% else %}<span class="badge bg-secondary">{{ m.get_status_display }}</span>{% endif %}
             </td>
             <td class="text-end fw-bold">R$ {{ m.valor_total|floatformat:"2g" }}</td>
             <td class="text-center">
               <div class="d-flex gap-3 justify-content-center">
+                {% if m.status == 'PENDENTE_APROVACAO' and request.user.pode_aprovar_manutencao %}
+                <form method="post" action="{% url 'frota:manutencao_aprovar' m.pk %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="action-icon" style="color:#1a7a3c;" title="Aprovar"><i class="bi bi-check-circle"></i></button>
+                </form>
+                <a class="action-icon danger" href="{% url 'frota:manutencao_detail' m.pk %}" title="Reprovar (abrir detalhe)">
+                  <i class="bi bi-x-circle"></i>
+                </a>
+                {% endif %}
                 <a class="action-icon edit" href="{% url 'frota:manutencao_update' m.pk %}" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </a>

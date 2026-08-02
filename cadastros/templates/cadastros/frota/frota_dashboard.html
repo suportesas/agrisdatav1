@@ -43,9 +43,59 @@
         </div>
       </div>
     </div>
+    {% if request.user.pode_aprovar_manutencao %}
+    <div class="col-md-3">
+      <div class="kpi-card">
+        <div class="kpi-icon {% if aprovacoes_pendentes|length > 0 %}orange{% else %}gray{% endif %}"><i class="bi bi-hourglass-split"></i></div>
+        <div class="kpi-body">
+          <div class="kpi-label">Aguardando Aprovação</div>
+          <div class="kpi-value">{{ aprovacoes_pendentes|length }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
   </div>
 
   <div class="row g-4">
+
+    {% if request.user.pode_aprovar_manutencao %}
+    <!-- Solicitações de Manutenção Aguardando Aprovação -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-hourglass-split text-info"></i> Solicitações de Manutenção Aguardando Aprovação</h6>
+        </div>
+        <div class="card-body p-0">
+          {% if aprovacoes_pendentes %}
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+              <thead class="table-light"><tr><th>Veículo</th><th>Motorista</th><th>Descrição</th><th>Data</th><th class="text-end">Ações</th></tr></thead>
+              <tbody>
+                {% for m in aprovacoes_pendentes %}
+                <tr>
+                  <td><a href="{% url 'frota:manutencao_detail' m.pk %}">{{ m.vehicle }}</a></td>
+                  <td class="small text-muted">{{ m.motorista_solicitante.nome|default:"—" }}</td>
+                  <td class="small">{{ m.descricao|truncatechars:60 }}</td>
+                  <td class="small">{{ m.data_abertura|date:"d/m/Y" }}</td>
+                  <td class="text-end">
+                    <form method="post" action="{% url 'frota:manutencao_aprovar' m.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button class="btn btn-outline-success btn-sm py-0 px-1" title="Aprovar"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                    <a href="{% url 'frota:manutencao_detail' m.pk %}" class="btn btn-outline-danger btn-sm py-0 px-1" title="Reprovar"><i class="bi bi-x-lg"></i></a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-3 small">Nenhuma solicitação aguardando aprovação.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- Alertas de Manutenção -->
     <div class="col-lg-6">

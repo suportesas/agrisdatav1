@@ -548,8 +548,10 @@ class ManutencaoVeiculo(models.Model):
         ('PREDITIVA', 'Preditiva'), ('REVISAO', 'Revisão Periódica'),
     ]
     STATUS_CHOICES = [
+        ('PENDENTE_APROVACAO', 'Pendente de Aprovação'),
         ('ABERTA', 'Aberta'), ('EM_ANDAMENTO', 'Em Andamento'),
         ('CONCLUIDA', 'Concluída'), ('CANCELADA', 'Cancelada'),
+        ('REPROVADA', 'Reprovada'),
     ]
 
     empresa = models.ForeignKey(
@@ -559,7 +561,7 @@ class ManutencaoVeiculo(models.Model):
         Vehicle, on_delete=models.CASCADE, related_name='manutencoes', verbose_name='Veículo'
     )
     tipo = models.CharField('Tipo', max_length=15, choices=TIPO_CHOICES, default='PREVENTIVA')
-    status = models.CharField('Status', max_length=15, choices=STATUS_CHOICES, default='ABERTA')
+    status = models.CharField('Status', max_length=20, choices=STATUS_CHOICES, default='ABERTA')
     descricao = models.CharField('Descrição do Serviço', max_length=300)
     data_abertura = models.DateField('Data de Abertura', default=date.today)
     data_conclusao = models.DateField('Data de Conclusão', null=True, blank=True)
@@ -590,6 +592,13 @@ class ManutencaoVeiculo(models.Model):
         related_name='manutencoes_solicitadas', verbose_name='Motorista Solicitante',
         help_text='Preenchido quando a manutenção é solicitada via Portal do Motorista'
     )
+    aprovado_por = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='manutencoes_aprovadas', verbose_name='Aprovado/Reprovado por',
+        help_text='Gerência/administrador que decidiu a solicitação do motorista'
+    )
+    data_aprovacao = models.DateTimeField('Data da Decisão', null=True, blank=True)
+    motivo_reprovacao = models.TextField('Motivo da Reprovação', blank=True)
     observacoes = models.TextField('Observações', blank=True)
     criado_por = models.ForeignKey(
         'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
@@ -616,6 +625,25 @@ class ManutencaoVeiculo(models.Model):
     @property
     def placa_atual(self):
         return self.vehicle.get_current_plate()
+
+    @property
+    def aguardando_aprovacao(self):
+        return self.status == 'PENDENTE_APROVACAO'
+
+    def aprovar(self, usuario):
+        from django.utils import timezone
+        self.status = 'ABERTA'
+        self.aprovado_por = usuario
+        self.data_aprovacao = timezone.now()
+        self.save(update_fields=['status', 'aprovado_por', 'data_aprovacao'])
+
+    def reprovar(self, usuario, motivo):
+        from django.utils import timezone
+        self.status = 'REPROVADA'
+        self.aprovado_por = usuario
+        self.data_aprovacao = timezone.now()
+        self.motivo_reprovacao = motivo
+        self.save(update_fields=['status', 'aprovado_por', 'data_aprovacao', 'motivo_reprovacao'])
 
 
 class ManutencaoItem(models.Model):

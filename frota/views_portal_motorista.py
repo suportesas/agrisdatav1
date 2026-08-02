@@ -216,7 +216,7 @@ def motorista_solicitar_manutencao(request):
             obj = form.save(commit=False)
             obj.empresa = motorista.empresa
             obj.motorista_solicitante = motorista
-            obj.status = 'ABERTA'
+            obj.status = 'PENDENTE_APROVACAO'
             obj.data_abertura = date.today()
             obj.save()
             messages.success(request, 'Solicitação enviada para aprovação.')
@@ -240,6 +240,10 @@ def motorista_manutencao_concluir(request, pk):
 
     if manutencao.status == 'CONCLUIDA':
         messages.info(request, 'Esta manutenção já está concluída.')
+        return redirect('portal_motorista:manutencao_list')
+
+    if manutencao.status in ('PENDENTE_APROVACAO', 'REPROVADA'):
+        messages.error(request, 'Esta solicitação ainda não foi aprovada pela gerência.')
         return redirect('portal_motorista:manutencao_list')
 
     if request.method == 'POST':

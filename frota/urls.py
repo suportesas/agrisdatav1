@@ -73,7 +73,6 @@ urlpatterns = [
     path('alertas/', views.alertas_manutencao_list, name='alertas_manutencao_list'),
     path('alertas/<int:pk>/resolver/', views.alerta_resolver, name='alerta_resolver'),
     path('api/lote-produto-data/', views.get_lote_produto_data, name='lote_produto_data'),
-    path('api/produto-busca/', views.produto_busca, name='produto_busca'),
 
     # Pedágios
     path('pedagios/', views.pedagio_list, name='pedagio_list'),

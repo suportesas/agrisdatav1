@@ -241,11 +241,12 @@ class ManutencaoVeiculoForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         optional = [
-            'data_conclusao', 'km_odometro', 'horimetro', 'proxima_data', 'proximo_km',
+            'data_conclusao', 'km_odometro', 'proxima_data', 'proximo_km',
             'local_oficina', 'fornecedor_externo', 'observacoes',
         ]
         for f in optional:
             self.fields[f].required = False
+        self.fields['horimetro'].required = True
         if self.instance and self.instance.pk:
             self.fields['placa'].initial = self.instance.placa_atual
         if self.user and self.user.empresa:
@@ -267,7 +268,7 @@ class ManutencaoItemForm(forms.ModelForm):
             'quantidade': forms.NumberInput(attrs={'class': 'form-control quantidade-input', 'step': '0.001'}),
             'valor_unitario': forms.HiddenInput(),
             'valor_custo': forms.NumberInput(attrs={'class': 'form-control-plaintext custo-input', 'readonly': 'readonly', 'step': '0.0001', 'tabindex': '-1'}),
-            'nome_produto': forms.TextInput(attrs={'class': 'form-control produto-search-input', 'placeholder': 'Buscar produto...', 'autocomplete': 'off'}),
+            'nome_produto': forms.HiddenInput(),
             'unidade_medida': forms.TextInput(attrs={'class': 'form-control-plaintext', 'readonly': 'readonly', 'tabindex': '-1'}),
             'desconto': forms.NumberInput(attrs={'class': 'form-control desconto-input', 'step': '0.01'}),
         }

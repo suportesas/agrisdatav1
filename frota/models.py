@@ -169,6 +169,10 @@ class Vehicle(models.Model):
 
     def get_current_plate(self):
         p = self.plates.filter(atual=True).first()
+        if not p:
+            # Fallback: nenhuma placa marcada como atual (ex: cadastro antigo/importado
+            # sem o flag setado) — usa a mais recente por vigência em vez de retornar nada.
+            p = self.plates.order_by('-vigencia_inicio').first()
         return p.placa if p else None
 
 

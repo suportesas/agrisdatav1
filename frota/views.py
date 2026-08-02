@@ -1,6 +1,7 @@
 """Views do módulo Frota: combustível, manutenção, pedágios, margem, telemetria."""
 import csv
 import io
+import json
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
 
@@ -8,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from core.pagination import paginate
-from django.db.models import Sum, Count, Avg
+from django.db.models import Sum, Count, Avg, F, DecimalField, ExpressionWrapper
 from django.forms import inlineformset_factory
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -139,6 +140,49 @@ def frota_dashboard(request):
         empresa=empresa, status__in=['ABERTA', 'EM_ANDAMENTO']
     ).select_related('vehicle').count()
 
+    # Ranking de veículos por manutenção (quantidade e valor gasto — serviço + peças)
+    veiculos_ativos = Vehicle.objects.filter(empresa=empresa, ativo=True)
+
+    contagem_por_veiculo = dict(
+        ManutencaoVeiculo.objects.filter(empresa=empresa, vehicle__in=veiculos_ativos)
+        .values('vehicle_id').annotate(qtd=Count('id')).values_list('vehicle_id', 'qtd')
+    )
+    servico_por_veiculo = dict(
+        ManutencaoVeiculo.objects.filter(empresa=empresa, vehicle__in=veiculos_ativos)
+        .values('vehicle_id').annotate(total=Sum('valor_servico')).values_list('vehicle_id', 'total')
+    )
+    pecas_expr = ExpressionWrapper(
+        F('itens__quantidade') * F('itens__valor_custo') - F('itens__desconto'),
+        output_field=DecimalField(max_digits=14, decimal_places=2)
+    )
+    pecas_por_veiculo = dict(
+        ManutencaoVeiculo.objects.filter(empresa=empresa, vehicle__in=veiculos_ativos)
+        .values('vehicle_id').annotate(total=Sum(pecas_expr)).values_list('vehicle_id', 'total')
+    )
+
+    ranking_veiculos = []
+    for veiculo in veiculos_ativos:
+        qtd = contagem_por_veiculo.get(veiculo.id, 0)
+        valor = (servico_por_veiculo.get(veiculo.id) or Decimal('0')) + (pecas_por_veiculo.get(veiculo.id) or Decimal('0'))
+        ranking_veiculos.append({'veiculo': veiculo, 'quantidade': qtd, 'valor': valor})
+
+    ranking_veiculos.sort(key=lambda r: (r['quantidade'], r['valor']), reverse=True)
+    mais_manutencao = ranking_veiculos[:5]
+    menos_manutencao = sorted(ranking_veiculos, key=lambda r: (r['quantidade'], r['valor']))[:5]
+
+    ranking_chart_json = json.dumps({
+        'mais': {
+            'labels': [str(r['veiculo']) for r in mais_manutencao],
+            'quantidades': [r['quantidade'] for r in mais_manutencao],
+            'valores': [float(r['valor']) for r in mais_manutencao],
+        },
+        'menos': {
+            'labels': [str(r['veiculo']) for r in menos_manutencao],
+            'quantidades': [r['quantidade'] for r in menos_manutencao],
+            'valores': [float(r['valor']) for r in menos_manutencao],
+        },
+    })
+
     return render(request, 'cadastros/frota/frota_dashboard.html', {
         'title': 'Dashboard de Frota',
         'docs_vencendo': docs_vencendo,
@@ -148,6 +192,9 @@ def frota_dashboard(request):
         'abastecimentos_recentes': abastecimentos_recentes,
         'gasto_combustivel_mes': gasto_combustivel_mes,
         'manutencoes_abertas': manutencoes_abertas,
+        'mais_manutencao': mais_manutencao,
+        'menos_manutencao': menos_manutencao,
+        'ranking_chart_json': ranking_chart_json,
     })
 
 
@@ -665,22 +712,45 @@ def alerta_resolver(request, pk):
 
 @login_required
 def get_lote_produto_data(request):
-    """Endpoint AJAX para buscar dados do produto via lote ou placa via vehicle_id."""
+    """Endpoint AJAX para buscar placa (vehicle_id), dados de um lote (lote_id)
+    ou dados de um produto do catálogo (produto_id) — usado pelo formulário de
+    manutenção para preencher unidade/custo/estoque ao selecionar no Select2."""
     from estoque.models import Lote
+    from produtos.models import Produto
     from .models import Vehicle
+
+    empresa = request.user.empresa
 
     vehicle_id = request.GET.get('vehicle_id')
     if vehicle_id:
         try:
-            vehicle = Vehicle.objects.get(pk=vehicle_id, empresa=request.user.empresa)
-            placa = vehicle.get_current_plate()
-            if not placa:
-                # Fallback: placa mais recente caso nenhuma esteja marcada como atual
-                latest = vehicle.plates.order_by('-vigencia_inicio').first()
-                placa = latest.placa if latest else ''
-            return JsonResponse({'placa': placa or ''})
+            vehicle = Vehicle.objects.get(pk=vehicle_id, empresa=empresa)
+            return JsonResponse({'placa': vehicle.get_current_plate() or ''})
         except Vehicle.DoesNotExist:
             return JsonResponse({'placa': ''})
+
+    produto_id = request.GET.get('produto_id')
+    if produto_id:
+        try:
+            produto = Produto.objects.select_related('unidade_medida').get(pk=produto_id, categoria__empresa=empresa)
+        except Produto.DoesNotExist:
+            return JsonResponse({'error': 'Produto não encontrado'}, status=404)
+
+        lote = (
+            Lote.objects
+            .filter(empresa=empresa, produto=produto, quantidade_atual__gt=0)
+            .select_related('unidade_medida')
+            .order_by('-quantidade_atual')
+            .first()
+        )
+        unidade = lote.unidade_medida.sigla if lote and lote.unidade_medida else (produto.unidade_medida.sigla if produto.unidade_medida else '')
+        return JsonResponse({
+            'nome_produto': produto.nome,
+            'lote_id': lote.pk if lote else '',
+            'unidade_medida': unidade,
+            'valor_custo': float(produto.preco_custo or 0),
+            'quantidade_disponivel': float(lote.quantidade_atual or 0) if lote else 0,
+        })
 
     lote_id = request.GET.get('lote_id')
     if not lote_id:
@@ -689,7 +759,7 @@ def get_lote_produto_data(request):
     try:
         lote = Lote.objects.select_related('produto', 'unidade_medida').get(
             id=lote_id,
-            empresa=request.user.empresa
+            empresa=empresa
         )
         return JsonResponse({
             'nome_produto': lote.produto.nome,
@@ -701,41 +771,6 @@ def get_lote_produto_data(request):
         return JsonResponse({'error': 'Lote não encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
-
-@login_required
-def produto_busca(request):
-    """Endpoint AJAX para busca de produtos por nome (retorna do cadastro de produtos)."""
-    from produtos.models import Produto
-    from estoque.models import Lote
-
-    q = request.GET.get('q', '').strip()
-    empresa = request.user.empresa
-    produtos = (
-        Produto.objects
-        .filter(ativo=True, categoria__empresa=empresa, nome__icontains=q)
-        .select_related('unidade_medida')
-        .order_by('nome')[:20]
-    )
-    # Carrega lotes disponíveis para preencher lote_id quando houver estoque
-    lotes_por_produto = {}
-    produto_ids = [p.pk for p in produtos]
-    for lote in Lote.objects.filter(empresa=empresa, produto_id__in=produto_ids, quantidade_atual__gt=0).select_related('unidade_medida'):
-        if lote.produto_id not in lotes_por_produto:
-            lotes_por_produto[lote.produto_id] = lote
-
-    results = []
-    for produto in produtos:
-        lote = lotes_por_produto.get(produto.pk)
-        unidade = lote.unidade_medida.sigla if lote and lote.unidade_medida else (produto.unidade_medida.sigla if produto.unidade_medida else '')
-        results.append({
-            'nome': produto.nome,
-            'lote_id': lote.pk if lote else '',
-            'unidade_medida': unidade,
-            'valor_custo': float(produto.preco_custo or 0),
-            'quantidade_disponivel': float(lote.quantidade_atual or 0) if lote else 0,
-        })
-    return JsonResponse({'results': results})
 
 
 # ──────────────────────────────────────────────────────────────────────────────

@@ -29,7 +29,7 @@ function preencherPlaca() {
   }
 
   placaField.value = '...';
-  fetch(`/cadastros/api/lote-produto-data/?vehicle_id=${vehicleSelect.value}`, {
+  fetch(`/frota/api/lote-produto-data/?vehicle_id=${vehicleSelect.value}`, {
     headers: { 'X-Requested-With': 'XMLHttpRequest' }
   })
     .then(r => r.json())
@@ -37,67 +37,29 @@ function preencherPlaca() {
     .catch(() => { placaField.value = ''; });
 }
 
-// ── Busca de produto com autocomplete ────────────────────────────────────────
+// ── Busca de produto (combobox Select2 padrão do sistema) ───────────────────
 
-let _debounceTimer = null;
-
-function buscarProduto(input) {
-  clearTimeout(_debounceTimer);
-  const q = input.value.trim();
-  fecharDropdown(input);
-
-  if (q.length < 2) return;
-
-  _debounceTimer = setTimeout(() => {
-    fetch(`/cadastros/api/produto-busca/?q=${encodeURIComponent(q)}`, {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-      .then(r => r.json())
-      .then(data => renderizarDropdown(input, data.results || []))
-      .catch(() => {});
-  }, 300);
+function inicializarSelect2Produto(scope) {
+  if (window.jQuery && window.AgrisSelect2) {
+    window.AgrisSelect2.initFromDataAttrs(scope);
+  }
 }
 
-function renderizarDropdown(input, results) {
-  fecharDropdown(input);
-  if (!results.length) return;
-
-  const dropdown = document.createElement('ul');
-  dropdown.className = 'list-group position-absolute w-100 shadow z-3 produto-dropdown';
-  dropdown.style.top = '100%';
-  dropdown.style.maxHeight = '220px';
-  dropdown.style.overflowY = 'auto';
-
-  results.forEach(item => {
-    const li = document.createElement('li');
-    li.className = 'list-group-item list-group-item-action py-1 px-2 small';
-    li.style.cursor = 'pointer';
-    li.innerHTML = `<strong>${item.nome}</strong> <span class="text-muted">${item.unidade_medida} &mdash; Estoque: ${parseFloat(item.quantidade_disponivel).toFixed(3)}</span>`;
-    li.addEventListener('mousedown', e => {
-      e.preventDefault();
-      const row = input.closest('tr.formset-row');
-      selecionarProduto(row, item);
-    });
-    dropdown.appendChild(li);
-  });
-
-  const wrapper = input.closest('td');
-  wrapper.appendChild(dropdown);
+function selecionarProduto(row, data) {
+  row.querySelector('input[name$="-lote"]').value = data.lote_id || '';
+  row.querySelector('input[name$="-nome_produto"]').value = data.nome_produto || '';
+  row.querySelector('input[name$="-descricao"]').value = data.nome_produto || '';
+  row.querySelector('input[name$="-unidade_medida"]').value = data.unidade_medida || '';
+  row.querySelector('input[name$="-valor_custo"]').value = parseFloat(data.valor_custo || 0).toFixed(4);
+  recalcularTotal(row);
 }
 
-function fecharDropdown(input) {
-  const td = input.closest('td');
-  if (!td) return;
-  const existing = td.querySelector('.produto-dropdown');
-  if (existing) existing.remove();
-}
-
-function selecionarProduto(row, item) {
-  row.querySelector('input[name$="-lote"]').value = item.lote_id;
-  row.querySelector('input[name$="-nome_produto"]').value = item.nome;
-  row.querySelector('input[name$="-descricao"]').value = item.nome;
-  row.querySelector('input[name$="-unidade_medida"]').value = item.unidade_medida;
-  row.querySelector('input[name$="-valor_custo"]').value = parseFloat(item.valor_custo).toFixed(4);
+function limparProduto(row) {
+  row.querySelector('input[name$="-lote"]').value = '';
+  row.querySelector('input[name$="-nome_produto"]').value = '';
+  row.querySelector('input[name$="-descricao"]').value = '';
+  row.querySelector('input[name$="-unidade_medida"]').value = '';
+  row.querySelector('input[name$="-valor_custo"]').value = '0.0000';
   recalcularTotal(row);
 }
 
@@ -142,6 +104,7 @@ function adicionarLinha() {
 
   document.getElementById('pecas-tbody').appendChild(tr);
   setTotalForms(idx + 1);
+  inicializarSelect2Produto(tr);
   atualizarTotalGeral();
 }
 
@@ -176,18 +139,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.addEventListener('input', function (e) {
-    if (e.target.classList.contains('produto-search-input')) {
-      buscarProduto(e.target);
-    }
     if (e.target.classList.contains('quantidade-input') || e.target.classList.contains('desconto-input')) {
       const row = e.target.closest('tr.formset-row');
       if (row) recalcularTotal(row);
-    }
-  });
-
-  document.addEventListener('focusout', function (e) {
-    if (e.target.classList.contains('produto-search-input')) {
-      setTimeout(() => fecharDropdown(e.target), 200);
     }
   });
 
@@ -195,6 +149,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const btn = e.target.closest('.btn-remover-peca');
     if (btn) removerLinha(btn);
   });
+
+  if (window.jQuery) {
+    // Select2 (usado no campo #id_vehicle) só dispara 'change' nativo de forma
+    // confiável em alguns navegadores/versões — 'select2:select'/'select2:clear'
+    // são os eventos próprios do plugin, sempre disparados na seleção via AJAX.
+    $(document).on('select2:select select2:clear', '#id_vehicle', preencherPlaca);
+
+    $(document).on('select2:select', '.produto-select', function (e) {
+      const row = this.closest('tr.formset-row');
+      const produtoId = e.params.data.id;
+      if (!row || !produtoId) return;
+      fetch(`/frota/api/lote-produto-data/?produto_id=${produtoId}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(r => r.json())
+        .then(data => { if (!data.error) selecionarProduto(row, data); })
+        .catch(() => {});
+    });
+
+    $(document).on('select2:clear', '.produto-select', function () {
+      const row = this.closest('tr.formset-row');
+      if (row) limparProduto(row);
+    });
+  }
 
   recalcularTodosTotais();
 });

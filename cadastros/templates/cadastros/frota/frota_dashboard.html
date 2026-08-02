@@ -149,7 +149,108 @@
         </div>
       </div>
     </div>
+
+    <!-- Ranking de Manutenção por Veículo -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-graph-up-arrow text-danger"></i> Veículos com Mais Manutenção</h6>
+        </div>
+        <div class="card-body">
+          {% if mais_manutencao %}
+          <div style="height: 220px;">
+            <canvas id="chartMaisManutencao"></canvas>
+          </div>
+          <div class="table-responsive mt-3">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light"><tr><th>Veículo</th><th class="text-end">Qtd.</th><th class="text-end">Valor Gasto</th></tr></thead>
+              <tbody>
+                {% for row in mais_manutencao %}
+                <tr>
+                  <td><a href="{% url 'frota:vehicle_detail' row.veiculo.pk %}">{{ row.veiculo }}</a></td>
+                  <td class="text-end">{{ row.quantidade }}</td>
+                  <td class="text-end fw-bold">R$ {{ row.valor|floatformat:"2g" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-3 small">Nenhuma manutenção registrada.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white border-0 pt-3 pb-0">
+          <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-graph-down-arrow text-primary"></i> Veículos com Menos Manutenção</h6>
+        </div>
+        <div class="card-body">
+          {% if menos_manutencao %}
+          <div style="height: 220px;">
+            <canvas id="chartMenosManutencao"></canvas>
+          </div>
+          <div class="table-responsive mt-3">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light"><tr><th>Veículo</th><th class="text-end">Qtd.</th><th class="text-end">Valor Gasto</th></tr></thead>
+              <tbody>
+                {% for row in menos_manutencao %}
+                <tr>
+                  <td><a href="{% url 'frota:vehicle_detail' row.veiculo.pk %}">{{ row.veiculo }}</a></td>
+                  <td class="text-end">{{ row.quantidade }}</td>
+                  <td class="text-end fw-bold">R$ {{ row.valor|floatformat:"2g" }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <p class="text-muted text-center py-3 small">Nenhum veículo ativo cadastrado.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
+
+{% if mais_manutencao or menos_manutencao %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const rankingData = {{ ranking_chart_json|safe }};
+
+  function montarGrafico(canvasId, dados, cor) {
+    const el = document.getElementById(canvasId);
+    if (!el || !dados.labels.length) return;
+    new Chart(el.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: dados.labels,
+        datasets: [{
+          label: 'Valor Gasto (R$)',
+          data: dados.valores,
+          backgroundColor: cor,
+          borderRadius: 4,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { callback: (v) => 'R$ ' + v.toLocaleString('pt-BR') } },
+        },
+      },
+    });
+  }
+
+  montarGrafico('chartMaisManutencao', rankingData.mais, '#e07a5f');
+  montarGrafico('chartMenosManutencao', rankingData.menos, '#2563eb');
+});
+</script>
+{% endif %}
 {% endblock %}

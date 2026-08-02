@@ -9,6 +9,7 @@ from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -229,6 +230,26 @@ def campo_os_iniciar(request, pk):
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
 
     if os_obj.status == 'APROVADA':
+        tipo_legado = os_obj.tipo_legado_efetivo
+
+        if tipo_legado == 'PLANTIO':
+            if not os_obj.safra_cultura_id:
+                messages.warning(request, 'Esta OS de plantio não tem cultura da safra definida — inicie pelo escritório.')
+                return redirect('portal_campo:os_detail', pk=pk)
+            try:
+                historico = os_obj.talhao.iniciar_cultivo(
+                    cultura=os_obj.safra_cultura.cultura,
+                    data_plantio=timezone.localdate(),
+                    safra_cultura=os_obj.safra_cultura,
+                    idiarn=os_obj.idiarn,
+                )
+            except ValidationError as e:
+                messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+                return redirect('portal_campo:os_detail', pk=pk)
+            if historico and not os_obj.historico_talhao_id:
+                os_obj.historico_talhao = historico
+                os_obj.save(update_fields=['historico_talhao'])
+
         agora = timezone.now()
         agora_local = timezone.localtime(agora)
         os_obj.status = 'EM_ANDAMENTO'

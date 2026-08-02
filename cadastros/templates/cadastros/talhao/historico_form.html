@@ -28,6 +28,11 @@
             <label class="form-label">{{ form.cultura.label }}</label>
             {{ form.cultura }}
           </div>
+          <div class="field col-6">
+            <label class="form-label">{{ form.idiarn.label }}</label>
+            {{ form.idiarn }}
+            {% if form.idiarn.errors %}<div class="text-danger small">{{ form.idiarn.errors }}</div>{% endif %}
+          </div>
           <div class="field col-4">
             <label class="form-label">{{ form.data_plantio.label }}</label>
             {{ form.data_plantio }}

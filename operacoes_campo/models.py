@@ -2,11 +2,16 @@
 Operações de Campo — OS, Colheita, Caderno de Campo, Pluviometria, Qualidade, Planejamento de Custo
 """
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator, RegexValidator
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 from datetime import timedelta
+
+idiarn_validator = RegexValidator(
+    regex=r'^\d{2}\.\d{6}\.\d{3}\.\d{2}\.\d{7}$',
+    message='Formato esperado: NN.NNNNNN.NNN.NN.NNNNNNN (ex: 24.003071.318.22.0064006)'
+)
 
 
 # ============================================================================
@@ -165,6 +170,16 @@ class OrdemServico(models.Model):
         help_text='Preencher apenas para OS de Irrigação e Adubação/Fertirrigação',
     )
     requisicao = models.ForeignKey('cadastros.Requisicao', on_delete=models.SET_NULL, null=True, blank=True, related_name='ordens_servico', verbose_name='Requisição de Insumos')
+    historico_talhao = models.ForeignKey(
+        'cadastros.HistoricoTalhao', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ordens_servico', verbose_name='Ciclo do Talhão',
+        help_text='Ciclo de cultivo (HistoricoTalhao) aberto no talhão no momento desta OS',
+    )
+
+    idiarn = models.CharField(
+        'IDIARN', max_length=30, blank=True, validators=[idiarn_validator],
+        help_text='Número de controle obrigatório do ciclo de plantio (preenchido na aprovação da OS)',
+    )
 
     solicitante = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_solicitadas', verbose_name='Solicitante')
     responsavel = models.ForeignKey('rh.Funcionario', on_delete=models.SET_NULL, null=True, blank=True, related_name='os_responsavel', verbose_name='Responsável pela Execução')
@@ -275,6 +290,13 @@ class OrdemServico(models.Model):
             self.custo_estimado_maquinario,
             self.custo_estimado_insumos,
         ])
+
+    @property
+    def tipo_legado_efetivo(self):
+        """Tipo legado efetivo desta OS (via tipo_servico, com fallback pro campo `tipo`)."""
+        if self.tipo_servico_id:
+            return self.tipo_servico.tipo_legado or ''
+        return self.tipo or ''
 
     @property
     def pode_aprovar(self):

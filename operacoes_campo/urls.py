@@ -17,6 +17,7 @@ urlpatterns = [
     path('ordens-servico/<int:pk>/editar/', views_os.os_update, name='os_update'),
     path('ordens-servico/<int:pk>/excluir/', views_os.os_delete, name='os_delete'),
     path('ordens-servico/<int:pk>/aprovar/', views_os.os_aprovar, name='os_aprovar'),
+    path('ordens-servico/<int:pk>/aprovar-plantio/', views_os.os_aprovar_plantio, name='os_aprovar_plantio'),
     path('ordens-servico/<int:pk>/iniciar/', views_os.os_iniciar, name='os_iniciar'),
     path('ordens-servico/<int:pk>/concluir/', views_os.os_concluir, name='os_concluir'),
     path('ordens-servico/<int:pk>/horimetro-pendente/', views_os.os_horimetro_pendente, name='os_horimetro_pendente'),

@@ -208,10 +208,11 @@ def etapa_concluir(request, os_pk, etapa_pk):
             os__talhao=os_obj.talhao, os__safra=os_obj.safra, status='CONCLUIDA'
         ).aggregate(t=Sum('total_liquido_kg'))['t'] or Decimal('0')
 
-        # Atualiza HistoricoTalhao se existir
+        # Atualiza HistoricoTalhao se existir — só o ciclo ainda em aberto
         from cadastros.models import HistoricoTalhao
         historico = HistoricoTalhao.objects.filter(
             talhao=os_obj.talhao,
+            data_colheita__isnull=True,
         ).order_by('-data_plantio').first()
 
         if historico:

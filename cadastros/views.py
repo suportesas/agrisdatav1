@@ -3510,7 +3510,7 @@ def talhao_detail(request, pk):
                 'sub': os.safra.nome if os.safra else '—',
                 'status': os.status,
                 'responsavel': os.responsavel.nome_completo if os.responsavel else '—',
-                'url_detail': f'/cadastros/ordens-servico/{os.pk}/',
+                'url_detail': f'/campo/ordens-servico/{os.pk}/',
                 'numero': os.numero,
             })
     for reg in caderno:
@@ -3521,7 +3521,7 @@ def talhao_detail(request, pk):
             'sub': reg.atividade,
             'status': '',
             'responsavel': str(reg.responsavel) if reg.responsavel else '—',
-            'url_detail': f'/cadastros/caderno-campo/{reg.pk}/',
+            'url_detail': f'/campo/caderno-campo/{reg.pk}/',
             'numero': '',
         })
     for mip in monitoramentos:
@@ -3532,7 +3532,7 @@ def talhao_detail(request, pk):
             'sub': f'{mip.get_tipo_monitoramento_display()} — {mip.get_status_display()}',
             'status': mip.status,
             'responsavel': str(mip.responsavel) if mip.responsavel else '—',
-            'url_detail': f'/cadastros/monitoramento-mip/{mip.pk}/',
+            'url_detail': f'/mip/monitoramento/{mip.pk}/',
             'numero': mip.numero,
         })
     timeline = sorted(_timeline, key=lambda x: str(x['data']), reverse=True)[:40]

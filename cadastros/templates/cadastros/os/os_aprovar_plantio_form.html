@@ -1,0 +1,24 @@
+<form method="post" novalidate>
+  {% csrf_token %}
+  <p class="text-muted small mb-3">
+    <i class="bi bi-info-circle me-1"></i>
+    Esta é uma OS de plantio. Informe o <strong>IDIARN</strong> (número de controle obrigatório do
+    ciclo, emitido pelo órgão externo) antes de aprovar.
+  </p>
+
+  <div class="mb-3">
+    <label class="form-label small mb-1">IDIARN</label>
+    <input type="text" class="form-control form-control-sm" name="idiarn"
+           placeholder="Ex: 24.003071.318.22.0064006" value="{{ os.idiarn }}" required>
+  </div>
+
+  {% if erro %}
+  <div class="alert alert-danger py-2 small mb-3 rounded-3">{{ erro }}</div>
+  {% endif %}
+
+  <div class="d-flex justify-content-end gap-2 mt-2">
+    <button type="submit" class="btn btn-primary btn-sm">
+      <i class="bi bi-check2-circle me-1"></i>Aprovar
+    </button>
+  </div>
+</form>

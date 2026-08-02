@@ -47,11 +47,17 @@
           <!-- Botões de ação -->
           <div class="d-flex gap-2 flex-wrap">
             {% if os.status == 'ABERTA' %}
+              {% if os.tipo_legado_efetivo == 'PLANTIO' %}
+                <button type="button" class="btn btn-primary btn-sm" data-os-modal-url="{% url 'operacoes_campo:os_aprovar_plantio' os.pk %}" data-os-modal-title="Aprovar OS de Plantio">
+                  <i class="bi bi-check2-circle me-1"></i>Aprovar
+                </button>
+              {% else %}
               <form method="post" action="{% url 'operacoes_campo:os_aprovar' os.pk %}">{% csrf_token %}
                 <button type="submit" class="btn btn-primary btn-sm">
                   <i class="bi bi-check2-circle me-1"></i>Aprovar
                 </button>
               </form>
+              {% endif %}
             {% elif os.status == 'APROVADA' %}
               <form method="post" action="{% url 'operacoes_campo:os_iniciar' os.pk %}">{% csrf_token %}
                 <button type="submit" class="btn btn-info text-white btn-sm">

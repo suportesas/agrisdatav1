@@ -8,6 +8,8 @@
     <div class="card-body">
       <p><strong>Talhão:</strong> <a href="{% url 'cadastros:talhao_detail' historico.talhao.pk %}">{{ historico.talhao.nome }}</a></p>
       <p><strong>Cultura:</strong> {{ historico.cultura.nome }}</p>
+      <p><strong>Safra:</strong> {{ historico.safra.nome_display|default:'-' }}</p>
+      <p><strong>IDIARN:</strong> {{ historico.idiarn|default:'-' }}</p>
       <p><strong>Variedade:</strong> {{ historico.variedade|default:'-' }}</p>
       <p><strong>Período:</strong> {{ historico.data_plantio|date:'d/m/Y' }}{% if historico.data_colheita %} a {{ historico.data_colheita|date:'d/m/Y' }}{% else %} (em andamento){% endif %}</p>
       <p><strong>Produção Real:</strong> {{ historico.producao_real|default:'-' }} {{ historico.cultura.get_unidade_medida_display }}</p>

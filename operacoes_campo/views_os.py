@@ -23,9 +23,9 @@ from .models import (
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
     EtapaColheita, PushSubscriptionCampo, OSIntervalo,
     OSTransplantio, OSReplantio, OSFuncionario, OSMaquina,
-    proximo_numero_corte,
+    proximo_numero_corte, idiarn_validator,
 )
-from cadastros.models import Talhao, Safra, SafraCultura
+from cadastros.models import Talhao, Safra, SafraCultura, HistoricoTalhao
 from .forms import (
     OrdemServicoForm, OSFuncionarioFormSet, OSMaquinaFormSet,
     OrdemServicoInsumoForm, CustoHoraMaquinaForm,
@@ -796,6 +796,9 @@ def os_create(request):
             os_obj.empresa = empresa
             os_obj.solicitante = request.user
             os_obj.cadastrado_por = request.user
+            os_obj.historico_talhao = HistoricoTalhao.objects.filter(
+                talhao=os_obj.talhao, data_colheita__isnull=True
+            ).order_by('-data_plantio').first()
             os_obj.save()
 
             func_formset.instance = os_obj
@@ -1489,6 +1492,8 @@ def os_aprovar(request, pk):
     if request.method == 'POST':
         if os_obj.status != 'ABERTA':
             messages.error(request, 'Somente OS abertas podem ser aprovadas.')
+        elif os_obj.tipo_legado_efetivo == 'PLANTIO':
+            messages.error(request, 'OS de plantio exige o IDIARN — aprove pela tela de detalhe da OS.')
         else:
             os_obj.status = 'APROVADA'
             os_obj.aprovador = request.user
@@ -1504,6 +1509,43 @@ def os_aprovar(request, pk):
 
 
 @login_required
+def os_aprovar_plantio(request, pk):
+    """
+    Aprova uma OS de Plantio (ABERTA → APROVADA) exigindo o IDIARN — número
+    de controle obrigatório do ciclo, emitido por órgão externo. Segue o
+    mesmo padrão de modal usado em `os_horimetro_pendente`.
+    """
+    empresa = request.user.empresa
+    os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
+    template = 'cadastros/os/os_aprovar_plantio_form.html'
+
+    if request.method == 'POST':
+        if os_obj.status != 'ABERTA':
+            return JsonResponse({'success': False, 'error': 'Somente OS abertas podem ser aprovadas.'})
+
+        idiarn = (request.POST.get('idiarn') or '').strip()
+        if not idiarn:
+            return render(request, template, {'os': os_obj, 'erro': 'Informe o IDIARN para aprovar a OS de plantio.'})
+        try:
+            idiarn_validator(idiarn)
+        except ValidationError as e:
+            return render(request, template, {'os': os_obj, 'erro': '; '.join(e.messages)})
+
+        os_obj.idiarn = idiarn
+        os_obj.status = 'APROVADA'
+        os_obj.aprovador = request.user
+        os_obj.data_aprovacao = timezone.now()
+        os_obj.save()
+
+        if os_obj.responsavel_id:
+            _enviar_push_os(os_obj.responsavel, os_obj)
+
+        return JsonResponse({'success': True, 'redirect': reverse('operacoes_campo:os_detail', args=[pk])})
+
+    return render(request, template, {'os': os_obj})
+
+
+@login_required
 def os_iniciar(request, pk):
     """Inicia a execução (APROVADA → EM_ANDAMENTO)"""
     empresa = request.user.empresa
@@ -1513,11 +1555,7 @@ def os_iniciar(request, pk):
         if os_obj.status != 'APROVADA':
             messages.error(request, 'Somente OS aprovadas podem ser iniciadas.')
         else:
-            tipo_legado = ''
-            if os_obj.tipo_servico_id:
-                tipo_legado = os_obj.tipo_servico.tipo_legado or ''
-            elif os_obj.tipo:
-                tipo_legado = os_obj.tipo
+            tipo_legado = os_obj.tipo_legado_efetivo
 
             if tipo_legado == 'PLANTIO':
                 if not os_obj.safra_id:
@@ -1526,20 +1564,6 @@ def os_iniciar(request, pk):
 
                 if not os_obj.safra_cultura_id:
                     messages.error(request, 'Selecione a cultura da safra para iniciar o plantio.')
-                    return redirect('operacoes_campo:os_detail', pk=pk)
-
-                talhao = os_obj.talhao
-                cultura_safra = os_obj.safra_cultura.cultura
-                if (
-                    talhao.cultura_atual_id
-                    and talhao.cultura_atual_id != cultura_safra.id
-                    and talhao.status in ('PLANTADO', 'COLHEITA')
-                ):
-                    messages.error(
-                        request,
-                        f'O talhão já está com cultivo ativo de {talhao.cultura_atual.nome}. '
-                        'Encerre o cultivo atual antes de iniciar um novo plantio.'
-                    )
                     return redirect('operacoes_campo:os_detail', pk=pk)
 
                 subtipo_legado = os_obj.subtipo_servico.subtipo_legado if os_obj.subtipo_servico_id else ''
@@ -1566,10 +1590,22 @@ def os_iniciar(request, pk):
                 messages.warning(request, f'Registre o horímetro inicial: {nomes}')
 
             if tipo_legado == 'PLANTIO':
-                os_obj.talhao.iniciar_cultivo(
-                    cultura=os_obj.safra_cultura.cultura,
-                    data_plantio=timezone.localdate(),
-                )
+                try:
+                    historico = os_obj.talhao.iniciar_cultivo(
+                        cultura=os_obj.safra_cultura.cultura,
+                        data_plantio=timezone.localdate(),
+                        safra_cultura=os_obj.safra_cultura,
+                        idiarn=os_obj.idiarn,
+                    )
+                except ValidationError as e:
+                    os_obj.status = 'APROVADA'
+                    os_obj.data_inicio = None
+                    os_obj.save()
+                    messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+                    return redirect('operacoes_campo:os_detail', pk=pk)
+                if historico and not os_obj.historico_talhao_id:
+                    os_obj.historico_talhao = historico
+                    os_obj.save(update_fields=['historico_talhao'])
             messages.success(request, f'OS {os_obj.numero} iniciada!')
         return redirect('operacoes_campo:os_detail', pk=pk)
 

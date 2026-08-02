@@ -1,8 +1,11 @@
+from datetime import date
+from decimal import Decimal
+
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from empresas.models import Empresa, Plano
-from cadastros.models import Fazenda, Cultura, Safra, SafraCultura
+from cadastros.models import Area, Fazenda, Cultura, HistoricoTalhao, Safra, SafraCultura, Talhao
 
 
 class SafraCrudTest(TestCase):
@@ -16,6 +19,14 @@ class SafraCrudTest(TestCase):
         self.fazenda = Fazenda.objects.create(nome='F', empresa=self.empresa, area_total=1, cadastrado_por=self.user)
         self.cultura = Cultura.objects.create(nome='Milho', empresa=self.empresa)
         self.cultura2 = Cultura.objects.create(nome='Soja', empresa=self.empresa)
+        self.area = Area.objects.create(
+            fazenda=self.fazenda, empresa=self.empresa, nome='Area 1',
+            area_total=Decimal('10.00'), area_plantavel=Decimal('8.00'),
+        )
+        self.talhao = Talhao.objects.create(
+            area=self.area, fazenda=self.fazenda, nome='T1', codigo='T001',
+            area_hac=Decimal('1.00'), empresa=self.empresa,
+        )
         self.client = Client()
         self.client.login(username='u', password='pass')
 
@@ -34,6 +45,8 @@ class SafraCrudTest(TestCase):
             data[f'culturas-{i}-periodo_inicio'] = row.get('periodo_inicio', '')
             data[f'culturas-{i}-periodo_fim'] = row.get('periodo_fim', '')
             data[f'culturas-{i}-status'] = row.get('status', 'PLANEJADA')
+            if row.get('talhoes'):
+                data[f'culturas-{i}-talhoes'] = [str(t) for t in row['talhoes']]
         return data
 
     def test_create_safra(self):
@@ -98,3 +111,47 @@ class SafraCrudTest(TestCase):
         resp = self.client.post(url, {})
         self.assertEqual(resp.status_code, 302)
         self.assertFalse(Safra.objects.filter(pk=safra.pk).exists())
+
+    def test_reuso_talhao_apos_ciclo_fechado_e_permitido(self):
+        """Um talhão pode ser atribuído a uma nova cultura da mesma safra
+        depois que o ciclo anterior (HistoricoTalhao) já foi colhido."""
+        safra = Safra.objects.create(nome='Reuso', fazenda=self.fazenda, ano=2025)
+        sc1 = SafraCultura.objects.create(safra=safra, cultura=self.cultura, status='FINALIZADA')
+        sc1.talhoes.add(self.talhao)
+        HistoricoTalhao.objects.create(
+            talhao=self.talhao, cultura=self.cultura, safra=safra, safra_cultura=sc1,
+            data_plantio=date(2025, 1, 1), data_colheita=date(2025, 5, 1),
+            empresa=self.empresa,
+        )
+
+        url = reverse('cadastros:safra_update', args=[safra.pk])
+        data = {'nome': 'Reuso', 'fazenda': str(self.fazenda.pk), 'ano': '2025'}
+        data.update(self._formset_data([
+            {'id': sc1.pk, 'cultura': self.cultura.pk, 'status': 'FINALIZADA', 'talhoes': [self.talhao.pk]},
+            {'cultura': self.cultura2.pk, 'status': 'PLANEJADA', 'talhoes': [self.talhao.pk]},
+        ], initial_forms=1))
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 302)
+        sc2 = SafraCultura.objects.get(safra=safra, cultura=self.cultura2)
+        self.assertIn(self.talhao, sc2.talhoes.all())
+
+    def test_reuso_talhao_com_ciclo_aberto_e_bloqueado(self):
+        """Enquanto o ciclo anterior do talhão estiver em aberto (sem colheita),
+        ele não pode ser atribuído a outra cultura."""
+        safra = Safra.objects.create(nome='Bloqueio', fazenda=self.fazenda, ano=2025)
+        sc1 = SafraCultura.objects.create(safra=safra, cultura=self.cultura, status='EM_ANDAMENTO')
+        sc1.talhoes.add(self.talhao)
+        HistoricoTalhao.objects.create(
+            talhao=self.talhao, cultura=self.cultura, safra=safra, safra_cultura=sc1,
+            data_plantio=date(2025, 1, 1), empresa=self.empresa,
+        )
+
+        url = reverse('cadastros:safra_update', args=[safra.pk])
+        data = {'nome': 'Bloqueio', 'fazenda': str(self.fazenda.pk), 'ano': '2025'}
+        data.update(self._formset_data([
+            {'id': sc1.pk, 'cultura': self.cultura.pk, 'status': 'EM_ANDAMENTO', 'talhoes': [self.talhao.pk]},
+            {'cultura': self.cultura2.pk, 'status': 'PLANEJADA', 'talhoes': [self.talhao.pk]},
+        ], initial_forms=1))
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(SafraCultura.objects.filter(safra=safra, cultura=self.cultura2).exists())

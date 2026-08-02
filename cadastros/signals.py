@@ -73,12 +73,16 @@ def talhao_post_save(sender, instance, created, **kwargs):
             ).exists()
 
             if not exists and instance.cultura_atual:
+                safra_cultura = getattr(instance, '_novo_ciclo_safra_cultura', None)
                 HistoricoTalhao.objects.create(
                     talhao=instance,
                     cultura=instance.cultura_atual,
                     variedade=instance.cultura_atual.variedade or '',
                     data_plantio=data_plantio,
-                    empresa=instance.empresa
+                    empresa=instance.empresa,
+                    safra_cultura=safra_cultura,
+                    safra=safra_cultura.safra if safra_cultura else None,
+                    idiarn=getattr(instance, '_novo_ciclo_idiarn', '') or '',
                 )
         except Exception:
             # Não propagar erro do sinal

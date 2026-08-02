@@ -269,12 +269,18 @@
               <a href="{% url 'operacoes_campo:os_update' os.pk %}" class="btn btn-xs btn-outline-warning py-0 px-2 flex-fill text-center" title="Editar">
                 <i class="bi bi-pencil"></i>
               </a>
+              {% if os.tipo_legado_efetivo == 'PLANTIO' %}
+              <a href="{% url 'operacoes_campo:os_detail' os.pk %}" class="btn btn-xs btn-outline-primary py-0 px-2 flex-fill text-center" title="Aprovar (exige IDIARN)">
+                <i class="bi bi-check2-circle"></i> Aprovar
+              </a>
+              {% else %}
               <form method="post" action="{% url 'operacoes_campo:os_aprovar' os.pk %}" class="flex-fill">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-xs btn-outline-primary py-0 w-100" title="Aprovar">
                   <i class="bi bi-check2-circle"></i> Aprovar
                 </button>
               </form>
+              {% endif %}
             </div>
           </div>
         </div>

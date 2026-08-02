@@ -2790,19 +2790,36 @@ class Talhao(models.Model):
             self.status in ['DISPONIVEL', 'DESCANSO']
         )
     
-    def iniciar_cultivo(self, cultura, data_plantio):
-        """Registra início de cultivo no talhão"""
+    def iniciar_cultivo(self, cultura, data_plantio, safra_cultura=None, idiarn=None):
+        """Registra início de cultivo no talhão.
+
+        Bloqueia abertura de um novo ciclo enquanto houver um `HistoricoTalhao`
+        em aberto (sem `data_colheita`) para este talhão. Retorna o
+        `HistoricoTalhao` criado pelo signal `talhao_post_save`.
+        """
+        if self.historico.filter(data_colheita__isnull=True).exists():
+            raise ValidationError('Este talhão já possui um ciclo em aberto.')
+
         self.cultura_atual = cultura
         self.data_plantio_atual = data_plantio
         self.status = 'PLANTADO'
         self.pronto_para_plantio = False
-        
+
         # Calcula previsão de colheita se cultura tiver ciclo
         if cultura.dias_colheita:
             from datetime import timedelta
             self.previsao_colheita = data_plantio + timedelta(days=cultura.dias_colheita)
-        
+
+        # Atributos transitórios lidos pelo signal `talhao_post_save` ao criar
+        # o HistoricoTalhao deste ciclo.
+        self._novo_ciclo_safra_cultura = safra_cultura
+        self._novo_ciclo_idiarn = idiarn
+
         self.save()
+
+        return self.historico.filter(
+            data_plantio=data_plantio, cultura=cultura
+        ).order_by('-id').first()
     
     def finalizar_cultivo(self):
         """Finaliza cultivo e libera talhão"""
@@ -2829,26 +2846,58 @@ class Talhao(models.Model):
         return None
 
 
+idiarn_validator = RegexValidator(
+    regex=r'^\d{2}\.\d{6}\.\d{3}\.\d{2}\.\d{7}$',
+    message='Formato esperado: NN.NNNNNN.NNN.NN.NNNNNNN (ex: 24.003071.318.22.0064006)'
+)
+
+
 class HistoricoTalhao(models.Model):
     """
     Histórico de cultivos em um talhão
     Rastreabilidade completa por safra
     """
-    
+
     talhao = models.ForeignKey(
         Talhao,
         on_delete=models.CASCADE,
         related_name='historico',
         verbose_name='Talhão'
     )
-    
+
     cultura = models.ForeignKey(
         Cultura,
         on_delete=models.PROTECT,
         related_name='historico_cultivos',
         verbose_name='Cultura'
     )
-    
+
+    safra = models.ForeignKey(
+        'cadastros.Safra',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='historico_talhoes',
+        verbose_name='Safra'
+    )
+
+    safra_cultura = models.ForeignKey(
+        'cadastros.SafraCultura',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='historicos',
+        verbose_name='Cultura da Safra'
+    )
+
+    idiarn = models.CharField(
+        'IDIARN',
+        max_length=30,
+        blank=True,
+        validators=[idiarn_validator],
+        help_text='Número de controle obrigatório do ciclo (ex: 24.003071.318.22.0064006)'
+    )
+
     variedade = models.CharField(
         'Variedade',
         max_length=100,

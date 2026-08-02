@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.urls import reverse
 
@@ -40,6 +41,7 @@ class HistoricoTalhaoTests(TestCase):
         data = {
             'talhao': self.talhao.pk,
             'cultura': self.cultura.pk,
+            'idiarn': '24.003071.318.22.0064006',
             'data_plantio': date.today().isoformat(),
             'producao_real': '1200.50',
             'custo_total': '500.00'
@@ -51,6 +53,19 @@ class HistoricoTalhaoTests(TestCase):
         exists = HistoricoTalhao.objects.filter(talhao=self.talhao, cultura=self.cultura).exists()
         self.assertTrue(exists)
         self.assertContains(resp, self.talhao.nome, status_code=200)
+
+    def test_create_historico_via_view_requires_idiarn(self):
+        self.client.login(username='huser', password='pass')
+        url = reverse('cadastros:historico_create', args=[self.talhao.pk])
+        data = {
+            'talhao': self.talhao.pk,
+            'cultura': self.cultura.pk,
+            'data_plantio': date.today().isoformat(),
+        }
+        resp = self.client.post(url, data)
+        self.assertEqual(resp.status_code, 200)
+        self.assertFalse(HistoricoTalhao.objects.filter(talhao=self.talhao, cultura=self.cultura).exists())
+        self.assertFormError(resp.context['form'], 'idiarn', 'Este campo é obrigatório.')
 
     def test_update_and_delete_historico(self):
         hist = HistoricoTalhao.objects.create(
@@ -85,6 +100,32 @@ class HistoricoTalhaoTests(TestCase):
         self.talhao.save()
 
         self.assertTrue(HistoricoTalhao.objects.filter(talhao=self.talhao, data_plantio=date.today(), cultura=self.cultura).exists())
+
+    def test_iniciar_cultivo_cria_historico_com_idiarn(self):
+        historico = self.talhao.iniciar_cultivo(
+            cultura=self.cultura, data_plantio=date.today(), idiarn='24.003071.318.22.0064006'
+        )
+        self.assertIsNotNone(historico)
+        self.assertEqual(historico.idiarn, '24.003071.318.22.0064006')
+        self.talhao.refresh_from_db()
+        self.assertEqual(self.talhao.status, 'PLANTADO')
+
+    def test_iniciar_cultivo_bloqueia_segundo_ciclo_aberto(self):
+        self.talhao.iniciar_cultivo(cultura=self.cultura, data_plantio=date.today())
+        outra_cultura = Cultura.objects.create(empresa=self.empresa, nome='Soja')
+        with self.assertRaises(ValidationError):
+            self.talhao.iniciar_cultivo(cultura=outra_cultura, data_plantio=date.today())
+
+    def test_iniciar_cultivo_permite_novo_ciclo_apos_colheita(self):
+        historico1 = self.talhao.iniciar_cultivo(cultura=self.cultura, data_plantio=date.today())
+        historico1.data_colheita = date.today()
+        historico1.save()
+        self.talhao.finalizar_cultivo()
+
+        outra_cultura = Cultura.objects.create(empresa=self.empresa, nome='Soja')
+        historico2 = self.talhao.iniciar_cultivo(cultura=outra_cultura, data_plantio=date.today())
+        self.assertIsNotNone(historico2)
+        self.assertNotEqual(historico1.pk, historico2.pk)
 
     def test_ajax_talhoes_por_fazenda(self):
         self.client.login(username='huser', password='pass')

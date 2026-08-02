@@ -2210,15 +2210,16 @@ class SafraCulturaForm(forms.ModelForm):
 
 
 class BaseSafraCulturaFormSet(forms.BaseInlineFormSet):
-    """Valida que um talhão não seja atribuído a duas culturas da mesma safra
-    nem a uma cultura ativa de outra safra."""
+    """Valida que um talhão não seja atribuído a uma cultura enquanto tiver um
+    ciclo de cultivo em aberto (HistoricoTalhao sem colheita) em outra
+    cultura/safra. Um talhão já colhido (ou nunca cultivado) pode ser
+    livremente reatribuído a uma nova cultura, mesmo dentro da mesma safra."""
 
     def clean(self):
         super().clean()
         if any(self.errors):
             return
 
-        talhoes_no_formset = {}
         culturas_validas = 0
         for form in self.forms:
             if not hasattr(form, 'cleaned_data') or form.cleaned_data.get('DELETE'):
@@ -2231,19 +2232,21 @@ class BaseSafraCulturaFormSet(forms.BaseInlineFormSet):
                 continue
 
             for talhao in talhoes:
-                if talhao in talhoes_no_formset:
-                    form.add_error('talhoes', f'Talhão {talhao.codigo} já foi atribuído a outra cultura desta safra.')
-                    continue
-                talhoes_no_formset[talhao] = form
-
-                conflito_qs = SafraCultura.objects.filter(
-                    talhoes=talhao, status__in=['PLANEJADA', 'EM_ANDAMENTO']
+                conflito_qs = HistoricoTalhao.objects.filter(
+                    talhao=talhao, data_colheita__isnull=True
                 )
-                if self.instance.pk:
-                    conflito_qs = conflito_qs.exclude(safra_id=self.instance.pk)
-                conflito = conflito_qs.select_related('safra').first()
+                if form.instance.pk:
+                    conflito_qs = conflito_qs.exclude(safra_cultura_id=form.instance.pk)
+                conflito = conflito_qs.select_related('cultura', 'safra').first()
                 if conflito:
-                    form.add_error('talhoes', f'Talhão {talhao.codigo} já está em uso em {conflito.safra}.')
+                    detalhe = conflito.cultura.nome
+                    if conflito.safra_id:
+                        detalhe += f' ({conflito.safra})'
+                    form.add_error(
+                        'talhoes',
+                        f'Talhão {talhao.codigo} já está em cultivo ativo de {detalhe}. '
+                        'Aguarde a colheita para reatribuir a outra cultura.'
+                    )
 
         if culturas_validas == 0:
             raise forms.ValidationError('Adicione ao menos uma cultura para esta safra.')
@@ -2458,7 +2461,7 @@ class HistoricoTalhaoForm(forms.ModelForm):
     class Meta:
         model = HistoricoTalhao
         fields = [
-            'talhao', 'cultura', 'variedade',
+            'talhao', 'cultura', 'variedade', 'idiarn',
             'data_plantio', 'data_colheita',
             'producao_estimada', 'producao_real',
             'custo_total',
@@ -2468,6 +2471,10 @@ class HistoricoTalhaoForm(forms.ModelForm):
             'talhao': forms.Select(attrs={'class': 'form-select'}),
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'variedade': forms.TextInput(attrs={'class': 'form-control'}),
+            'idiarn': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex: 24.003071.318.22.0064006'
+            }),
             'data_plantio': DateBRInput(attrs={
                 'class': 'form-control'
             }),
@@ -2499,7 +2506,12 @@ class HistoricoTalhaoForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        
+
+        # IDIARN obrigatório para novos ciclos; registros antigos sem o dado
+        # continuam editáveis sem forçar o preenchimento retroativo.
+        if not self.instance.pk:
+            self.fields['idiarn'].required = True
+
         # 🔒 FILTRO: Apenas talhões e culturas da empresa
         if self.user and self.user.empresa:
             self.fields['talhao'].queryset = Talhao.objects.filter(

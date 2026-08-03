@@ -175,8 +175,11 @@
                   <select class="form-select form-select-sm select2-ajax produto-select"
                           data-ajax-url="{% url 'produtos:ajax_buscar_produtos' %}"
                           data-placeholder="Buscar produto...">
-                    {% if item_form.instance.pk %}
-                    <option value="{% if item_form.instance.lote_id %}{{ item_form.instance.lote.produto_id }}{% endif %}" selected>{{ item_form.instance.nome_produto }}</option>
+                    {% if item_form.instance.pk and item_form.instance.nome_produto %}
+                    {# Select2 treats a lone option with an empty value as its internal placeholder marker and
+                       swaps its text for the placeholder — so this value must never be empty, even though it's
+                       otherwise unused (only select2:select/select2:clear on user interaction are read by JS). #}
+                    <option value="item-{{ item_form.instance.pk }}" selected>{{ item_form.instance.nome_produto }}</option>
                     {% endif %}
                   </select>
                 </td>

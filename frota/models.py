@@ -712,6 +712,9 @@ class DocumentoManutencao(models.Model):
     def __str__(self):
         return f"{self.get_tipo_display()} — {self.descricao or os.path.basename(self.arquivo.name) if self.arquivo else ''}"
 
+    def get_nome_arquivo(self):
+        return os.path.basename(self.arquivo.name) if self.arquivo else ''
+
 
 class AlertaManutencao(models.Model):
     """Alerta gerado automaticamente quando manutenção está próxima do vencimento."""

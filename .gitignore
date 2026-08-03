@@ -48,6 +48,7 @@ db.sqlite3-journal
 .env.docker
 .env.local
 .env.*.local
+.env.producao
 secrets.json
 *.pem
 *.key
@@ -119,6 +120,7 @@ celerybeat.pid
 *~
 .sass-cache/
 node_modules/
+VENDA - FRUTANIA.xlsx
 
 # ==============================================================================
 # ARTEFATOS DE TESTE E2E (screenshots/html/traces de falhas)

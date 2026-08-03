@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{{ title }} | Agrisdata{% endblock %}
 {% block page_title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid mt-4">
@@ -109,13 +116,22 @@
         <!-- Adicionar item -->
         <div class="card-body border-top">
           <h6 class="fw-semibold text-secondary small mb-2"><i class="bi bi-plus-circle"></i> Adicionar Peça</h6>
-          <form method="post" action="{% url 'frota:manutencao_item_add' obj.pk %}" class="row g-2">
+          <form method="post" action="{% url 'frota:manutencao_item_add' obj.pk %}" class="row g-2" id="add-peca-form">
             {% csrf_token %}
-            <div class="col-md-4">{{ item_form.descricao }}</div>
-            <div class="col-md-3">{{ item_form.lote }}</div>
-            <div class="col-md-2">{{ item_form.quantidade }}</div>
-            <div class="col-md-2">{{ item_form.valor_unitario }}</div>
-            <div class="col-md-1"><button type="submit" class="btn btn-warning btn-sm w-100"><i class="bi bi-plus"></i></button></div>
+            {{ item_form.descricao }}
+            {{ item_form.lote }}
+            {{ item_form.nome_produto }}
+            {{ item_form.unidade_medida }}
+            {{ item_form.valor_unitario }}
+            {{ item_form.valor_custo }}
+            <div class="col-md-6">
+              <select class="form-select form-select-sm select2-ajax" id="add-peca-produto"
+                      data-ajax-url="{% url 'produtos:ajax_buscar_produtos' %}"
+                      data-placeholder="Buscar produto...">
+              </select>
+            </div>
+            <div class="col-md-4">{{ item_form.quantidade }}</div>
+            <div class="col-md-2"><button type="submit" class="btn btn-warning btn-sm w-100"><i class="bi bi-plus"></i></button></div>
           </form>
         </div>
       </div>
@@ -227,4 +243,49 @@
   </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=8"></script>
+<script>
+$(function () {
+  AgrisSelect2.initFromDataAttrs();
+
+  $(document).on('select2:select', '#add-peca-produto', function (e) {
+    var produtoId = e.params.data.id;
+    if (!produtoId) return;
+    fetch(`/frota/api/lote-produto-data/?produto_id=${produtoId}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) return;
+        document.getElementById('id_lote').value = data.lote_id || '';
+        document.getElementById('id_nome_produto').value = data.nome_produto || '';
+        document.getElementById('id_descricao').value = data.nome_produto || '';
+        document.getElementById('id_unidade_medida').value = data.unidade_medida || '';
+        document.getElementById('id_valor_custo').value = parseFloat(data.valor_custo || 0).toFixed(4);
+      })
+      .catch(() => {});
+  });
+
+  $(document).on('select2:clear', '#add-peca-produto', function () {
+    document.getElementById('id_lote').value = '';
+    document.getElementById('id_nome_produto').value = '';
+    document.getElementById('id_descricao').value = '';
+    document.getElementById('id_unidade_medida').value = '';
+    document.getElementById('id_valor_custo').value = '0.0000';
+  });
+
+  $('#add-peca-form').on('submit', function (e) {
+    if (!document.getElementById('id_lote').value) {
+      e.preventDefault();
+      alert('Selecione um produto antes de adicionar a peça.');
+    }
+  });
+});
+</script>
 {% endblock %}

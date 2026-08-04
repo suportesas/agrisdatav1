@@ -24,7 +24,7 @@
   <!-- Menu Navigation -->
   <nav class="sidebar-nav">
     <ul class="nav-list">
-      
+
       <!-- Dashboard -->
       <li class="nav-item has-submenu" data-start-collapsed="true">
         <a href="#" class="nav-link">
@@ -47,7 +47,9 @@
           {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_rastreamento_dashboard' %}
           <li><a href="{% url 'estoque:relatorio_rastreamento_dashboard' %}"><i class="bi bi-activity"></i> Rastreamento</a></li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:dashboard' %}
           <li><a href="{% url 'produtos:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard de Produtos</a></li>
+          {% endif %}
           {% endif %}
         </ul>
       </li>
@@ -121,37 +123,38 @@
       {% endif %}
 
       {% if not user.is_superuser and user.empresa %}
+      {% if user.is_admin_empresa or request|tem_acesso:'configuracoes_hub' %}
       <li class="nav-divider"></li>
-      
+      {% endif %}
+
       <!-- Gestão da Empresa (Admin da Empresa) -->
       {% if user.is_admin_empresa %}
       <li class="nav-section">
         <span>GESTÃO DA EMPRESA</span>
       </li>
-      
-      <li class="nav-item">
-        <a href="{% url 'configuracoes_hub' %}" class="nav-link">
-          <i class="bi bi-gear-fill"></i>
-          <span>Configurações</span>
-        </a>
-      </li>
-      {% else %}
-      <li class="nav-item">
-        <a href="{% url 'configuracoes_hub' %}" class="nav-link">
-          <i class="bi bi-gear-fill"></i>
-          <span>Configurações</span>
-        </a>
-      </li>
-      {% endif %}
-      {% endif %}
 
-      <li class="nav-divider"></li>
+      <li class="nav-item">
+        <a href="{% url 'configuracoes_hub' %}" class="nav-link">
+          <i class="bi bi-gear-fill"></i>
+          <span>Configurações</span>
+        </a>
+      </li>
+      {% elif request|tem_acesso:'configuracoes_hub' %}
+      <li class="nav-item">
+        <a href="{% url 'configuracoes_hub' %}" class="nav-link">
+          <i class="bi bi-gear-fill"></i>
+          <span>Configurações</span>
+        </a>
+      </li>
+      {% endif %}
+      {% endif %}
 
       <!-- ══════════ OPERACIONAL (Apenas para Empresa) ══════════ -->
       {% if not user.is_superuser and user.empresa %}
 
       <!-- ── PRODUÇÃO AGRÍCOLA ── -->
       {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:os_list,mip:monitoramento_mip_list,estufas:estufa_list' %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>PRODUÇÃO AGRÍCOLA</span>
       </li>
@@ -166,53 +169,103 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:fazenda_list' %}
           <li><a href="{% url 'cadastros:fazenda_list' %}"><i class="bi bi-geo-alt"></i> Fazendas</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:area_list' %}
           <li><a href="{% url 'cadastros:area_list' %}"><i class="bi bi-map"></i> Áreas</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:talhao_list' %}
           <li><a href="{% url 'cadastros:talhao_list' %}"><i class="bi bi-grid-3x3"></i> Talhões</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cultura_list' %}
           <li><a href="{% url 'cadastros:cultura_list' %}"><i class="bi bi-flower2"></i> Culturas</a></li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:safra_list,cadastros:safra_create' %}
           <li class="submenu-divider"></li>
           <li class="has-submenu">
             <a href="#"><i class="bi bi-calendar-event"></i> Safras <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:safra_list' %}
               <li><a href="{% url 'cadastros:safra_list' %}"><i class="bi bi-list-ul"></i> Lista de Safras</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:safra_create' %}
               <li><a href="{% url 'cadastros:safra_create' %}"><i class="bi bi-plus-circle"></i> Nova Safra</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:os_list,operacoes_campo:os_create,operacoes_campo:os_painel_delegacao' %}
           <li class="submenu-divider"></li>
           <li class="has-submenu">
             <a href="#"><i class="bi bi-clipboard-check"></i> Ordens de Serviço <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:os_list' %}
               <li><a href="{% url 'operacoes_campo:os_list' %}"><i class="bi bi-list-ul"></i> Lista de OS</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:os_create' %}
               <li><a href="{% url 'operacoes_campo:os_create' %}"><i class="bi bi-plus-square"></i> Nova OS</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:os_painel_delegacao' %}
               <li><a href="{% url 'operacoes_campo:os_painel_delegacao' %}"><i class="bi bi-diagram-3 text-primary"></i> Painel de Delegação</a></li>
+              {% endif %}
               {% if user.is_admin_empresa %}
               <li><a href="{% url 'operacoes_campo:portal_campo_config' %}"><i class="bi bi-gear text-secondary"></i> Config. Portal do Campo</a></li>
               {% endif %}
             </ul>
           </li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:custo_talhao_list' %}
           <li><a href="{% url 'operacoes_campo:custo_talhao_list' %}"><i class="bi bi-graph-up"></i> Custo por Talhão/Safra</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:planejamento_custo_list' %}
           <li><a href="{% url 'operacoes_campo:planejamento_custo_list' %}"><i class="bi bi-clipboard-data text-warning"></i> Planejamento de Custo</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:custo_maquina_list' %}
           <li><a href="{% url 'operacoes_campo:custo_maquina_list' %}"><i class="bi bi-gear"></i> Custo/Hora Máquinas</a></li>
-          
+          {% endif %}
+
           <!-- Pragas e Doenças (Submenu) -->
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:praga_list,mip:estagio_list,mip:estagio_cadastro_em_lote' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-bug"></i> Pragas e Doenças <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:praga_list' %}
               <li><a href="{% url 'cadastros:praga_list' %}"><i class="bi bi-bug"></i> Pragas</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'mip:estagio_list' %}
               <li><a href="{% url 'mip:estagio_list' %}"><i class="bi bi-diagram-3"></i> Estágios</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'mip:estagio_cadastro_em_lote' %}
               <li><a href="{% url 'mip:estagio_cadastro_em_lote' %}"><i class="bi bi-plus-square"></i> Cadastro em Lote</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'mip:monitoramento_mip_list,operacoes_campo:pluviometria_list,cadastros:poco_list,operacoes_campo:qualidade_campo_list,operacoes_campo:caderno_campo_list,operacoes_campo:lote_list' %}
           <li class="submenu-divider"></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'mip:monitoramento_mip_list' %}
           <li><a href="{% url 'mip:monitoramento_mip_list' %}"><i class="bi bi-crosshair2"></i> Monitoramento MIP</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:pluviometria_list' %}
           <li><a href="{% url 'operacoes_campo:pluviometria_list' %}"><i class="bi bi-cloud-rain-heavy"></i> Pluviometria</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:poco_list' %}
           <li><a href="{% url 'cadastros:poco_list' %}"><i class="bi bi-water"></i> Poços / Bombas</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:qualidade_campo_list' %}
           <li><a href="{% url 'operacoes_campo:qualidade_campo_list' %}"><i class="bi bi-patch-check"></i> Qualidade de Campo</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:caderno_campo_list' %}
           <li><a href="{% url 'operacoes_campo:caderno_campo_list' %}"><i class="bi bi-journal-text"></i> Caderno de Campo</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:lote_list' %}
           <li><a href="{% url 'operacoes_campo:lote_list' %}"><i class="bi bi-boxes"></i> Lotes de Produção</a></li>
+          {% endif %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'portal_campo:login' %}" target="_blank"><i class="bi bi-person-badge-fill"></i> Portal do Campo</a></li>
         </ul>
@@ -229,17 +282,23 @@
         </a>
         <ul class="nav-submenu">
           <li><a href="{% url 'estufas:estufa_list' %}"><i class="bi bi-house-door"></i> Estufas</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'estufas:lote_muda_list' %}
           <li><a href="{% url 'estufas:lote_muda_list' %}"><i class="bi bi-grid-3x3-gap"></i> Lotes de Mudas</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estufas:dashboard_estufas' %}
           <li><a href="{% url 'estufas:dashboard_estufas' %}"><i class="bi bi-bar-chart-line"></i> Dashboard</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
 
-      <li class="nav-divider"></li>
       <!-- ── PESSOAS & PARCEIROS ── -->
+      {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cliente_list,cadastros:produtor_list,cadastros:fornecedor_list,cadastros:transportadora_list,cadastros:vendedor_list,frota:vehicle_list,rh:funcionario_list,patrimonio:patrimonio_list' %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>PESSOAS &amp; PARCEIROS</span>
       </li>
+      {% endif %}
 
       <!-- Cadastros -->
       {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cliente_list,cadastros:produtor_list,cadastros:fornecedor_list,cadastros:transportadora_list,cadastros:vendedor_list' %}
@@ -250,19 +309,33 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cliente_list' %}
           <li><a href="{% url 'cadastros:cliente_list' %}"><i class="bi bi-person-check"></i> Clientes</a></li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:produtor_list,cadastros:produtor_create' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-person-bounding-box"></i> Produtores <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:produtor_list' %}
               <li><a href="{% url 'cadastros:produtor_list' %}"><i class="bi bi-list-ul"></i> Listar Produtores</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:produtor_create' %}
               <li><a href="{% url 'cadastros:produtor_create' %}"><i class="bi bi-person-plus"></i> Novo Produtor</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:fornecedor_list' %}
           <li><a href="{% url 'cadastros:fornecedor_list' %}"><i class="bi bi-shop"></i> Fornecedores</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:transportadora_list' %}
           <li><a href="{% url 'cadastros:transportadora_list' %}"><i class="bi bi-truck"></i> Transportadoras</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:vendedor_list' %}
           <li><a href="{% url 'cadastros:vendedor_list' %}"><i class="bi bi-person-lines-fill"></i> Vendedores</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -276,26 +349,50 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:frota_dashboard' %}
           <li><a href="{% url 'frota:frota_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          {% endif %}
           <li><a href="{% url 'frota:vehicle_list' %}"><i class="bi bi-car-front"></i> Veículos</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:abastecimento_list' %}
           <li><a href="{% url 'frota:abastecimento_list' %}"><i class="bi bi-fuel-pump"></i> Combustível</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:manutencao_list' %}
           <li><a href="{% url 'frota:manutencao_list' %}"><i class="bi bi-wrench"></i> Manutenções</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:pedagio_list' %}
           <li><a href="{% url 'frota:pedagio_list' %}"><i class="bi bi-signpost"></i> Pedágios</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:viagem_list' %}
           <li><a href="{% url 'frota:viagem_list' %}"><i class="bi bi-map"></i> Viagens</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:telemetria_list' %}
           <li><a href="{% url 'frota:telemetria_list' %}"><i class="bi bi-geo-alt"></i> Telemetria</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:alertas_manutencao_list' %}
           <li><a href="{% url 'frota:alertas_manutencao_list' %}"><i class="bi bi-exclamation-triangle text-warning"></i> Alertas</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:abastecimento_importar' %}
           <li><a href="{% url 'frota:abastecimento_importar' %}"><i class="bi bi-upload"></i> Importar CSV</a></li>
+          {% endif %}
           <li><a href="{% url 'portal_motorista:login' %}" target="_blank"><i class="bi bi-person-badge"></i> Portal do Motorista</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'frota:motorista_list,frota:motorista_vinculo_list,frota:motorista_vinculo_consulta' %}
           <li class="submenu-divider"></li>
           <!-- Motorista x Frota (Submenu) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-link-45deg"></i> Motorista x Frota <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'frota:motorista_list' %}
               <li><a href="{% url 'frota:motorista_list' %}"><i class="bi bi-person-badge"></i> Motoristas</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'frota:motorista_vinculo_list' %}
               <li><a href="{% url 'frota:motorista_vinculo_list' %}"><i class="bi bi-list-ul"></i> Lista de Vínculos</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'frota:motorista_vinculo_consulta' %}
               <li><a href="{% url 'frota:motorista_vinculo_consulta' %}"><i class="bi bi-search"></i> Consulta Histórico</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -309,38 +406,64 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:rh_dashboard' %}
           <li><a href="{% url 'rh:rh_dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard RH</a></li>
           <li class="submenu-divider"></li>
-          
+          {% endif %}
+
           <!-- Funcionários (Submenu dentro de RH) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-person-badge"></i> Funcionários <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
               <li><a href="{% url 'rh:funcionario_list' %}"><i class="bi bi-list-ul"></i> Listar Funcionários</a></li>
+              {% if user.is_admin_empresa or request|tem_acesso:'rh:funcao_list' %}
               <li><a href="{% url 'rh:funcao_list' %}"><i class="bi bi-person-workspace"></i> Funções/Cargos</a></li>
+              {% endif %}
             </ul>
           </li>
-          
+
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:ferias_list' %}
           <li><a href="{% url 'rh:ferias_list' %}"><i class="bi bi-umbrella"></i> Férias</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:afastamento_list' %}
           <li><a href="{% url 'rh:afastamento_list' %}"><i class="bi bi-bandaid"></i> Afastamentos</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:risco_ambiental_catalogo_list' %}
           <li><a href="{% url 'rh:risco_ambiental_catalogo_list' %}"><i class="bi bi-shield-exclamation"></i> Riscos Ambientais</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:vinculo_list' %}
           <li><a href="{% url 'rh:vinculo_list' %}"><i class="bi bi-link-45deg"></i> Vínculos Contratuais</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:laudo_list' %}
           <li><a href="{% url 'rh:laudo_list' %}"><i class="bi bi-file-earmark-check"></i> Laudos de Risco</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:rescisao_list' %}
           <li><a href="{% url 'rh:rescisao_list' %}"><i class="bi bi-person-dash"></i> Rescisões</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:aso_solicitacao_list,rh:aso_solicitacao_create,rh:tipo_exame_aso_list' %}
           <li class="submenu-divider"></li>
-          
+
           <!-- ASO - Atestado Saúde Ocupacional (Submenu dentro de RH) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-heart-pulse"></i> ASO <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'rh:aso_solicitacao_list' %}
               <li><a href="{% url 'rh:aso_solicitacao_list' %}"><i class="bi bi-list-ul"></i> Solicitações</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'rh:aso_solicitacao_create' %}
               <li><a href="{% url 'rh:aso_solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'rh:tipo_exame_aso_list' %}
               <li><a href="{% url 'rh:tipo_exame_aso_list' %}"><i class="bi bi-gear"></i> Tipos de Exame</a></li>
+              {% endif %}
             </ul>
           </li>
-          
+          {% endif %}
+
+          {% if user.is_admin_empresa or request|tem_acesso:'rh:relatorio_rh' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'rh:relatorio_rh' %}"><i class="bi bi-file-earmark-text"></i> Relatório RH</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -355,19 +478,27 @@
         </a>
         <ul class="nav-submenu">
           <li><a href="{% url 'patrimonio:patrimonio_list' %}"><i class="bi bi-list-ul"></i> Listar Patrimônios</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'patrimonio:patrimonio_create' %}
           <li><a href="{% url 'patrimonio:patrimonio_create' %}"><i class="bi bi-plus-circle"></i> Novo Patrimônio</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'patrimonio:auditoria_list' %}
           <li><a href="{% url 'patrimonio:auditoria_list' %}"><i class="bi bi-clipboard-check"></i> Auditorias</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'patrimonio:patrimonio_relatorio' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
 
-      <li class="nav-divider"></li>
       <!-- ── SUPRIMENTOS & ESTOQUE ── -->
+      {% if user.is_admin_empresa or request|tem_acesso:'produtos:produto_list,estoque:movimentacao_list,compras:pedido_list' %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>SUPRIMENTOS &amp; ESTOQUE</span>
       </li>
+      {% endif %}
 
       <!-- Produtos -->
       {% if user.is_admin_empresa or request|tem_acesso:'produtos:produto_list' %}
@@ -380,13 +511,27 @@
         <ul class="nav-submenu">
           <!-- Dashboard removido: agora está em Dashboard principal -->
           <li><a href="{% url 'produtos:produto_list' %}"><i class="bi bi-list-ul"></i> Listar Produtos</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:produto_create' %}
           <li><a href="{% url 'produtos:produto_create' %}"><i class="bi bi-plus-circle"></i> Novo Produto</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:tipo_produto_list' %}
           <li><a href="{% url 'produtos:tipo_produto_list' %}"><i class="bi bi-tag"></i> Tipos de Produto</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:categoria_list' %}
           <li><a href="{% url 'produtos:categoria_list' %}"><i class="bi bi-tags"></i> Categorias</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:subcategoria_list' %}
           <li><a href="{% url 'produtos:subcategoria_list' %}"><i class="bi bi-bookmark"></i> Subcategorias</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:marca_list' %}
           <li><a href="{% url 'produtos:marca_list' %}"><i class="bi bi-award"></i> Marcas</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:unidademedida_list' %}
           <li><a href="{% url 'produtos:unidademedida_list' %}"><i class="bi bi-rulers"></i> Unidades</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:naturezaoperacao_list' %}
           <li><a href="{% url 'produtos:naturezaoperacao_list' %}"><i class="bi bi-file-text"></i> Naturezas</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -406,18 +551,27 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:estoque_produtos_list' %}
           <li>
             <a href="{% url 'estoque:estoque_produtos_list' %}">
-              <i class="bi bi-box-seam"></i> 
+              <i class="bi bi-box-seam"></i>
               Estoque de Produtos
               {% if alertas_estoque.total_alertas > 0 %}
               <span class="badge bg-danger ms-2">{{ alertas_estoque.total_alertas }}</span>
               {% endif %}
             </a>
           </li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:requisicao_list,cadastros:requisicao_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:requisicao_list' %}
           <li><a href="{% url 'cadastros:requisicao_list' %}"><i class="bi bi-clipboard-check"></i> Requisições</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:requisicao_create' %}
           <li><a href="{% url 'cadastros:requisicao_create' %}"><i class="bi bi-plus-circle"></i> Nova Requisição</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'emprestimos:emprestimo_extrato' %}
           <li>
             <a href="{% if notificacoes_emprestimo.total_nao_lidas > 0 %}{% url 'emprestimos:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on{% else %}{% url 'emprestimos:emprestimo_extrato' %}{% endif %}">
               <i class="bi bi-journal-text"></i> Extrato de Empréstimos
@@ -426,9 +580,11 @@
               {% endif %}
             </a>
           </li>
+          {% endif %}
           {% if user.is_admin_empresa or request|tem_acesso:'cadastros:requisicao_pendentes_aprovacao' %}
           <li><a href="{% url 'cadastros:requisicao_pendentes_aprovacao' %}" class="fw-bold text-danger"><i class="bi bi-hourglass-split text-warning"></i> <span class="badge bg-danger">Pendentes</span> Aprovação</a></li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:requisicao_pendentes_atendimento' %}
           <li>
             <a href="{% url 'cadastros:requisicao_pendentes_atendimento' %}" class="fw-bold text-warning-emphasis">
               <i class="bi bi-box-arrow-up text-warning"></i> Aguardando Liberação
@@ -437,18 +593,41 @@
               {% endif %}
             </a>
           </li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:armazem_list,estoque:local_list,estoque:lote_list,estoque:movimentacao_list' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:armazem_list' %}
           <li><a href="{% url 'estoque:armazem_list' %}"><i class="bi bi-building"></i> Armazéns</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:local_list' %}
           <li><a href="{% url 'estoque:local_list' %}"><i class="bi bi-pin-map"></i> Locais</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:lote_list' %}
           <li><a href="{% url 'estoque:lote_list' %}"><i class="bi bi-box2"></i> Lotes</a></li>
+          {% endif %}
           <li><a href="{% url 'estoque:movimentacao_list' %}"><i class="bi bi-arrow-left-right"></i> Movimentações</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_alertas_estoque,estoque:inventario_ciclico_list' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_alertas_estoque' %}
           <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Relatório de Alertas</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:inventario_ciclico_list' %}
           <li><a href="{% url 'estoque:inventario_ciclico_list' %}"><i class="bi bi-boxes text-info"></i> Inventário</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:entrada_create,estoque:saida_create,estoque:transferencia_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:entrada_create' %}
           <li><a href="{% url 'estoque:entrada_create' %}"><i class="bi bi-box-arrow-in-down text-success"></i> Entrada</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:saida_create' %}
           <li><a href="{% url 'estoque:saida_create' %}"><i class="bi bi-box-arrow-up text-warning"></i> Saída</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'estoque:transferencia_create' %}
           <li><a href="{% url 'estoque:transferencia_create' %}"><i class="bi bi-arrow-left-right text-info"></i> Transferência</a></li>
+          {% endif %}
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -465,30 +644,50 @@
         <ul class="nav-submenu">
           {% if user.is_admin_empresa or request|tem_acesso:'compras:pedido_direto_create' %}
           <li><a href="{% url 'compras:pedido_direto_create' %}"><i class="bi bi-lightning-charge text-success"></i> Pedido Direto</a></li>
-          {% endif %}
           <li class="submenu-divider"></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:solicitacao_list' %}
           <li><a href="{% url 'compras:solicitacao_list' %}"><i class="bi bi-file-text"></i> Solicitações</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:solicitacao_create' %}
           <li><a href="{% url 'compras:solicitacao_create' %}"><i class="bi bi-plus-circle"></i> Nova Solicitação</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:cotacao_list' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:cotacao_list' %}"><i class="bi bi-cart3"></i> Cotações</a></li>
+          {% endif %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:pedido_list' %}"><i class="bi bi-file-earmark-check"></i> Pedidos de Compra</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:recebimento_list,compras:entrada_direta_nf,compras:mde_list' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:recebimento_list' %}
           <li><a href="{% url 'compras:recebimento_list' %}"><i class="bi bi-box-arrow-in-down text-success"></i> Recebimentos</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:entrada_direta_nf' %}
           <li><a href="{% url 'compras:entrada_direta_nf' %}"><i class="bi bi-box-arrow-in-down"></i> Entrada Direta NF-e</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:mde_list' %}
           <li><a href="{% url 'compras:mde_list' %}"><i class="bi bi-check2-square text-secondary"></i> Manifestação MD-e</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:tipo_divergencia_list' %}
           <li><a href="{% url 'compras:tipo_divergencia_list' %}"><i class="bi bi-exclamation-triangle text-warning"></i> Tipos de Divergência</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:planejamento_embalagem_list' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'compras:planejamento_embalagem_list' %}"><i class="bi bi-calendar2-check text-warning"></i> Planejamento Embalagens</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
 
-      <li class="nav-divider"></li>
       <!-- ── FINANCEIRO & FISCAL ── -->
+      {% if user.is_admin_empresa or request|tem_acesso:'cadastros:ncm_list,cadastros:cfop_list,financeiro:conta_pagar_list' %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>FINANCEIRO &amp; FISCAL</span>
       </li>
+      {% endif %}
 
       <!-- Fiscal -->
       {% if user.is_admin_empresa or request|tem_acesso:'cadastros:ncm_list,cadastros:cfop_list' %}
@@ -499,9 +698,15 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:ncm_list' %}
           <li><a href="{% url 'cadastros:ncm_list' %}"><i class="bi bi-upc-scan"></i> NCMs</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cfop_list' %}
           <li><a href="{% url 'cadastros:cfop_list' %}"><i class="bi bi-journal-code"></i> CFOP</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'produtos:naturezaoperacao_list' %}
           <li><a href="{% url 'produtos:naturezaoperacao_list' %}"><i class="bi bi-arrow-repeat"></i> Natureza da Operação</a></li>
+          {% endif %}
           {% if user.is_admin_empresa or request|tem_acesso:'cadastros:cfop_import' %}
           <li><a href="{% url 'cadastros:cfop_import' %}"><i class="bi bi-download"></i> Importar CFOP</a></li>
           {% endif %}
@@ -518,62 +723,101 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'financeiro:dashboard' %}
           <li><a href="{% url 'financeiro:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard Financeiro</a></li>
-
           <li class="submenu-divider"></li>
+          {% endif %}
 
           <li><a href="{% url 'financeiro:conta_pagar_list' %}"><i class="bi bi-list-check"></i> Contas a Pagar</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'financeiro:parcela_list' %}
           <li><a href="{% url 'financeiro:parcela_list' %}"><i class="bi bi-calendar-check"></i> Agenda de Pagamentos</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'financeiro:conta_receber_list' %}
           <li><a href="{% url 'financeiro:conta_receber_list' %}"><i class="bi bi-cash-coin"></i> Contas a Receber</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'financeiro:relatorio_fluxo_caixa' %}
           <li><a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"><i class="bi bi-graph-up"></i> Fluxo de Caixa</a></li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:conta_list,plano_contas:conta_create,plano_contas:centro_list,plano_contas:centro_create' %}
           <li class="submenu-divider"></li>
 
           <!-- Plano de Contas (Submenu) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-diagram-3"></i> Plano de Contas <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:conta_list' %}
               <li><a href="{% url 'plano_contas:conta_list' %}"><i class="bi bi-list-ul"></i> Contas Contábeis</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:conta_arvore' %}
               <li><a href="{% url 'plano_contas:conta_arvore' %}"><i class="bi bi-diagram-2"></i> Ver Árvore</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:conta_create' %}
               <li><a href="{% url 'plano_contas:conta_create' %}"><i class="bi bi-plus-circle"></i> Nova Conta</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:balancete' %}
               <li><a href="{% url 'plano_contas:balancete' %}"><i class="bi bi-file-earmark-bar-graph"></i> Balancete</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:centro_list,plano_contas:centro_create' %}
               <li class="submenu-divider"></li>
+              {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:centro_list' %}
               <li><a href="{% url 'plano_contas:centro_list' %}"><i class="bi bi-grid-3x3-gap"></i> Centros de Custo</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:centro_create' %}
               <li><a href="{% url 'plano_contas:centro_create' %}"><i class="bi bi-plus-circle"></i> Novo Centro</a></li>
+              {% endif %}
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'bancario:conta_bancaria_list,bancario:conta_bancaria_create,bancario:relatorio_conciliacao' %}
           <li class="submenu-divider"></li>
 
           <!-- Contas Bancárias (Submenu) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-bank"></i> Contas Bancárias <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'bancario:conta_bancaria_list' %}
               <li><a href="{% url 'bancario:conta_bancaria_list' %}"><i class="bi bi-list-ul"></i> Contas</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'bancario:conta_bancaria_create' %}
               <li><a href="{% url 'bancario:conta_bancaria_create' %}"><i class="bi bi-plus-circle"></i> Nova Conta</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'bancario:relatorio_conciliacao' %}
               <li><a href="{% url 'bancario:relatorio_conciliacao' %}"><i class="bi bi-check2-all"></i> Conciliação</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
 
+          {% if user.is_admin_empresa or request|tem_acesso:'adiantamentos:adiantamento_list,adiantamentos:adiantamento_create,adiantamentos:relatorio_adiantamentos' %}
           <li class="submenu-divider"></li>
 
           <!-- Adiantamentos Internacionais (Submenu) -->
           <li class="has-submenu">
             <a href="#"><i class="bi bi-cash-coin"></i> Adiantamentos Intl. <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'adiantamentos:adiantamento_list' %}
               <li><a href="{% url 'adiantamentos:adiantamento_list' %}"><i class="bi bi-list-ul"></i> Adiantamentos</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'adiantamentos:adiantamento_create' %}
               <li><a href="{% url 'adiantamentos:adiantamento_create' %}"><i class="bi bi-plus-circle"></i> Novo Adiantamento</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'adiantamentos:relatorio_adiantamentos' %}
               <li><a href="{% url 'adiantamentos:relatorio_adiantamentos' %}"><i class="bi bi-graph-up"></i> Relatório</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
 
         </ul>
       </li>
       {% endif %}
 
-      <li class="nav-divider"></li>
       <!-- ── CONTROLADORIA ── -->
       {% if user.is_admin_empresa %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>CONTROLADORIA</span>
       </li>
@@ -589,9 +833,9 @@
       </li>
       {% endif %}
 
-      <li class="nav-divider"></li>
       <!-- ── COMERCIAL & EXPORTAÇÃO ── -->
-      {% if user.is_admin_empresa or request|tem_acesso:'exportacao:booking_list,embalagem:ordem_list,vendas:pedido_list,faturamento:nota_fiscal_list' %}
+      {% if user.is_admin_empresa or request|tem_acesso:'exportacao:booking_list,embalagem:ordem_list,vendas:pedido_list,faturamento:nota_fiscal_list,etiquetas_avulsas:lote_list' %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>COMERCIAL &amp; EXPORTAÇÃO</span>
       </li>
@@ -607,18 +851,33 @@
         </a>
         <ul class="nav-submenu">
           <!-- Logística Marítima (Submenu) -->
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:porto_list,cadastros:armador_list,cadastros:navio_list,cadastros:agente_exportacao_list' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-shop-window"></i> Logística Marítima <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:porto_list' %}
               <li><a href="{% url 'cadastros:porto_list' %}"><i class="bi bi-water"></i> Portos</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:armador_list' %}
               <li><a href="{% url 'cadastros:armador_list' %}"><i class="bi bi-building"></i> Armadores</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:navio_list' %}
               <li><a href="{% url 'cadastros:navio_list' %}"><i class="bi bi-compass"></i> Navios</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:agente_exportacao_list' %}
               <li><a href="{% url 'cadastros:agente_exportacao_list' %}"><i class="bi bi-globe"></i> Agentes de Exportação</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'exportacao:solicitacao_booking_list' %}
           <li><a href="{% url 'exportacao:solicitacao_booking_list' %}"><i class="bi bi-file-earmark-plus"></i> Solicitações Booking</a></li>
+          {% endif %}
           <li><a href="{% url 'exportacao:booking_list' %}"><i class="bi bi-box-seam"></i> Bookings</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'exportacao:ordem_coleta_list' %}
           <li><a href="{% url 'exportacao:ordem_coleta_list' %}"><i class="bi bi-truck"></i> Ordens de Coleta</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'drawback:dashboard' %}
           <li class="submenu-divider"></li>
           <li>
             <a href="{% url 'drawback:dashboard' %}">
@@ -634,6 +893,7 @@
               {% endif %}
             </a>
           </li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -647,17 +907,31 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:dashboard' %}
           <li><a href="{% url 'embalagem:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
           <li class="submenu-divider"></li>
+          {% endif %}
           <li><a href="{% url 'embalagem:ordem_list' %}"><i class="bi bi-clipboard-check"></i> Ordens de Embalagem</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:ordem_create' %}
           <li><a href="{% url 'embalagem:ordem_create' %}"><i class="bi bi-plus-circle"></i> Nova Ordem</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:pallet_list' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'embalagem:pallet_list' %}"><i class="bi bi-stack"></i> Pallets</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:romaneio_list,embalagem:romaneio_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:romaneio_list' %}
           <li><a href="{% url 'embalagem:romaneio_list' %}"><i class="bi bi-file-earmark-text"></i> Romaneios de Venda</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:romaneio_create' %}
           <li><a href="{% url 'embalagem:romaneio_create' %}"><i class="bi bi-plus-circle"></i> Novo Romaneio</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:tipo_embalagem_list' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'embalagem:tipo_embalagem_list' %}"><i class="bi bi-gear"></i> Tipos de Embalagem</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -672,7 +946,9 @@
         </a>
         <ul class="nav-submenu">
           <li><a href="{% url 'etiquetas_avulsas:lote_list' %}"><i class="bi bi-list-ul"></i> Lotes de Etiquetas</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'etiquetas_avulsas:lote_create' %}
           <li><a href="{% url 'etiquetas_avulsas:lote_create' %}"><i class="bi bi-plus-circle"></i> Nova Etiqueta</a></li>
+          {% endif %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'empresas:api_key_list' %}"><i class="bi bi-key"></i> Chaves de API</a></li>
         </ul>
@@ -689,8 +965,12 @@
         </a>
         <ul class="nav-submenu">
           <li><a href="{% url 'vendas:pedido_list' %}"><i class="bi bi-list-ul"></i> Pedidos de Venda</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'vendas:pedido_create' %}
           <li><a href="{% url 'vendas:pedido_create' %}"><i class="bi bi-plus-circle"></i> Novo Pedido</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'vendas:tabela_preco_list' %}
           <li><a href="{% url 'vendas:tabela_preco_list' %}"><i class="bi bi-tags"></i> Tabelas de Preço</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}
@@ -704,38 +984,76 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:dashboard' %}
           <li><a href="{% url 'faturamento:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
           <li class="submenu-divider"></li>
+          {% endif %}
           <li><a href="{% url 'faturamento:nota_fiscal_list' %}"><i class="bi bi-file-earmark-text"></i> Notas Fiscais (NF-e)</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:nota_fiscal_create' %}
           <li><a href="{% url 'faturamento:nota_fiscal_create' %}"><i class="bi bi-plus-circle"></i> Nova NF-e</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:remessas_pendentes' %}
           <li><a href="{% url 'faturamento:remessas_pendentes' %}"><i class="bi bi-clock-history text-warning"></i> Remessas Pendentes</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:invoice_list,faturamento:invoice_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:invoice_list' %}
           <li><a href="{% url 'faturamento:invoice_list' %}"><i class="bi bi-globe"></i> Invoices Exportação</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:invoice_create' %}
           <li><a href="{% url 'faturamento:invoice_create' %}"><i class="bi bi-plus-circle"></i> Nova Invoice</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:packing_list_list' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'faturamento:packing_list_list' %}"><i class="bi bi-box-seam"></i> Packing Lists</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:instrucao_embarque_list' %}
           <li><a href="{% url 'faturamento:instrucao_embarque_list' %}"><i class="bi bi-truck"></i> Instruções de Embarque</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:minuta_list' %}
           <li><a href="{% url 'faturamento:minuta_list' %}"><i class="bi bi-file-earmark-ruled"></i> Minutas de Conhecimento</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:cte_list,faturamento:cte_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:cte_list' %}
           <li><a href="{% url 'faturamento:cte_list' %}"><i class="bi bi-truck text-primary"></i> CT-e (Transportes)</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:cte_create' %}
           <li><a href="{% url 'faturamento:cte_create' %}"><i class="bi bi-plus-circle"></i> Novo CT-e</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:mdfe_list,faturamento:mdfe_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:mdfe_list' %}
           <li><a href="{% url 'faturamento:mdfe_list' %}"><i class="bi bi-clipboard-check text-warning"></i> MDF-e (Manifestos)</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:mdfe_create' %}
           <li><a href="{% url 'faturamento:mdfe_create' %}"><i class="bi bi-plus-circle"></i> Novo MDF-e</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:cotacoes_bcb_list' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'faturamento:cotacoes_bcb_list' %}"><i class="bi bi-bank text-success"></i> Cotações BCB</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:configuracao,faturamento:dfe_list' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:configuracao' %}
           <li><a href="{% url 'faturamento:configuracao' %}"><i class="bi bi-gear"></i> Configuração Fiscal</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'faturamento:dfe_list' %}
           <li><a href="{% url 'faturamento:dfe_list' %}"><i class="bi bi-cloud-download text-secondary"></i> Distribuição de DF-e</a></li>
+          {% endif %}
+          {% endif %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'faturamento:docs_integranotas' %}" target="_blank"><i class="bi bi-file-earmark-code text-info"></i> Docs API IntegraNotas</a></li>
         </ul>
       </li>
       {% endif %}
 
-      <li class="nav-divider"></li>
       <!-- ── INFRAESTRUTURA ── -->
       {% if user.is_admin_empresa or request|tem_acesso:'energia:usina_list' %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>INFRAESTRUTURA</span>
       </li>
@@ -748,26 +1066,51 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:dashboard' %}
           <li><a href="{% url 'energia:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:consolidado' %}
           <li><a href="{% url 'energia:consolidado' %}"><i class="bi bi-bar-chart-fill text-warning"></i> Consolidado / Ranking</a></li>
+          {% endif %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'energia:usina_list' %}"><i class="bi bi-lightning-charge-fill text-warning"></i> Usinas</a></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:uc_list' %}
           <li><a href="{% url 'energia:uc_list' %}"><i class="bi bi-plug-fill text-info"></i> Unidades Consumidoras</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:lancamento_list,energia:lancamento_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:lancamento_list' %}
           <li><a href="{% url 'energia:lancamento_list' %}"><i class="bi bi-receipt"></i> Lançamentos Mensais</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:lancamento_create' %}
           <li><a href="{% url 'energia:lancamento_create' %}"><i class="bi bi-plus-circle"></i> Novo Lançamento</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:relatorio_usina_list,energia:relatorio_usina_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:relatorio_usina_list' %}
           <li><a href="{% url 'energia:relatorio_usina_list' %}"><i class="bi bi-file-earmark-bar-graph-fill text-success"></i> Relatórios de Usina</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:relatorio_usina_create' %}
           <li><a href="{% url 'energia:relatorio_usina_create' %}"><i class="bi bi-plus-circle"></i> Novo Relatório</a></li>
+          {% endif %}
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:ocorrencia_list,energia:ocorrencia_create' %}
           <li class="submenu-divider"></li>
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:ocorrencia_list' %}
           <li><a href="{% url 'energia:ocorrencia_list' %}"><i class="bi bi-exclamation-triangle-fill text-warning"></i> Ocorrências</a></li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'energia:ocorrencia_create' %}
           <li><a href="{% url 'energia:ocorrencia_create' %}"><i class="bi bi-plus-circle"></i> Nova Ocorrência</a></li>
+          {% endif %}
+          {% endif %}
         </ul>
       </li>
       {% endif %}
 
-      <li class="nav-divider"></li>
       <!-- ── RELATÓRIOS ── -->
+      {% if user.is_admin_empresa or request|tem_acesso:'estoque:movimentacao_list,compras:pedido_list,cadastros:relatorio_cliente,cadastros:relatorio_fornecedor,cadastros:relatorio_fornecedor_ranking,cadastros:fornecedor_ranking_avaliacoes,patrimonio:patrimonio_list' %}
+      <li class="nav-divider"></li>
       <li class="nav-section">
         <span>RELATÓRIOS</span>
       </li>
@@ -784,9 +1127,16 @@
           <li class="has-submenu">
             <a href="#"><i class="bi bi-archive"></i> Estoque <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_estoque' %}
               <li><a href="{% url 'estoque:relatorio_estoque' %}"><i class="bi bi-file-earmark-pdf"></i> Relatório por Lotes</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_produto' %}
               <li><a href="{% url 'estoque:relatorio_produto' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório por Produto</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_alertas_estoque' %}
               <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'emprestimos:emprestimo_extrato' %}
               <li>
                 <a href="{% if notificacoes_emprestimo.total_nao_lidas > 0 %}{% url 'emprestimos:emprestimo_extrato' %}?apenas_mensagens_nao_lidas=on{% else %}{% url 'emprestimos:emprestimo_extrato' %}{% endif %}">
                   <i class="bi bi-journal-text"></i> Extrato de Empréstimos
@@ -795,17 +1145,30 @@
                   {% endif %}
                 </a>
               </li>
+              {% endif %}
             </ul>
           </li>
           <li class="has-submenu">
             <a href="#"><i class="bi bi-graph-up"></i> Estoque Avançado <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_abc' %}
               <li><a href="{% url 'estoque:relatorio_abc' %}"><i class="bi bi-pie-chart"></i> Análise ABC</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_comparativo' %}
               <li><a href="{% url 'estoque:relatorio_comparativo' %}"><i class="bi bi-graph-up"></i> Comparativo</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_auditoria' %}
               <li><a href="{% url 'estoque:relatorio_auditoria' %}"><i class="bi bi-clock-history"></i> Auditoria</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_rastreamento' %}
               <li><a href="{% url 'estoque:relatorio_rastreamento' %}"><i class="bi bi-upc-scan"></i> Rastreamento</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_validacao_disponibilidade' %}
               <li><a href="{% url 'estoque:relatorio_validacao_disponibilidade' %}"><i class="bi bi-check2-square"></i> Validação de Disponibilidade</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'estoque:relatorio_alertas_estoque' %}
               <li><a href="{% url 'estoque:relatorio_alertas_estoque' %}"><i class="bi bi-exclamation-triangle text-danger"></i> Alertas (Excel/PDF)</a></li>
+              {% endif %}
             </ul>
           </li>
           {% endif %}
@@ -813,37 +1176,59 @@
           <li class="has-submenu">
             <a href="#"><i class="bi bi-cart-check"></i> Compras <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'compras:relatorio_compras_simples' %}
               <li><a href="{% url 'compras:relatorio_compras_simples' %}"><i class="bi bi-receipt"></i> Relatório de Compras</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'compras:relatorio_compras_geral' %}
               <li><a href="{% url 'compras:relatorio_compras_geral' %}"><i class="bi bi-clipboard-data"></i> Visão Geral</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'compras:relatorio_compras' %}
               <li><a href="{% url 'compras:relatorio_compras' %}"><i class="bi bi-file-earmark-bar-graph"></i> Compras por Período</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'compras:relatorio_pedidos_pendentes' %}
               <li><a href="{% url 'compras:relatorio_pedidos_pendentes' %}"><i class="bi bi-file-earmark-excel"></i> Pedidos Pendentes</a></li>
+              {% endif %}
             </ul>
           </li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:relatorio_cliente' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-people"></i> Clientes <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
               <li><a href="{% url 'cadastros:relatorio_cliente' %}"><i class="bi bi-file-earmark-text"></i> Relatório Cliente</a></li>
             </ul>
           </li>
+          {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'cadastros:relatorio_fornecedor,cadastros:relatorio_fornecedor_ranking,cadastros:fornecedor_ranking_avaliacoes' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-truck"></i> Fornecedores <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:relatorio_fornecedor' %}
               <li><a href="{% url 'cadastros:relatorio_fornecedor' %}"><i class="bi bi-file-earmark-text"></i> Relatório Fornecedor</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:relatorio_fornecedor_ranking' %}
               <li><a href="{% url 'cadastros:relatorio_fornecedor_ranking' %}"><i class="bi bi-bar-chart-line"></i> Ranking de Compras</a></li>
+              {% endif %}
+              {% if user.is_admin_empresa or request|tem_acesso:'cadastros:fornecedor_ranking_avaliacoes' %}
               <li><a href="{% url 'cadastros:fornecedor_ranking_avaliacoes' %}"><i class="bi bi-star-fill"></i> Ranking de Avaliações</a></li>
+              {% endif %}
             </ul>
           </li>
+          {% endif %}
           {% if user.is_admin_empresa or request|tem_acesso:'patrimonio:patrimonio_list' %}
           <li class="has-submenu">
             <a href="#"><i class="bi bi-tools"></i> Patrimônio <i class="bi bi-chevron-right ms-auto"></i></a>
             <ul class="nested-submenu">
+              {% if user.is_admin_empresa or request|tem_acesso:'patrimonio:patrimonio_relatorio' %}
               <li><a href="{% url 'patrimonio:patrimonio_relatorio' %}"><i class="bi bi-file-earmark-bar-graph"></i> Relatório de Patrimônios</a></li>
+              {% endif %}
             </ul>
           </li>
           {% endif %}
         </ul>
       </li>
+      {% endif %}
+
       {% endif %}
 
     </ul>

@@ -497,3 +497,39 @@ def get_client_ip(request):
 def get_user_agent(request):
     """Obtém user agent da requisição"""
     return request.META.get('HTTP_USER_AGENT', '')
+
+
+# ============================================
+# PÁGINA INICIAL PÓS-LOGIN
+# ============================================
+
+def resolver_pagina_inicial(request):
+    """
+    Resolve a tela de pouso pós-login: primeiro a `pagina_inicial` do próprio
+    usuário, depois a da sua Função (a primeira, em ordem alfabética, que tiver
+    uma definida). Ignora silenciosamente páginas inativas ou às quais o
+    usuário não tem mais acesso, caindo para o próximo candidato.
+    Retorna None se nenhum candidato aplicável (chamador cai no dashboard).
+    """
+    from django.urls import reverse, NoReverseMatch
+    from empresas.acesso import usuario_tem_acesso
+
+    user = request.user
+    candidatos = []
+    if user.pagina_inicial_id and user.pagina_inicial.ativo:
+        candidatos.append(user.pagina_inicial)
+
+    role_padrao = user.roles.filter(
+        pagina_inicial__isnull=False, pagina_inicial__ativo=True
+    ).order_by('name').first()
+    if role_padrao:
+        candidatos.append(role_padrao.pagina_inicial)
+
+    for programa in candidatos:
+        if not usuario_tem_acesso(request, programa.url_name):
+            continue
+        try:
+            return reverse(programa.url_name)
+        except NoReverseMatch:
+            continue
+    return None

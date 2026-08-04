@@ -867,6 +867,15 @@ class Role(models.Model):
         related_name='roles',
         verbose_name='Telas com acesso'
     )
+    pagina_inicial = models.ForeignKey(
+        Programa,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        verbose_name='Página inicial padrão',
+        help_text='Tela para onde usuários desta Função vão após o login, se não tiverem uma página própria definida.'
+    )
     origem_global = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,

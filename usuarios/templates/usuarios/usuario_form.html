@@ -91,6 +91,15 @@
             </div>
             {% endif %}
 
+            {% if form.pagina_inicial %}
+            <div class="field col-6">
+              <label class="form-label">{{ form.pagina_inicial.label }}</label>
+              {{ form.pagina_inicial }}
+              {% if form.pagina_inicial.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.pagina_inicial.errors|join:", " }}</div>{% endif %}
+              {% if form.pagina_inicial.help_text %}<div class="helper-note">{{ form.pagina_inicial.help_text }}</div>{% endif %}
+            </div>
+            {% endif %}
+
             {% if form.is_active %}
               {% if not form.is_active.field.widget.is_hidden %}
               <div class="field col-12">

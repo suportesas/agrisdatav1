@@ -146,9 +146,15 @@ class UsuarioCreateForm(UserCreationForm):
         model = Usuario
         fields = [
             'username', 'email', 'first_name', 'last_name',
-            'tipo', 'telefone', 'cpf', 'empresa', 'roles',
+            'tipo', 'telefone', 'cpf', 'empresa', 'roles', 'pagina_inicial',
             'password1', 'password2', 'is_active', 'is_staff'
         ]
+        labels = {
+            'pagina_inicial': 'Página inicial',
+        }
+        help_texts = {
+            'pagina_inicial': 'Tela para onde este usuário vai após o login. Se vazio, usa a página padrão da Função (ou o Dashboard).',
+        }
         widgets = {
             'username': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -163,6 +169,9 @@ class UsuarioCreateForm(UserCreationForm):
             'roles': forms.SelectMultiple(attrs={
                 'class': 'form-select',
                 'size': '10'
+            }),
+            'pagina_inicial': forms.Select(attrs={
+                'class': 'form-select'
             }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -221,6 +230,14 @@ class UsuarioCreateForm(UserCreationForm):
             # PRIORIDADE 3: Caso contrário (superuser criando novo), mostrar todas
             else:
                 self.fields['roles'].queryset = Role.objects.all()
+
+        if 'pagina_inicial' in self.fields:
+            from empresas.models import Programa
+            self.fields['pagina_inicial'].queryset = Programa.objects.filter(
+                ativo=True, tipo_acao='listagem'
+            ).order_by('app_label', 'nome')
+            self.fields['pagina_inicial'].empty_label = '— Usar a padrão da Função (ou Dashboard) —'
+            self.fields['pagina_inicial'].required = False
 
     def clean_roles(self):
         """Valida que as roles selecionadas pertencem à empresa correta (ou são Globais)"""
@@ -371,9 +388,15 @@ class UsuarioUpdateForm(UserChangeForm):
         fields = [
             'username', 'email', 'first_name', 'last_name',
             'tipo', 'telefone', 'cpf', 'data_nascimento',
-            'data_admissao', 'comissao_vendas', 'roles', 'observacoes',
+            'data_admissao', 'comissao_vendas', 'roles', 'pagina_inicial', 'observacoes',
             'is_active', 'is_staff'
         ]
+        labels = {
+            'pagina_inicial': 'Página inicial',
+        }
+        help_texts = {
+            'pagina_inicial': 'Tela para onde este usuário vai após o login. Se vazio, usa a página padrão da Função (ou o Dashboard).',
+        }
         widgets = {
             'username': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -395,6 +418,9 @@ class UsuarioUpdateForm(UserChangeForm):
             'roles': forms.SelectMultiple(attrs={
                 'class': 'form-select',
                 'size': '10'
+            }),
+            'pagina_inicial': forms.Select(attrs={
+                'class': 'form-select'
             }),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
@@ -441,7 +467,15 @@ class UsuarioUpdateForm(UserChangeForm):
             # PRIORIDADE 3: Caso contrário (superuser editando superuser), mostrar todas
             else:
                 self.fields['roles'].queryset = Role.objects.all()
-    
+
+        if 'pagina_inicial' in self.fields:
+            from empresas.models import Programa
+            self.fields['pagina_inicial'].queryset = Programa.objects.filter(
+                ativo=True, tipo_acao='listagem'
+            ).order_by('app_label', 'nome')
+            self.fields['pagina_inicial'].empty_label = '— Usar a padrão da Função (ou Dashboard) —'
+            self.fields['pagina_inicial'].required = False
+
     def clean_email(self):
         email = self.cleaned_data.get('email')
         # Verifica se email já existe em outro usuário

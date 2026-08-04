@@ -3785,9 +3785,9 @@ class ManutencaoItemForm(forms.ModelForm):
             'lote': forms.HiddenInput(),
             'quantidade': forms.NumberInput(attrs={'class': 'form-control quantidade-input', 'step': '0.001'}),
             'valor_unitario': forms.HiddenInput(),
-            'valor_custo': forms.NumberInput(attrs={'class': 'form-control-plaintext custo-input', 'readonly': 'readonly', 'step': '0.0001', 'tabindex': '-1'}),
+            'valor_custo': forms.NumberInput(attrs={'class': 'form-control custo-input text-end', 'step': '0.0001', 'min': '0'}),
             'nome_produto': forms.TextInput(attrs={'class': 'form-control produto-search-input', 'placeholder': 'Buscar produto...', 'autocomplete': 'off'}),
-            'unidade_medida': forms.TextInput(attrs={'class': 'form-control-plaintext', 'readonly': 'readonly', 'tabindex': '-1'}),
+            'unidade_medida': forms.TextInput(attrs={'class': 'form-control', 'maxlength': '20'}),
             'desconto': forms.NumberInput(attrs={'class': 'form-control desconto-input', 'step': '0.01'}),
         }
 

@@ -511,7 +511,7 @@ def manutencao_create(request):
                     'title': 'Nova Manutenção',
                 })
         else:
-            formset = ManutencaoItemFormSet(form_kwargs={'user': request.user})
+            formset = ManutencaoItemFormSet(request.POST, form_kwargs={'user': request.user})
             return render(request, 'cadastros/frota/manutencao_form.html', {
                 'form': form,
                 'formset': formset,
@@ -600,7 +600,7 @@ def manutencao_update(request, pk):
                     'title': 'Editar Manutenção',
                 })
         else:
-            formset = ManutencaoItemFormSet(instance=obj, form_kwargs={'user': request.user})
+            formset = ManutencaoItemFormSet(request.POST, instance=obj, form_kwargs={'user': request.user})
             return render(request, 'cadastros/frota/manutencao_form.html', {
                 'form': form,
                 'formset': formset,

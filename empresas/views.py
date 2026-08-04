@@ -768,22 +768,43 @@ def empresa_emitente_softhouse(request, pk):
         if not token_softhouse:
             messages.error(request, 'Token da softhouse não configurado. Configure em "IntegraNotas (Softhouse)".')
         else:
+            client = IntegranNotasClient(token=token_softhouse, ambiente=config.ambiente_nfe)
             try:
                 payload = build_emitente_softhouse_payload(empresa, config, documentos=documentos_payload)
-                client = IntegranNotasClient(token=token_softhouse, ambiente=config.ambiente_nfe)
-                data = client.criar_emitente_softhouse(payload)
-                novo_token = data.get('token', '')
-                if novo_token:
-                    config.set_token(novo_token)
-                    config.save()
-                    messages.success(request, f'Emitente de "{empresa.nome}" criado na IntegraNotas com sucesso!')
-                    return redirect('empresas:empresa_emitente_softhouse', pk=empresa.pk)
-                else:
-                    messages.warning(request, f'Emitente de "{empresa.nome}" criado, mas a resposta não trouxe um token.')
             except IntegranNotasError as exc:
                 messages.error(request, f'Erro ao criar emitente de "{empresa.nome}" [{exc.codigo}]: {exc}')
-            except Exception as exc:
-                messages.error(request, f'Erro de comunicação com a IntegraNotas: {exc}')
+            else:
+                try:
+                    data = client.criar_emitente_softhouse(payload)
+                    novo_token = data.get('token', '')
+                    if novo_token:
+                        config.set_token(novo_token)
+                        config.save()
+                        messages.success(request, f'Emitente de "{empresa.nome}" criado na IntegraNotas com sucesso!')
+                        return redirect('empresas:empresa_emitente_softhouse', pk=empresa.pk)
+                    else:
+                        messages.warning(request, f'Emitente de "{empresa.nome}" criado, mas a resposta não trouxe um token.')
+                except IntegranNotasError as exc:
+                    # O emitente pode já existir na IntegraNotas (criado a partir de outro
+                    # ambiente/banco) — nesse caso a criação falha mas dá pra recuperar o
+                    # token buscando pelo CNPJ/CPF em vez de mostrar só o erro.
+                    novo_token = ''
+                    try:
+                        data_existente = client.buscar_emitente_softhouse(empresa.cnpj or '')
+                        novo_token = (data_existente.get('emitente') or {}).get('token', '')
+                    except IntegranNotasError:
+                        pass
+                    if novo_token:
+                        config.set_token(novo_token)
+                        config.save()
+                        messages.success(
+                            request,
+                            f'Emitente de "{empresa.nome}" já existia na IntegraNotas — token recuperado com sucesso!',
+                        )
+                        return redirect('empresas:empresa_emitente_softhouse', pk=empresa.pk)
+                    messages.error(request, f'Erro ao criar emitente de "{empresa.nome}" [{exc.codigo}]: {exc}')
+                except Exception as exc:
+                    messages.error(request, f'Erro de comunicação com a IntegraNotas: {exc}')
 
     campos_faltando_msg = ''
     if not token_configurado:

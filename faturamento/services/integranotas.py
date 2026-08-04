@@ -579,6 +579,27 @@ class IntegranNotasClient:
             )
         return data
 
+    def buscar_emitente_softhouse(self, doc: str) -> dict:
+        """Busca um emitente já cadastrado pelo CNPJ/CPF, trazendo o token dele
+        de volta — usado quando a criação falha porque o emitente já existe
+        na IntegraNotas (registrado a partir de outro ambiente/banco).
+        Instanciar este client com o token da softhouse, igual criar_emitente_softhouse.
+        Docs: GET /v1/soft/emitente/{doc}"""
+        resp = requests.get(
+            f'{self.base_url}/soft/emitente/{_digits(doc)}',
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao buscar emitente'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
     # ─── Private helpers ──────────────────────────────────────────────
 
     def _atribuir_numero(self, nf) -> None:

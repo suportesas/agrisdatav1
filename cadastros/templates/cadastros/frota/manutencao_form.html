@@ -153,12 +153,12 @@
           <table class="items-table" id="pecas-table">
             <thead>
               <tr>
-                <th>Produto</th>
+                <th style="width: 30%;">Produto</th>
                 <th style="width: 70px;">Und</th>
-                <th class="text-end" style="width: 90px;">Qtd.</th>
-                <th class="text-end" style="width: 110px;">Custo Unit.</th>
-                <th class="text-end" style="width: 100px;">Desconto</th>
-                <th class="text-end" style="width: 110px;">Total (R$)</th>
+                <th class="text-end" style="width: 130px;">Qtd.</th>
+                <th class="text-end" style="width: 150px;">Custo Unit.</th>
+                <th class="text-end" style="width: 140px;">Desconto</th>
+                <th class="text-end" style="width: 120px;">Total (R$)</th>
                 <th style="width: 40px;"></th>
               </tr>
             </thead>
@@ -175,11 +175,13 @@
                   <select class="form-select form-select-sm select2-ajax produto-select"
                           data-ajax-url="{% url 'produtos:ajax_buscar_produtos' %}"
                           data-placeholder="Buscar produto...">
-                    {% if item_form.instance.pk and item_form.instance.nome_produto %}
+                    {% if item_form.nome_produto.value %}
                     {# Select2 treats a lone option with an empty value as its internal placeholder marker and
                        swaps its text for the placeholder — so this value must never be empty, even though it's
-                       otherwise unused (only select2:select/select2:clear on user interaction are read by JS). #}
-                    <option value="item-{{ item_form.instance.pk }}" selected>{{ item_form.instance.nome_produto }}</option>
+                       otherwise unused (only select2:select/select2:clear on user interaction are read by JS).
+                       Uses the bound field value (not item_form.instance) so a re-rendered row that failed
+                       validation before ever being saved (no pk yet) still shows the chosen product. #}
+                    <option value="item-{{ item_form.instance.pk|default:forloop.counter0 }}" selected>{{ item_form.nome_produto.value }}</option>
                     {% endif %}
                   </select>
                 </td>
@@ -236,7 +238,7 @@
             </td>
             <td>
               <input type="text" name="itens-__prefix__-unidade_medida" id="id_itens-__prefix__-unidade_medida"
-                     class="form-control-plaintext" readonly tabindex="-1">
+                     class="form-control" maxlength="20">
             </td>
             <td class="text-end">
               <input type="number" name="itens-__prefix__-quantidade" id="id_itens-__prefix__-quantidade"
@@ -244,7 +246,7 @@
             </td>
             <td class="text-end">
               <input type="number" name="itens-__prefix__-valor_custo" id="id_itens-__prefix__-valor_custo"
-                     class="form-control-plaintext custo-input text-end" readonly step="0.0001" tabindex="-1">
+                     class="form-control custo-input text-end" step="0.0001" min="0">
             </td>
             <td class="text-end">
               <input type="number" name="itens-__prefix__-desconto" id="id_itens-__prefix__-desconto"
@@ -283,5 +285,5 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{% static 'js/select2-ajax.js' %}?v=8"></script>
 <script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
-<script src="{% static 'js/manutencao_form.js' %}?v=4"></script>
+<script src="{% static 'js/manutencao_form.js' %}?v=5"></script>
 {% endblock %}

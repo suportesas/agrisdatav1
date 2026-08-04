@@ -86,10 +86,18 @@
         <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between">
           <h6 class="fw-bold text-secondary mb-0"><i class="bi bi-list-check"></i> Peças e Materiais</h6>
         </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr><th>Descrição</th><th>Lote</th><th class="text-end">Qtd.</th><th class="text-end">Valor Unit.</th><th class="text-end">Desconto</th><th class="text-end">Total</th><th></th></tr>
+        <div class="items-table-wrap">
+          <table class="items-table" id="pecas-table">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th style="width: 90px;">Lote</th>
+                <th class="text-end" style="width: 90px;">Qtd.</th>
+                <th class="text-end" style="width: 120px;">Valor Unit.</th>
+                <th class="text-end" style="width: 110px;">Desconto</th>
+                <th class="text-end" style="width: 110px;">Total</th>
+                <th style="width: 40px;"></th>
+              </tr>
             </thead>
             <tbody>
               {% for item in obj.itens.all %}
@@ -100,10 +108,10 @@
                 <td class="text-end small">R$ {{ item.valor_custo|floatformat:"4g" }}</td>
                 <td class="text-end small">R$ {{ item.desconto|floatformat:"2g" }}</td>
                 <td class="text-end fw-bold">R$ {{ item.custo_total|floatformat:"2g" }}</td>
-                <td>
+                <td class="text-center">
                   <form method="post" action="{% url 'frota:manutencao_item_delete' obj.pk item.pk %}" class="d-inline">
                     {% csrf_token %}
-                    <button class="btn btn-outline-danger btn-sm py-0 px-1" onclick="return confirm('Remover item?')"><i class="bi bi-trash"></i></button>
+                    <button class="row-action danger" title="Remover" onclick="return confirm('Remover item?')"><i class="bi bi-trash"></i></button>
                   </form>
                 </td>
               </tr>
@@ -116,22 +124,23 @@
         <!-- Adicionar item -->
         <div class="card-body border-top">
           <h6 class="fw-semibold text-secondary small mb-2"><i class="bi bi-plus-circle"></i> Adicionar Peça</h6>
-          <form method="post" action="{% url 'frota:manutencao_item_add' obj.pk %}" class="row g-2" id="add-peca-form">
+          <form method="post" action="{% url 'frota:manutencao_item_add' obj.pk %}" class="peca-add-form" id="add-peca-form">
             {% csrf_token %}
             {{ item_form.descricao }}
             {{ item_form.lote }}
             {{ item_form.nome_produto }}
-            {{ item_form.unidade_medida }}
             {{ item_form.valor_unitario }}
-            {{ item_form.valor_custo }}
-            <div class="col-md-6">
+            <input type="hidden" name="desconto" value="0">
+            <div class="field grow">
               <select class="form-select form-select-sm select2-ajax" id="add-peca-produto"
                       data-ajax-url="{% url 'produtos:ajax_buscar_produtos' %}"
                       data-placeholder="Buscar produto...">
               </select>
             </div>
-            <div class="col-md-4">{{ item_form.quantidade }}</div>
-            <div class="col-md-2"><button type="submit" class="btn btn-warning btn-sm w-100"><i class="bi bi-plus"></i></button></div>
+            <div class="field" style="width: 90px;">{{ item_form.unidade_medida }}</div>
+            <div class="field" style="width: 110px;">{{ item_form.quantidade }}</div>
+            <div class="field" style="width: 130px;">{{ item_form.valor_custo }}</div>
+            <button type="submit" class="btn btn-sm btn-outline" title="Adicionar"><i class="bi bi-plus-circle"></i></button>
           </form>
         </div>
       </div>

@@ -438,6 +438,11 @@ EMAIL_SUBJECT_PREFIX = '[Agrisdata] '
 SITE_DOMAIN = os.getenv('SITE_DOMAIN', '')   # vazio = usa o host da requisição
 SITE_HTTPS = get_bool_env('SITE_HTTPS', False)
 
+# URL de login do app (usada nos links "Entrar" da landing page).
+# Em homologação, configure com o domínio do ambiente de homolog para não
+# mandar o usuário para o login de produção.
+APP_LOGIN_URL = os.getenv('APP_LOGIN_URL', 'https://app.agrisdata.com/login/')
+
 # CSRF: aceita origens confiáveis via .env e também o SITE_DOMAIN configurado.
 # Exemplo .env: CSRF_TRUSTED_ORIGINS=https://abc123.ngrok-free.app,https://erp.minhaempresa.com.br
 CSRF_TRUSTED_ORIGINS = [

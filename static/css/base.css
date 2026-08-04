@@ -1114,6 +1114,34 @@ table.items-table tbody tr:hover {
   background: var(--pastel-red-bg);
 }
 
+/* Inline "add item" row below an .items-table (e.g. manutencao_detail quick-add) */
+.peca-add-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.peca-add-form .field {
+  flex: 0 0 auto;
+}
+.peca-add-form .field.grow {
+  flex: 1 1 auto;
+  min-width: 160px;
+}
+.peca-add-form > button {
+  flex: 0 0 auto;
+}
+.peca-add-form .field .form-control,
+.peca-add-form .field .form-select {
+  height: 40px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+.peca-add-form > button {
+  height: 40px;
+}
+
 /* Sticky bottom action bar (Salvar/Cancelar) */
 .app-footer-bar {
   position: sticky;

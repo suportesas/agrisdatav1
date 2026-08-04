@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   document.addEventListener('input', function (e) {
-    if (e.target.classList.contains('quantidade-input') || e.target.classList.contains('desconto-input')) {
+    if (e.target.classList.contains('quantidade-input') || e.target.classList.contains('desconto-input') || e.target.classList.contains('custo-input')) {
       const row = e.target.closest('tr.formset-row');
       if (row) recalcularTotal(row);
     }

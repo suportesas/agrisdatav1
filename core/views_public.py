@@ -1,6 +1,7 @@
 """
 Views públicas do site (Landing Page, etc)
 """
+from django.conf import settings
 from django.shortcuts import render, redirect
 
 
@@ -8,14 +9,15 @@ def landing_page(request):
     """Página inicial de divulgação do Agrisdata"""
     if request.user.is_authenticated:
         return redirect('dashboard:index')
-    
+
     # Imagem hero - trator em operação no campo
     imagem_hero = 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=1000&h=800&fit=crop&q=80'
-    
+
     context = {
         'imagem_hero': imagem_hero,
+        'app_login_url': settings.APP_LOGIN_URL,
     }
-    
+
     return render(request, 'landing_page.html', context)
 
 

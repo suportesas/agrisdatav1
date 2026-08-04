@@ -90,6 +90,23 @@
 
     <div class="form-section">
       <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-house-door"></i></span>
+        <span class="title">Página Inicial</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12{% if form.pagina_inicial.errors %} has-error{% endif %}">
+            <label class="form-label" for="{{ form.pagina_inicial.id_for_label }}">{{ form.pagina_inicial.label }}</label>
+            {{ form.pagina_inicial }}
+            {% if form.pagina_inicial.help_text %}<div class="helper-note"><i class="bi bi-lightbulb text-warning"></i> {{ form.pagina_inicial.help_text }}</div>{% endif %}
+            {% if form.pagina_inicial.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.pagina_inicial.errors.0 }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
         <span class="icon-badge sm gray"><i class="bi bi-lightbulb"></i></span>
         <span class="title">Exemplos de Funções Comuns</span>
       </div>

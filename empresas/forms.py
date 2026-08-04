@@ -1,6 +1,6 @@
 from django import forms
 from core.widgets import DateBRInput
-from .models import APIKey, ConfiguracaoPlataforma, Empresa, Plano, Role
+from .models import APIKey, ConfiguracaoPlataforma, Empresa, Plano, Programa, Role
 
 
 class EmpresaForm(forms.ModelForm):
@@ -162,14 +162,16 @@ class RoleForm(forms.ModelForm):
 
     class Meta:
         model = Role
-        fields = ['name', 'description']
+        fields = ['name', 'description', 'pagina_inicial']
         labels = {
             'name': 'Nome da Função',
             'description': 'Descrição (opcional)',
+            'pagina_inicial': 'Página inicial padrão',
         }
         help_texts = {
             'name': 'Digite o nome da função (ex: Gerente de Compras, Supervisor de Estoque)',
             'description': 'Descreva as responsabilidades desta função',
+            'pagina_inicial': 'Tela para onde usuários desta Função vão após o login, se não tiverem uma página própria definida.',
         }
         widgets = {
             'name': forms.TextInput(attrs={
@@ -182,8 +184,19 @@ class RoleForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Descreva as responsabilidades e permissões desta função...',
             }),
+            'pagina_inicial': forms.Select(attrs={
+                'class': 'form-select',
+            }),
         }
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pagina_inicial'].queryset = Programa.objects.filter(
+            ativo=True, tipo_acao='listagem'
+        ).order_by('app_label', 'nome')
+        self.fields['pagina_inicial'].empty_label = '— Usar padrão do sistema (Dashboard) —'
+        self.fields['pagina_inicial'].required = False
+
     def clean_name(self):
         """Valida e limpa o nome da função"""
         name = self.cleaned_data.get('name', '').strip()

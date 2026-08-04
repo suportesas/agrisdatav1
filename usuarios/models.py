@@ -328,7 +328,17 @@ class Usuario(AbstractUser):
         verbose_name='Funções',
         help_text='Funções atribuídas ao usuário (ex.: Proprietário, Almoxarife)'
     )
-    
+
+    pagina_inicial = models.ForeignKey(
+        'empresas.Programa',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        verbose_name='Página inicial',
+        help_text='Tela para onde este usuário vai após o login. Se vazio, usa a página padrão da Função (ou o Dashboard).'
+    )
+
     must_change_password = models.BooleanField(
         'Deve trocar a senha',
         default=False,

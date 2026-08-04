@@ -42,7 +42,7 @@ from .forms import (
 from .utils_login import (
     get_client_ip, get_user_agent, detectar_anomalias_login,
     notificar_anomalia, criar_alerta, atualizar_grafico_acesso,
-    obter_estatisticas_acesso
+    obter_estatisticas_acesso, resolver_pagina_inicial
 )
 
 from .models_supabase import SupabaseUsuarioSync
@@ -139,25 +139,32 @@ def get_user_agent(request):
 # AUTENTICAÇÃO
 # ============================================
 
+# Limite de contas distintas com falha de login, a partir do mesmo IP,
+# antes de considerar o IP suspeito de credential stuffing.
+LIMITE_IP_USUARIOS_DISTINTOS = 8
+
+
 def login_view(request):
     """
     View de login customizada com validação de empresa
     Registra o login no banco de dados para auditoria
-    Proteção contra força bruta com rate limiting
+    Proteção contra força bruta com rate limiting por usuário,
+    e contra credential stuffing por IP (múltiplas contas distintas).
     """
     if request.user.is_authenticated:
         return redirect('dashboard:index')
 
-    # ✅ PROTEÇÃO CONTRA FORÇA BRUTA
     ip = get_client_ip(request)
-    cache_key = f'login_attempts_{ip}'
-    tentativas = cache.get(cache_key, 0)
-    
-    # Bloqueia após 5 tentativas por 15 minutos
-    if tentativas >= 5:
+
+    # ✅ PROTEÇÃO CONTRA CREDENTIAL STUFFING (mesmo IP tentando várias contas)
+    ip_users_key = f'login_attempts_ip_users_{ip}'
+    usuarios_tentados = cache.get(ip_users_key, set())
+
+    if len(usuarios_tentados) >= LIMITE_IP_USUARIOS_DISTINTOS:
         messages.error(
-            request, 
-            '🔒 Muitas tentativas de login. Tente novamente em 15 minutos.'
+            request,
+            '🔒 Muitas tentativas de login com contas diferentes a partir deste '
+            'endereço. Tente novamente em 15 minutos.'
         )
         return render(request, 'usuarios/login.html', {
             'form': LoginForm(),
@@ -165,8 +172,23 @@ def login_view(request):
         })
 
     if request.method == 'POST':
+        username_tentativa = (request.POST.get('username') or '').strip().lower()
+        user_cache_key = f'login_attempts_user_{username_tentativa}' if username_tentativa else None
+
+        # ✅ PROTEÇÃO CONTRA FORÇA BRUTA (bloqueia só a conta alvo)
+        if user_cache_key and cache.get(user_cache_key, 0) >= 5:
+            messages.error(
+                request,
+                '🔒 Esta conta está temporariamente bloqueada por excesso de '
+                'tentativas. Tente novamente em 15 minutos.'
+            )
+            return render(request, 'usuarios/login.html', {
+                'form': LoginForm(),
+                'bloqueado': True
+            })
+
         form = LoginForm(request, data=request.POST)
-        
+
         if form.is_valid():
             user = form.get_user()
             
@@ -243,9 +265,10 @@ def login_view(request):
                     return redirect('login')
             
             # ✅ LOGIN BEM-SUCEDIDO
-            
+
             # Limpa tentativas de login após sucesso
-            cache.delete(cache_key)
+            if user_cache_key:
+                cache.delete(user_cache_key)
             
             # Faz login
             login(request, user)
@@ -319,25 +342,36 @@ def login_view(request):
                     user.groups.add(group)
                 return redirect('portal_motorista:home')
 
+            destino = resolver_pagina_inicial(request)
+            if destino:
+                return redirect(destino)
             return redirect('dashboard:index')
         
         else:
-            # ✅ LOGIN FALHOU - Incrementa tentativas
-            tentativas += 1
-            cache.set(cache_key, tentativas, 900)  # 15 minutos
-            
-            restantes = 5 - tentativas
-            if restantes > 0:
-                messages.error(
-                    request, 
-                    f'❌ Usuário ou senha incorretos. '
-                    f'Você tem mais {restantes} tentativa(s).'
-                )
+            # ✅ LOGIN FALHOU - Incrementa tentativas da conta
+            if user_cache_key:
+                tentativas = cache.get(user_cache_key, 0) + 1
+                cache.set(user_cache_key, tentativas, 900)  # 15 minutos
+
+                restantes = 5 - tentativas
+                if restantes > 0:
+                    messages.error(
+                        request,
+                        f'❌ Usuário ou senha incorretos. '
+                        f'Você tem mais {restantes} tentativa(s).'
+                    )
+                else:
+                    messages.error(
+                        request,
+                        '🔒 Conta bloqueada temporariamente por excesso de tentativas.'
+                    )
             else:
-                messages.error(
-                    request,
-                    '🔒 Conta bloqueada temporariamente por excesso de tentativas.'
-                )
+                messages.error(request, '❌ Usuário ou senha incorretos.')
+
+            # Registra a conta tentada para detecção de credential stuffing por IP
+            if username_tentativa:
+                usuarios_tentados.add(username_tentativa)
+                cache.set(ip_users_key, usuarios_tentados, 900)  # 15 minutos
     else:
         form = LoginForm()
     

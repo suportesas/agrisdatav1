@@ -65,4 +65,7 @@ urlpatterns = [
     path('api-keys/', views.api_key_list, name='api_key_list'),
     path('api-keys/nova/', views.api_key_create, name='api_key_create'),
     path('api-keys/<int:pk>/revogar/', views.api_key_revoke, name='api_key_revoke'),
+
+    # AJAX helpers
+    path('ajax/paginas-iniciais/', views.ajax_buscar_paginas_iniciais, name='ajax_buscar_paginas_iniciais'),
 ]

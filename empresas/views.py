@@ -1102,3 +1102,25 @@ def api_key_revoke(request, pk):
     api_key.save(update_fields=['ativo'])
     messages.success(request, f'Chave "{api_key.nome}" revogada.')
     return redirect('empresas:api_key_list')
+
+
+@login_required
+def ajax_buscar_paginas_iniciais(request):
+    """Combobox unificado (Select2 AJAX paginado, 10 por página) para o campo
+    "Página inicial" (Role.pagina_inicial / Usuario.pagina_inicial). Evita
+    despejar as ~120 telas elegíveis (tipo_acao='listagem') num <select>
+    nativo gigante — o que trava o dropdown do Chrome ao passar o mouse
+    sobre a lista."""
+    from core.select2 import select2_response
+
+    q = request.GET.get('q', '').strip()
+    qs = Programa.objects.filter(ativo=True, tipo_acao='listagem')
+    if q:
+        qs = qs.filter(Q(nome__icontains=q) | Q(app_label__icontains=q) | Q(url_name__icontains=q))
+    qs = qs.order_by('app_label', 'nome')
+
+    def serialize(p):
+        app_nome = APP_LABELS_PT.get(p.app_label, p.app_label.capitalize())
+        return {'id': p.pk, 'text': f'{app_nome} — {p.nome}'}
+
+    return select2_response(request, qs, serialize)

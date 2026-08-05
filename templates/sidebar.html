@@ -26,6 +26,7 @@
     <ul class="nav-list">
 
       <!-- Dashboard -->
+      {% if user.is_admin_empresa or mostra_dashboard_geral or request|tem_acesso:'estoque:dashboard,compras:dashboard_compras,financeiro:dashboard,estoque:relatorio_rastreamento_dashboard,produtos:dashboard' %}
       <li class="nav-item has-submenu" data-start-collapsed="true">
         <a href="#" class="nav-link">
           <i class="bi bi-speedometer2"></i>
@@ -33,7 +34,9 @@
           <i class="bi bi-chevron-down submenu-arrow"></i>
         </a>
         <ul class="nav-submenu">
+          {% if user.is_admin_empresa or mostra_dashboard_geral %}
           <li><a href="{% url 'dashboard:index' %}"><i class="bi bi-speedometer2"></i> Geral</a></li>
+          {% endif %}
           {% if not user.is_superuser %}
           {% if user.is_admin_empresa or request|tem_acesso:'estoque:dashboard' %}
           <li><a href="{% url 'estoque:dashboard' %}"><i class="bi bi-box-seam"></i> Estoque</a></li>
@@ -53,6 +56,7 @@
           {% endif %}
         </ul>
       </li>
+      {% endif %}
 
       <!-- GESTÃO (Superusuário) -->
       {% if user.is_superuser %}

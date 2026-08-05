@@ -412,7 +412,7 @@ class EnderecoFazendaForm(forms.ModelForm):
         model = EnderecoFazenda
         fields = [
             'tipo', 'cep', 'logradouro', 'numero',
-            'complemento', 'bairro', 'cidade', 'uf',
+            'complemento', 'bairro', 'cidade', 'uf', 'codigo_municipio',
             'pais', 'recebedor_notify', 'padrao'
         ]
         widgets = {
@@ -444,6 +444,11 @@ class EnderecoFazendaForm(forms.ModelForm):
                     'class': 'form-control',
                     'id': 'id_endereco_uf',
                     'maxlength': 2
+                }),
+                'codigo_municipio': forms.TextInput(attrs={
+                    'class': 'form-control',
+                    'placeholder': '7 dígitos IBGE',
+                    'maxlength': 7
                 }),
                 'pais': forms.TextInput(attrs={
                     'class': 'form-control'

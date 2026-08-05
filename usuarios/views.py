@@ -37,7 +37,7 @@ from .models import (
 )
 from .forms import (
     UsuarioCreateForm, UsuarioUpdateForm, LoginForm,
-    AlterarSenhaForm, PerfilUsuarioForm, TipoUsuarioForm
+    AlterarSenhaForm, PerfilUsuarioForm, TipoUsuarioForm, MeuPerfilUsuarioForm
 )
 from .utils_login import (
     get_client_ip, get_user_agent, detectar_anomalias_login,
@@ -164,7 +164,7 @@ def login_view(request):
         messages.error(
             request,
             '🔒 Muitas tentativas de login com contas diferentes a partir deste '
-            'endereço. Tente novamente em 15 minutos.'
+            'endereço. Tente novamente em 5 minutos.'
         )
         return render(request, 'usuarios/login.html', {
             'form': LoginForm(),
@@ -180,7 +180,7 @@ def login_view(request):
             messages.error(
                 request,
                 '🔒 Esta conta está temporariamente bloqueada por excesso de '
-                'tentativas. Tente novamente em 15 minutos.'
+                'tentativas. Tente novamente em 5 minutos.'
             )
             return render(request, 'usuarios/login.html', {
                 'form': LoginForm(),
@@ -351,7 +351,7 @@ def login_view(request):
             # ✅ LOGIN FALHOU - Incrementa tentativas da conta
             if user_cache_key:
                 tentativas = cache.get(user_cache_key, 0) + 1
-                cache.set(user_cache_key, tentativas, 900)  # 15 minutos
+                cache.set(user_cache_key, tentativas, 300)  # 5 minutos
 
                 restantes = 5 - tentativas
                 if restantes > 0:
@@ -371,7 +371,7 @@ def login_view(request):
             # Registra a conta tentada para detecção de credential stuffing por IP
             if username_tentativa:
                 usuarios_tentados.add(username_tentativa)
-                cache.set(ip_users_key, usuarios_tentados, 900)  # 15 minutos
+                cache.set(ip_users_key, usuarios_tentados, 300)  # 5 minutos
     else:
         form = LoginForm()
     
@@ -889,16 +889,21 @@ def meu_perfil(request):
     perfil, created = PerfilUsuario.objects.get_or_create(usuario=usuario)
     
     if request.method == 'POST':
-        form_usuario = UsuarioUpdateForm(request.POST, request.FILES, instance=usuario, user=usuario)
+        form_usuario = MeuPerfilUsuarioForm(request.POST, instance=usuario)
         form_perfil = PerfilUsuarioForm(request.POST, instance=perfil)
-        
+
         if form_usuario.is_valid() and form_perfil.is_valid():
             form_usuario.save()
             form_perfil.save()
             messages.success(request, '✅ Perfil atualizado com sucesso!')
             return redirect('usuarios:meu_perfil')
+        else:
+            errors_text = '; '.join(
+                f"{k}: {', '.join(v)}" for k, v in {**form_usuario.errors, **form_perfil.errors}.items()
+            )
+            messages.error(request, f'❌ Não foi possível salvar: {errors_text}')
     else:
-        form_usuario = UsuarioUpdateForm(instance=usuario, user=usuario)
+        form_usuario = MeuPerfilUsuarioForm(instance=usuario)
         form_perfil = PerfilUsuarioForm(instance=perfil)
     
     context = {

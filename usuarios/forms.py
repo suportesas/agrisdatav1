@@ -4,7 +4,8 @@ Forms para autenticação e gerenciamento de usuários
 """
 
 from django import forms
-from core.widgets import DateBRInput
+from django.urls import reverse_lazy
+from core.widgets import DateBRInput, Select2AjaxWidget
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
 from .models import TipoUsuario, Usuario, PerfilUsuario
@@ -170,9 +171,10 @@ class UsuarioCreateForm(UserCreationForm):
                 'class': 'form-select',
                 'size': '10'
             }),
-            'pagina_inicial': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+            'pagina_inicial': Select2AjaxWidget(
+                ajax_url=reverse_lazy('empresas:ajax_buscar_paginas_iniciais'),
+                placeholder='— Usar a padrão da Função (ou Dashboard) —',
+            ),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
@@ -419,9 +421,10 @@ class UsuarioUpdateForm(UserChangeForm):
                 'class': 'form-select',
                 'size': '10'
             }),
-            'pagina_inicial': forms.Select(attrs={
-                'class': 'form-select'
-            }),
+            'pagina_inicial': Select2AjaxWidget(
+                ajax_url=reverse_lazy('empresas:ajax_buscar_paginas_iniciais'),
+                placeholder='— Usar a padrão da Função (ou Dashboard) —',
+            ),
             'is_active': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
@@ -528,6 +531,39 @@ class UsuarioUpdateForm(UserChangeForm):
                 )
         
         return roles
+
+
+class MeuPerfilUsuarioForm(forms.ModelForm):
+    """
+    Autoedição do próprio perfil (tela "Meu Perfil").
+
+    Só expõe os campos que o próprio usuário deve poder alterar. Não reutiliza
+    UsuarioUpdateForm aqui: aquele form inclui username/tipo/roles/pagina_inicial/
+    is_staff/is_active, que são obrigatórios ou sensíveis — deixar o usuário comum
+    submetê-los (mesmo sem renderizar os campos no template) tanto quebra a
+    validação (username/tipo ficam ausentes do POST e o form nunca fica válido)
+    quanto abriria uma escalação de privilégio caso alguém forje o POST.
+    """
+
+    class Meta:
+        model = Usuario
+        fields = ['first_name', 'last_name', 'email', 'telefone', 'data_nascimento']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'telefone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'data-mask': '(00) 00000-0000'
+            }),
+            'data_nascimento': DateBRInput(attrs={'class': 'form-control'}),
+        }
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if Usuario.objects.exclude(pk=self.instance.pk).filter(email=email).exists():
+            raise ValidationError('Este e-mail já está cadastrado em outro usuário.')
+        return email
 
 
 class AlterarSenhaForm(forms.Form):

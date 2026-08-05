@@ -441,13 +441,21 @@ class EnderecoFazenda(models.Model):
         choices=UF_CHOICES,
         help_text='Sigla do estado; use EX para Exterior'
     )
-    
+
+    codigo_municipio = models.CharField(
+        'Código IBGE',
+        max_length=7,
+        blank=True,
+        null=True,
+        help_text='Código IBGE do município — obrigatório para emissão de NF-e'
+    )
+
     pais = models.CharField(
         'País',
         max_length=50,
         default='Brasil'
     )
-    
+
     # Controle
     padrao = models.BooleanField(
         'Endereço Padrão',

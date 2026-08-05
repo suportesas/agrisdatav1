@@ -1612,21 +1612,58 @@ def buscar_cep(request):
         return JsonResponse({'erro': 'Erro ao buscar CEP. Tente novamente ou preencha manualmente.'}, status=500)
 
 
+def _resolver_codigo_ibge(uf, cidade):
+    """Resolve o código IBGE do município a partir de UF + nome da cidade.
+
+    Usado como complemento à Brasil API (fallback de CEP), que não retorna o
+    código IBGE — diferente do ViaCEP, que já traz o campo `ibge` pronto.
+    Consulta a mesma API oficial usada no autocomplete client-side
+    (static/js/ibge_municipios.js), então o critério de match fica igual nas
+    duas pontas.
+    """
+    import unicodedata
+
+    def _normalize(texto):
+        texto = unicodedata.normalize('NFD', texto or '')
+        texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+        return texto.strip().lower()
+
+    uf = (uf or '').strip().upper()
+    cidade_norm = _normalize(cidade)
+    if len(uf) != 2 or not cidade_norm:
+        return ''
+
+    try:
+        url = f'https://servicodados.ibge.gov.br/api/v1/localidades/estados/{uf}/municipios'
+        response = requests.get(url, timeout=5)
+        if response.status_code != 200:
+            return ''
+        for municipio in response.json():
+            if _normalize(municipio.get('nome')) == cidade_norm:
+                return str(municipio.get('id', ''))
+    except Exception:
+        return ''
+    return ''
+
+
 def buscar_cep_brasil_api(cep):
     """API alternativa usando Brasil API como fallback"""
     try:
         url = f'https://brasilapi.com.br/api/cep/v1/{cep}'
         response = requests.get(url, timeout=10)
-        
+
         if response.status_code == 200:
             dados = response.json()
+            cidade = dados.get('city', '')
+            uf = dados.get('state', '')
             resultado = {
                 'cep': cep,
                 'logradouro': dados.get('street', ''),
                 'complemento': '',
                 'bairro': dados.get('neighborhood', ''),
-                'cidade': dados.get('city', ''),
-                'uf': dados.get('state', ''),
+                'cidade': cidade,
+                'uf': uf,
+                'ibge': _resolver_codigo_ibge(uf, cidade),
             }
             resp_payload = {'sucesso': True, 'dados': resultado}
             resp_payload.update(resultado)

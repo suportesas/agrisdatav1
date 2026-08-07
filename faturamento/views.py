@@ -3290,6 +3290,7 @@ def dfe_list(request):
         'data_fim': data_fim,
         'tipo_choices': DfeRecebido.SCHEMA_CHOICES,
         'situacao_choices': DfeRecebido.SITUACAO_CHOICES,
+        'manifestacao_tipos': DfeRecebido.MANIFESTACAO_TIPO_CHOICES,
         'total': total,
         'total_autorizadas': total_autorizadas,
         'total_canceladas': total_canceladas,
@@ -3302,32 +3303,10 @@ def dfe_list(request):
 
 @login_required
 @require_POST
-def dfe_sincronizar_agora(request):
-    """Dispara uma sincronização síncrona (sem esperar o cron de 2h) para a empresa logada."""
-    from .services.distribuicao_dfe import sincronizar_dfe_empresa
-
-    empresa = _get_empresa(request)
-    if not empresa:
-        return redirect('dashboard:index')
-
-    resultado = sincronizar_dfe_empresa(empresa)
-    if resultado['erro']:
-        messages.error(request, f"Falha na sincronização: {resultado['erro']}")
-    else:
-        messages.success(
-            request,
-            f"Sincronizado: {resultado['novos']} documento(s) novo(s), "
-            f"{resultado['ciencia_automatica']} manifestação(ões) de Ciência automática, "
-            f"{resultado['xml_baixados']} XML(s) completo(s) baixado(s)."
-        )
-    return redirect('faturamento:dfe_list')
-
-
-@login_required
 def dfe_manifestar(request, pk):
     """Registra Manifestação do Destinatário (MD-e) para um resNFe recebido via distribuição.
 
-    Mesmo fluxo de compras.views.recebimento_manifestar, adaptado para DfeRecebido.
+    Chamado pelo modal em dfe_list.html — sempre redireciona de volta pra lá (sucesso ou erro).
     """
     documento = get_object_or_404(DfeRecebido, pk=pk, empresa=_get_empresa(request))
 
@@ -3344,46 +3323,42 @@ def dfe_manifestar(request, pk):
         messages.info(request, f'Manifestação já registrada: {documento.get_manifestacao_tipo_display()}.')
         return redirect('faturamento:dfe_list')
 
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
+
     TIPOS = DfeRecebido.MANIFESTACAO_TIPO_CHOICES
+    tipos_validos = [t[0] for t in TIPOS]
+    tipo = request.POST.get('tipo', '').strip()
+    justificativa = request.POST.get('justificativa', '').strip()
 
-    if request.method == 'POST':
-        from .services.integranotas import IntegranNotasClient, IntegranNotasError
-
-        tipo = request.POST.get('tipo', '').strip()
-        justificativa = request.POST.get('justificativa', '').strip()
-        tipos_validos = [t[0] for t in TIPOS]
-
-        if tipo not in tipos_validos:
-            messages.error(request, 'Tipo de manifestação inválido.')
-            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
-
-        if tipo == 'operacao_nao_realizada' and not justificativa:
-            messages.error(request, 'Justificativa obrigatória para "Operação Não Realizada".')
-            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
-
-        config = ConfiguracaoFiscal.objects.filter(empresa=documento.empresa).first()
-        if not config or not config.has_token:
-            messages.error(request, 'Configure o token IntegraNota em Configuração Fiscal para registrar manifestação.')
-            return redirect('faturamento:dfe_list')
-
-        try:
-            client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
-            resultado = client.manifestar_nfe(documento.chave_acesso, tipo, justificativa)
-        except IntegranNotasError as exc:
-            messages.error(request, f'Erro ao registrar manifestação [{exc.codigo}]: {exc}')
-            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
-        except Exception as exc:
-            messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
-            return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
-
-        documento.manifestacao_tipo = tipo
-        documento.manifestacao_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
-        documento.manifestacao_data = timezone.now()
-        documento.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
-        messages.success(request, f'Manifestação "{dict(TIPOS)[tipo]}" registrada com sucesso na SEFAZ.')
+    if tipo not in tipos_validos:
+        messages.error(request, 'Tipo de manifestação inválido.')
         return redirect('faturamento:dfe_list')
 
-    return render(request, 'faturamento/dfe_manifestar.html', {'documento': documento, 'tipos': TIPOS})
+    if tipo == 'operacao_nao_realizada' and not justificativa:
+        messages.error(request, 'Justificativa obrigatória para "Operação Não Realizada".')
+        return redirect('faturamento:dfe_list')
+
+    config = ConfiguracaoFiscal.objects.filter(empresa=documento.empresa).first()
+    if not config or not config.has_token:
+        messages.error(request, 'Configure o token IntegraNota em Configuração Fiscal para registrar manifestação.')
+        return redirect('faturamento:dfe_list')
+
+    try:
+        client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+        resultado = client.manifestar_nfe(documento.chave_acesso, tipo, justificativa)
+    except IntegranNotasError as exc:
+        messages.error(request, f'Erro ao registrar manifestação [{exc.codigo}]: {exc}')
+        return redirect('faturamento:dfe_list')
+    except Exception as exc:
+        messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')
+        return redirect('faturamento:dfe_list')
+
+    documento.manifestacao_tipo = tipo
+    documento.manifestacao_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
+    documento.manifestacao_data = timezone.now()
+    documento.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
+    messages.success(request, f'Manifestação "{dict(TIPOS)[tipo]}" registrada com sucesso na SEFAZ.')
+    return redirect('faturamento:dfe_list')
 
 
 @login_required

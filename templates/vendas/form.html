@@ -455,6 +455,10 @@
       const text = e.params.data.text || '';
       descEl.value = text.replace(/^.*—\s*/, '').trim() || text;
     }
+    const unidadeEl = row.querySelector('input[name$="-unidade"]');
+    if (unidadeEl && e.params.data.unidade_venda_sigla) {
+      unidadeEl.value = e.params.data.unidade_venda_sigla;
+    }
   });
 
   const tipoVendaChangeEl = document.getElementById('id_tipo_venda');

@@ -38,6 +38,9 @@
 
 <body class="{% if user.is_authenticated and user.is_superuser %}saas-owner-layout{% endif %}">
   {% if user.is_authenticated %}
+    <!-- Garante o cookie CSRF em toda página autenticada (usado pelo session-heartbeat.js e por outros fetch() do sistema) -->
+    <form id="global-csrf-form" style="display:none">{% csrf_token %}</form>
+
     <!-- Sidebar Moderno -->
     {% include 'sidebar.html' %}
 
@@ -505,5 +508,10 @@
   
   <!-- Sidebar Moderno JS -->
   <script src="{% static 'js/sidebar-modern.js' %}?v=3"></script>
+
+  {% if user.is_authenticated %}
+  <!-- Mantém a sessão viva enquanto houver interação real (evita logout por inatividade em falso) -->
+  <script src="{% static 'js/session-heartbeat.js' %}" data-url="{% url 'session_heartbeat' %}"></script>
+  {% endif %}
 </body>
 </html>

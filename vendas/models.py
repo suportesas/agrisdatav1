@@ -263,5 +263,7 @@ class ItemPedidoVenda(models.Model):
         return f"{self.pedido.numero} — {self.descricao}"
 
     def save(self, *args, **kwargs):
+        if self.desconto_item is None:
+            self.desconto_item = Decimal('0.00')
         self.preco_total = (self.quantidade * self.preco_unitario) - self.desconto_item
         super().save(*args, **kwargs)

@@ -536,6 +536,7 @@ class ProdutoDefensivoCulturaForm(forms.ModelForm):
             'volume_calda_aplicacao', 'dosagem_calculada_ha',
             'carencia', 'quantidade_maxima_aplicacoes', 'intervalo_reaplicacao', 'mrl',
             'volume_calda_minimo', 'volume_calda_maximo',
+            'ordem_recomendacao', 'efetividade_pct', 'custo_relativo',
             'observacoes',
         ]
         widgets = {
@@ -614,6 +615,17 @@ class ProdutoDefensivoCulturaForm(forms.ModelForm):
                 'step': '0.01',
                 'placeholder': 'Litros por hectare'
             }),
+            'ordem_recomendacao': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'placeholder': '1=melhor opção, 2=alternativa...'
+            }),
+            'efetividade_pct': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0', 'max': '100',
+                'placeholder': 'Ex: 95'
+            }),
+            'custo_relativo': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={
                 'class': 'form-control', 
                 'rows': 2,

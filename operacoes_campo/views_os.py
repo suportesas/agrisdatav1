@@ -23,7 +23,7 @@ from .models import (
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
     EtapaColheita, PushSubscriptionCampo, OSIntervalo,
     OSTransplantio, OSReplantio, OSFuncionario, OSMaquina,
-    proximo_numero_corte, idiarn_validator,
+    proximo_numero_corte, idiarn_validator, cultura_atual_talhao,
 )
 from cadastros.models import Talhao, Safra, SafraCultura, HistoricoTalhao
 from .forms import (
@@ -1818,10 +1818,11 @@ def os_concluir(request, pk):
                             cadastrado_por=request.user,
                             observacoes=os_obj.observacoes or '',
                         )
-                        for item in insumos_os.filter(quantidade_aplicada__gt=0).select_related('produto', 'unidade_medida'):
+                        for item in insumos_os.filter(quantidade_aplicada__gt=0).select_related('produto', 'unidade_medida', 'praga'):
                             RegistroCadernoCampoInsumo.objects.create(
                                 registro=registro,
                                 produto=item.produto,
+                                praga=item.praga,
                                 quantidade=item.quantidade_aplicada,
                                 unidade_medida=item.unidade_medida,
                             )
@@ -2095,6 +2096,70 @@ def ajax_produto_info(request):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+def ajax_recomendacao_defensivo(request):
+    """GET ?praga_id=X&os_id=Y — retorna, ranqueados, os defensivos cadastrados
+    (ProdutoDefensivoCultura) para a praga/cultura da OS, com dose sugerida
+    (dosagem da bula × área executada) e alerta se o produto for proibido em
+    algum país de destino cadastrado na cultura da safra."""
+    from produtos.models import ProdutoDefensivoCultura
+
+    empresa = request.user.empresa
+    praga_id = request.GET.get('praga_id')
+    os_id = request.GET.get('os_id')
+    if not praga_id or not os_id:
+        return JsonResponse({'error': 'praga_id e os_id são obrigatórios'}, status=400)
+
+    from cadastros.models import Praga
+    praga = get_object_or_404(Praga, pk=praga_id, empresa=empresa)
+    os_obj = get_object_or_404(OrdemServico, pk=os_id, empresa=empresa)
+
+    cultura = cultura_atual_talhao(os_obj.talhao, os_obj.safra)
+    if not cultura:
+        return JsonResponse({'sem_cultura': True, 'recomendacoes': []})
+
+    area = os_obj.area_executada_ha or os_obj.talhao.area_hac or Decimal('0')
+    paises_destino = set()
+    if os_obj.safra_id:
+        safra_cultura = os_obj.safra.culturas.filter(cultura=cultura).first()
+        if safra_cultura:
+            paises_destino = {p.lower() for p in safra_cultura.get_paises_destino_list()}
+
+    qs = (
+        ProdutoDefensivoCultura.objects
+        .filter(praga=praga, cultura=cultura, produto__categoria__empresa=empresa, produto__ativo=True)
+        .select_related('produto', 'unidade_dosagem')
+        .order_by('ordem_recomendacao', '-efetividade_pct')
+    )
+
+    recomendacoes = []
+    for item in qs:
+        dose_media = (item.dosagem_minima + item.dosagem_maxima) / 2
+        quantidade_sugerida = (dose_media * area).quantize(Decimal('0.001')) if area else None
+
+        paises_proibidos = item.produto.get_paises_proibidos_list()
+        alerta_pais = next(
+            (pp for pp in paises_proibidos if pp.lower() in paises_destino),
+            None,
+        )
+
+        recomendacoes.append({
+            'produto_id': item.produto_id,
+            'produto_nome': item.produto.nome,
+            'ordem': item.ordem_recomendacao,
+            'efetividade_pct': item.efetividade_pct,
+            'custo_relativo': item.custo_relativo,
+            'dosagem_minima': str(item.dosagem_minima),
+            'dosagem_maxima': str(item.dosagem_maxima),
+            'unidade_dosagem_sigla': item.unidade_dosagem.sigla if item.unidade_dosagem else '',
+            'carencia': item.carencia,
+            'quantidade_sugerida': str(quantidade_sugerida) if quantidade_sugerida is not None else None,
+            'alerta_pais_proibido': alerta_pais,
+        })
+
+    return JsonResponse({'sem_cultura': False, 'area_referencia': str(area), 'recomendacoes': recomendacoes})
 
 
 # ============================================================================

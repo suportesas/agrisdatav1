@@ -1,5 +1,6 @@
 from decimal import Decimal
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator
 from django.db import models
 from cadastros.models import NCM, Fornecedor, CFOP
 
@@ -1065,11 +1066,28 @@ class ProdutoDefensivoCultura(models.Model):
     
     # Limite Máximo de Resíduo
     mrl = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name='MRL', help_text='Limite Máximo de Resíduo (mg/kg)')
-    
+
     # Volume de Calda
     volume_calda_minimo = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Volume Mínimo de Calda (L/ha)')
     volume_calda_maximo = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Volume Máximo de Calda (L/ha)')
-    
+
+    # Recomendação (usado para ranquear defensivos sugeridos para a mesma praga/cultura)
+    CUSTO_RELATIVO_CHOICES = [
+        ('BAIXO', 'Baixo'),
+        ('MEDIO', 'Médio'),
+        ('ALTO', 'Alto'),
+    ]
+    ordem_recomendacao = models.PositiveSmallIntegerField(
+        'Ordem de Recomendação', default=1,
+        help_text='1=melhor opção para esta praga/cultura, 2=alternativa, etc.',
+    )
+    efetividade_pct = models.PositiveSmallIntegerField(
+        'Efetividade (%)', null=True, blank=True, validators=[MaxValueValidator(100)],
+    )
+    custo_relativo = models.CharField(
+        'Custo Relativo', max_length=6, choices=CUSTO_RELATIVO_CHOICES, blank=True,
+    )
+
     # Observações específicas
     observacoes = models.TextField(blank=True, verbose_name='Observações')
     

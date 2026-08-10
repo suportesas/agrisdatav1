@@ -194,8 +194,9 @@ class OrdemServicoInsumoForm(forms.ModelForm):
 
     class Meta:
         model = OrdemServicoInsumo
-        fields = ['produto', 'unidade_medida', 'quantidade_planejada', 'quantidade_aplicada', 'custo_unitario', 'observacoes']
+        fields = ['praga', 'produto', 'unidade_medida', 'quantidade_planejada', 'quantidade_aplicada', 'custo_unitario', 'observacoes']
         widgets = {
+            'praga': forms.Select(attrs={'class': 'form-select'}),
             'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
             'quantidade_planejada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -208,8 +209,11 @@ class OrdemServicoInsumoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if empresa:
             from produtos.models import Produto, UnidadeMedida
+            from cadastros.models import Praga
             self.fields['produto'].queryset = Produto.objects.filter(lotes__armazem__empresa=empresa).distinct().order_by('nome')
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=empresa).order_by('nome')
+            self.fields['praga'].queryset = Praga.objects.filter(empresa=empresa, ativa=True).order_by('nome_comum')
+            self.fields['praga'].required = False
 
             from decimal import Decimal
             from estoque.disponibilidade import reservas_por_produto

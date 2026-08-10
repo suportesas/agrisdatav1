@@ -46,6 +46,7 @@ urlpatterns = [
     path('ordens-servico/ajax/talhoes-por-safra-cultura/', views_os.ajax_talhoes_por_safra_cultura, name='os_ajax_talhoes_por_safra_cultura'),
     path('ordens-servico/ajax/numero-corte/', views_os.ajax_numero_corte, name='os_ajax_numero_corte'),
     path('ordens-servico/ajax/produto-info/', views_os.ajax_produto_info, name='os_ajax_produto_info'),
+    path('ordens-servico/ajax/recomendacao-defensivo/', views_os.ajax_recomendacao_defensivo, name='os_ajax_recomendacao_defensivo'),
 
     # Delegação
     path('delegacao/', views_os.os_painel_delegacao, name='os_painel_delegacao'),

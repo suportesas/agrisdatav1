@@ -41,6 +41,7 @@
       <a href="#sec-simulacao" data-tab="sec-simulacao">Simulação por Volume</a>
       <a href="#sec-aplicacao" data-tab="sec-aplicacao">Aplicação</a>
       <a href="#sec-mrl" data-tab="sec-mrl">Limite Máximo de Resíduo</a>
+      <a href="#sec-recomendacao" data-tab="sec-recomendacao">Recomendação</a>
       <a href="#sec-observacoes" data-tab="sec-observacoes">Observações</a>
     </nav>
 
@@ -211,6 +212,37 @@
               {{ form.mrl }}
               <div class="helper-note">mg/kg - Conforme legislação vigente</div>
               {% if form.mrl.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.mrl.errors }}</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section" id="sec-recomendacao" data-tab-panel="sec-recomendacao">
+        <div class="form-section-header">
+          <span class="icon-badge sm green"><i class="bi bi-star"></i></span>
+          <span class="title">Recomendação</span>
+        </div>
+        <div class="form-section-body">
+          <div class="alert alert-info py-2 px-3 mb-3 small">
+            <i class="bi bi-info-circle me-1"></i>
+            Usado para ranquear este defensivo entre as alternativas sugeridas para a mesma praga/cultura na Ordem de Serviço.
+          </div>
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">{{ form.ordem_recomendacao.label }}</label>
+              {{ form.ordem_recomendacao }}
+              <div class="helper-note">1=melhor opção, 2=alternativa...</div>
+              {% if form.ordem_recomendacao.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.ordem_recomendacao.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.efetividade_pct.label }}</label>
+              {{ form.efetividade_pct }}
+              {% if form.efetividade_pct.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.efetividade_pct.errors }}</div>{% endif %}
+            </div>
+            <div class="field col-4">
+              <label class="form-label">{{ form.custo_relativo.label }}</label>
+              {{ form.custo_relativo }}
+              {% if form.custo_relativo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.custo_relativo.errors }}</div>{% endif %}
             </div>
           </div>
         </div>

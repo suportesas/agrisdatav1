@@ -321,6 +321,11 @@ class OrdemServicoInsumo(models.Model):
     empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='os_insumos', verbose_name='Empresa')
     os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='insumos_os', verbose_name='Ordem de Serviço')
     produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT, related_name='insumos_os', verbose_name='Produto')
+    praga = models.ForeignKey(
+        'cadastros.Praga', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='insumos_os', verbose_name='Praga/Doença Alvo',
+        help_text='Praga que motivou a aplicação (usada para sugerir defensivos recomendados).',
+    )
     unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT, null=True, blank=True, related_name='insumos_os', verbose_name='Unidade')
     quantidade_planejada = models.DecimalField('Quantidade Planejada', max_digits=15, decimal_places=3, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
     quantidade_aplicada = models.DecimalField('Quantidade Aplicada', max_digits=15, decimal_places=3, default=Decimal('0'), validators=[MinValueValidator(Decimal('0'))])
@@ -1126,6 +1131,10 @@ class RegistroCadernoCampo(models.Model):
 class RegistroCadernoCampoInsumo(models.Model):
     registro = models.ForeignKey(RegistroCadernoCampo, on_delete=models.CASCADE, related_name='insumos_utilizados')
     produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT)
+    praga = models.ForeignKey(
+        'cadastros.Praga', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='insumos_caderno_campo', verbose_name='Praga/Doença Alvo',
+    )
     quantidade = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
     unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT)
     receituario_numero = models.CharField(max_length=50, blank=True, verbose_name='Nº Receituário Agronômico')
@@ -1173,6 +1182,15 @@ def proximo_numero_corte(talhao, safra=None, excluir_pk=None):
     return qs.count() + 1
 
 
+def cultura_atual_talhao(talhao, safra=None):
+    """Retorna a `Cultura` (cadastros.Cultura) plantada no talhão para a safra informada,
+    resolvida via `SafraCultura` (o talhão não tem FK direta para cultura)."""
+    if not safra:
+        return None
+    safra_cultura = safra.culturas.filter(talhoes=talhao).select_related('cultura').first()
+    return safra_cultura.cultura if safra_cultura else None
+
+
 def verificar_carencia_defensivos(talhao, safra=None):
     """
     Verifica, a partir do Caderno de Campo, se há aplicação de defensivo no talhão
@@ -1185,12 +1203,7 @@ def verificar_carencia_defensivos(talhao, safra=None):
     from produtos.models import ProdutoDefensivoCultura
 
     hoje = timezone.now().date()
-
-    cultura = None
-    if safra:
-        safra_cultura = safra.culturas.filter(talhoes=talhao).select_related('cultura').first()
-        if safra_cultura:
-            cultura = safra_cultura.cultura
+    cultura = cultura_atual_talhao(talhao, safra)
 
     registros = RegistroCadernoCampo.objects.filter(
         talhao=talhao, tipo_atividade='APLICACAO_DEFENSIVO',

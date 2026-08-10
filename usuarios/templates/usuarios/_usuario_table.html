@@ -8,9 +8,21 @@
   </div>
   {% endif %}
   <div class="card-body p-0">
-    <div style="overflow-x: auto; overflow-y: auto; max-height: 65vh;">
+    <div class="d-flex justify-content-end gap-1 px-3 pt-2 pb-1 border-bottom bg-light">
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              onclick="this.closest('.card-body').querySelector('.table-responsive').scrollBy({left: -250, behavior: 'smooth'})"
+              title="Rolar para a esquerda">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary"
+              onclick="this.closest('.card-body').querySelector('.table-responsive').scrollBy({left: 250, behavior: 'smooth'})"
+              title="Rolar para a direita">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+    <div class="table-responsive">
       <table class="table table-hover align-middle mb-0" style="min-width: 900px;">
-        <thead class="bg-light border-bottom" style="position: sticky; top: 0; z-index: 3;">
+        <thead class="bg-light border-bottom">
           <tr>
             <th class="px-4 py-3 text-muted fw-semibold" style="width: 60px;">
               <small>ID</small>

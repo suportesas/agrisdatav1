@@ -843,7 +843,7 @@ def ajax_buscar_produtos(request):
     empresa = request.user.empresa
     qs = Produto.objects.filter(
         categoria__empresa=empresa, ativo=True
-    ).select_related('ncm', 'categoria')
+    ).select_related('ncm', 'categoria', 'unidade_venda')
     if q:
         qs = qs.filter(Q(nome__icontains=q) | Q(codigo__icontains=q))
     apenas_base = request.GET.get('apenas_base') == '1' or request.GET.get('excluir_variantes') == '1'
@@ -857,6 +857,7 @@ def ajax_buscar_produtos(request):
             'text': f'{p.codigo} — {p.nome}',
             'tem_variantes': p.variantes.exists() if not apenas_base else False,
             'categoria_nome': p.categoria.nome,
+            'unidade_venda_sigla': p.unidade_venda.sigla,
         }
 
     return select2_response(request, qs, serialize)

@@ -304,6 +304,25 @@ main {
   background: var(--color-surface);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+/* Barra de rolagem de altura fixa (evita a barra "fluent" do Chromium que
+   se expande ao passar o mouse — arrastar durante essa transição faz o
+   scroll escorregar de volta ao início). */
+.table-responsive::-webkit-scrollbar {
+  height: 12px;
+}
+.table-responsive::-webkit-scrollbar-track {
+  background: var(--color-neutral-bg);
+}
+.table-responsive::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 6px;
+  border: 2px solid var(--color-neutral-bg);
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 .table {

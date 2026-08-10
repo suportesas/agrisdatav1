@@ -111,6 +111,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
     # Middleware customizado
+    'core.middleware.inactivity_logout.InactivityLogoutMiddleware',
     'core.middleware.empresa_bloqueada.EmpresaBloqueadaMiddleware',
     'core.middleware.programa_enforcement.ProgramaEnforcementMiddleware',
     'core.middleware.fornecedor_portal_only.FornecedorPortalOnlyMiddleware',
@@ -136,6 +137,7 @@ TEMPLATES = [
                 'core.context_processors.alertas_estoque',  # Context processor customizado para alertas
                 'core.context_processors.notificacoes_emprestimo',  # Mensagens não lidas de empréstimos no menu
                 'core.context_processors.requisicoes_aguardando_atendimento',  # Requisições aprovadas aguardando liberação do almoxarifado
+                'core.context_processors.mostra_dashboard_geral',  # Visibilidade do link "Geral" no submenu Dashboard
                 'core.context_processors.alertas_drawback',  # Alertas de vencimento de ACs de drawback
                 'usuarios.context_processors.supabase_context',  # Injecta contexto Supabase
             ],
@@ -547,6 +549,9 @@ SESSION_COOKIE_AGE = 86400  # 24 horas
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = get_bool_env('SESSION_COOKIE_SECURE', not DEBUG)
 SESSION_COOKIE_SAMESITE = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')
+# Logout automático por inatividade real (sem cliques/teclado/scroll), mantido vivo
+# pelo heartbeat client-side (static/js/session-heartbeat.js) enquanto o usuário interage.
+SESSION_INACTIVITY_TIMEOUT = int(os.getenv('SESSION_INACTIVITY_TIMEOUT', '300'))  # 5 minutos
 CSRF_COOKIE_SECURE = get_bool_env('CSRF_COOKIE_SECURE', not DEBUG)
 CSRF_COOKIE_HTTPONLY = get_bool_env('CSRF_COOKIE_HTTPONLY', False)
 CSRF_COOKIE_SAMESITE = os.getenv('CSRF_COOKIE_SAMESITE', 'Lax')

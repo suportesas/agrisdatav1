@@ -13,6 +13,7 @@ from compras import views as compras_views
 from core.views_public import (landing_page, recursos_page, sobre_page, planos_page,
                                faq_page, contato_page, recursos_avancados_page, page_not_found)
 from core import views_hub
+from core.views_session import session_heartbeat
 
 
 def root_redirect(request):
@@ -90,6 +91,7 @@ urlpatterns = [
     # ATALHOS GLOBAIS
     # ============================================
     path('compras/recebimentos/entrada-direta/', compras_views.entrada_direta_nf, name='entrada_direta_nf'),
+    path('session-heartbeat/', session_heartbeat, name='session_heartbeat'),
     
     # ============================================
     # CONFIGURAÇÕES DO SISTEMA

@@ -173,6 +173,34 @@ def alertas_drawback(request):
     return {'alertas_drawback': payload}
 
 
+def mostra_dashboard_geral(request):
+    """Controla a visibilidade do link "Geral" (dashboard:index) no submenu
+    Dashboard da sidebar.
+
+    `dashboard:index` fica fora do sistema de Programas (ver
+    EXCLUDED_NAMESPACES em empresas/programa_discovery.py) por ser o destino
+    seguro de fallback pós-login/pós-bloqueio — por isso nunca pode ser
+    "selecionado nas permissões". Só faz sentido aparecer no menu quando é de
+    fato a página inicial resolvida do usuário, ou seja, quando nem o usuário
+    nem nenhuma de suas Funções têm uma página inicial própria definida
+    (mesma regra de `usuarios.utils_login.resolver_pagina_inicial`).
+    """
+    if not request.user.is_authenticated:
+        return {'mostra_dashboard_geral': True}
+
+    user = request.user
+    if user.is_superuser or (hasattr(user, 'is_admin_empresa') and user.is_admin_empresa()):
+        return {'mostra_dashboard_geral': True}
+
+    if user.pagina_inicial_id:
+        return {'mostra_dashboard_geral': False}
+
+    if user.roles.filter(pagina_inicial__isnull=False).exists():
+        return {'mostra_dashboard_geral': False}
+
+    return {'mostra_dashboard_geral': True}
+
+
 def requisicoes_aguardando_atendimento(request):
     """Adiciona contador de requisições aprovadas aguardando liberação pelo almoxarifado."""
     payload = {'total_aguardando': 0}

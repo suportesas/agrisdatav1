@@ -79,6 +79,13 @@ def _deve_ignorar(full_name, full_path):
 
 
 def _derive_tipo_acao(bare_name):
+    # Telas de dashboard nomeadas apenas "dashboard" ou "dashboard_<algo>"
+    # (ex.: financeiro:dashboard, estufas:dashboard_estufas) não têm o sufixo
+    # "_dashboard" e cairiam em 'outro' — tratadas como 'listagem' para que
+    # apareçam como candidatas a Página inicial (ver usuarios/forms.py,
+    # empresas/forms.py) igual às demais telas de listagem/visão geral.
+    if bare_name == 'dashboard' or bare_name.startswith('dashboard_'):
+        return 'listagem', bare_name
     for sufixo, tipo in _SUFIXOS_TIPO_ACAO:
         if bare_name.endswith(sufixo):
             resto = bare_name[:-len(sufixo)]

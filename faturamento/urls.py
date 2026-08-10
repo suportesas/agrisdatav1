@@ -73,7 +73,6 @@ urlpatterns = [
 
     # Distribuição de DF-e
     path('distribuicao-dfe/', views.dfe_list, name='dfe_list'),
-    path('distribuicao-dfe/sincronizar/', views.dfe_sincronizar_agora, name='dfe_sincronizar_agora'),
     path('distribuicao-dfe/<int:pk>/manifestar/', views.dfe_manifestar, name='dfe_manifestar'),
     path('distribuicao-dfe/manifestar-lote/', views.dfe_manifestar_lote, name='dfe_manifestar_lote'),
     path('distribuicao-dfe/baixar-xml-lote/', views.dfe_baixar_xml_lote, name='dfe_baixar_xml_lote'),

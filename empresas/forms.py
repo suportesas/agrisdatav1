@@ -1,5 +1,6 @@
 from django import forms
-from core.widgets import DateBRInput
+from django.urls import reverse_lazy
+from core.widgets import DateBRInput, Select2AjaxWidget
 from .models import APIKey, ConfiguracaoPlataforma, Empresa, Plano, Programa, Role
 
 
@@ -184,9 +185,10 @@ class RoleForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Descreva as responsabilidades e permissões desta função...',
             }),
-            'pagina_inicial': forms.Select(attrs={
-                'class': 'form-select',
-            }),
+            'pagina_inicial': Select2AjaxWidget(
+                ajax_url=reverse_lazy('empresas:ajax_buscar_paginas_iniciais'),
+                placeholder='— Usar padrão do sistema (Dashboard) —',
+            ),
         }
 
     def __init__(self, *args, **kwargs):

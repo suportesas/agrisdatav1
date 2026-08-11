@@ -2,7 +2,7 @@ from django.urls import path
 from . import (
     views_os, views_colheita, views_caderno_campo,
     views_pluviometria, views_qualidade_campo, views_planejamento_custo,
-    views_portal_config, views_lote_producao,
+    views_portal_config, views_lote_producao, views_receituario,
 )
 
 
@@ -27,6 +27,12 @@ urlpatterns = [
     path('ordens-servico/<int:pk>/insumos/novo/', views_os.os_insumo_add, name='os_insumo_add'),
     path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/editar/', views_os.os_insumo_edit, name='os_insumo_edit'),
     path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/excluir/', views_os.os_insumo_delete, name='os_insumo_delete'),
+    path('ordens-servico/<int:pk>/insumos/<int:insumo_pk>/receituario/novo/', views_receituario.receituario_create, name='receituario_create'),
+    path('ordens-servico/<int:pk>/receituarios/<int:receituario_pk>/', views_receituario.receituario_detail, name='receituario_detail'),
+    path('ordens-servico/<int:pk>/receituarios/<int:receituario_pk>/editar/', views_receituario.receituario_edit, name='receituario_edit'),
+    path('ordens-servico/<int:pk>/receituarios/<int:receituario_pk>/aprovar/', views_receituario.receituario_aprovar, name='receituario_aprovar'),
+    path('ordens-servico/<int:pk>/receituarios/<int:receituario_pk>/rejeitar/', views_receituario.receituario_rejeitar, name='receituario_rejeitar'),
+    path('receituarios/', views_receituario.receituario_list, name='receituario_list'),
     path('ordens-servico/<int:pk>/funcionarios/novo/', views_os.os_funcionario_add, name='os_funcionario_add'),
     path('ordens-servico/<int:pk>/funcionarios/<int:funcionario_pk>/editar/', views_os.os_funcionario_edit, name='os_funcionario_edit'),
     path('ordens-servico/<int:pk>/funcionarios/<int:funcionario_pk>/excluir/', views_os.os_funcionario_delete, name='os_funcionario_delete'),

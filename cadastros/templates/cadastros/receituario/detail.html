@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Receituário {{ receituario.numero }} | Agrisdata{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+
+      <div class="page-header mb-3">
+        <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon green"><i class="bi bi-file-earmark-medical"></i></span>
+          <div>
+            <h2 class="mb-0">Receituário {{ receituario.numero }}</h2>
+            <p class="text-muted mb-0">OS: <a href="{% url 'operacoes_campo:os_detail' pk=os.pk %}">{{ os.numero }}</a></p>
+          </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          {% if receituario.status == 'RASCUNHO' %}
+          <a href="{% url 'operacoes_campo:receituario_edit' pk=os.pk receituario_pk=receituario.pk %}" class="btn btn-outline-warning">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          {% endif %}
+          <a href="{% url 'operacoes_campo:os_detail' pk=os.pk %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Voltar à OS
+          </a>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm rounded-4 mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <strong>Status:</strong><br>
+              {% if receituario.status == 'RASCUNHO' %}
+              <span class="badge bg-secondary">Rascunho</span>
+              {% elif receituario.status == 'APROVADO' %}
+              <span class="badge bg-success">Aprovado</span>
+              {% else %}
+              <span class="badge bg-danger">Rejeitado</span>
+              {% endif %}
+            </div>
+            <div class="col-md-3"><strong>Cultura:</strong><br>{{ receituario.cultura }}</div>
+            <div class="col-md-3"><strong>Praga/Doença:</strong><br>{{ receituario.praga }}</div>
+            <div class="col-md-3"><strong>Defensivo:</strong><br>{{ receituario.produto.nome }}</div>
+
+            <div class="col-md-3"><strong>Dosagem a Aplicar:</strong><br>{{ receituario.dosagem_aplicar }} {{ receituario.unidade_dosagem.sigla }}</div>
+            <div class="col-md-3"><strong>Volume de Calda:</strong><br>{{ receituario.volume_calda|default:'—' }} {% if receituario.volume_calda %}L/ha{% endif %}</div>
+            <div class="col-md-3"><strong>Carência:</strong><br>{% if receituario.carencia_dias is not None %}{{ receituario.carencia_dias }} dias{% else %}—{% endif %}</div>
+            <div class="col-md-3"><strong>Efetividade:</strong><br>{% if receituario.efetividade_pct %}{{ receituario.efetividade_pct }}%{% else %}—{% endif %}</div>
+
+            <div class="col-md-3"><strong>Data Prevista:</strong><br>{{ receituario.data_aplicacao_prevista|date:'d/m/Y'|default:'—' }}</div>
+            <div class="col-md-3"><strong>Temperatura:</strong><br>{{ receituario.temperatura_c|default:'—' }}{% if receituario.temperatura_c %}°C{% endif %}</div>
+            <div class="col-md-3"><strong>Umidade:</strong><br>{{ receituario.umidade_pct|default:'—' }}{% if receituario.umidade_pct %}%{% endif %}</div>
+            <div class="col-md-3"><strong>Vento:</strong><br>{{ receituario.vento_kmh|default:'—' }}{% if receituario.vento_kmh %} km/h{% endif %}</div>
+
+            <div class="col-md-6">
+              <strong>Responsável Técnico:</strong><br>
+              {{ receituario.responsavel_tecnico.nome_completo }}
+              {% if receituario.numero_crea %}— CREA {{ receituario.numero_crea }}{% endif %}
+            </div>
+            <div class="col-md-6">
+              <strong>Emitido por:</strong><br>
+              {{ receituario.created_by|default:'—' }} em {{ receituario.created_at|date:'d/m/Y H:i' }}
+            </div>
+
+            {% if receituario.status == 'APROVADO' %}
+            <div class="col-md-12">
+              <strong>Aprovado por:</strong> {{ receituario.aprovado_por|default:'—' }} em {{ receituario.data_aprovacao|date:'d/m/Y H:i' }}
+            </div>
+            {% elif receituario.status == 'REJEITADO' %}
+            <div class="col-md-12">
+              <div class="alert alert-danger py-2 px-3 mb-0 small">
+                <i class="bi bi-exclamation-triangle me-1"></i><strong>Motivo da rejeição:</strong> {{ receituario.motivo_rejeicao }}
+              </div>
+            </div>
+            {% endif %}
+
+            {% if receituario.observacoes %}
+            <div class="col-md-12"><strong>Observações:</strong><br>{{ receituario.observacoes }}</div>
+            {% endif %}
+          </div>
+
+          {% if receituario.status == 'RASCUNHO' and pode_decidir %}
+          <div class="mt-4 d-flex gap-2 flex-wrap">
+            <form method="post" action="{% url 'operacoes_campo:receituario_aprovar' pk=os.pk receituario_pk=receituario.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Aprovar</button>
+            </form>
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="collapse" data-bs-target="#formRejeitar">
+              <i class="bi bi-x-circle me-1"></i>Rejeitar
+            </button>
+          </div>
+          <div class="collapse mt-3" id="formRejeitar">
+            <form method="post" action="{% url 'operacoes_campo:receituario_rejeitar' pk=os.pk receituario_pk=receituario.pk %}" class="border rounded-3 p-3 bg-light">
+              {% csrf_token %}
+              <label class="form-label small fw-semibold">Motivo da rejeição<span class="text-danger">*</span></label>
+              <textarea name="motivo_rejeicao" class="form-control mb-2" rows="2" required placeholder="Explique por que este receituário está sendo rejeitado"></textarea>
+              <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-x-circle me-1"></i>Confirmar Rejeição</button>
+            </form>
+          </div>
+          {% elif receituario.status == 'RASCUNHO' %}
+          <div class="mt-3">
+            <span class="text-muted small"><i class="bi bi-info-circle"></i> Apenas ADMIN/GERENTE podem aprovar ou rejeitar este receituário.</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -267,6 +267,9 @@
           {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:caderno_campo_list' %}
           <li><a href="{% url 'operacoes_campo:caderno_campo_list' %}"><i class="bi bi-journal-text"></i> Caderno de Campo</a></li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:receituario_list' %}
+          <li><a href="{% url 'operacoes_campo:receituario_list' %}"><i class="bi bi-file-earmark-medical"></i> Receituários</a></li>
+          {% endif %}
           {% if user.is_admin_empresa or request|tem_acesso:'operacoes_campo:lote_list' %}
           <li><a href="{% url 'operacoes_campo:lote_list' %}"><i class="bi bi-boxes"></i> Lotes de Produção</a></li>
           {% endif %}

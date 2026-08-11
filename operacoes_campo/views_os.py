@@ -1818,13 +1818,25 @@ def os_concluir(request, pk):
                             cadastrado_por=request.user,
                             observacoes=os_obj.observacoes or '',
                         )
+                        from produtos.models import ProdutoDefensivoCultura
+                        cultura_caderno = cultura_atual_talhao(os_obj.talhao, os_obj.safra)
                         for item in insumos_os.filter(quantidade_aplicada__gt=0).select_related('produto', 'unidade_medida', 'praga'):
+                            carencia_dias = None
+                            if item.praga_id and cultura_caderno:
+                                dc = ProdutoDefensivoCultura.objects.filter(
+                                    produto=item.produto, cultura=cultura_caderno, praga=item.praga,
+                                ).first()
+                                if dc:
+                                    carencia_dias = dc.carencia
+                            receituario_aprovado = item.receituarios.filter(status='APROVADO').order_by('-id').first()
                             RegistroCadernoCampoInsumo.objects.create(
                                 registro=registro,
                                 produto=item.produto,
                                 praga=item.praga,
                                 quantidade=item.quantidade_aplicada,
                                 unidade_medida=item.unidade_medida,
+                                carencia_dias=carencia_dias,
+                                receituario_numero=receituario_aprovado.numero if receituario_aprovado else '',
                             )
 
         except Exception as e:
@@ -1837,6 +1849,18 @@ def os_concluir(request, pk):
         if insumos_os.filter(quantidade_aplicada__gt=0).exists():
             _msg += ' · Insumos aguardando baixa pelo almoxarifado (Estoque > Movimentações).'
         messages.success(request, _msg)
+
+        pendentes = [
+            item.produto.nome
+            for item in insumos_os.filter(praga__isnull=False).select_related('produto')
+            if not item.receituarios.filter(status='APROVADO').exists()
+        ]
+        if pendentes:
+            messages.warning(
+                request,
+                'Atenção: os seguintes defensivos foram aplicados sem um Receituário Agronômico aprovado — '
+                'emita e aprove o receituário para manter o registro completo: ' + ', '.join(pendentes)
+            )
         return redirect('operacoes_campo:os_detail', pk=pk)
 
     context = {'os': os_obj}
@@ -2103,7 +2127,9 @@ def ajax_recomendacao_defensivo(request):
     """GET ?praga_id=X&os_id=Y — retorna, ranqueados, os defensivos cadastrados
     (ProdutoDefensivoCultura) para a praga/cultura da OS, com dose sugerida
     (dosagem da bula × área executada) e alerta se o produto for proibido em
-    algum país de destino cadastrado na cultura da safra."""
+    algum país de destino cadastrado na cultura da safra. Só sugere produtos
+    com lote em estoque — mesmo critério do campo `produto` do formulário de
+    insumo, para não recomendar algo que o form depois rejeita."""
     from produtos.models import ProdutoDefensivoCultura
 
     empresa = request.user.empresa
@@ -2129,7 +2155,11 @@ def ajax_recomendacao_defensivo(request):
 
     qs = (
         ProdutoDefensivoCultura.objects
-        .filter(praga=praga, cultura=cultura, produto__categoria__empresa=empresa, produto__ativo=True)
+        .filter(
+            praga=praga, cultura=cultura, produto__categoria__empresa=empresa, produto__ativo=True,
+            produto__lotes__armazem__empresa=empresa,
+        )
+        .distinct()
         .select_related('produto', 'unidade_dosagem')
         .order_by('ordem_recomendacao', '-efetividade_pct')
     )
@@ -2159,7 +2189,18 @@ def ajax_recomendacao_defensivo(request):
             'alerta_pais_proibido': alerta_pais,
         })
 
-    return JsonResponse({'sem_cultura': False, 'area_referencia': str(area), 'recomendacoes': recomendacoes})
+    sem_estoque = False
+    if not recomendacoes:
+        sem_estoque = ProdutoDefensivoCultura.objects.filter(
+            praga=praga, cultura=cultura, produto__categoria__empresa=empresa, produto__ativo=True,
+        ).exists()
+
+    return JsonResponse({
+        'sem_cultura': False,
+        'area_referencia': str(area),
+        'recomendacoes': recomendacoes,
+        'sem_estoque': sem_estoque,
+    })
 
 
 # ============================================================================

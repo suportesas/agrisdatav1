@@ -49,6 +49,7 @@ PUBLIC_PREFIXES = (
     '/usuarios/',
     '/landing/', '/recursos', '/sobre/', '/planos/', '/faq/', '/contato/',
     '/portal/',
+    '/session-heartbeat/',
 )
 
 

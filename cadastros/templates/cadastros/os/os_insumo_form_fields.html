@@ -127,8 +127,12 @@
         return;
       }
       if (!data.recomendacoes || data.recomendacoes.length === 0) {
-        recomendacoesBox.innerHTML = '<div class="alert alert-info py-2 px-3 mb-0 small">' +
-          '<i class="bi bi-info-circle me-1"></i> Nenhum defensivo cadastrado para esta praga/cultura ainda.</div>';
+        recomendacoesBox.innerHTML = data.sem_estoque
+          ? '<div class="alert alert-warning py-2 px-3 mb-0 small">' +
+            '<i class="bi bi-exclamation-triangle me-1"></i> Há defensivo(s) recomendados para esta praga/cultura, ' +
+            'mas sem estoque disponível no momento.</div>'
+          : '<div class="alert alert-info py-2 px-3 mb-0 small">' +
+            '<i class="bi bi-info-circle me-1"></i> Nenhum defensivo cadastrado para esta praga/cultura ainda.</div>';
         recomendacoesBox.style.display = 'block';
         return;
       }

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Receituários Agronômicos{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <div class="page-header mb-3">
+    <div class="d-flex align-items-center gap-3">
+      <span class="page-header-icon green"><i class="bi bi-file-earmark-medical"></i></span>
+      <h2>Receituários Agronômicos</h2>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <form method="get" id="filterForm" class="filter-bar">
+      <div class="filter-field" style="min-width:260px;">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Buscar</label>
+        <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="Número, OS, defensivo, praga…">
+      </div>
+      <div class="filter-field">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          <option value="">-- Todos --</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% include 'partials/per_page_select.html' with col_class='filter-field' %}
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filtrar</button>
+        <a href="{% url 'operacoes_campo:receituario_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i> Limpar</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if page_obj.paginator %}
+      Exibindo <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong> de <strong>{{ page_obj.paginator.count }}</strong> receituário{{ page_obj.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="bg-light">
+          <tr>
+            <th class="ps-4">Número</th>
+            <th>OS</th>
+            <th>Defensivo</th>
+            <th>Praga/Doença</th>
+            <th>Responsável Técnico</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for receituario in receituarios %}
+          <tr>
+            <td class="ps-4"><strong>{{ receituario.numero }}</strong></td>
+            <td><a href="{% url 'operacoes_campo:os_detail' pk=receituario.os_id %}">{{ receituario.os.numero }}</a></td>
+            <td>{{ receituario.produto.nome }}</td>
+            <td>{{ receituario.praga.nome_comum }}</td>
+            <td>{{ receituario.responsavel_tecnico.nome_completo|default:'—' }}</td>
+            <td class="text-center">
+              {% if receituario.status == 'RASCUNHO' %}
+              <span class="badge bg-secondary">Rascunho</span>
+              {% elif receituario.status == 'APROVADO' %}
+              <span class="badge bg-success">Aprovado</span>
+              {% else %}
+              <span class="badge bg-danger">Rejeitado</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <a class="action-icon" href="{% url 'operacoes_campo:receituario_detail' pk=receituario.os_id receituario_pk=receituario.pk %}" title="Ver detalhes">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox display-4 d-block mb-3"></i>
+              Nenhum receituário encontrado.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=page_obj %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

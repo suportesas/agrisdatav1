@@ -321,6 +321,11 @@ class OrdemServicoInsumo(models.Model):
     empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='os_insumos', verbose_name='Empresa')
     os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='insumos_os', verbose_name='Ordem de Serviço')
     produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT, related_name='insumos_os', verbose_name='Produto')
+    praga = models.ForeignKey(
+        'cadastros.Praga', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='insumos_os', verbose_name='Praga/Doença Alvo',
+        help_text='Praga que motivou a aplicação (usada para sugerir defensivos recomendados).',
+    )
     unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT, null=True, blank=True, related_name='insumos_os', verbose_name='Unidade')
     quantidade_planejada = models.DecimalField('Quantidade Planejada', max_digits=15, decimal_places=3, null=True, blank=True, validators=[MinValueValidator(Decimal('0'))])
     quantidade_aplicada = models.DecimalField('Quantidade Aplicada', max_digits=15, decimal_places=3, default=Decimal('0'), validators=[MinValueValidator(Decimal('0'))])
@@ -369,6 +374,112 @@ class OrdemServicoInsumo(models.Model):
         if not self.unidade_medida_id and getattr(self.produto, 'unidade_medida_id', None):
             self.unidade_medida_id = self.produto.unidade_medida_id
         super().save(*args, **kwargs)
+
+    @property
+    def receituario_atual(self):
+        """Receituário mais recente emitido para este item (rascunho, aprovado ou
+        rejeitado) — se rejeitado, um novo pode ser emitido para o mesmo item."""
+        return self.receituarios.order_by('-id').first()
+
+
+class Receituario(models.Model):
+    """Receituário Agronômico: documento técnico que autoriza a aplicação de um
+    defensivo contra uma praga específica, emitido por um responsável técnico
+    (agrônomo com CREA) e sujeito a aprovação. Os dados de dosagem/carência/
+    efetividade são um retrato (snapshot) de `ProdutoDefensivoCultura` no momento
+    da emissão — não devem mudar se o cadastro base for editado depois."""
+
+    STATUS_CHOICES = [
+        ('RASCUNHO', 'Rascunho'),
+        ('APROVADO', 'Aprovado'),
+        ('REJEITADO', 'Rejeitado'),
+    ]
+
+    empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='receituarios', verbose_name='Empresa')
+    os = models.ForeignKey(OrdemServico, on_delete=models.CASCADE, related_name='receituarios', verbose_name='Ordem de Serviço')
+    insumo = models.ForeignKey(OrdemServicoInsumo, on_delete=models.CASCADE, related_name='receituarios', verbose_name='Item de Insumo')
+    numero = models.CharField('Número', max_length=30, unique=True, blank=True)
+
+    # Snapshot no momento da emissão
+    cultura = models.ForeignKey('cadastros.Cultura', on_delete=models.PROTECT, related_name='receituarios', verbose_name='Cultura')
+    praga = models.ForeignKey('cadastros.Praga', on_delete=models.PROTECT, related_name='receituarios', verbose_name='Praga/Doença')
+    produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT, related_name='receituarios', verbose_name='Defensivo')
+    dosagem_aplicar = models.DecimalField('Dosagem a Aplicar', max_digits=10, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
+    unidade_dosagem = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT, related_name='receituarios', verbose_name='Unidade de Dosagem')
+    volume_calda = models.DecimalField('Volume de Calda (L/ha)', max_digits=10, decimal_places=2, null=True, blank=True)
+    carencia_dias = models.IntegerField('Carência (dias)', null=True, blank=True)
+    quantidade_maxima_aplicacoes = models.IntegerField('Máx. Aplicações', null=True, blank=True)
+    intervalo_reaplicacao_dias = models.IntegerField('Intervalo para Reaplicação (dias)', null=True, blank=True)
+    efetividade_pct = models.PositiveSmallIntegerField('Efetividade (%)', null=True, blank=True)
+    custo_relativo = models.CharField('Custo Relativo', max_length=6, blank=True)
+
+    # Dados da aplicação
+    data_aplicacao_prevista = models.DateField('Data Prevista de Aplicação', null=True, blank=True)
+    temperatura_c = models.DecimalField('Temperatura (°C)', max_digits=4, decimal_places=1, null=True, blank=True)
+    umidade_pct = models.PositiveSmallIntegerField('Umidade (%)', null=True, blank=True)
+    vento_kmh = models.DecimalField('Vento (km/h)', max_digits=4, decimal_places=1, null=True, blank=True)
+
+    # Responsável técnico
+    responsavel_tecnico = models.ForeignKey(
+        'rh.Funcionario', on_delete=models.PROTECT, related_name='receituarios_emitidos',
+        verbose_name='Responsável Técnico',
+    )
+    numero_crea = models.CharField('Número CREA', max_length=50, blank=True, help_text='Retrato do CREA do responsável técnico no momento da emissão.')
+
+    # Status e aprovação
+    status = models.CharField('Status', max_length=10, choices=STATUS_CHOICES, default='RASCUNHO')
+    motivo_rejeicao = models.TextField('Motivo da Rejeição', blank=True)
+    aprovado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='receituarios_aprovados', verbose_name='Aprovado por')
+    data_aprovacao = models.DateTimeField('Data de Aprovação', null=True, blank=True)
+
+    observacoes = models.TextField('Observações', blank=True)
+    created_by = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='receituarios_criados', verbose_name='Criado por')
+    created_at = models.DateTimeField('Criado em', auto_now_add=True)
+    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Receituário Agronômico'
+        verbose_name_plural = 'Receituários Agronômicos'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['empresa', 'status']),
+            models.Index(fields=['insumo']),
+        ]
+
+    def __str__(self):
+        return f"{self.numero} - {self.produto} - {self.praga}"
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            ano = timezone.now().year
+            ultimo = Receituario.objects.filter(
+                empresa=self.empresa, numero__startswith=f'REC-{ano}-'
+            ).order_by('numero').last()
+            seq = 1
+            if ultimo:
+                try:
+                    seq = int(ultimo.numero.split('-')[-1]) + 1
+                except (ValueError, IndexError):
+                    seq = Receituario.objects.filter(empresa=self.empresa, numero__startswith=f'REC-{ano}-').count() + 1
+            self.numero = f'REC-{ano}-{seq:05d}'
+        if self.responsavel_tecnico_id and not self.numero_crea:
+            self.numero_crea = self.responsavel_tecnico.numero_crea
+        super().save(*args, **kwargs)
+
+    def aprovar(self, usuario):
+        if self.status != 'RASCUNHO':
+            raise ValidationError('Apenas receituários em rascunho podem ser aprovados.')
+        self.status = 'APROVADO'
+        self.aprovado_por = usuario
+        self.data_aprovacao = timezone.now()
+        self.save(update_fields=['status', 'aprovado_por', 'data_aprovacao'])
+
+    def rejeitar(self, usuario, motivo):
+        if self.status != 'RASCUNHO':
+            raise ValidationError('Apenas receituários em rascunho podem ser rejeitados.')
+        self.status = 'REJEITADO'
+        self.motivo_rejeicao = motivo
+        self.save(update_fields=['status', 'motivo_rejeicao'])
 
 
 # ============================================================================
@@ -1126,6 +1237,10 @@ class RegistroCadernoCampo(models.Model):
 class RegistroCadernoCampoInsumo(models.Model):
     registro = models.ForeignKey(RegistroCadernoCampo, on_delete=models.CASCADE, related_name='insumos_utilizados')
     produto = models.ForeignKey('produtos.Produto', on_delete=models.PROTECT)
+    praga = models.ForeignKey(
+        'cadastros.Praga', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='insumos_caderno_campo', verbose_name='Praga/Doença Alvo',
+    )
     quantidade = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(Decimal('0.001'))])
     unidade_medida = models.ForeignKey('produtos.UnidadeMedida', on_delete=models.PROTECT)
     receituario_numero = models.CharField(max_length=50, blank=True, verbose_name='Nº Receituário Agronômico')
@@ -1173,6 +1288,15 @@ def proximo_numero_corte(talhao, safra=None, excluir_pk=None):
     return qs.count() + 1
 
 
+def cultura_atual_talhao(talhao, safra=None):
+    """Retorna a `Cultura` (cadastros.Cultura) plantada no talhão para a safra informada,
+    resolvida via `SafraCultura` (o talhão não tem FK direta para cultura)."""
+    if not safra:
+        return None
+    safra_cultura = safra.culturas.filter(talhoes=talhao).select_related('cultura').first()
+    return safra_cultura.cultura if safra_cultura else None
+
+
 def verificar_carencia_defensivos(talhao, safra=None):
     """
     Verifica, a partir do Caderno de Campo, se há aplicação de defensivo no talhão
@@ -1185,12 +1309,7 @@ def verificar_carencia_defensivos(talhao, safra=None):
     from produtos.models import ProdutoDefensivoCultura
 
     hoje = timezone.now().date()
-
-    cultura = None
-    if safra:
-        safra_cultura = safra.culturas.filter(talhoes=talhao).select_related('cultura').first()
-        if safra_cultura:
-            cultura = safra_cultura.cultura
+    cultura = cultura_atual_talhao(talhao, safra)
 
     registros = RegistroCadernoCampo.objects.filter(
         talhao=talhao, tipo_atividade='APLICACAO_DEFENSIVO',

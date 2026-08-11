@@ -629,7 +629,7 @@
         {% if object.pk %}
         <div class="d-flex justify-content-between align-items-center mb-3">
           <p class="text-muted mb-0">Registre para cada cultura as pragas combatidas e as dosagens específicas</p>
-          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalDefensivoCultura">
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalDefensivoCultura" onclick="resetModalDefensivoCultura()">
             <i class="bi bi-plus-circle me-1"></i>Adicionar Cultura/Praga
           </button>
         </div>
@@ -1188,9 +1188,64 @@ function excluirDefensivoCultura(id) {
     });
 }
 
+function resetModalDefensivoCultura() {
+    const form = document.getElementById('formDefensivoCultura');
+    if (!form) return;
+    form.reset();
+    form.action = form.getAttribute('data-create-url');
+    document.getElementById('modalDefensivoCulturaLabel').innerHTML =
+        '<i class="bi bi-shield-fill-exclamation me-2"></i>Adicionar Cultura e Praga';
+    ['dosagemMinimaCalc', 'dosagemMaximaCalc', 'dosagemCalculadaHa'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    const alertaDosagem = document.getElementById('alertaDosagem');
+    if (alertaDosagem) alertaDosagem.innerHTML = '';
+}
+
 function editarDefensivoCultura(id) {
-    // Redirecionar para página de edição
-    window.location.href = `/produtos/defensivo-cultura/${id}/edit/`;
+    fetch(`/produtos/defensivo-cultura/${id}/json/`, {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.error || 'Erro ao buscar registro');
+            return;
+        }
+        const form = document.getElementById('formDefensivoCultura');
+        form.action = `/produtos/defensivo-cultura/${id}/edit/`;
+        document.getElementById('modalDefensivoCulturaLabel').innerHTML =
+            '<i class="bi bi-shield-fill-exclamation me-2"></i>Editar Cultura e Praga';
+
+        document.getElementById('culturaSelect').value = data.cultura_id || '';
+        document.getElementById('pragaSelect').value = data.praga_id || '';
+        document.getElementById('dcDosagemMinima').value = data.dosagem_minima || '';
+        document.getElementById('dcDosagemMaxima').value = data.dosagem_maxima || '';
+        document.getElementById('unidadeDosagemSelect').value = data.unidade_dosagem_id || '';
+        document.getElementById('dosagemMinimaCalc').value = data.dosagem_minima_calc || '';
+        document.getElementById('dosagemMaximaCalc').value = data.dosagem_maxima_calc || '';
+        document.getElementById('unidadeDosagemCalcSelect').value = data.unidade_dosagem_calc_id || '';
+        document.getElementById('volumeCaldaAplicacao').value = data.volume_calda_aplicacao || '';
+        document.getElementById('dosagemCalculadaHa').value = data.dosagem_calculada_ha || '';
+        document.getElementById('dcCarencia').value = data.carencia != null ? data.carencia : '';
+        document.getElementById('dcQuantidadeMaximaAplicacoes').value = data.quantidade_maxima_aplicacoes != null ? data.quantidade_maxima_aplicacoes : '';
+        document.getElementById('dcIntervaloReaplicacao').value = data.intervalo_reaplicacao != null ? data.intervalo_reaplicacao : '';
+        document.getElementById('dcMrl').value = data.mrl || '';
+        document.getElementById('dcVolumeCaldaMinimo').value = data.volume_calda_minimo || '';
+        document.getElementById('dcVolumeCaldaMaximo').value = data.volume_calda_maximo || '';
+        document.getElementById('dcOrdemRecomendacao').value = data.ordem_recomendacao != null ? data.ordem_recomendacao : '';
+        document.getElementById('dcEfetividadePct').value = data.efetividade_pct != null ? data.efetividade_pct : '';
+        document.getElementById('dcCustoRelativo').value = data.custo_relativo || '';
+        document.getElementById('dcObservacoes').value = data.observacoes || '';
+
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDefensivoCultura'));
+        modal.show();
+    })
+    .catch(error => {
+        alert('Erro ao buscar registro: ' + error);
+    });
 }
 
 // ============== FUNÇÕES DE DOCUMENTOS ==============
@@ -1929,12 +1984,12 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">
+        <h5 class="modal-title" id="modalDefensivoCulturaLabel">
           <i class="bi bi-shield-fill-exclamation me-2"></i>Adicionar Cultura e Praga
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <form action="{% url 'produtos:defensivo_cultura_create' object.pk %}" method="post">
+      <form id="formDefensivoCultura" action="{% url 'produtos:defensivo_cultura_create' object.pk %}" method="post" data-create-url="{% url 'produtos:defensivo_cultura_create' object.pk %}">
         {% csrf_token %}
         <div class="modal-body">
           <div class="alert alert-info">
@@ -1977,12 +2032,12 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="row">
             <div class="col-md-4 mb-3">
               <label class="form-label required-label">Dosagem Mínima</label>
-              <input type="number" name="dosagem_minima" class="form-control" 
+              <input type="number" name="dosagem_minima" id="dcDosagemMinima" class="form-control"
                      step="0.001" placeholder="Ex: 1.5" required>
             </div>
             <div class="col-md-4 mb-3">
               <label class="form-label required-label">Dosagem Máxima</label>
-              <input type="number" name="dosagem_maxima" class="form-control" 
+              <input type="number" name="dosagem_maxima" id="dcDosagemMaxima" class="form-control"
                      step="0.001" placeholder="Ex: 2.5" required>
             </div>
             <div class="col-md-4 mb-3">
@@ -2005,12 +2060,12 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label required-label">Volume Mínimo (L/ha)</label>
-              <input type="number" name="volume_calda_minimo" class="form-control" 
+              <input type="number" name="volume_calda_minimo" id="dcVolumeCaldaMinimo" class="form-control"
                      step="0.01" placeholder="Ex: 100" required>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label required-label">Volume Máximo (L/ha)</label>
-              <input type="number" name="volume_calda_maximo" class="form-control" 
+              <input type="number" name="volume_calda_maximo" id="dcVolumeCaldaMaximo" class="form-control"
                      step="0.01" placeholder="Ex: 200" required>
             </div>
           </div>
@@ -2067,35 +2122,62 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="row">
             <div class="col-md-4 mb-3">
               <label class="form-label required-label">Carência (dias)</label>
-              <input type="number" name="carencia" class="form-control" 
+              <input type="number" name="carencia" id="dcCarencia" class="form-control"
                      placeholder="Dias até colheita" required>
               <small class="text-muted">Entre última aplicação e colheita</small>
             </div>
             <div class="col-md-4 mb-3">
               <label class="form-label required-label">Máx. Aplicações</label>
-              <input type="number" name="quantidade_maxima_aplicacoes" class="form-control" 
+              <input type="number" name="quantidade_maxima_aplicacoes" id="dcQuantidadeMaximaAplicacoes" class="form-control"
                      placeholder="Ex: 3" required>
             </div>
             <div class="col-md-4 mb-3">
               <label class="form-label required-label">Intervalo (dias)</label>
-              <input type="number" name="intervalo_reaplicacao" class="form-control" 
+              <input type="number" name="intervalo_reaplicacao" id="dcIntervaloReaplicacao" class="form-control"
                      placeholder="Entre aplicações" required>
             </div>
           </div>
-          
+
           <h6 class="mb-3"><i class="bi bi-flask me-1"></i>Limite Máximo de Resíduo</h6>
           <div class="row">
             <div class="col-md-12 mb-3">
               <label class="form-label">MRL (mg/kg)</label>
-              <input type="number" name="mrl" class="form-control" 
+              <input type="number" name="mrl" id="dcMrl" class="form-control"
                      step="0.001" placeholder="Ex: 0.001">
               <small class="text-muted">Limite Máximo de Resíduo conforme legislação</small>
             </div>
           </div>
-          
+
+          <h6 class="mb-3"><i class="bi bi-star me-1"></i>Recomendação</h6>
+          <div class="alert alert-info py-2 px-3 small">
+            <i class="bi bi-info-circle me-1"></i>
+            Usado para ranquear este defensivo entre as alternativas sugeridas para a mesma praga/cultura na Ordem de Serviço.
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Ordem de Recomendação</label>
+              <input type="number" name="ordem_recomendacao" id="dcOrdemRecomendacao" class="form-control"
+                     min="1" placeholder="1=melhor opção, 2=alternativa...">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Efetividade (%)</label>
+              <input type="number" name="efetividade_pct" id="dcEfetividadePct" class="form-control"
+                     min="0" max="100" placeholder="Ex: 95">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label">Custo Relativo</label>
+              <select name="custo_relativo" id="dcCustoRelativo" class="form-select">
+                <option value="">Selecione...</option>
+                <option value="BAIXO">Baixo</option>
+                <option value="MEDIO">Médio</option>
+                <option value="ALTO">Alto</option>
+              </select>
+            </div>
+          </div>
+
           <div class="mb-3">
             <label class="form-label">Observações</label>
-            <textarea name="observacoes" class="form-control" rows="2" 
+            <textarea name="observacoes" id="dcObservacoes" class="form-control" rows="2"
                       placeholder="Informações adicionais sobre esta aplicação"></textarea>
           </div>
         </div>
@@ -2501,6 +2583,11 @@ document.addEventListener('DOMContentLoaded', function() {
         $fornecedorSelect.val(null).trigger('change');
       }
     });
+  }
+
+  const modalDefensivoCultura = document.getElementById('modalDefensivoCultura');
+  if (modalDefensivoCultura) {
+    modalDefensivoCultura.addEventListener('hidden.bs.modal', resetModalDefensivoCultura);
   }
 });
 {% endif %}

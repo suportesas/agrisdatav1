@@ -86,6 +86,7 @@ urlpatterns = [
     # Defensivo Cultura
     path('<int:produto_pk>/defensivo-cultura/cadastrar/', views.defensivo_cultura_create, name='defensivo_cultura_create'),
     path('defensivo-cultura/<int:pk>/edit/', views.defensivo_cultura_edit, name='defensivo_cultura_edit'),
+    path('defensivo-cultura/<int:pk>/json/', views.defensivo_cultura_json, name='defensivo_cultura_json'),
     path('defensivo-cultura/<int:pk>/delete/', views.defensivo_cultura_delete, name='defensivo_cultura_delete'),
     
     # AJAX - Cadastro rápido de cultura

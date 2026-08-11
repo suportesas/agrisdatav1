@@ -381,6 +381,7 @@
                 <th>Início</th>
                 <th>Fim</th>
                 <th>Status</th>
+                <th>Países de Destino</th>
                 <th style="width:40px"></th>
               </tr>
             </thead>
@@ -392,6 +393,7 @@
                 <td>{{ cf.periodo_inicio }}</td>
                 <td>{{ cf.periodo_fim }}</td>
                 <td>{{ cf.status }}</td>
+                <td>{{ cf.paises_destino }}</td>
                 <td>
                   <span class="d-none">{{ cf.DELETE }}</span>
                   <button type="button" class="row-action danger btn-remove-cultura"><i class="bi bi-trash"></i></button>
@@ -408,6 +410,7 @@
             <td>{{ culturas_formset.empty_form.periodo_inicio }}</td>
             <td>{{ culturas_formset.empty_form.periodo_fim }}</td>
             <td>{{ culturas_formset.empty_form.status }}</td>
+            <td>{{ culturas_formset.empty_form.paises_destino }}</td>
             <td>
               <span class="d-none">{{ culturas_formset.empty_form.DELETE }}</span>
               <button type="button" class="row-action danger btn-remove-cultura"><i class="bi bi-trash"></i></button>

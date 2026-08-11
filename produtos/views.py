@@ -1508,6 +1508,40 @@ def defensivo_cultura_edit(request, pk):
     })
 
 
+@login_required
+def defensivo_cultura_json(request, pk):
+    """Retorna os dados de um registro de cultura/praga em JSON, para preencher o modal de edição."""
+    dc = get_object_or_404(ProdutoDefensivoCultura, pk=pk)
+
+    if dc.produto.categoria.empresa != request.user.empresa:
+        return JsonResponse({'success': False, 'error': 'Não autorizado'}, status=403)
+
+    return JsonResponse({
+        'success': True,
+        'id': dc.pk,
+        'cultura_id': dc.cultura_id,
+        'praga_id': dc.praga_id,
+        'dosagem_minima': str(dc.dosagem_minima),
+        'dosagem_maxima': str(dc.dosagem_maxima),
+        'unidade_dosagem_id': dc.unidade_dosagem_id,
+        'dosagem_minima_calc': str(dc.dosagem_minima_calc) if dc.dosagem_minima_calc is not None else '',
+        'dosagem_maxima_calc': str(dc.dosagem_maxima_calc) if dc.dosagem_maxima_calc is not None else '',
+        'unidade_dosagem_calc_id': dc.unidade_dosagem_calc_id,
+        'volume_calda_aplicacao': str(dc.volume_calda_aplicacao) if dc.volume_calda_aplicacao is not None else '',
+        'dosagem_calculada_ha': str(dc.dosagem_calculada_ha) if dc.dosagem_calculada_ha is not None else '',
+        'carencia': dc.carencia,
+        'quantidade_maxima_aplicacoes': dc.quantidade_maxima_aplicacoes,
+        'intervalo_reaplicacao': dc.intervalo_reaplicacao,
+        'mrl': str(dc.mrl) if dc.mrl is not None else '',
+        'volume_calda_minimo': str(dc.volume_calda_minimo),
+        'volume_calda_maximo': str(dc.volume_calda_maximo),
+        'ordem_recomendacao': dc.ordem_recomendacao,
+        'efetividade_pct': dc.efetividade_pct,
+        'custo_relativo': dc.custo_relativo,
+        'observacoes': dc.observacoes or '',
+    })
+
+
 # ============== VIEWS DE DOCUMENTOS DO PRODUTO ==============
 
 @login_required

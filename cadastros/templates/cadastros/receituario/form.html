@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }} | Agrisdata{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <div class="form-header">
+        <div class="form-header-top">
+          <div class="form-header-title">
+            <span class="icon-badge green"><i class="bi bi-file-earmark-medical"></i></span>
+            <div>
+              <h2>{{ titulo }}</h2>
+              <p class="text-muted mb-0">OS: <strong>{{ os.numero }}</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-header">
+          <span class="icon-badge sm blue"><i class="bi bi-clipboard-data"></i></span>
+          <span class="title">Dados do Insumo (não editáveis)</span>
+        </div>
+        <div class="form-section-body">
+          <div class="form-grid">
+            <div class="field col-4">
+              <label class="form-label">Cultura</label>
+              <div class="fw-semibold">{{ cultura }}</div>
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Praga/Doença</label>
+              <div class="fw-semibold">{{ insumo.praga }}</div>
+            </div>
+            <div class="field col-4">
+              <label class="form-label">Defensivo</label>
+              <div class="fw-semibold">{{ insumo.produto.nome }}</div>
+            </div>
+          </div>
+          {% if recomendacao %}
+          <div class="alert alert-info py-2 px-3 mb-0 small mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            Dose sugerida a partir do cadastro Defensivo × Cultura: {{ recomendacao.dosagem_minima }}–{{ recomendacao.dosagem_maxima }} {{ recomendacao.unidade_dosagem.sigla }},
+            carência {{ recomendacao.carencia }} dia{{ recomendacao.carencia|pluralize }}{% if recomendacao.efetividade_pct %}, efetividade {{ recomendacao.efetividade_pct }}%{% endif %}.
+            Campos abaixo já vêm pré-preenchidos — ajuste se necessário.
+          </div>
+          {% elif not receituario %}
+          <div class="alert alert-warning py-2 px-3 mb-0 small mt-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Não há cadastro de Defensivo × Cultura para esta combinação — preencha a dosagem manualmente conforme a bula do produto.
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm green"><i class="bi bi-droplet"></i></span>
+            <span class="title">Aplicação</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-4">
+                <label class="form-label">Dosagem a Aplicar<span class="req">*</span></label>
+                {{ form.dosagem_aplicar }}
+                {% if form.dosagem_aplicar.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.dosagem_aplicar.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Unidade<span class="req">*</span></label>
+                {{ form.unidade_dosagem }}
+                {% if form.unidade_dosagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.unidade_dosagem.errors|striptags }}</div>{% endif %}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Volume de Calda (L/ha)</label>
+                {{ form.volume_calda }}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Data Prevista de Aplicação</label>
+                {{ form.data_aplicacao_prevista }}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Temperatura (°C)</label>
+                {{ form.temperatura_c }}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Umidade (%)</label>
+                {{ form.umidade_pct }}
+              </div>
+              <div class="field col-4">
+                <label class="form-label">Vento (km/h)</label>
+                {{ form.vento_kmh }}
+              </div>
+              <div class="field col-8">
+                <label class="form-label">Responsável Técnico<span class="req">*</span></label>
+                {{ form.responsavel_tecnico }}
+                {% if form.responsavel_tecnico.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.responsavel_tecnico.errors|striptags }}</div>{% endif %}
+                {% if not form.responsavel_tecnico.field.queryset.exists %}
+                <div class="helper-note text-warning"><i class="bi bi-exclamation-triangle"></i> Nenhum funcionário com CREA cadastrado nesta empresa — cadastre o número do CREA em RH → Funcionários antes de emitir.</div>
+                {% endif %}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 justify-content-end mt-3 mb-4">
+          <a href="{% url 'operacoes_campo:os_detail' pk=os.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Salvar Rascunho</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

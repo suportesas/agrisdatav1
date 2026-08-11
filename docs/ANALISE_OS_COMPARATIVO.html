@@ -1,0 +1,568 @@
+<title>Ordem de Serviço — Auditoria e Comparativo de Mercado</title>
+<style>
+  :root{
+    --paper:#f5f6f1;
+    --paper-raised:#ffffff;
+    --ink:#1b2118;
+    --ink-soft:#4d5645;
+    --accent:#3f6b33;
+    --accent-soft:#e4ebdd;
+    --line:#d8dad0;
+    --crit:#b23a2e;    --crit-soft:#f6e3e0;
+    --warn:#a9791f;    --warn-soft:#f4ecda;
+    --info:#3c6e8f;    --info-soft:#e1ebf0;
+    --ok:#2f7c63;      --ok-soft:#e0eee8;
+    --font-sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  }
+  :root[data-theme="dark"]{
+    --paper:#14170f; --paper-raised:#1b1f15;
+    --ink:#e7e7de; --ink-soft:#a9ae9d;
+    --accent:#8fbb74; --accent-soft:#233521;
+    --line:#2b2f24;
+    --crit:#e2695a; --crit-soft:#3a221f;
+    --warn:#e0aa55; --warn-soft:#3a3018;
+    --info:#6fa8c7; --info-soft:#1f2f38;
+    --ok:#57b394;   --ok-soft:#1c3329;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#14170f; --paper-raised:#1b1f15;
+      --ink:#e7e7de; --ink-soft:#a9ae9d;
+      --accent:#8fbb74; --accent-soft:#233521;
+      --line:#2b2f24;
+      --crit:#e2695a; --crit-soft:#3a221f;
+      --warn:#e0aa55; --warn-soft:#3a3018;
+      --info:#6fa8c7; --info-soft:#1f2f38;
+      --ok:#57b394;   --ok-soft:#1c3329;
+    }
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .page{
+    background:var(--paper); color:var(--ink);
+    font-family:var(--font-sans);
+    line-height:1.55;
+    min-height:100vh;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:3rem 1.5rem 6rem;}
+
+  /* ---- header ---- */
+  .eyebrow{
+    font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); margin:0 0 .6rem;
+  }
+  h1{
+    font-size:clamp(1.6rem, 3.4vw, 2.35rem);
+    line-height:1.15; margin:0 0 .75rem; font-weight:800; letter-spacing:-.01em;
+    text-wrap:balance;
+  }
+  .dek{ color:var(--ink-soft); font-size:1.02rem; max-width:62ch; margin:0 0 1.6rem; }
+  .meta{
+    display:flex; flex-wrap:wrap; gap:.4rem 1.2rem;
+    font-family:var(--font-mono); font-size:.78rem; color:var(--ink-soft);
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    padding:.7rem 0; margin-bottom:2.2rem;
+  }
+  .meta b{color:var(--ink); font-weight:600;}
+
+  nav.toc{
+    display:flex; flex-wrap:wrap; gap:.5rem; margin-bottom:3rem;
+  }
+  nav.toc a{
+    font-size:.8rem; font-weight:600; color:var(--ink-soft); text-decoration:none;
+    border:1px solid var(--line); border-radius:999px; padding:.35rem .85rem;
+    transition:border-color .15s, color .15s;
+  }
+  nav.toc a:hover, nav.toc a:focus-visible{ color:var(--accent); border-color:var(--accent); outline:none;}
+
+  section{ margin-bottom:3.6rem; scroll-margin-top:1.5rem; }
+  h2{
+    font-size:1.4rem; font-weight:800; letter-spacing:-.005em; margin:0 0 1.1rem;
+    padding-left:.85rem; border-left:4px solid var(--accent);
+  }
+  h3{ font-size:1.02rem; font-weight:700; margin:0 0 .5rem; }
+  p{ margin:0 0 1rem; max-width:72ch; }
+  .lede{ color:var(--ink-soft); max-width:70ch; }
+
+  /* ---- stat tiles ---- */
+  .tiles{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr));
+    gap:.9rem; margin-top:1.4rem;
+  }
+  .tile{
+    background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--sev,var(--line));
+    border-radius:6px; padding:.9rem 1rem;
+  }
+  .tile .n{ font-family:var(--font-mono); font-size:1.5rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .tile .l{ font-size:.8rem; color:var(--ink-soft); margin-top:.15rem; }
+
+  /* ---- mermaid ---- */
+  .diagram{
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:8px;
+    padding:1.2rem; overflow-x:auto; margin-bottom:1.2rem;
+  }
+
+  /* ---- comparison table ---- */
+  .tablewrap{ overflow-x:auto; border:1px solid var(--line); border-radius:8px; }
+  table{ border-collapse:collapse; width:100%; min-width:760px; font-size:.86rem; }
+  thead th{
+    text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--ink-soft); background:var(--accent-soft); padding:.7rem .9rem;
+    position:sticky; top:0;
+  }
+  thead th:first-child{ position:sticky; left:0; z-index:2; }
+  tbody th{
+    text-align:left; font-weight:600; padding:.7rem .9rem; white-space:nowrap;
+    background:var(--paper-raised); position:sticky; left:0;
+    border-right:1px solid var(--line);
+  }
+  tbody td{ padding:.7rem .9rem; border-top:1px solid var(--line); vertical-align:top; }
+  tbody tr:nth-child(even) td, tbody tr:nth-child(even) th{ background:color-mix(in srgb, var(--paper) 55%, var(--paper-raised)); }
+
+  .chip{
+    display:inline-flex; align-items:center; gap:.35rem; font-size:.74rem; font-weight:700;
+    padding:.18rem .55rem; border-radius:999px; white-space:nowrap;
+  }
+  .chip::before{ content:""; width:.45rem; height:.45rem; border-radius:50%; background:currentColor; }
+  .chip.ausente{ background:var(--crit-soft); color:var(--crit); }
+  .chip.parcial{ background:var(--warn-soft); color:var(--warn); }
+  .chip.implementado{ background:var(--info-soft); color:var(--info); }
+  .chip.diferencial{ background:var(--ok-soft); color:var(--ok); }
+  .cellnote{ display:block; color:var(--ink-soft); font-size:.78rem; margin-top:.3rem; }
+
+  .legend{ display:flex; flex-wrap:wrap; gap:.9rem; margin:.9rem 0 0; font-size:.78rem; color:var(--ink-soft); }
+  .legend span{ display:inline-flex; align-items:center; gap:.4rem; }
+  .legend i{ width:.6rem; height:.6rem; border-radius:50%; }
+
+  /* ---- findings ---- */
+  .finding{
+    background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid var(--sev);
+    border-radius:6px; padding:1rem 1.2rem; margin-bottom:.9rem;
+  }
+  .finding-head{ display:flex; align-items:baseline; gap:.7rem; flex-wrap:wrap; margin-bottom:.4rem; }
+  .finding-head h3{ margin:0; }
+  .finding .src{ font-family:var(--font-mono); font-size:.74rem; color:var(--ink-soft); }
+  .finding p{ margin:.3rem 0; font-size:.92rem; }
+  .finding .rec{ margin-top:.5rem; padding-top:.5rem; border-top:1px dashed var(--line); font-size:.92rem; }
+  .finding .rec b{ color:var(--accent); }
+
+  /* ---- roadmap ---- */
+  .roadmap{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; }
+  .rm-col{ background:var(--paper-raised); border:1px solid var(--line); border-radius:8px; padding:1rem 1.1rem; }
+  .rm-col h3{ display:flex; justify-content:space-between; align-items:center; }
+  .rm-tag{ font-family:var(--font-mono); font-size:.68rem; color:var(--ink-soft); font-weight:400; }
+  .rm-col ul{ margin:.6rem 0 0; padding-left:1.1rem; font-size:.88rem; }
+  .rm-col li{ margin-bottom:.55rem; }
+  .rm-col.quick{ border-top:3px solid var(--ok); }
+  .rm-col.mid{ border-top:3px solid var(--info); }
+  .rm-col.strat{ border-top:3px solid var(--accent); }
+
+  footer{ border-top:1px solid var(--line); padding-top:1.2rem; font-size:.8rem; color:var(--ink-soft); }
+  footer ul{ padding-left:1.1rem; }
+  footer a{ color:var(--ink-soft); }
+  a{ color:var(--accent); }
+</style>
+
+<div class="page">
+  <div class="wrap">
+
+    <p class="eyebrow">Auditoria técnica &amp; comparativo de mercado</p>
+    <h1>Ordem de Serviço no AgrisData: como funciona hoje, como o mercado agro resolve o mesmo problema, e o que priorizar</h1>
+    <p class="dek">Mapeamento do módulo <code>operacoes_campo</code> a partir do código-fonte (modelos, views, PWA de campo), confrontado com o posicionamento público de Aegro, Solinftec e TOTVS Agro para a mesma função: planejamento e execução de operações agrícolas.</p>
+    <div class="meta">
+      <span>Escopo: <b>operacoes_campo · cadastros/portal_campo · estoque</b></span>
+      <span>Data: <b>29 jul 2026</b></span>
+      <span>Base: <b>leitura direta do código</b>, não da documentação de produto</span>
+    </div>
+
+    <nav class="toc">
+      <a href="#resumo">Resumo executivo</a>
+      <a href="#fluxo">Como funciona hoje</a>
+      <a href="#e2e">Preparo de solo → colheita</a>
+      <a href="#comparativo">Comparativo de mercado</a>
+      <a href="#achados">Achados priorizados</a>
+      <a href="#roadmap">O que fazer</a>
+      <a href="#fontes">Fontes</a>
+    </nav>
+
+    <section id="resumo">
+      <h2>Resumo executivo</h2>
+      <p class="lede">O módulo de OS do AgrisData já cobre o ciclo completo — planejamento, execução em campo (com PWA), custo real por talhão e comparação com o orçado — e nisso está no mesmo patamar dos concorrentes. Os gaps não são de funcionalidade ausente, são de <b>solidez do fluxo</b>: não há segregação entre quem solicita e quem aprova, "cancelar" uma OS na prática apaga a linha do banco, a baixa de estoque fica pendente de um passo manual, o app offline não repõe metade das mutações quando a conexão volta, e nada disso tem teste automatizado.</p>
+      <div class="tiles">
+        <div class="tile" style="--sev:var(--crit)">
+          <div class="n">0</div>
+          <div class="l">testes automatizados cobrindo a máquina de estados de OS</div>
+        </div>
+        <div class="tile" style="--sev:var(--crit)">
+          <div class="n">0</div>
+          <div class="l">níveis de aprovação — qualquer usuário do módulo aprova a própria OS</div>
+        </div>
+        <div class="tile" style="--sev:var(--warn)">
+          <div class="n">2/8</div>
+          <div class="l">endpoints de campo com replay funcionando quando volta a conexão</div>
+        </div>
+        <div class="tile" style="--sev:var(--warn)">
+          <div class="n">2 etapas</div>
+          <div class="l">manuais para a baixa de estoque virar saldo de fato</div>
+        </div>
+        <div class="tile" style="--sev:var(--crit)">
+          <div class="n">1/5</div>
+          <div class="l">transições de estado do ciclo agrícola protegidas por transação (só a conclusão da OS)</div>
+        </div>
+      </div>
+      <p style="margin-top:1.1rem;">Além da governança de OS, foi pedido um exame específico da cadeia <b>preparo de solo → estufa/muda → plantio/transplantio → colheita</b>: veja <a href="#e2e">"Preparo de solo → colheita"</a> abaixo — ali estão os pontos que hoje impedem operar esse ciclo de ponta a ponta sem intervenção manual fora do fluxo de OS.</p>
+    </section>
+
+    <section id="fluxo">
+      <h2>Como funciona hoje</h2>
+      <p class="lede">Estados formais em <code>OrdemServico.status</code>: <code>ABERTA → APROVADA → EM_ANDAMENTO → CONCLUIDA</code>, mais um <code>CANCELADA</code> que existe no enum mas nunca é atribuído por nenhuma tela.</p>
+      <div class="diagram">
+        <pre class="mermaid">
+stateDiagram-v2
+    [*] --> ABERTA: os_create
+    ABERTA --> APROVADA: os_aprovar (sem checagem de quem aprova)
+    ABERTA --> APROVADA: atribuir responsável (aprovação implícita)
+    APROVADA --> EM_ANDAMENTO: os_iniciar / campo_os_iniciar
+    EM_ANDAMENTO --> EM_ANDAMENTO: pausar / retomar (intervalos)
+    APROVADA --> CONCLUIDA: os_concluir (pula EM_ANDAMENTO)
+    EM_ANDAMENTO --> CONCLUIDA: os_concluir
+    ABERTA --> [*]: os_delete (exclusão física)
+    APROVADA --> [*]: os_delete (exclusão física)
+    CANCELADA --> CANCELADA: nunca atribuído por nenhuma view
+        </pre>
+      </div>
+      <p>Três mecânicas definem o comportamento real do módulo:</p>
+      <p><b>Mão de obra em dois relógios.</b> <code>OSFuncionario</code> é alocação manual (hora digitada); <code>OSIntervalo</code> é apontamento em tempo real feito pelo operador no Portal do Campo (com GPS opcional no clique de iniciar/retomar). Quando os dois existem para a mesma pessoa, o intervalo sempre vence no cálculo de custo — não há soma dos dois.</p>
+      <p><b>Baixa de estoque em duas etapas.</b> Concluir a OS cria uma <code>MovimentacaoEstoque</code> com status <code>PENDENTE</code>; o saldo do produto só é debitado quando o almoxarifado a executa manualmente em Estoque → Movimentações. Até lá, o insumo fica reservado (não subtraído) via <code>reservas_por_produto()</code>.</p>
+      <p><b>Dois canais, duas regras.</b> O fluxo administrativo valida saldo de estoque disponível antes de deixar concluir a OS; o Portal do Campo (mobile) não faz essa validação — o operador em campo pode concluir consumindo mais do que existe em estoque.</p>
+    </section>
+
+    <section id="e2e">
+      <h2>Preparo de solo → estufa → plantio → colheita: onde o fluxo quebra</h2>
+      <p class="lede">A pergunta era direta: dá para operar esse ciclo inteiro em produção sem "gambiarra" fora do sistema de OS? <b>Hoje, não.</b> A cadeia funciona em pedaços isolados corretamente, mas não há continuidade automática entre eles — o elo que deveria ligar "preparo de solo concluído" a "pode plantar" nunca é escrito por nenhuma OS, e 4 das 5 transições de estado do ciclo não estão protegidas por transação.</p>
+
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart LR
+    PS["OS Preparo de Solo\nCONCLUIDA"] -. "não seta<br/>pronto_para_plantio" .-> GATE
+    GATE{"Talhão apto?\npronto_para_plantio"} -- "só via edição\nmanual do Talhão" --> EST
+    MUDA["Estufa: LoteMuda\nPRONTO"] --> EST["OS Transplantio"]
+    EST -- "dupla alocação\npossível na criação" --> PLANT["Talhão: PLANTADO"]
+    PD["OS Plantio direto"] -. "nenhum gate\nagronômico" .-> PLANT
+    PLANT --> TRAT["OS Tratos Culturais\nAdubação / Irrigação / Pulverização"]
+    TRAT --> COL["OS Colheita\nEtapaColheita"]
+    COL -- "etapa_concluir\nnão é atômico" --> DESC["Talhão: DESCANSO"]
+    COL -. "LoteProducao pode\nfalhar em silêncio" .-> PACK["Packing"]
+    DESC -. "só reabre com novo\npasso manual" .-> PS
+
+    classDef bad stroke:#b23a2e,stroke-width:2px,stroke-dasharray: 4 3;
+    classDef warn stroke:#a9791f,stroke-width:2px;
+    class GATE,PD bad;
+    class EST,COL warn;
+        </pre>
+      </div>
+      <p class="cellnote" style="max-width:72ch;">Linhas tracejadas = elo ausente (não existe no código). Linhas contínuas com aviso = existe, mas com falha conhecida.</p>
+
+      <h3 style="margin-top:1.8rem;">Bloqueadores — impedem o uso ponta a ponta hoje</h3>
+
+      <div class="finding" style="--sev:var(--crit)">
+        <div class="finding-head">
+          <span class="chip ausente">Bloqueador</span>
+          <h3>Preparo de Solo não fecha o ciclo com o Talhão</h3>
+          <span class="src">cadastros/models.py:2678 (pronto_para_plantio) · operacoes_campo/views_os.py:1618-1806 (os_concluir)</span>
+        </div>
+        <p>Concluir uma OS de <code>PREPARO_SOLO</code> não escreve nada no Talhão. O único gate agronômico que o sistema tem — RN-19, que exige <code>Talhao.pronto_para_plantio=True</code> para permitir transplantio — depende de um campo que <b>nenhuma OS jamais define como verdadeiro</b>. Ele nasce <code>False</code> em todo talhão novo e só existe um jeito de ligá-lo: entrar na tela de edição do Talhão e marcar a checkbox manualmente, sem nenhuma exigência de que exista de fato uma OS de preparo de solo concluída por trás.</p>
+        <p class="rec"><b>Como resolver:</b> dentro do <code>transaction.atomic()</code> já existente em <code>os_concluir</code>, quando <code>tipo_legado == 'PREPARO_SOLO'</code>, setar <code>talhao.pronto_para_plantio = True</code> (e opcionalmente carimbar <code>data_preparo_solo</code>/OS de origem para auditoria). É a mudança mínima que faz o campo nascer do fluxo de OS em vez de depender de edição manual.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--crit)">
+        <div class="finding-head">
+          <span class="chip ausente">Bloqueador</span>
+          <h3>Plantio direto (sem transplante) não tem gate nenhum</h3>
+          <span class="src">operacoes_campo/forms.py:129-189 (OrdemServicoForm.clean)</span>
+        </div>
+        <p><code>clean()</code> só tem dois blocos de validação cruzada com o Talhão: um para colheita (status) e um para transplantio (<code>pronto_para_plantio</code>). Para OS de <code>PLANTIO</code> sem subtipo Transplante, não existe terceiro bloco — qualquer talhão ativo aceita uma OS de plantio, tenha ou não passado por preparo de solo.</p>
+        <p class="rec"><b>Como resolver:</b> replicar a mesma checagem de <code>pronto_para_plantio</code> também para <code>tipo_legado == 'PLANTIO'</code> sem transplante, não só para o subtipo Transplante — hoje a regra existe só "pela metade".</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--crit)">
+        <div class="finding-head">
+          <span class="chip ausente">Bloqueador</span>
+          <h3>A tela de edição do Talhão contorna toda a state machine</h3>
+          <span class="src">cadastros/forms.py:2005-2014 (TalhaoForm) · cadastros/views.py:3411-3434 (talhao_update)</span>
+        </div>
+        <p><code>status</code> e <code>pronto_para_plantio</code> são campos comuns e editáveis em <code>talhao_update</code>, sem checagem de papel e sem validar se a transição faz sentido. Qualquer usuário logado pode colocar o talhão em <code>PLANTADO</code> ou <code>COLHEITA</code> direto pela tela de cadastro, sem OS nenhuma por trás — o que também explica por que o gate de preparo de solo (item acima) tende a virar rotina operacional: como o sistema não fecha o ciclo sozinho, a equipe aprende a "destravar" pelo cadastro do talhão.</p>
+        <p class="rec"><b>Como resolver:</b> tornar <code>status</code> e <code>pronto_para_plantio</code> somente-leitura no formulário padrão do Talhão (exibidos, não editáveis), deixando-os como consequência exclusiva das transições de OS. Se for necessário um ajuste manual excepcional, restringir a admin da empresa com log de auditoria.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--crit)">
+        <div class="finding-head">
+          <span class="chip ausente">Bloqueador</span>
+          <h3>4 das 5 transições de estado do ciclo não são atômicas</h3>
+          <span class="src">views_os.py: os_create (747-858) · os_update (1372-1461) · os_iniciar (1507-1576) · views_colheita.py: etapa_concluir (145-226)</span>
+        </div>
+        <p>Só <code>os_concluir</code> roda dentro de <code>transaction.atomic()</code>. Nas outras quatro, uma falha no meio da sequência de <code>save()</code>s deixa dado inconsistente e, em três delas, nem sequer captura a exceção (erro 500 cru para o usuário):</p>
+        <p>· <code>os_create</code>/<code>os_update</code>: se a validação do <code>OSTransplantio</code> falhar depois que a <code>OrdemServico</code> já foi salva, sobra uma OS "fantasma" em <code>ABERTA</code>, sem transplantio associado.<br>
+        · <code>os_iniciar</code>: a OS vira <code>EM_ANDAMENTO</code> antes de <code>talhao.iniciar_cultivo()</code> ser chamado — se essa chamada falhar, a OS avançou mas o talhão não.<br>
+        · <code>etapa_concluir</code>: se o processo cair entre salvar a etapa e chamar <code>talhao.finalizar_cultivo()</code>, o talhão fica preso em <code>COLHEITA</code> sem liberação para o próximo ciclo.</p>
+        <p class="rec"><b>Como resolver:</b> envolver as quatro views no mesmo padrão já usado em <code>os_concluir</code> — <code>transaction.atomic()</code> + <code>try/except</code> com mensagem de erro amigável e rollback. É a correção de maior alavancagem da lista: sem ela, qualquer outro ajuste no fluxo continua exposto a dado inconsistente em produção.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--warn)">
+        <div class="finding-head">
+          <span class="chip parcial">Alto</span>
+          <h3>Duas OS de transplantio podem reivindicar o mesmo lote de mudas inteiro</h3>
+          <span class="src">estufas/models.py:96-108 · operacoes_campo/models.py:387-393 (OSTransplantio.clean) · views_os.py:1545-1556</span>
+        </div>
+        <p><code>quantidade_disponivel</code> do lote só desconta transplantios em OS <code>EM_ANDAMENTO</code>/<code>CONCLUIDA</code> — enquanto duas OS ficam <code>ABERTA</code>/<code>APROVADA</code> ao mesmo tempo, cada uma pode passar na validação de criação pedindo 100% do mesmo lote, porque nenhuma "vê" a outra. O sistema só percebe o conflito ao tentar <b>iniciar</b> a segunda, travando-a em <code>APROVADA</code> até correção manual da quantidade — não corrompe dado, mas gera retrabalho não sinalizado na tela de criação. Não há <code>select_for_update()</code> em lugar nenhum do fluxo, então também existe uma janela residual de corrida em iniciações simultâneas.</p>
+        <p class="rec"><b>Como resolver:</b> contar OS <code>ABERTA</code>/<code>APROVADA</code> como reserva provisória no cálculo de <code>quantidade_disponivel</code> (não só <code>EM_ANDAMENTO</code>/<code>CONCLUIDA</code>), e usar <code>select_for_update()</code> no <code>LoteMuda</code> ao validar/iniciar transplantio.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--warn)">
+        <div class="finding-head">
+          <span class="chip parcial">Alto</span>
+          <h3>Geração do lote de produção na colheita falha em silêncio</h3>
+          <span class="src">operacoes_campo/views_colheita.py:177-192 (etapa_concluir)</span>
+        </div>
+        <p>A criação do <code>LoteProducao</code> — o elo entre colheita e packing (RF-109) — está dentro de um <code>except Exception: pass</code> explícito. Se falhar, a etapa é concluída e o talhão liberado normalmente, mas <b>nenhum lote chega ao packing e ninguém é avisado</b>.</p>
+        <p class="rec"><b>Como resolver:</b> manter a etapa concluindo mesmo se o lote falhar (não travar a colheita por isso), mas registrar o erro (log) e mostrar um aviso não bloqueante na tela, com opção de gerar o lote manualmente depois.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--info)">
+        <div class="finding-head">
+          <span class="chip implementado">Médio</span>
+          <h3>Lote de muda com perda total nunca é encerrado</h3>
+          <span class="src">estufas/models.py:44-59 (STATUS_AVANCAR, get_lotes_ativos)</span>
+        </div>
+        <p>O status <code>ENCERRADO</code> existe no enum mas nenhum código o atribui. Um lote com 100% de perda (via <code>PerdaEstufa</code>), sem nunca ter sido transplantado, continua listado como "ativo" para sempre.</p>
+        <p class="rec"><b>Como resolver:</b> ao registrar perda que zera <code>quantidade_disponivel</code> de um lote nunca transplantado, setar <code>status='ENCERRADO'</code> automaticamente; alternativamente, oferecer ação manual "encerrar lote" na tela de estufa.</p>
+      </div>
+
+      <h3 style="margin-top:1.8rem;">O que já funciona corretamente nessa cadeia</h3>
+      <p>Vale registrar o que <b>não</b> precisa de conserto: <code>os_concluir</code> já é atômico e cobre corretamente o consumo do lote de mudas e a geração de custo; <code>finalizar_cultivo()</code> devolve o talhão para <code>DESCANSO</code> de forma consistente ao fim do ciclo; o bloqueio de OS de colheita fora de hora (talhão não <code>PLANTADO</code>/<code>COLHEITA</code>) funciona; e a checagem de saldo de mudas em <code>os_iniciar</code> nunca deixa o lote ficar negativo — apenas trava a segunda OS até ajuste manual, o que é seguro, ainda que operacionalmente rústico.</p>
+    </section>
+
+    <section id="comparativo">
+      <h2>Comparativo com o nicho</h2>
+      <p class="lede">Aegro, Solinftec e TOTVS Agro (Multicultivo/Bioenergia) atacam o mesmo problema — converter planejamento de safra em execução de campo rastreável — com ênfases diferentes: Aegro em simplicidade e custo por talhão para o produtor médio, Solinftec em telemetria e automação de máquina, TOTVS Agro em governança e indicadores para operações grandes/corporativas.</p>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Dimensão</th>
+              <th scope="col">AgrisData hoje</th>
+              <th scope="col">Aegro</th>
+              <th scope="col">Solinftec</th>
+              <th scope="col">TOTVS Agro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Aprovação / SoD</th>
+              <td><span class="chip ausente">Ausente</span><span class="cellnote">quem cria pode aprovar a própria OS</span></td>
+              <td><span class="chip parcial">Parcial</span><span class="cellnote">foco em planejamento simples, não alçada</span></td>
+              <td><span class="chip parcial">Parcial</span><span class="cellnote">agendamento otimizado, não é o foco</span></td>
+              <td><span class="chip diferencial">Diferencial</span><span class="cellnote">workflow de aprovação configurável por campo/alçada</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Cancelamento / auditoria</th>
+              <td><span class="chip ausente">Ausente</span><span class="cellnote">"excluir" apaga a linha do banco</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+            </tr>
+            <tr>
+              <th scope="row">App de campo offline</th>
+              <td><span class="chip parcial">Parcial</span><span class="cellnote">PWA existe, mas só 2 de ~8 ações mutáveis fazem replay ao reconectar</span></td>
+              <td><span class="chip diferencial">Diferencial</span><span class="cellnote">acesso offline completo com sync automático (posicionamento próprio)</span></td>
+              <td><span class="chip implementado">Implementado</span><span class="cellnote">ênfase em captura automática via telemetria, menos em apontamento manual</span></td>
+              <td><span class="chip implementado">Implementado</span><span class="cellnote">módulos de captura móvel para atividades manuais e mecanizadas</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Baixa de estoque no consumo</th>
+              <td><span class="chip parcial">Parcial</span><span class="cellnote">gera movimentação, mas baixa efetiva exige passo manual do almoxarifado</span></td>
+              <td><span class="chip implementado">Implementado</span><span class="cellnote">rateio automático de custo por talhão</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Custo orçado × realizado</th>
+              <td><span class="chip diferencial">Diferencial</span><span class="cellnote">planejamento por fase/cultura, formação de preço multi-moeda, comparativo reescalado por área</span></td>
+              <td><span class="chip implementado">Implementado</span><span class="cellnote">rateio de custo por talhão ao fim da safra</span></td>
+              <td><span class="chip parcial">Parcial</span><span class="cellnote">forte em custo operacional de máquina, menos em planejamento financeiro de safra</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Indicadores de backlog de OS</th>
+              <td><span class="chip ausente">Ausente</span><span class="cellnote">só Kanban/matriz, sem métrica agregada (aging, taxa de conclusão)</span></td>
+              <td><span class="chip parcial">Parcial</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+              <td><span class="chip diferencial">Diferencial</span><span class="cellnote">gráficos de OS por status e por faixa de dias em aberto</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Telemetria de máquina (horímetro/ISOBUS)</th>
+              <td><span class="chip ausente">Ausente</span><span class="cellnote">horímetro é digitado; integração via CANBUS/ISOBUS está no roadmap (Fase 7)</span></td>
+              <td><span class="chip parcial">Parcial</span></td>
+              <td><span class="chip diferencial">Diferencial</span><span class="cellnote">plataforma nasceu em telemetria de máquina/agricultura de precisão</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Rastreabilidade por corte/etapa de colheita</th>
+              <td><span class="chip diferencial">Diferencial</span><span class="cellnote">1 OS por corte, gera lote de produção automaticamente para o packing</span></td>
+              <td><span class="chip parcial">Parcial</span></td>
+              <td><span class="chip implementado">Implementado</span><span class="cellnote">forte em cana-de-açúcar/bioenergia</span></td>
+              <td><span class="chip implementado">Implementado</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Compliance (receituário agronômico)</th>
+              <td><span class="chip ausente">Ausente</span><span class="cellnote">campo existe só no Caderno de Campo, opcional; não bloqueia conclusão de OS</span></td>
+              <td><span class="chip parcial">Parcial</span></td>
+              <td><span class="chip parcial">Parcial</span></td>
+              <td><span class="chip implementado">Implementado</span><span class="cellnote">módulo de controle de qualidade de operações</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--crit)"></i>Ausente</span>
+        <span><i style="background:var(--warn)"></i>Parcial</span>
+        <span><i style="background:var(--info)"></i>Implementado</span>
+        <span><i style="background:var(--ok)"></i>Diferencial</span>
+      </div>
+      <p class="cellnote" style="margin-top:1rem;max-width:72ch;">Colunas de concorrentes refletem posicionamento público (sites, central de ajuda) pesquisado em jul/2026, não teste direto dos produtos — usar como leitura direcional de mercado, não como especificação exata de feature.</p>
+    </section>
+
+    <section id="achados">
+      <h2>Achados priorizados</h2>
+
+      <div class="finding" style="--sev:var(--crit)">
+        <div class="finding-head">
+          <span class="chip ausente">Crítico</span>
+          <h3>Não há segregação de funções na aprovação</h3>
+          <span class="src">views_os.py — os_aprovar, os_atribuir_responsavel</span>
+        </div>
+        <p>Qualquer usuário com acesso ao módulo pode aprovar a própria OS; atribuir responsável também aprova implicitamente, sem passar por <code>os_aprovar</code>. O campo <code>aprovador</code> só registra quem clicou, não restringe quem pode clicar.</p>
+        <p class="rec"><b>Recomendação:</b> bloquear aprovador == solicitante como regra mínima; evoluir para alçada por custo estimado ou tipo de serviço (ex. defensivo) no médio prazo, no padrão do TOTVS Agro.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--crit)">
+        <div class="finding-head">
+          <span class="chip ausente">Crítico</span>
+          <h3>"Cancelar" OS apaga a linha do banco</h3>
+          <span class="src">views_os.py — os_delete</span>
+        </div>
+        <p>O status <code>CANCELADA</code> existe no enum, aparece em estatísticas e badges, mas nenhuma view o atribui — o botão de exclusão faz <code>delete()</code> físico, quebrando o padrão de soft-delete do resto do sistema e apagando histórico de OS descartadas (relevante para auditoria/GLOBALG.A.P.).</p>
+        <p class="rec"><b>Recomendação:</b> trocar <code>os_delete</code> por uma transição real para <code>CANCELADA</code>, com motivo obrigatório; restringir exclusão física a superusuário, se necessário.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--warn)">
+        <div class="finding-head">
+          <span class="chip parcial">Alto</span>
+          <h3>PWA offline não repõe a maior parte das ações</h3>
+          <span class="src">views_portal_campo.py — _process_offline_mutation / sw.js</span>
+        </div>
+        <p>O service worker enfileira qualquer POST offline e devolve sucesso falso para a UI, mas o backend só sabe reprocessar <code>iniciar</code> e <code>executar</code>. Concluir OS e os CRUDs de trabalhador/máquina/insumo lançados sem sinal são perdidos silenciosamente — justamente o cenário de área rural sem cobertura que motivou o app.</p>
+        <p class="rec"><b>Recomendação:</b> implementar replay para os endpoints restantes antes de divulgar o app como "funciona offline"; enquanto isso, sinalizar na UI quando uma ação ficou só em fila local.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--warn)">
+        <div class="finding-head">
+          <span class="chip parcial">Alto</span>
+          <h3>Validação de estoque diverge entre admin e campo</h3>
+          <span class="src">views_os.py:os_concluir vs views_portal_campo.py:campo_os_concluir</span>
+        </div>
+        <p>O fluxo administrativo bloqueia conclusão se o saldo disponível for insuficiente; o Portal do Campo não faz essa checagem — o operador em campo consegue concluir consumindo mais do que o estoque comporta.</p>
+        <p class="rec"><b>Recomendação:</b> replicar a validação de <code>reservas_por_produto</code> em <code>campo_os_concluir</code>, com mensagem adequada para tela mobile.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--warn)">
+        <div class="finding-head">
+          <span class="chip parcial">Alto</span>
+          <h3>RN-02 (receituário obrigatório) não é reforçada na OS</h3>
+          <span class="src">forms.py:714 — receituario_numero opcional, só no Caderno de Campo</span>
+        </div>
+        <p>O número do receituário agronômico só existe como campo opcional em <code>RegistroCadernoCampoInsumo</code>. Nada em <code>OrdemServicoInsumo</code> ou <code>os_concluir</code> impede dar baixa de um defensivo sem receituário vinculado.</p>
+        <p class="rec"><b>Recomendação:</b> exigir receituário na conclusão quando o produto aplicado for classificado como defensivo/agrotóxico.</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--info)">
+        <div class="finding-head">
+          <span class="chip implementado">Médio</span>
+          <h3>Zero testes automatizados no fluxo de OS</h3>
+          <span class="src">operacoes_campo/tests.py — cobre só recepção de packing</span>
+        </div>
+        <p>Máquina de estados, cálculo de custo (<code>CustoTalhao.recalcular</code>) e validação de estoque não têm nenhuma rede de segurança automatizada — qualquer regressão só é pega manualmente.</p>
+        <p class="rec"><b>Recomendação:</b> priorizar testes antes de qualquer refatoração dos pontos críticos acima (aprovação, conclusão, baixa de estoque).</p>
+      </div>
+
+      <div class="finding" style="--sev:var(--info)">
+        <div class="finding-head">
+          <span class="chip implementado">Médio</span>
+          <h3>Sem indicador agregado de backlog de OS</h3>
+          <span class="src">os_list.html — só Kanban e matriz Talhão × Tipo</span>
+        </div>
+        <p>O TOTVS Agro Bioenergia expõe explicitamente gráficos de OS não iniciadas/em andamento/encerradas e OS abertas por faixa de dias — uma visão gerencial que o AgrisData não tem hoje (só listagem operacional).</p>
+        <p class="rec"><b>Recomendação:</b> adicionar um painel simples de aging (dias desde abertura sem aprovação/conclusão) ao dashboard existente.</p>
+      </div>
+
+    </section>
+
+    <section id="roadmap">
+      <h2>O que priorizar</h2>
+      <div class="roadmap">
+        <div class="rm-col quick">
+          <h3>Agora <span class="rm-tag">baixo esforço</span></h3>
+          <ul>
+            <li><b>[bloqueia uso ponta a ponta]</b> Em <code>os_concluir</code>, quando o tipo for Preparo de Solo, setar <code>talhao.pronto_para_plantio=True</code></li>
+            <li><b>[bloqueia uso ponta a ponta]</b> Estender a checagem de <code>pronto_para_plantio</code> também para plantio direto (não só transplantio)</li>
+            <li><b>[bloqueia uso ponta a ponta]</b> Envolver <code>os_create</code>, <code>os_update</code>, <code>os_iniciar</code> e <code>etapa_concluir</code> em <code>transaction.atomic()</code></li>
+            <li><b>[bloqueia uso ponta a ponta]</b> Tornar <code>status</code>/<code>pronto_para_plantio</code> do Talhão somente-leitura no formulário padrão</li>
+            <li>Bloquear aprovador == solicitante em <code>os_aprovar</code></li>
+            <li>Transformar <code>os_delete</code> em transição para <code>CANCELADA</code> com motivo</li>
+            <li>Replicar validação de saldo de estoque no Portal do Campo</li>
+            <li>Exigir receituário na conclusão para produtos defensivos</li>
+            <li>Corrigir geração de <code>numero</code> da OS com lock (evitar colisão sob concorrência)</li>
+          </ul>
+        </div>
+        <div class="rm-col mid">
+          <h3>Próximo trimestre <span class="rm-tag">médio prazo</span></h3>
+          <ul>
+            <li>Reservar quantidade de mudas para OS <code>ABERTA</code>/<code>APROVADA</code> (evitar dupla alocação do mesmo lote) + <code>select_for_update()</code></li>
+            <li>Tratar falha na geração do <code>LoteProducao</code> ao concluir colheita: logar e avisar, não engolir</li>
+            <li>Encerrar automaticamente <code>LoteMuda</code> com perda total nunca transplantado</li>
+            <li>Testes automatizados da máquina de estados e do cálculo de custo</li>
+            <li>Completar replay offline do PWA para todos os endpoints mutáveis</li>
+            <li>Painel de aging/backlog de OS no dashboard</li>
+            <li>Concluir migração do campo <code>tipo</code> legado para o catálogo estruturado</li>
+          </ul>
+        </div>
+        <div class="rm-col strat">
+          <h3>Estratégico <span class="rm-tag">roadmap</span></h3>
+          <ul>
+            <li>Workflow de aprovação por alçada (custo estimado / tipo de serviço)</li>
+            <li>Automatizar baixa de estoque na conclusão, com opção por empresa</li>
+            <li>Telemetria de máquina via ISOBUS/CANBUS (já mapeado como RF-118, Fase 7)</li>
+            <li>Unificar <code>OSMaquina</code> e <code>FrotaColheita</code> num único modelo de alocação de máquina</li>
+            <li>Conectar custo estimado da OS ao módulo de Planejamento de Custo de Safra</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer id="fontes">
+      <h3 style="color:var(--ink); font-size:.85rem; text-transform:uppercase; letter-spacing:.05em;">Fontes de mercado consultadas (jul/2026)</h3>
+      <ul>
+        <li><a href="https://aegro.com.br/funcionalidades/">Aegro — Funcionalidades para gestão rural</a></li>
+        <li><a href="https://aegro.com.br/solucoes/gestao-rural/">Aegro — Gestão Rural</a></li>
+        <li><a href="https://www.solinftec.com/pt-br/">Solinftec — Plataforma de Software</a></li>
+        <li><a href="https://www.solinftec.com/pt-br/utilizacao-da-maquina/">Solinftec — Utilização da máquina</a></li>
+        <li><a href="https://produtos.totvs.com/agro/totvs-agro-bioenergia/totvs-agro-bioenergia-12-1-2301/">TOTVS Agro Bioenergia — Novidades</a></li>
+        <li><a href="https://produtos.totvs.com/ficha-tecnica/tudo-sobre-o-totvs-agro-multicultivo/">TOTVS Agro Multicultivo — Ficha técnica</a></li>
+      </ul>
+      <p style="margin-top:.8rem;">Base interna: leitura de <code>operacoes_campo/models.py</code>, <code>views_os.py</code>, <code>views_colheita.py</code>, <code>views_planejamento_custo.py</code>, <code>cadastros/views_portal_campo.py</code>, <code>estoque/disponibilidade.py</code>, <code>core/middleware/role_enforcement.py</code> e <code>docs/1_ARQUITETURA/PRD.md</code>.</p>
+    </footer>
+
+  </div>
+</div>

@@ -461,8 +461,16 @@ class Funcionario(models.Model):
     foto = models.ImageField('Foto', upload_to='funcionarios/fotos/%Y/%m/', blank=True, null=True)
     ativo = models.BooleanField('Funcionário Ativo', default=True)
 
-    pin_portal = models.CharField('PIN (Portal do Campo)', max_length=128, blank=True)
+    pin_portal = models.CharField(
+        'PIN (legado)', max_length=128, blank=True,
+        help_text='Hash pré-migração para login unificado via Usuario. Não usado para autenticação após a migração.'
+    )
     portal_ativo = models.BooleanField('Acesso ao Portal do Campo', default=False)
+    usuario_vinculado = models.OneToOneField(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='funcionario_profile', verbose_name='Usuário do Portal do Campo',
+        help_text='Conta de login unificado (via /login/) para acesso ao Portal do Campo'
+    )
 
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     cadastrado_por = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True, related_name='funcionarios_cadastrados', verbose_name='Cadastrado por')

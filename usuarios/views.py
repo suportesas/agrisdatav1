@@ -342,6 +342,17 @@ def login_view(request):
                     user.groups.add(group)
                 return redirect('portal_motorista:home')
 
+            try:
+                funcionario = user.funcionario_profile
+            except Exception:
+                funcionario = None
+
+            if funcionario and funcionario.ativo and funcionario.portal_ativo:
+                group, _ = Group.objects.get_or_create(name='FUNC_CAMPO')
+                if not user.groups.filter(pk=group.pk).exists():
+                    user.groups.add(group)
+                return redirect('portal_campo:home')
+
             destino = resolver_pagina_inicial(request)
             if destino:
                 return redirect(destino)

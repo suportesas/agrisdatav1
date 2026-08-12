@@ -3640,6 +3640,70 @@ def talhao_detail(request, pk):
     })
 
 
+def _gerar_qrcode_base64(payload):
+    """Gera um QR code em PNG (base64) para o payload informado. Mesmo padrão de usuarios/utils_login.py::criar_qrcode_totp."""
+    import qrcode
+    from io import BytesIO
+    import base64
+
+    qr = qrcode.QRCode(version=1, box_size=10, border=3)
+    qr.add_data(payload)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    return base64.b64encode(buffer.getvalue()).decode()
+
+
+@login_required
+def talhao_qrcode_print(request, pk):
+    """Etiqueta com QR code único do talhão, pronta para impressão e fixação no campo."""
+    empresa = request.user.empresa
+    talhao = get_object_or_404(
+        Talhao.objects.da_empresa(empresa).select_related('fazenda', 'area'),
+        pk=pk
+    )
+
+    talhao.get_or_create_qr_token()
+    qr_b64 = _gerar_qrcode_base64(f'AGRISDATA-TALHAO:{talhao.qr_token}')
+
+    return render(request, 'cadastros/talhao/talhao_qrcode_print.html', {
+        'talhao': talhao,
+        'qr_b64': qr_b64,
+    })
+
+
+@login_required
+def talhao_qrcode_print_bulk(request):
+    """Grid de etiquetas com QR code, uma por talhão selecionado, pronta para impressão em lote."""
+    empresa = request.user.empresa
+    ids = [i for i in request.GET.get('ids', '').split(',') if i.strip().isdigit()]
+
+    talhoes = list(
+        Talhao.objects.da_empresa(empresa)
+        .select_related('fazenda', 'area')
+        .filter(pk__in=ids)
+        .order_by('fazenda__nome', 'area__nome', 'codigo')
+    )
+
+    if not talhoes:
+        messages.warning(request, 'Nenhum talhão selecionado para impressão.')
+        return redirect('cadastros:talhao_list')
+
+    etiquetas = []
+    for talhao in talhoes:
+        talhao.get_or_create_qr_token()
+        etiquetas.append({
+            'talhao': talhao,
+            'qr_b64': _gerar_qrcode_base64(f'AGRISDATA-TALHAO:{talhao.qr_token}'),
+        })
+
+    return render(request, 'cadastros/talhao/talhao_qrcode_print_bulk.html', {
+        'etiquetas': etiquetas,
+    })
+
+
 @login_required
 def historico_create(request, talhao_pk):
     """Cria um registro de histórico para um talhão (usuário da empresa)."""

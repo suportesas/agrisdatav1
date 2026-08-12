@@ -44,14 +44,16 @@
   <div class="alert alert-info rounded-4 mb-4" style="border-left: 4px solid #0dcaf0;">
     <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Como funciona o Portal do Campo?</div>
     <ol class="mb-1 ps-3 small">
-      <li>Configure o CPF e o PIN abaixo</li>
-      <li>No celular do operador, acesse <strong>{{ request.scheme }}://{{ request.get_host }}/portal/campo/</strong></li>
+      <li>Configure o PIN abaixo</li>
+      <li>No celular do operador, acesse <strong>{{ request.scheme }}://{{ request.get_host }}/login/</strong></li>
       <li>O navegador vai oferecer para <strong>Instalar</strong> o app (ícone aparece na tela inicial)</li>
-      <li>Faça login com o <strong>CPF</strong> e o <strong>PIN</strong> definidos aqui</li>
+      <li>Faça login com o <strong>usuário</strong> e o <strong>PIN</strong> definidos aqui — o login é unificado com a tela principal do sistema</li>
     </ol>
+    {% if funcionario.usuario_vinculado %}
     <div class="small text-muted mt-1">
-      CPF do funcionário cadastrado: <strong>{{ funcionario.cpf|default:"(não informado)" }}</strong>
+      Usuário de login: <strong>{{ funcionario.usuario_vinculado.username }}</strong>
     </div>
+    {% endif %}
   </div>
 
   <!-- Formulário -->
@@ -114,10 +116,10 @@
           <div class="small text-muted mt-1">Anote ou mostre ao operador antes de salvar.</div>
         </div>
 
-        {% if funcionario.pin_portal %}
+        {% if funcionario.usuario_vinculado %}
         <div class="alert alert-success rounded-3 py-2 mb-3">
           <i class="bi bi-check-circle me-1"></i>
-          Este funcionário já possui um PIN configurado.
+          Este funcionário já possui acesso configurado (usuário <strong>{{ funcionario.usuario_vinculado.username }}</strong>).
           Preencha os campos acima para <strong>trocar o PIN</strong>.
         </div>
         {% endif %}

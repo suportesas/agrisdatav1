@@ -1,5 +1,5 @@
 """
-Portal do Campo — autenticação por CPF+PIN, execução e conclusão de OS no campo.
+Portal do Campo — login unificado via django.contrib.auth (Usuario vinculado ao Funcionario).
 Mobile-first / PWA: sem sidebar, navegação inferior fixa.
 """
 import json
@@ -9,9 +9,11 @@ from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -25,8 +27,7 @@ from operacoes_campo.models import (
 from frota.models import Vehicle
 from produtos.models import Produto
 
-LOGIN_URL = 'portal_campo:login'
-HOME_URL  = 'portal_campo:home'
+HOME_URL = 'portal_campo:home'
 
 # Mapeamento tipo → template parcial de campos específicos
 _TIPO_FORM_MAP = {
@@ -44,27 +45,39 @@ def _tipo_form_template(os_obj):
     return _TIPO_FORM_MAP.get(os_obj.tipo, 'cadastros/portal_campo/execucao/_form_generico.html')
 
 
+def _talhao_confere(os_obj, dados):
+    """Confere se o QR (ou código digitado) enviado ao iniciar a OS corresponde ao talhão da OS.
+    `dados` é um dict-like (request.POST ou payload da fila offline)."""
+    if not os_obj.talhao_id:
+        return True
+
+    qr_token = (dados.get('talhao_qr_token') or '').strip()
+    if qr_token:
+        return str(os_obj.talhao.qr_token) == qr_token
+
+    codigo_manual = (dados.get('talhao_codigo_manual') or '').strip()
+    if codigo_manual:
+        return codigo_manual.upper() == (os_obj.talhao.codigo or '').upper()
+
+    return False
+
+
 # ──────────────────────────────────────────────────────────────────────────────
-# AUTENTICAÇÃO
+# AUTENTICAÇÃO — login unificado (django.contrib.auth), tela principal /login/
 # ──────────────────────────────────────────────────────────────────────────────
 
-def campo_login_required(view_func):
+def funcionario_campo_login_required(view_func):
+    """Exige um Usuario autenticado com um Funcionario vinculado e ativo no Portal do Campo."""
     @wraps(view_func)
+    @login_required
     def wrapper(request, *args, **kwargs):
-        if 'campo_funcionario_id' not in request.session:
-            return redirect(LOGIN_URL)
+        func = getattr(request.user, 'funcionario_profile', None)
+        if not func or not func.ativo or not func.portal_ativo:
+            messages.error(request, 'Acesso restrito a funcionários do Portal do Campo.')
+            return redirect(settings.LOGIN_URL)
+        request.funcionario = func
         return view_func(request, *args, **kwargs)
     return wrapper
-
-
-def _get_funcionario(request):
-    fid = request.session.get('campo_funcionario_id')
-    if not fid:
-        return None
-    try:
-        return Funcionario.objects.get(pk=fid, ativo=True, portal_ativo=True)
-    except Funcionario.DoesNotExist:
-        return None
 
 
 def _base_ctx(request):
@@ -75,36 +88,14 @@ def _base_ctx(request):
 
 
 def campo_login(request):
-    if request.session.get('campo_funcionario_id'):
-        return redirect(HOME_URL)
-
-    error = None
-    if request.method == 'POST':
-        import re
-        cpf_raw = request.POST.get('cpf', '').strip()
-        pin = request.POST.get('pin', '').strip()
-        cpf_digits = re.sub(r'\D', '', cpf_raw)
-
-        func = None
-        for f in Funcionario.objects.filter(ativo=True, portal_ativo=True):
-            if re.sub(r'\D', '', f.cpf) == cpf_digits:
-                func = f
-                break
-
-        if func and func.check_pin(pin):
-            request.session['campo_funcionario_id'] = func.pk
-            request.session['campo_funcionario_nome'] = func.nome_completo.split()[0]
-            messages.success(request, f'Bem-vindo, {func.nome_completo.split()[0]}!')
-            return redirect(HOME_URL)
-        else:
-            error = 'CPF ou PIN incorretos.'
-
-    return render(request, 'cadastros/portal_campo/login.html', {'error': error})
+    """Compatibilidade com bookmarks antigos — login agora é feito em /login/."""
+    return redirect(f"{settings.LOGIN_URL}?next={reverse(HOME_URL)}")
 
 
 def campo_logout(request):
-    request.session.flush()
-    return redirect(LOGIN_URL)
+    from django.contrib.auth import logout as auth_logout
+    auth_logout(request)
+    return redirect(settings.LOGIN_URL)
 
 
 def campo_sw_js(request):
@@ -126,12 +117,9 @@ def campo_sw_js(request):
 # DASHBOARD
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 def campo_home(request):
-    func = _get_funcionario(request)
-    if not func:
-        request.session.flush()
-        return redirect(LOGIN_URL)
+    func = request.funcionario
 
     hoje = date.today()
     sete_dias = hoje - timedelta(days=7)
@@ -174,12 +162,9 @@ def campo_home(request):
 # DETALHE DA OS
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 def campo_os_detail(request, pk):
-    func = _get_funcionario(request)
-    if not func:
-        request.session.flush()
-        return redirect(LOGIN_URL)
+    func = request.funcionario
 
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
     alocacoes = os_obj.funcionarios_os.select_related('funcionario').order_by('data_execucao', 'hora_inicio')
@@ -219,17 +204,18 @@ def campo_os_detail(request, pk):
 # INICIAR OS
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def campo_os_iniciar(request, pk):
-    func = _get_funcionario(request)
-    if not func:
-        request.session.flush()
-        return redirect(LOGIN_URL)
+    func = request.funcionario
 
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
 
     if os_obj.status == 'APROVADA':
+        if not _talhao_confere(os_obj, request.POST):
+            messages.error(request, 'QR code não confere com o talhão desta OS. Confirme se você está no talhão correto.')
+            return redirect('portal_campo:os_detail', pk=pk)
+
         tipo_legado = os_obj.tipo_legado_efetivo
 
         if tipo_legado == 'PLANTIO':
@@ -279,13 +265,10 @@ def campo_os_iniciar(request, pk):
 # PAUSAR OS
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def campo_os_pausar(request, pk):
-    func = _get_funcionario(request)
-    if not func:
-        request.session.flush()
-        return redirect(LOGIN_URL)
+    func = request.funcionario
 
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
 
@@ -309,13 +292,10 @@ def campo_os_pausar(request, pk):
 # RETOMAR OS
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def campo_os_retomar(request, pk):
-    func = _get_funcionario(request)
-    if not func:
-        request.session.flush()
-        return redirect(LOGIN_URL)
+    func = request.funcionario
 
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
 
@@ -339,12 +319,9 @@ def campo_os_retomar(request, pk):
 # REGISTRAR EXECUÇÃO (dados por tipo de serviço, insumos, máquinas, foto)
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 def campo_os_executar(request, pk):
-    func = _get_funcionario(request)
-    if not func:
-        request.session.flush()
-        return redirect(LOGIN_URL)
+    func = request.funcionario
 
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
 
@@ -418,10 +395,8 @@ def campo_os_executar(request, pk):
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _os_ajax_guard(request, pk):
-    """Retorna (func, os_obj) ou raise Http404 se inválido."""
-    func = _get_funcionario(request)
-    if not func:
-        return None, None
+    """Retorna (func, os_obj)."""
+    func = request.funcionario
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
     return func, os_obj
 
@@ -516,12 +491,10 @@ def _insumo_html(ins):
     )
 
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def ajax_add_worker(request, pk):
     func, os_obj = _os_ajax_guard(request, pk)
-    if not func:
-        return JsonResponse({'success': False, 'error': 'Não autorizado'}, status=403)
     try:
         body = json.loads(request.body)
         fid = int(body['funcionario_id'])
@@ -564,12 +537,10 @@ def ajax_add_worker(request, pk):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def ajax_del_worker(request, pk, item_pk):
     func, os_obj = _os_ajax_guard(request, pk)
-    if not func:
-        return JsonResponse({'success': False}, status=403)
     try:
         OSFuncionario.objects.get(pk=item_pk, os=os_obj).delete()
         return JsonResponse({'success': True})
@@ -577,12 +548,10 @@ def ajax_del_worker(request, pk, item_pk):
         return JsonResponse({'success': False, 'error': 'Não encontrado'}, status=404)
 
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def ajax_add_maquina(request, pk):
     func, os_obj = _os_ajax_guard(request, pk)
-    if not func:
-        return JsonResponse({'success': False}, status=403)
     try:
         body = json.loads(request.body)
         vid = int(body['veiculo_id'])
@@ -614,13 +583,11 @@ def ajax_add_maquina(request, pk):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def ajax_edit_maquina(request, pk, item_pk):
     """Atualiza horímetro inicial/final de uma máquina já adicionada à OS."""
     func, os_obj = _os_ajax_guard(request, pk)
-    if not func:
-        return JsonResponse({'success': False}, status=403)
     try:
         body = json.loads(request.body)
         m_rec = OSMaquina.objects.get(pk=item_pk, os=os_obj)
@@ -637,12 +604,10 @@ def ajax_edit_maquina(request, pk, item_pk):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def ajax_del_maquina(request, pk, item_pk):
     func, os_obj = _os_ajax_guard(request, pk)
-    if not func:
-        return JsonResponse({'success': False}, status=403)
     try:
         OSMaquina.objects.get(pk=item_pk, os=os_obj).delete()
         return JsonResponse({'success': True})
@@ -650,12 +615,10 @@ def ajax_del_maquina(request, pk, item_pk):
         return JsonResponse({'success': False, 'error': 'Não encontrado'}, status=404)
 
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def ajax_add_insumo(request, pk):
     func, os_obj = _os_ajax_guard(request, pk)
-    if not func:
-        return JsonResponse({'success': False}, status=403)
     try:
         body = json.loads(request.body)
         pid = int(body['produto_id'])
@@ -674,12 +637,10 @@ def ajax_add_insumo(request, pk):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-@campo_login_required
+@funcionario_campo_login_required
 @require_POST
 def ajax_del_insumo(request, pk, item_pk):
     func, os_obj = _os_ajax_guard(request, pk)
-    if not func:
-        return JsonResponse({'success': False}, status=403)
     try:
         OrdemServicoInsumo.objects.get(pk=item_pk, os=os_obj).delete()
         return JsonResponse({'success': True})
@@ -732,12 +693,9 @@ def _salvar_registro_execucao(request, os_obj, func, obs):
 # CONCLUIR OS (foto obrigatória)
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 def campo_os_concluir(request, pk):
-    func = _get_funcionario(request)
-    if not func:
-        request.session.flush()
-        return redirect(LOGIN_URL)
+    func = request.funcionario
 
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=func.empresa)
 
@@ -811,15 +769,13 @@ def campo_os_concluir(request, pk):
 # PUSH SUBSCRIPTION (PWA)
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 def campo_push_subscribe(request):
     """Recebe o JSON de subscription Web Push e salva no banco."""
     if request.method != 'POST':
         return JsonResponse({'ok': False}, status=405)
 
-    func = _get_funcionario(request)
-    if not func:
-        return JsonResponse({'ok': False}, status=403)
+    func = request.funcionario
 
     try:
         data = json.loads(request.body)
@@ -846,7 +802,7 @@ def campo_push_subscribe(request):
 # SYNC OFFLINE → SERVIDOR
 # ──────────────────────────────────────────────────────────────────────────────
 
-@campo_login_required
+@funcionario_campo_login_required
 def campo_sync_offline(request):
     """
     Endpoint chamado pelo pwa.js ao reconectar.
@@ -856,9 +812,7 @@ def campo_sync_offline(request):
     if request.method != 'POST':
         return JsonResponse({'ok': False}, status=405)
 
-    func = _get_funcionario(request)
-    if not func:
-        return JsonResponse({'ok': False}, status=403)
+    func = request.funcionario
 
     try:
         body = json.loads(request.body)
@@ -892,6 +846,8 @@ def _process_offline_mutation(request, func, endpoint, method, payload):
         try:
             os_obj = OrdemServico.objects.get(pk=pk, empresa=func.empresa)
             if os_obj.status == 'APROVADA':
+                if not _talhao_confere(os_obj, payload):
+                    return {'ok': False, 'detail': 'QR code não confere com o talhão desta OS.'}
                 os_obj.status = 'EM_ANDAMENTO'
                 os_obj.data_inicio = timezone.now()
                 os_obj.save(update_fields=['status', 'data_inicio'])

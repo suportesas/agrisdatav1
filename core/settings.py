@@ -117,6 +117,7 @@ MIDDLEWARE = [
     'core.middleware.fornecedor_portal_only.FornecedorPortalOnlyMiddleware',
     'core.middleware.restrito_produtor.RestrictProdutorMiddleware',
     'core.middleware.restrito_motorista.RestrictMotoristaMiddleware',
+    'core.middleware.restrito_funcionario_campo.RestrictFuncionarioCampoMiddleware',
     'core.middleware.portal_cliente.PortalClienteMiddleware',
 ]
 

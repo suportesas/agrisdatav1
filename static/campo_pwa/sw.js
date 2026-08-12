@@ -3,10 +3,11 @@
  * Offline: SQLite WASM via OPFS (quando online, network-first; quando offline, serve do SQLite local)
  * Sync: drena sync_queue ao reconectar
  */
-const CACHE_NAME = 'campo-v2';
+const CACHE_NAME = 'campo-v3';
 const STATIC_CACHE = [
   '/static/campo_pwa/pwa.js',
   '/static/campo_pwa/offline-db.js',
+  '/static/vendor/jsqr.min.js',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
 ];

@@ -3025,15 +3025,22 @@ def funcionario_delete(request, pk):
 
 
 def funcionario_set_pin(request, pk):
-    """Define PIN e ativa acesso ao Portal do Campo para um funcionário."""
-    funcionario = get_object_or_404(Funcionario, pk=pk, empresa=request.user.empresa)
+    """Define PIN e ativa acesso ao Portal do Campo (login unificado via Usuario) para um funcionário."""
+    from django.contrib.auth.models import Group
+    from usuarios.models import Usuario
+    from .services.funcionario_portal import gerar_username_funcionario
+
+    empresa = request.user.empresa
+    funcionario = get_object_or_404(Funcionario, pk=pk, empresa=empresa)
 
     if request.method == 'POST':
         pin = request.POST.get('pin', '').strip()
         pin2 = request.POST.get('pin2', '').strip()
         portal_ativo = request.POST.get('portal_ativo') == '1'
 
-        if pin and pin != pin2:
+        if not funcionario.usuario_vinculado_id and not pin:
+            messages.error(request, 'Defina um PIN para o primeiro acesso deste funcionário.')
+        elif pin and pin != pin2:
             messages.error(request, 'Os PINs não coincidem.')
         elif pin and not pin.isdigit():
             messages.error(request, 'O PIN deve conter apenas números.')
@@ -3041,10 +3048,38 @@ def funcionario_set_pin(request, pk):
             messages.error(request, 'O PIN deve ter pelo menos 4 dígitos.')
         else:
             funcionario.portal_ativo = portal_ativo
-            if pin:
-                funcionario.set_pin(pin)
-            funcionario.save(update_fields=['portal_ativo', 'pin_portal'])
-            messages.success(request, f'Acesso ao Portal do Campo configurado para {funcionario.nome_completo}.')
+            usuario = funcionario.usuario_vinculado
+
+            if not usuario:
+                username = gerar_username_funcionario(empresa.pk, funcionario.cpf)
+                nome_partes = funcionario.nome_completo.strip().split(' ', 1)
+                usuario = Usuario(
+                    username=username,
+                    first_name=nome_partes[0],
+                    last_name=nome_partes[1] if len(nome_partes) > 1 else '',
+                    empresa=empresa,
+                    tipo='FUNC_CAMPO',
+                    is_active=funcionario.ativo,
+                )
+                usuario.set_password(pin)
+                usuario.save()
+
+                grupo, _ = Group.objects.get_or_create(name='FUNC_CAMPO')
+                usuario.groups.add(grupo)
+
+                funcionario.usuario_vinculado = usuario
+            else:
+                if pin:
+                    usuario.set_password(pin)
+                usuario.is_active = funcionario.ativo
+                usuario.save()
+
+            funcionario.save(update_fields=['portal_ativo', 'usuario_vinculado'])
+            messages.success(
+                request,
+                f'Acesso ao Portal do Campo configurado para {funcionario.nome_completo}. '
+                f'Login: "{usuario.username}" (informe ao funcionário junto com o PIN).'
+            )
             return redirect('rh:funcionario_detail', pk=funcionario.pk)
 
     return render(request, 'cadastros/funcionario/set_pin_portal.html', {

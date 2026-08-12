@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Codes dos Talhões | Agrisdata</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #f0f4f0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .etiqueta {
+      background: #fff;
+      border: 2px solid #1a7a3c;
+      border-radius: 14px;
+      padding: 1.25rem;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+    .etiqueta .fazenda { color: #6c757d; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+    .etiqueta .nome { color: #1a7a3c; font-weight: 700; font-size: 1.15rem; margin: .15rem 0; }
+    .etiqueta .codigo { color: #333; font-size: .95rem; margin-bottom: .75rem; }
+    .etiqueta img { width: 100%; max-width: 190px; height: auto; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+      .grid { gap: .75rem; }
+      .etiqueta { border-width: 1.5px; box-shadow: none; }
+    }
+  </style>
+</head>
+<body class="p-4">
+
+  <div class="no-print d-flex justify-content-center mb-4">
+    <button onclick="window.print()" class="btn btn-success">
+      <i class="bi bi-printer"></i> Imprimir / Salvar PDF ({{ etiquetas|length }} etiqueta{{ etiquetas|length|pluralize }})
+    </button>
+  </div>
+
+  <div class="grid">
+    {% for item in etiquetas %}
+    <div class="etiqueta">
+      <div class="fazenda">{{ item.talhao.fazenda.nome }}{% if item.talhao.area %} · {{ item.talhao.area.nome }}{% endif %}</div>
+      <div class="nome">{{ item.talhao.nome }}</div>
+      {% if item.talhao.codigo %}<div class="codigo">Código: {{ item.talhao.codigo }}</div>{% endif %}
+      <img src="data:image/png;base64,{{ item.qr_b64 }}" alt="QR Code do talhão {{ item.talhao.nome }}">
+    </div>
+    {% endfor %}
+  </div>
+
+</body>
+</html>

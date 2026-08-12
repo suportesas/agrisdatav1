@@ -84,6 +84,8 @@ urlpatterns = [
     path('talhoes/<int:pk>/', views.talhao_detail, name='talhao_detail'),
     path('talhoes/<int:pk>/editar/', views.talhao_update, name='talhao_update'),
     path('talhoes/<int:pk>/excluir/', views.talhao_delete, name='talhao_delete'),
+    path('talhoes/<int:pk>/qrcode/', views.talhao_qrcode_print, name='talhao_qrcode_print'),
+    path('talhoes/qrcode/lote/', views.talhao_qrcode_print_bulk, name='talhao_qrcode_print_bulk'),
     # Histórico de cultivo
     path('talhoes/<int:talhao_pk>/historico/nova/', views.historico_create, name='historico_create'),
     path('historico/<int:pk>/editar/', views.historico_update, name='historico_update'),

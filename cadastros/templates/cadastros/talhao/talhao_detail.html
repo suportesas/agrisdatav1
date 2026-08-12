@@ -48,6 +48,9 @@
             <a href="{% url 'operacoes_campo:os_create' %}?talhao={{ talhao.pk }}" class="btn btn-success btn-sm">
               <i class="bi bi-plus-circle me-1"></i>Nova OS
             </a>
+            <a href="{% url 'cadastros:talhao_qrcode_print' talhao.pk %}" target="_blank" class="btn btn-outline-success btn-sm">
+              <i class="bi bi-qr-code me-1"></i>Imprimir QR
+            </a>
             <a href="{% url 'cadastros:talhao_update' talhao.pk %}" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-pencil me-1"></i>Editar
             </a>

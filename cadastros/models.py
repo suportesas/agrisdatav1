@@ -15,6 +15,7 @@ from django.core.validators import MaxValueValidator, RegexValidator
 import re
 import random
 import time
+import uuid
 
 # Lista de UFs (inclui 'EX' para Exterior)
 UF_CHOICES = [
@@ -2617,7 +2618,16 @@ class Talhao(models.Model):
         max_length=20,
         help_text='Código único de identificação'
     )
-    
+
+    qr_token = models.UUIDField(
+        'Token QR',
+        null=True,
+        blank=True,
+        unique=True,
+        editable=False,
+        help_text='Identificador único usado no QR code impresso deste talhão'
+    )
+
     # Medidas
     area_hac = models.DecimalField(
         'Área (ha)',
@@ -2824,6 +2834,13 @@ class Talhao(models.Model):
         self._novo_ciclo_idiarn = idiarn
 
         self.save()
+
+    def get_or_create_qr_token(self):
+        """Retorna o token do QR code do talhão, gerando-o na primeira chamada."""
+        if not self.qr_token:
+            self.qr_token = uuid.uuid4()
+            self.save(update_fields=['qr_token'])
+        return self.qr_token
 
         return self.historico.filter(
             data_plantio=data_plantio, cultura=cultura

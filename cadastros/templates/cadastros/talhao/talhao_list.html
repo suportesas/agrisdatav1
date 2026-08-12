@@ -96,6 +96,9 @@
       <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalAjuda">
         <i class="bi bi-question-circle"></i> Como Fazer?
       </button>
+      <button type="button" id="btnImprimirQrLote" class="btn btn-outline-success" disabled>
+        <i class="bi bi-qr-code"></i> Imprimir QR selecionados (<span id="qtdSelecionados">0</span>)
+      </button>
       <a href="{% url 'cadastros:talhao_create' %}" class="btn btn-success">
         <i class="bi bi-plus-circle"></i> Novo Talhão
       </a>
@@ -175,7 +178,10 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="bg-light">
             <tr>
-              <th class="ps-4">Código</th>
+              <th class="ps-4" style="width:2.5rem;">
+                <input type="checkbox" class="form-check-input" id="checkAllTalhoes" title="Selecionar todos">
+              </th>
+              <th>Código</th>
               <th>Nome</th>
               <th>Fazenda / Área</th>
               <th class="text-end">Área</th>
@@ -188,8 +194,13 @@
           <tbody>
             {% for talhao in talhoes %}
             <tr>
-              <!-- Código -->
+              <!-- Seleção -->
               <td class="ps-4">
+                <input type="checkbox" class="form-check-input talhao-checkbox" value="{{ talhao.id }}">
+              </td>
+
+              <!-- Código -->
+              <td>
                 <strong class="text-primary">{{ talhao.codigo }}</strong>
               </td>
 
@@ -301,7 +312,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="8" class="text-center py-5 text-muted">
+              <td colspan="9" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox display-4 d-block mb-3"></i>
                 <p class="mb-0">Nenhum talhão cadastrado</p>
                 <a href="{% url 'cadastros:talhao_create' %}" class="btn btn-success mt-3">
@@ -563,4 +574,43 @@
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  const checkAll = document.getElementById('checkAllTalhoes');
+  const btnLote = document.getElementById('btnImprimirQrLote');
+  const qtdLabel = document.getElementById('qtdSelecionados');
+
+  function checkboxes() {
+    return Array.from(document.querySelectorAll('.talhao-checkbox'));
+  }
+
+  function atualizarBotao() {
+    const marcados = checkboxes().filter(cb => cb.checked);
+    qtdLabel.textContent = marcados.length;
+    btnLote.disabled = marcados.length === 0;
+  }
+
+  if (checkAll) {
+    checkAll.addEventListener('change', function () {
+      checkboxes().forEach(cb => { cb.checked = checkAll.checked; });
+      atualizarBotao();
+    });
+  }
+
+  document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('talhao-checkbox')) atualizarBotao();
+  });
+
+  if (btnLote) {
+    btnLote.addEventListener('click', function () {
+      const ids = checkboxes().filter(cb => cb.checked).map(cb => cb.value);
+      if (!ids.length) return;
+      window.open("{% url 'cadastros:talhao_qrcode_print_bulk' %}?ids=" + ids.join(','), '_blank');
+    });
+  }
+
+  atualizarBotao();
+})();
+</script>
 {% endblock %}

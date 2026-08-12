@@ -381,6 +381,25 @@ class OrdemServicoInsumo(models.Model):
         rejeitado) — se rejeitado, um novo pode ser emitido para o mesmo item."""
         return self.receituarios.order_by('-id').first()
 
+    @property
+    def alerta_divergencia_receituario(self):
+        """Aviso de compliance quando a Qtd. Aplicada difere >10% do total de
+        produto prescrito no receituário aprovado — não bloqueia, só sinaliza
+        pra conferência antes de concluir a OS."""
+        rec = self.receituario_atual
+        if not rec or rec.status != 'APROVADO':
+            return None
+        total = rec.quantidade_produto_total
+        if not total or not self.quantidade_aplicada:
+            return None
+        desvio = abs(self.quantidade_aplicada - total) / total
+        if desvio <= Decimal('0.10'):
+            return None
+        return (
+            f'Aplicado ({self.quantidade_aplicada} {self.unidade_medida.sigla if self.unidade_medida_id else ""}) '
+            f'difere {(desvio * 100):.0f}% do prescrito no receituário {rec.numero} ({total}).'
+        )
+
 
 class Receituario(models.Model):
     """Receituário Agronômico: documento técnico que autoriza a aplicação de um
@@ -473,6 +492,10 @@ class Receituario(models.Model):
         self.aprovado_por = usuario
         self.data_aprovacao = timezone.now()
         self.save(update_fields=['status', 'aprovado_por', 'data_aprovacao'])
+        total = self.quantidade_produto_total
+        if total is not None:
+            self.insumo.quantidade_planejada = total
+            self.insumo.save(update_fields=['quantidade_planejada'])
 
     def rejeitar(self, usuario, motivo):
         if self.status != 'RASCUNHO':
@@ -480,6 +503,92 @@ class Receituario(models.Model):
         self.status = 'REJEITADO'
         self.motivo_rejeicao = motivo
         self.save(update_fields=['status', 'motivo_rejeicao'])
+
+    @property
+    def _defensivo_referencia(self):
+        """Registro atual de Defensivo × Cultura × Praga para este receituário —
+        usado só para alertar sobre faixas mín/máx, não para o snapshot (que já
+        foi congelado em `save()`). Busca dados atuais de propósito: se a bula
+        no cadastro mudou, o alerta deve refletir a regra vigente."""
+        from produtos.models import ProdutoDefensivoCultura
+        if not (self.produto_id and self.cultura_id and self.praga_id):
+            return None
+        if not hasattr(self, '_defensivo_referencia_cache'):
+            self._defensivo_referencia_cache = ProdutoDefensivoCultura.objects.filter(
+                produto_id=self.produto_id, cultura_id=self.cultura_id, praga_id=self.praga_id,
+            ).select_related('unidade_dosagem').first()
+        return self._defensivo_referencia_cache
+
+    @property
+    def alertas_faixa(self):
+        """Avisos quando a dosagem ou o volume de calda informados estão fora da
+        faixa mín/máx cadastrada em Defensivo × Cultura. Não bloqueia o
+        salvamento — o agrônomo pode decidir aplicar fora da faixa sob sua
+        responsabilidade, mas o sistema alerta para essa decisão ficar visível."""
+        dc = self._defensivo_referencia
+        if not dc:
+            return []
+        alertas = []
+        if self.dosagem_aplicar is not None and self.unidade_dosagem_id == dc.unidade_dosagem_id:
+            sigla = dc.unidade_dosagem.sigla
+            if self.dosagem_aplicar < dc.dosagem_minima:
+                alertas.append(
+                    f'Dosagem informada ({self.dosagem_aplicar} {sigla}) está ABAIXO do mínimo recomendado '
+                    f'({dc.dosagem_minima} {sigla}).'
+                )
+            elif self.dosagem_aplicar > dc.dosagem_maxima:
+                alertas.append(
+                    f'Dosagem informada ({self.dosagem_aplicar} {sigla}) está ACIMA do máximo recomendado '
+                    f'({dc.dosagem_maxima} {sigla}).'
+                )
+        if self.volume_calda is not None:
+            if self.volume_calda < dc.volume_calda_minimo:
+                alertas.append(
+                    f'Volume de calda informado ({self.volume_calda} L/ha) está ABAIXO do mínimo recomendado '
+                    f'({dc.volume_calda_minimo} L/ha).'
+                )
+            elif self.volume_calda > dc.volume_calda_maximo:
+                alertas.append(
+                    f'Volume de calda informado ({self.volume_calda} L/ha) está ACIMA do máximo recomendado '
+                    f'({dc.volume_calda_maximo} L/ha).'
+                )
+        return alertas
+
+    @property
+    def area_referencia_ha(self):
+        """Área usada para o resumo de preparo do tanque: área executada da OS,
+        com fallback para a área cadastrada do talhão (mesmo critério de
+        `ajax_recomendacao_defensivo`)."""
+        return self.os.area_executada_ha or (self.os.talhao.area_hac if self.os.talhao_id else None)
+
+    @property
+    def quantidade_produto_total(self):
+        """Dosagem/ha × área do talhão = quantidade total do defensivo para o tanque."""
+        area = self.area_referencia_ha
+        if not (self.dosagem_aplicar and area):
+            return None
+        return (self.dosagem_aplicar * area).quantize(Decimal('0.001'))
+
+    @property
+    def volume_calda_total(self):
+        """Volume de calda/ha × área do talhão = volume total de calda a preparar."""
+        area = self.area_referencia_ha
+        if not (self.volume_calda and area):
+            return None
+        return (self.volume_calda * area).quantize(Decimal('0.01'))
+
+    @property
+    def agua_pura_total(self):
+        """Calda total − produto total. Só calculado quando a dosagem é numa
+        unidade de VOLUME (L, mL) — dosagem em peso (kg/g) não subtrai
+        diretamente de um volume de calda em litros."""
+        if not (self.unidade_dosagem_id and self.unidade_dosagem.tipo == 'VOLUME'):
+            return None
+        calda = self.volume_calda_total
+        produto = self.quantidade_produto_total
+        if calda is None or produto is None:
+            return None
+        return (calda - produto).quantize(Decimal('0.01'))
 
 
 # ============================================================================

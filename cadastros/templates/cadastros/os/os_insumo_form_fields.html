@@ -153,6 +153,7 @@
           '</div>' +
           '<button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0 btn-usar-recomendacao" ' +
           'data-produto-id="' + rec.produto_id + '" data-produto-nome="' + rec.produto_nome.replace(/"/g, '&quot;') + '" ' +
+          'data-unidade-id="' + (rec.unidade_dosagem_id || '') + '" ' +
           'data-quantidade="' + (rec.quantidade_sugerida || '') + '">Usar este defensivo</button>' +
           '</div>';
       }).join('');
@@ -161,6 +162,9 @@
 
       recomendacoesBox.querySelectorAll('.btn-usar-recomendacao').forEach(function (btn) {
         btn.addEventListener('click', function () {
+          // A unidade da recomendação (cadastrada em Cultura/Praga) tem prioridade
+          // sobre a unidade padrão do produto que o auto-fill do produto traria.
+          unidadeForcada = btn.dataset.unidadeId || null;
           selecionarProduto(btn.dataset.produtoId, btn.dataset.produtoNome);
           if (btn.dataset.quantidade && qtdPlanejadaInput) {
             qtdPlanejadaInput.value = btn.dataset.quantidade;
@@ -184,18 +188,29 @@
   }
 
   // ── Auto-fill ao selecionar produto ─────────────────────────────────────────
-  produtoSel.addEventListener('change', function () {
-    const pid = this.value;
+  // Vinculado via jQuery (não addEventListener nativo): Select2 dispara 'change'
+  // através de jQuery.trigger(), que não invoca listeners de addEventListener
+  // puro — nem no clique manual do usuário, nem no jQuery(...).trigger('change')
+  // usado pelo botão "Usar este defensivo" acima. jQuery.on() escuta os dois casos.
+  // Setada pelo botão "Usar este defensivo" antes de disparar a troca de produto,
+  // pra sobrepor a unidade padrão do produto pela unidade de dosagem cadastrada
+  // em Cultura/Praga para aquele defensivo específico (podem ser diferentes).
+  let unidadeForcada = null;
+
+  function autoFillFromProduto(pid) {
     if (!pid) return;
+    const unidadeForcadaId = unidadeForcada;
+    unidadeForcada = null;
     fetch(`${PRODUTO_INFO_URL}?produto_id=${pid}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
-        if (data.unidade_medida_id && unidadeSel) {
-          const opt = Array.from(unidadeSel.options).find(o => String(o.value) === String(data.unidade_medida_id));
+        const unidadeAlvo = unidadeForcadaId || data.unidade_medida_id;
+        if (unidadeAlvo && unidadeSel) {
+          const opt = Array.from(unidadeSel.options).find(o => String(o.value) === String(unidadeAlvo));
           if (opt) {
-            unidadeSel.value = data.unidade_medida_id;
-            siglaBadge.textContent = data.unidade_medida_sigla || '';
+            unidadeSel.value = unidadeAlvo;
+            siglaBadge.textContent = opt.text.split('—')[0].trim().split(' ')[0] || '';
           }
         }
         if (custoInput && (!custoInput.value || parseFloat(custoInput.value || 0) === 0)) {
@@ -204,7 +219,12 @@
         }
       })
       .catch(() => {});
-  });
+  }
+  if (window.jQuery) {
+    jQuery(produtoSel).on('change', function () { autoFillFromProduto(this.value); });
+  } else {
+    produtoSel.addEventListener('change', function () { autoFillFromProduto(this.value); });
+  }
 
   // ── Sigla ao mudar unidade manualmente ──────────────────────────────────────
   if (unidadeSel) {

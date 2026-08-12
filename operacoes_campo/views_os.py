@@ -2183,6 +2183,7 @@ def ajax_recomendacao_defensivo(request):
             'custo_relativo': item.custo_relativo,
             'dosagem_minima': str(item.dosagem_minima),
             'dosagem_maxima': str(item.dosagem_maxima),
+            'unidade_dosagem_id': item.unidade_dosagem_id,
             'unidade_dosagem_sigla': item.unidade_dosagem.sigla if item.unidade_dosagem else '',
             'carencia': item.carencia,
             'quantidade_sugerida': str(quantidade_sugerida) if quantidade_sugerida is not None else None,

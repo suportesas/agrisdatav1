@@ -2122,6 +2122,25 @@ def ajax_produto_info(request):
         return JsonResponse({'error': str(e)}, status=400)
 
 
+def defensivos_recomendados_qs(empresa, cultura, praga):
+    """Defensivos cadastrados (ProdutoDefensivoCultura) para a praga/cultura, com
+    lote em estoque, ranqueados pela ordem de recomendação cadastrada. Fonte
+    única usada tanto pela sugestão AJAX no insumo da OS quanto pela geração
+    automática de insumos a partir de um monitoramento MIP — só sugere produtos
+    com estoque disponível, para não recomendar algo que o form depois rejeita."""
+    from produtos.models import ProdutoDefensivoCultura
+    return (
+        ProdutoDefensivoCultura.objects
+        .filter(
+            praga=praga, cultura=cultura, produto__categoria__empresa=empresa, produto__ativo=True,
+            produto__lotes__armazem__empresa=empresa,
+        )
+        .distinct()
+        .select_related('produto', 'unidade_dosagem')
+        .order_by('ordem_recomendacao', '-efetividade_pct')
+    )
+
+
 @login_required
 def ajax_recomendacao_defensivo(request):
     """GET ?praga_id=X&os_id=Y — retorna, ranqueados, os defensivos cadastrados
@@ -2153,16 +2172,7 @@ def ajax_recomendacao_defensivo(request):
         if safra_cultura:
             paises_destino = {p.lower() for p in safra_cultura.get_paises_destino_list()}
 
-    qs = (
-        ProdutoDefensivoCultura.objects
-        .filter(
-            praga=praga, cultura=cultura, produto__categoria__empresa=empresa, produto__ativo=True,
-            produto__lotes__armazem__empresa=empresa,
-        )
-        .distinct()
-        .select_related('produto', 'unidade_dosagem')
-        .order_by('ordem_recomendacao', '-efetividade_pct')
-    )
+    qs = defensivos_recomendados_qs(empresa, cultura, praga)
 
     recomendacoes = []
     for item in qs:

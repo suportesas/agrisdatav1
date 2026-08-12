@@ -79,6 +79,8 @@ def receituario_create(request, pk, insumo_pk):
                 receituario.custo_relativo = dc.custo_relativo
             receituario.created_by = request.user
             receituario.save()
+            for alerta in receituario.alertas_faixa:
+                messages.warning(request, alerta)
             messages.success(request, f'Receituário {receituario.numero} criado como rascunho.')
             return redirect('operacoes_campo:receituario_detail', pk=pk, receituario_pk=receituario.pk)
     else:
@@ -104,7 +106,10 @@ def receituario_detail(request, pk, receituario_pk):
     empresa = request.user.empresa
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
     receituario = get_object_or_404(
-        Receituario.objects.select_related('produto', 'praga', 'cultura', 'unidade_dosagem', 'responsavel_tecnico', 'aprovado_por', 'created_by'),
+        Receituario.objects.select_related(
+            'produto', 'praga', 'cultura', 'unidade_dosagem', 'responsavel_tecnico',
+            'aprovado_por', 'created_by', 'os', 'os__talhao',
+        ),
         pk=receituario_pk, os=os_obj, empresa=empresa,
     )
     return render(request, 'cadastros/receituario/detail.html', {
@@ -124,10 +129,14 @@ def receituario_edit(request, pk, receituario_pk):
         messages.error(request, 'Apenas receituários em rascunho podem ser editados.')
         return redirect('operacoes_campo:receituario_detail', pk=pk, receituario_pk=receituario_pk)
 
+    dc = _defensivo_recomendado(receituario.produto, receituario.cultura, receituario.praga)
+
     if request.method == 'POST':
         form = ReceituarioForm(request.POST, instance=receituario, empresa=empresa)
         if form.is_valid():
             form.save()
+            for alerta in receituario.alertas_faixa:
+                messages.warning(request, alerta)
             messages.success(request, f'Receituário {receituario.numero} atualizado.')
             return redirect('operacoes_campo:receituario_detail', pk=pk, receituario_pk=receituario_pk)
     else:
@@ -137,7 +146,7 @@ def receituario_edit(request, pk, receituario_pk):
         'os': os_obj,
         'insumo': receituario.insumo,
         'cultura': receituario.cultura,
-        'recomendacao': None,
+        'recomendacao': dc,
         'form': form,
         'receituario': receituario,
         'titulo': f'Editar Receituário {receituario.numero}',

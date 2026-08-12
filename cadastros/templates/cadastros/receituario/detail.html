@@ -27,6 +27,17 @@
         </div>
       </div>
 
+      {% if receituario.alertas_faixa %}
+      <div class="alert alert-warning py-2 px-3 mb-3 small">
+        <i class="bi bi-exclamation-triangle me-1"></i><strong>Fora da faixa recomendada da bula:</strong>
+        <ul class="mb-0 mt-1">
+          {% for alerta in receituario.alertas_faixa %}
+          <li>{{ alerta }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+
       <div class="card border-0 shadow-sm rounded-4 mb-3">
         <div class="card-body">
           <div class="row g-3">
@@ -80,6 +91,40 @@
             <div class="col-md-12"><strong>Observações:</strong><br>{{ receituario.observacoes }}</div>
             {% endif %}
           </div>
+
+          {% with area=receituario.area_referencia_ha produto_total=receituario.quantidade_produto_total calda_total=receituario.volume_calda_total agua_total=receituario.agua_pura_total %}
+          <hr class="my-3">
+          <h6 class="mb-2"><i class="bi bi-droplet-half me-1"></i>Resumo de Preparo (Tanque)</h6>
+          {% if not area %}
+          <div class="alert alert-warning py-2 px-3 mb-0 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Não foi possível calcular o total para o tanque — defina a área executada da OS ou a área do talhão.
+          </div>
+          {% else %}
+          <div class="row g-3">
+            <div class="col-md-3">
+              <strong>Área de Referência:</strong><br>{{ area }} ha
+            </div>
+            <div class="col-md-3">
+              <strong>Total de Produto:</strong><br>
+              {% if produto_total %}{{ produto_total }} {{ receituario.unidade_dosagem.sigla }}{% else %}—{% endif %}
+            </div>
+            <div class="col-md-3">
+              <strong>Volume de Calda Total:</strong><br>
+              {% if calda_total %}{{ calda_total }} L{% else %}—{% endif %}
+            </div>
+            <div class="col-md-3">
+              <strong>Água Pura:</strong><br>
+              {% if agua_total %}{{ agua_total }} L{% else %}—{% endif %}
+            </div>
+          </div>
+          {% if calda_total and not agua_total %}
+          <div class="small text-muted mt-2">
+            <i class="bi bi-info-circle me-1"></i>Água pura não calculada: a dosagem está numa unidade de peso ({{ receituario.unidade_dosagem.sigla }}), não de volume.
+          </div>
+          {% endif %}
+          {% endif %}
+          {% endwith %}
 
           {% if receituario.status == 'RASCUNHO' and pode_decidir %}
           <div class="mt-4 d-flex gap-2 flex-wrap">

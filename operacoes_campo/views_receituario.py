@@ -9,11 +9,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse, JsonResponse
+from django.urls import reverse
 from decimal import Decimal
 
 from core.pagination import paginate
 from .models import OrdemServico, OrdemServicoInsumo, Receituario, cultura_atual_talhao
 from .forms import ReceituarioForm
+from .views_os import _is_ajax
 
 
 def _pode_decidir_receituario(user):
@@ -44,20 +47,37 @@ def receituario_create(request, pk, insumo_pk):
     empresa = request.user.empresa
     os_obj = get_object_or_404(OrdemServico, pk=pk, empresa=empresa)
     insumo = get_object_or_404(OrdemServicoInsumo, pk=insumo_pk, os=os_obj, empresa=empresa)
+    ajax = _is_ajax(request)
+
+    def _bloqueado(msg):
+        # No modal, o loadForm() do JS injeta a resposta como HTML puro (não
+        # espera JSON) — por isso retorna um trecho de HTML aqui em vez de
+        # redirecionar, o que o fetch() só seguiria e traria a página inteira.
+        if ajax:
+            return HttpResponse(f'<div class="alert alert-danger mb-0">{msg}</div>')
+        messages.error(request, msg)
+        return redirect('operacoes_campo:os_detail', pk=pk)
 
     if not insumo.praga_id:
-        messages.error(request, 'Defina a praga/doença alvo no insumo antes de emitir um receituário.')
-        return redirect('operacoes_campo:os_detail', pk=pk)
+        return _bloqueado('Defina a praga/doença alvo no insumo antes de emitir um receituário.')
 
     ativo = insumo.receituarios.filter(status__in=['RASCUNHO', 'APROVADO']).first()
     if ativo:
+        detail_url = reverse('operacoes_campo:receituario_detail', args=[pk, ativo.pk])
+        if ajax:
+            # Chega aqui tipicamente ao abrir o modal (GET) — o loadForm() do JS
+            # injeta a resposta como HTML puro, não faz parse de JSON, por isso
+            # um link em vez de um redirect JSON (que só é lido no POST).
+            return HttpResponse(
+                f'<div class="alert alert-info mb-0">Este insumo já tem o receituário '
+                f'<a href="{detail_url}">{ativo.numero}</a> ({ativo.get_status_display()}).</div>'
+            )
         messages.info(request, f'Este insumo já tem o receituário {ativo.numero} ({ativo.get_status_display()}).')
-        return redirect('operacoes_campo:receituario_detail', pk=pk, receituario_pk=ativo.pk)
+        return redirect(detail_url)
 
     cultura = cultura_atual_talhao(os_obj.talhao, os_obj.safra)
     if not cultura:
-        messages.error(request, 'Não foi possível identificar a cultura desta OS (defina a cultura na safra do talhão).')
-        return redirect('operacoes_campo:os_detail', pk=pk)
+        return _bloqueado('Não foi possível identificar a cultura desta OS (defina a cultura na safra do talhão).')
 
     dc = _defensivo_recomendado(insumo.produto, cultura, insumo.praga)
 
@@ -82,7 +102,10 @@ def receituario_create(request, pk, insumo_pk):
             for alerta in receituario.alertas_faixa:
                 messages.warning(request, alerta)
             messages.success(request, f'Receituário {receituario.numero} criado como rascunho.')
-            return redirect('operacoes_campo:receituario_detail', pk=pk, receituario_pk=receituario.pk)
+            detail_url = reverse('operacoes_campo:receituario_detail', args=[pk, receituario.pk])
+            if ajax:
+                return JsonResponse({'success': True, 'redirect': detail_url})
+            return redirect(detail_url)
     else:
         initial = {}
         if dc:
@@ -91,13 +114,16 @@ def receituario_create(request, pk, insumo_pk):
             initial['volume_calda'] = ((dc.volume_calda_minimo + dc.volume_calda_maximo) / 2).quantize(Decimal('0.01'))
         form = ReceituarioForm(empresa=empresa, initial=initial)
 
-    return render(request, 'cadastros/receituario/form.html', {
+    template = 'cadastros/receituario/form_fields.html' if ajax else 'cadastros/receituario/form.html'
+    return render(request, template, {
         'os': os_obj,
         'insumo': insumo,
         'cultura': cultura,
         'recomendacao': dc,
         'form': form,
         'titulo': f'Emitir Receituário — {os_obj.numero}',
+        'is_modal': ajax,
+        'action_url': request.path if ajax else None,
     })
 
 

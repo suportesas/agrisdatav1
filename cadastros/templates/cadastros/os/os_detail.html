@@ -521,9 +521,11 @@
                         {% else %}
                           {% with rec=item.receituario_atual %}
                           {% if not rec %}
-                          <a href="{% url 'operacoes_campo:receituario_create' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-success py-0 px-1" title="Emitir Receituário">
+                          <button type="button" class="btn btn-xs btn-outline-success py-0 px-1" title="Emitir Receituário"
+                                  data-os-modal-url="{% url 'operacoes_campo:receituario_create' pk=os.pk insumo_pk=item.pk %}"
+                                  data-os-modal-title="Emitir Receituário">
                             <i class="bi bi-file-earmark-plus"></i> Emitir
-                          </a>
+                          </button>
                           {% elif rec.status == 'RASCUNHO' %}
                           <a href="{% url 'operacoes_campo:receituario_detail' pk=os.pk receituario_pk=rec.pk %}" class="badge bg-secondary text-decoration-none" title="{{ rec.numero }}">Rascunho</a>
                           {% elif rec.status == 'APROVADO' %}

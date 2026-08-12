@@ -295,7 +295,8 @@ def monitoramento_mip_gerar_os(request, pk):
         messages.info(request, f'Este monitoramento já possui a OS {monitoramento.os.numero} vinculada.')
         return redirect('mip:monitoramento_mip_detail', pk=pk)
 
-    from operacoes_campo.models import OrdemServico
+    from operacoes_campo.models import OrdemServico, OrdemServicoInsumo
+    from operacoes_campo.views_os import defensivos_recomendados_qs
 
     safra_cultura = None
     if monitoramento.safra_id and monitoramento.cultura_id:
@@ -326,6 +327,37 @@ def monitoramento_mip_gerar_os(request, pk):
 
     monitoramento.os = nova_os
     monitoramento.save(update_fields=['os'])
+
+    # Pré-preenche um insumo por praga recomendada, já com o defensivo mais bem
+    # ranqueado (ordem_recomendacao/efetividade) que tem lote em estoque — o
+    # agrônomo revisa/troca o produto na OS antes de emitir o receituário.
+    # Pragas sem nenhum defensivo cadastrado ou sem estoque ficam de fora (o
+    # model exige produto) e continuam contadas em `sem_produto_disponivel`.
+    area = monitoramento.talhao.area_hac or Decimal('0')
+    insumos_criados = 0
+    sem_produto_disponivel = []
+    for pm in pragas_recomendadas:
+        melhor = defensivos_recomendados_qs(empresa, monitoramento.cultura, pm.praga).first() if monitoramento.cultura_id else None
+        if not melhor:
+            sem_produto_disponivel.append(pm.praga.nome_comum)
+            continue
+        dose_media = (melhor.dosagem_minima + melhor.dosagem_maxima) / 2
+        quantidade_planejada = (dose_media * area).quantize(Decimal('0.001')) if area else None
+        OrdemServicoInsumo.objects.create(
+            empresa=empresa,
+            os=nova_os,
+            produto=melhor.produto,
+            praga=pm.praga,
+            unidade_medida=melhor.unidade_dosagem,
+            quantidade_planejada=quantidade_planejada,
+            custo_unitario=melhor.produto.preco_custo,
+        )
+        insumos_criados += 1
+
+    if insumos_criados:
+        messages.success(request, f'{insumos_criados} insumo(s) pré-preenchido(s) com o defensivo mais recomendado em estoque — revise antes de emitir o receituário.')
+    if sem_produto_disponivel:
+        messages.warning(request, f'Sem defensivo em estoque cadastrado para: {", ".join(sem_produto_disponivel)}. Adicione manualmente.')
 
     messages.success(
         request,

@@ -256,10 +256,19 @@ def pedido_emitir_documento(request, pk):
                     valor_pis = (item.preco_total * (trib.pis_base_calculo / Decimal('100')) * aliquota_pis / Decimal('100')).quantize(Decimal('0.01'))
                     valor_cofins = (item.preco_total * (trib.cofins_base_calculo / Decimal('100')) * aliquota_cofins / Decimal('100')).quantize(Decimal('0.01'))
                     cst_icms, cst_pis, cst_cofins = trib.icms_situacao_tributaria, trib.pis_situacao_tributaria, trib.cofins_situacao_tributaria
+                    ibs_cbs_cst = trib.ibs_cbs_situacao_tributaria
+                    ibs_cbs_cclasstrib = trib.ibs_cbs_classificacao_tributaria
+                    ibs_reducao, cbs_reducao = trib.ibs_percentual_reducao, trib.cbs_percentual_reducao
+                    ibs_diferimento, cbs_diferimento = trib.ibs_percentual_diferimento, trib.cbs_percentual_diferimento
+                    ibs_credpres_codigo = trib.ibs_cbs_credito_presumido_codigo
+                    ibs_credpres_percentual = trib.ibs_cbs_credito_presumido_percentual
                 else:
                     cst_icms, cst_pis, cst_cofins = '00', '01', '01'
                     aliquota_icms = aliquota_ipi = aliquota_pis = aliquota_cofins = Decimal('0.00')
                     valor_icms = valor_ipi = valor_pis = valor_cofins = Decimal('0.00')
+                    ibs_cbs_cst = ibs_cbs_cclasstrib = ibs_credpres_codigo = ''
+                    ibs_reducao = cbs_reducao = ibs_diferimento = cbs_diferimento = Decimal('0.00')
+                    ibs_credpres_percentual = Decimal('0.00')
 
                 ItemNotaFiscal.objects.create(
                     nota_fiscal=nf,
@@ -278,6 +287,12 @@ def pedido_emitir_documento(request, pk):
                     aliquota_ipi=aliquota_ipi, valor_ipi=valor_ipi,
                     aliquota_pis=aliquota_pis, valor_pis=valor_pis,
                     aliquota_cofins=aliquota_cofins, valor_cofins=valor_cofins,
+                    ibs_cbs_situacao_tributaria=ibs_cbs_cst,
+                    ibs_cbs_classificacao_tributaria=ibs_cbs_cclasstrib,
+                    ibs_percentual_reducao=ibs_reducao, cbs_percentual_reducao=cbs_reducao,
+                    ibs_percentual_diferimento=ibs_diferimento, cbs_percentual_diferimento=cbs_diferimento,
+                    ibs_cbs_credito_presumido_codigo=ibs_credpres_codigo,
+                    ibs_cbs_credito_presumido_percentual=ibs_credpres_percentual,
                 )
             nf.calcular_totais()
             nf.save()
@@ -319,10 +334,19 @@ def pedido_emitir_documento(request, pk):
                     valor_pis = (item.preco_total * (trib.pis_base_calculo / Decimal('100')) * aliquota_pis / Decimal('100')).quantize(Decimal('0.01'))
                     valor_cofins = (item.preco_total * (trib.cofins_base_calculo / Decimal('100')) * aliquota_cofins / Decimal('100')).quantize(Decimal('0.01'))
                     cst_icms, cst_pis, cst_cofins = trib.icms_situacao_tributaria, trib.pis_situacao_tributaria, trib.cofins_situacao_tributaria
+                    ibs_cbs_cst = trib.ibs_cbs_situacao_tributaria
+                    ibs_cbs_cclasstrib = trib.ibs_cbs_classificacao_tributaria
+                    ibs_reducao, cbs_reducao = trib.ibs_percentual_reducao, trib.cbs_percentual_reducao
+                    ibs_diferimento, cbs_diferimento = trib.ibs_percentual_diferimento, trib.cbs_percentual_diferimento
+                    ibs_credpres_codigo = trib.ibs_cbs_credito_presumido_codigo
+                    ibs_credpres_percentual = trib.ibs_cbs_credito_presumido_percentual
                 else:
                     cst_icms, cst_pis, cst_cofins = '00', '01', '01'
                     aliquota_icms = aliquota_ipi = aliquota_pis = aliquota_cofins = Decimal('0.00')
                     valor_icms = valor_ipi = valor_pis = valor_cofins = Decimal('0.00')
+                    ibs_cbs_cst = ibs_cbs_cclasstrib = ibs_credpres_codigo = ''
+                    ibs_reducao = cbs_reducao = ibs_diferimento = cbs_diferimento = Decimal('0.00')
+                    ibs_credpres_percentual = Decimal('0.00')
 
                 ItemNotaFiscal.objects.create(
                     nota_fiscal=nf,
@@ -341,6 +365,12 @@ def pedido_emitir_documento(request, pk):
                     aliquota_ipi=aliquota_ipi, valor_ipi=valor_ipi,
                     aliquota_pis=aliquota_pis, valor_pis=valor_pis,
                     aliquota_cofins=aliquota_cofins, valor_cofins=valor_cofins,
+                    ibs_cbs_situacao_tributaria=ibs_cbs_cst,
+                    ibs_cbs_classificacao_tributaria=ibs_cbs_cclasstrib,
+                    ibs_percentual_reducao=ibs_reducao, cbs_percentual_reducao=cbs_reducao,
+                    ibs_percentual_diferimento=ibs_diferimento, cbs_percentual_diferimento=cbs_diferimento,
+                    ibs_cbs_credito_presumido_codigo=ibs_credpres_codigo,
+                    ibs_cbs_credito_presumido_percentual=ibs_credpres_percentual,
                 )
 
             produtos_desc = '/'.join(dict.fromkeys(

@@ -34,6 +34,7 @@ EXCLUDED_URL_NAMES = {
     'password_reset_confirm', 'password_reset_complete',
     'landing_page', 'recursos_page', 'sobre_page', 'planos_page',
     'faq_page', 'contato_page', 'recursos_avancados_page',
+    'session_heartbeat',
 }
 
 # Sufixos de nome de URL → tipo de ação. Ordem importa (mais específico primeiro).

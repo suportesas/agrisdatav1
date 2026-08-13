@@ -198,7 +198,14 @@
       "Bash(nohup python manage.py runserver 8000)",
       "Bash(python manage.py makemigrations operacoes_campo)",
       "Bash(powershell -Command \"Get-Process python -ErrorAction SilentlyContinue | Select-Object Id,Path\")",
-      "Bash(xargs -I{} sed -i 's/select2-ajax\\\\.js%20%3F/XX/' \"{}\")"
+      "Bash(xargs -I{} sed -i 's/select2-ajax\\\\.js%20%3F/XX/' \"{}\")",
+      "Bash(python manage.py makemigrations produtos operacoes_campo cadastros)",
+      "Bash(python manage.py migrate produtos operacoes_campo cadastros)",
+      "Bash(python manage.py migrate cadastros)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('core/middleware/inactivity_logout.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('core/settings.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python manage.py test produtos operacoes_campo cadastros)",
+      "Bash(python manage.py test produtos operacoes_campo cadastros --keepdb)"
     ],
     "additionalDirectories": [
       "\\tmp"

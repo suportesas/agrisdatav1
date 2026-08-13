@@ -483,7 +483,7 @@
                     <tr>
                       <th>Produto</th><th class="text-end">Planejado</th>
                       <th class="text-end">Aplicado</th><th class="text-end">Custo Unit.</th>
-                      <th class="text-end">Total</th><th>Baixa</th><th></th>
+                      <th class="text-end">Total</th><th>Baixa</th><th>Receituário</th><th></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -494,7 +494,14 @@
                         <small class="text-muted">{{ item.unidade_medida.sigla|default:item.unidade_medida.nome|default:'—' }}</small>
                       </td>
                       <td class="text-end">{{ item.quantidade_planejada|default:'—' }}</td>
-                      <td class="text-end">{{ item.quantidade_aplicada|floatformat:"3g" }}</td>
+                      <td class="text-end">
+                        {{ item.quantidade_aplicada|floatformat:"3g" }}
+                        {% with alerta=item.alerta_divergencia_receituario %}
+                        {% if alerta %}
+                        <i class="bi bi-exclamation-triangle-fill text-warning" title="{{ alerta }}" data-bs-toggle="tooltip"></i>
+                        {% endif %}
+                        {% endwith %}
+                      </td>
                       <td class="text-end">R$ {{ item.custo_unitario|default:0|floatformat:"4g" }}</td>
                       <td class="text-end fw-semibold text-warning">R$ {{ item.custo_total|floatformat:"2g" }}</td>
                       <td>
@@ -509,6 +516,27 @@
                         {% endif %}
                       </td>
                       <td>
+                        {% if not item.praga_id %}
+                        <span class="text-muted small">—</span>
+                        {% else %}
+                          {% with rec=item.receituario_atual %}
+                          {% if not rec %}
+                          <button type="button" class="btn btn-xs btn-outline-success py-0 px-1" title="Emitir Receituário"
+                                  data-os-modal-url="{% url 'operacoes_campo:receituario_create' pk=os.pk insumo_pk=item.pk %}"
+                                  data-os-modal-title="Emitir Receituário">
+                            <i class="bi bi-file-earmark-plus"></i> Emitir
+                          </button>
+                          {% elif rec.status == 'RASCUNHO' %}
+                          <a href="{% url 'operacoes_campo:receituario_detail' pk=os.pk receituario_pk=rec.pk %}" class="badge bg-secondary text-decoration-none" title="{{ rec.numero }}">Rascunho</a>
+                          {% elif rec.status == 'APROVADO' %}
+                          <a href="{% url 'operacoes_campo:receituario_detail' pk=os.pk receituario_pk=rec.pk %}" class="badge bg-success text-decoration-none" title="{{ rec.numero }}">Aprovado</a>
+                          {% else %}
+                          <a href="{% url 'operacoes_campo:receituario_detail' pk=os.pk receituario_pk=rec.pk %}" class="badge bg-danger text-decoration-none" title="{{ rec.numero }}">Rejeitado</a>
+                          {% endif %}
+                          {% endwith %}
+                        {% endif %}
+                      </td>
+                      <td>
                         {% if os.status not in 'CONCLUIDA,CANCELADA' %}
                         <a href="{% url 'operacoes_campo:os_insumo_edit' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-secondary py-0 px-1" title="Editar"><i class="bi bi-pencil"></i></a>
                         <a href="{% url 'operacoes_campo:os_insumo_delete' pk=os.pk insumo_pk=item.pk %}" class="btn btn-xs btn-outline-danger py-0 px-1" title="Excluir"><i class="bi bi-trash"></i></a>
@@ -519,6 +547,7 @@
                     <tr class="table-light">
                       <td colspan="4" class="text-end fw-bold text-muted small">Total Insumos:</td>
                       <td class="text-end fw-bold text-warning">R$ {{ custo_ins|floatformat:"2g" }}</td>
+                      <td></td>
                       <td></td>
                       <td></td>
                     </tr>
@@ -1088,6 +1117,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+    new bootstrap.Tooltip(el);
+  });
+
   const modalEl = document.getElementById('osAddModal');
   if (!modalEl) return;
   const modalTitleEl = document.getElementById('osAddModalTitle');

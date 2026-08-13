@@ -28,12 +28,13 @@
   function handleExpiredSession() {
     if (sessionExpired) return;
     sessionExpired = true;
+    var loginUrl = '/login/?next=' + encodeURIComponent(window.location.pathname + window.location.search);
     var msg = 'Sua sessão expirou por inatividade. Você será redirecionado para o login.';
     if (typeof window.showToast === 'function') {
       window.showToast(msg, 'warning');
-      setTimeout(function () { window.location.href = '/login/'; }, 2500);
+      setTimeout(function () { window.location.href = loginUrl; }, 2500);
     } else {
-      window.location.href = '/login/';
+      window.location.href = loginUrl;
     }
   }
 

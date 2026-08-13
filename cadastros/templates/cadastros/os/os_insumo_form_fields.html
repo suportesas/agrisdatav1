@@ -9,6 +9,15 @@
     <div class="form-section-body {% if is_modal %}px-0{% endif %}">
       <div class="form-grid">
 
+        {% if form.praga %}
+        <div class="field col-12">
+          <label class="form-label">Praga/Doença Alvo <small class="fw-normal text-muted">(opcional — sugere defensivos recomendados)</small></label>
+          {{ form.praga }}
+          {% if form.praga.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.praga.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="field col-12" id="recomendacoes-defensivo" style="display:none;"></div>
+        {% endif %}
+
         <div class="field col-12">
           <label class="form-label">Produto<span class="req">*</span></label>
           {{ form.produto }}
@@ -83,25 +92,125 @@
   const unidadeSel  = document.getElementById('id_unidade_medida');
   const custoInput  = document.getElementById('id_custo_unitario');
   const siglaBadge  = document.getElementById('unidade-sigla-badge');
+  const pragaSel    = document.getElementById('id_praga');
+  const qtdPlanejadaInput = document.getElementById('id_quantidade_planejada');
+  const recomendacoesBox  = document.getElementById('recomendacoes-defensivo');
   if (!produtoSel) return;
 
   const PRODUTO_INFO_URL = "{% url 'operacoes_campo:os_ajax_produto_info' %}";
+  const RECOMENDACAO_URL = "{% url 'operacoes_campo:os_ajax_recomendacao_defensivo' %}";
+  const OS_ID = "{{ os.pk }}";
 
   AgrisSelect2.initFromDataAttrs();
 
+  // ── Recomendação de defensivo ao escolher a praga alvo ──────────────────────
+  if (pragaSel && recomendacoesBox) {
+    const CUSTO_LABEL = {BAIXO: 'Custo baixo', MEDIO: 'Custo médio', ALTO: 'Custo alto'};
+
+    function selecionarProduto(id, nome) {
+      if (window.jQuery && jQuery(produtoSel).data('select2')) {
+        const opt = new Option(nome, id, true, true);
+        jQuery(produtoSel).append(opt).trigger('change');
+      } else {
+        produtoSel.value = id;
+        produtoSel.dispatchEvent(new Event('change'));
+      }
+    }
+
+    function renderRecomendacoes(data) {
+      recomendacoesBox.innerHTML = '';
+      if (data.sem_cultura) {
+        recomendacoesBox.innerHTML = '<div class="alert alert-warning py-2 px-3 mb-0 small">' +
+          '<i class="bi bi-exclamation-triangle me-1"></i> Não foi possível identificar a cultura desta OS ' +
+          '(defina a cultura na safra do talhão) para sugerir defensivos.</div>';
+        recomendacoesBox.style.display = 'block';
+        return;
+      }
+      if (!data.recomendacoes || data.recomendacoes.length === 0) {
+        recomendacoesBox.innerHTML = data.sem_estoque
+          ? '<div class="alert alert-warning py-2 px-3 mb-0 small">' +
+            '<i class="bi bi-exclamation-triangle me-1"></i> Há defensivo(s) recomendados para esta praga/cultura, ' +
+            'mas sem estoque disponível no momento.</div>'
+          : '<div class="alert alert-info py-2 px-3 mb-0 small">' +
+            '<i class="bi bi-info-circle me-1"></i> Nenhum defensivo cadastrado para esta praga/cultura ainda.</div>';
+        recomendacoesBox.style.display = 'block';
+        return;
+      }
+      const cards = data.recomendacoes.map(function (rec) {
+        const alerta = rec.alerta_pais_proibido
+          ? '<div class="mt-1"><span class="status-pill red"><i class="bi bi-exclamation-triangle"></i> Proibido em ' + rec.alerta_pais_proibido + '</span></div>'
+          : '';
+        const efetividade = rec.efetividade_pct != null ? '<span class="status-pill green">' + rec.efetividade_pct + '% efetivo</span> ' : '';
+        const custo = rec.custo_relativo ? '<span class="status-pill gray">' + (CUSTO_LABEL[rec.custo_relativo] || rec.custo_relativo) + '</span> ' : '';
+        const qtd = rec.quantidade_sugerida ? (' · sugestão: <strong>' + rec.quantidade_sugerida + ' ' + rec.unidade_dosagem_sigla + '</strong> para a área desta OS') : '';
+        return '<div class="border rounded-3 p-2 mb-2 d-flex justify-content-between align-items-start gap-2">' +
+          '<div>' +
+          '<span class="status-pill blue">' + rec.ordem + 'ª opção</span> ' + efetividade + custo +
+          '<div class="mt-1"><strong>' + rec.produto_nome + '</strong></div>' +
+          '<div class="small text-muted">Dose: ' + rec.dosagem_minima + '–' + rec.dosagem_maxima + ' ' + rec.unidade_dosagem_sigla +
+          ' · Carência: ' + (rec.carencia != null ? rec.carencia + ' dias' : '—') + qtd + '</div>' +
+          alerta +
+          '</div>' +
+          '<button type="button" class="btn btn-sm btn-outline-primary flex-shrink-0 btn-usar-recomendacao" ' +
+          'data-produto-id="' + rec.produto_id + '" data-produto-nome="' + rec.produto_nome.replace(/"/g, '&quot;') + '" ' +
+          'data-unidade-id="' + (rec.unidade_dosagem_id || '') + '" ' +
+          'data-quantidade="' + (rec.quantidade_sugerida || '') + '">Usar este defensivo</button>' +
+          '</div>';
+      }).join('');
+      recomendacoesBox.innerHTML = cards;
+      recomendacoesBox.style.display = 'block';
+
+      recomendacoesBox.querySelectorAll('.btn-usar-recomendacao').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          // A unidade da recomendação (cadastrada em Cultura/Praga) tem prioridade
+          // sobre a unidade padrão do produto que o auto-fill do produto traria.
+          unidadeForcada = btn.dataset.unidadeId || null;
+          selecionarProduto(btn.dataset.produtoId, btn.dataset.produtoNome);
+          if (btn.dataset.quantidade && qtdPlanejadaInput) {
+            qtdPlanejadaInput.value = btn.dataset.quantidade;
+          }
+        });
+      });
+    }
+
+    pragaSel.addEventListener('change', function () {
+      const pragaId = this.value;
+      if (!pragaId || !OS_ID) {
+        recomendacoesBox.style.display = 'none';
+        recomendacoesBox.innerHTML = '';
+        return;
+      }
+      fetch(`${RECOMENDACAO_URL}?praga_id=${pragaId}&os_id=${OS_ID}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) renderRecomendacoes(data); })
+        .catch(() => {});
+    });
+  }
+
   // ── Auto-fill ao selecionar produto ─────────────────────────────────────────
-  produtoSel.addEventListener('change', function () {
-    const pid = this.value;
+  // Vinculado via jQuery (não addEventListener nativo): Select2 dispara 'change'
+  // através de jQuery.trigger(), que não invoca listeners de addEventListener
+  // puro — nem no clique manual do usuário, nem no jQuery(...).trigger('change')
+  // usado pelo botão "Usar este defensivo" acima. jQuery.on() escuta os dois casos.
+  // Setada pelo botão "Usar este defensivo" antes de disparar a troca de produto,
+  // pra sobrepor a unidade padrão do produto pela unidade de dosagem cadastrada
+  // em Cultura/Praga para aquele defensivo específico (podem ser diferentes).
+  let unidadeForcada = null;
+
+  function autoFillFromProduto(pid) {
     if (!pid) return;
+    const unidadeForcadaId = unidadeForcada;
+    unidadeForcada = null;
     fetch(`${PRODUTO_INFO_URL}?produto_id=${pid}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
-        if (data.unidade_medida_id && unidadeSel) {
-          const opt = Array.from(unidadeSel.options).find(o => String(o.value) === String(data.unidade_medida_id));
+        const unidadeAlvo = unidadeForcadaId || data.unidade_medida_id;
+        if (unidadeAlvo && unidadeSel) {
+          const opt = Array.from(unidadeSel.options).find(o => String(o.value) === String(unidadeAlvo));
           if (opt) {
-            unidadeSel.value = data.unidade_medida_id;
-            siglaBadge.textContent = data.unidade_medida_sigla || '';
+            unidadeSel.value = unidadeAlvo;
+            siglaBadge.textContent = opt.text.split('—')[0].trim().split(' ')[0] || '';
           }
         }
         if (custoInput && (!custoInput.value || parseFloat(custoInput.value || 0) === 0)) {
@@ -110,7 +219,12 @@
         }
       })
       .catch(() => {});
-  });
+  }
+  if (window.jQuery) {
+    jQuery(produtoSel).on('change', function () { autoFillFromProduto(this.value); });
+  } else {
+    produtoSel.addEventListener('change', function () { autoFillFromProduto(this.value); });
+  }
 
   // ── Sigla ao mudar unidade manualmente ──────────────────────────────────────
   if (unidadeSel) {

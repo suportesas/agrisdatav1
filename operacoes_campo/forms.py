@@ -16,7 +16,7 @@ from .models import (
     PlanejamentoCustoSafra, PlanejamentoCustoItem,
     PlanejamentoCustoItemIndireto, FormacaoPreco,
     TipoServicoOS, SubtipoServicoOS, ModalidadeExecucaoOS,
-    OSTransplantio, OSReplantio,
+    OSTransplantio, OSReplantio, Receituario,
     verificar_carencia_defensivos, proximo_numero_corte,
 )
 
@@ -194,8 +194,9 @@ class OrdemServicoInsumoForm(forms.ModelForm):
 
     class Meta:
         model = OrdemServicoInsumo
-        fields = ['produto', 'unidade_medida', 'quantidade_planejada', 'quantidade_aplicada', 'custo_unitario', 'observacoes']
+        fields = ['praga', 'produto', 'unidade_medida', 'quantidade_planejada', 'quantidade_aplicada', 'custo_unitario', 'observacoes']
         widgets = {
+            'praga': forms.Select(attrs={'class': 'form-select'}),
             'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
             'unidade_medida': forms.Select(attrs={'class': 'form-select'}),
             'quantidade_planejada': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
@@ -208,8 +209,11 @@ class OrdemServicoInsumoForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if empresa:
             from produtos.models import Produto, UnidadeMedida
+            from cadastros.models import Praga
             self.fields['produto'].queryset = Produto.objects.filter(lotes__armazem__empresa=empresa).distinct().order_by('nome')
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=empresa).order_by('nome')
+            self.fields['praga'].queryset = Praga.objects.filter(empresa=empresa, ativa=True).order_by('nome_comum')
+            self.fields['praga'].required = False
 
             from decimal import Decimal
             from estoque.disponibilidade import reservas_por_produto
@@ -235,6 +239,48 @@ class OrdemServicoInsumoForm(forms.ModelForm):
         if custo_unitario in (None, '') and produto and getattr(produto, 'preco_custo', None) not in (None, ''):
             cleaned['custo_unitario'] = produto.preco_custo
         return cleaned
+
+
+class ReceituarioForm(forms.ModelForm):
+    """Emissão de Receituário Agronômico para um item de insumo da OS.
+    Praga/produto/cultura/carência/etc. são snapshot preenchido pela view
+    (a partir do insumo + ProdutoDefensivoCultura) — não editáveis aqui."""
+
+    class Meta:
+        model = Receituario
+        fields = [
+            'dosagem_aplicar', 'unidade_dosagem', 'volume_calda',
+            'data_aplicacao_prevista', 'temperatura_c', 'umidade_pct', 'vento_kmh',
+            'responsavel_tecnico', 'observacoes',
+        ]
+        widgets = {
+            'dosagem_aplicar': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'unidade_dosagem': forms.Select(attrs={'class': 'form-select'}),
+            'volume_calda': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'L/ha'}),
+            'data_aplicacao_prevista': DateBRInput(attrs={'class': 'form-control'}),
+            'temperatura_c': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '°C'}),
+            'umidade_pct': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100', 'placeholder': '%'}),
+            'vento_kmh': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'km/h'}),
+            'responsavel_tecnico': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            from produtos.models import UnidadeMedida
+            from rh.models import Funcionario
+            self.fields['unidade_dosagem'].queryset = UnidadeMedida.objects.filter(empresa=empresa).order_by('nome')
+            self.fields['responsavel_tecnico'].queryset = Funcionario.objects.filter(
+                empresa=empresa, ativo=True, numero_crea__gt=''
+            ).order_by('nome_completo')
+            self.fields['responsavel_tecnico'].label_from_instance = lambda f: f"{f.nome_completo} — CREA {f.numero_crea}"
+        self.fields['volume_calda'].required = False
+        self.fields['data_aplicacao_prevista'].required = False
+        self.fields['temperatura_c'].required = False
+        self.fields['umidade_pct'].required = False
+        self.fields['vento_kmh'].required = False
+        self.fields['observacoes'].required = False
 
 
 class OSTransplantioForm(forms.ModelForm):

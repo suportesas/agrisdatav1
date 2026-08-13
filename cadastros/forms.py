@@ -2183,13 +2183,16 @@ class SafraCulturaForm(forms.ModelForm):
 
     class Meta:
         model = SafraCultura
-        fields = ['cultura', 'periodo_inicio', 'periodo_fim', 'status', 'talhoes']
+        fields = ['cultura', 'periodo_inicio', 'periodo_fim', 'status', 'talhoes', 'paises_destino']
         widgets = {
             'cultura': forms.Select(attrs={'class': 'form-select'}),
             'periodo_inicio': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'periodo_fim': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
             'status': forms.Select(attrs={'class': 'form-select'}),
             'talhoes': forms.SelectMultiple(attrs={'class': 'd-none'}),
+            'paises_destino': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': 'Ex: Argentina, Chile, União Europeia',
+            }),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):

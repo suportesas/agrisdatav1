@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-globe-americas"></i></span>
+        <h2>{{ titulo }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'bancario:banco_correspondente_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm"><i class="bi bi-bank"></i></span>
+            <span class="title">Dados do Banco Correspondente</span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-8{% if form.nome.errors %} has-error{% endif %}">
+                <label class="form-label">Banco Correspondente<span class="req">*</span></label>
+                {{ form.nome }}
+                {% if form.nome.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.nome.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="field col-4{% if form.swift_bic.errors %} has-error{% endif %}">
+                <label class="form-label">SWIFT/BIC<span class="req">*</span></label>
+                {{ form.swift_bic }}
+                {% if form.swift_bic.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.swift_bic.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="field col-6{% if form.moeda.errors %} has-error{% endif %}">
+                <label class="form-label">Moeda<span class="req">*</span></label>
+                {{ form.moeda }}
+                <div class="helper-note">Um mesmo banco costuma ter um correspondente diferente por moeda.</div>
+                {% if form.moeda.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.moeda.errors|join:", " }}</div>{% endif %}
+              </div>
+              <div class="field col-12">
+                <label class="form-label">Endereço</label>
+                {{ form.endereco }}
+              </div>
+              {% if banco %}
+              <div class="field col-12">
+                <div class="switch-row">
+                  <label class="switch">
+                    {{ form.ativo }}
+                    <span class="slider"></span>
+                  </label>
+                  <label class="switch-label" for="{{ form.ativo.id_for_label }}">Banco Ativo</label>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'bancario:banco_correspondente_list' %}" class="btn btn-outline">
+        Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-circle"></i> Salvar
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

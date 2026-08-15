@@ -11,6 +11,14 @@ urlpatterns = [
     path('contas/<int:pk>/editar/', views.conta_bancaria_edit, name='conta_bancaria_edit'),
     path('contas/<int:pk>/toggle/', views.conta_bancaria_toggle, name='conta_bancaria_toggle'),
     path('contas/<int:pk>/importar/', views.importar_extrato, name='importar_extrato'),
+    path('contas/<int:pk>/correspondentes/adicionar/', views.conta_bancaria_correspondente_add, name='conta_bancaria_correspondente_add'),
+    path('contas/<int:pk>/correspondentes/<int:banco_pk>/remover/', views.conta_bancaria_correspondente_remove, name='conta_bancaria_correspondente_remove'),
+
+    # BancoCorrespondente CRUD
+    path('bancos-correspondentes/', views.banco_correspondente_list, name='banco_correspondente_list'),
+    path('bancos-correspondentes/novo/', views.banco_correspondente_create, name='banco_correspondente_create'),
+    path('bancos-correspondentes/<int:pk>/editar/', views.banco_correspondente_edit, name='banco_correspondente_edit'),
+    path('bancos-correspondentes/<int:pk>/toggle/', views.banco_correspondente_toggle, name='banco_correspondente_toggle'),
 
     # Importações
     path('importacoes/<int:pk>/', views.importacao_detail, name='importacao_detail'),

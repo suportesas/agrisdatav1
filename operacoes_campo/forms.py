@@ -664,7 +664,7 @@ class InspecaoQualidadeCampoForm(forms.ModelForm):
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'estagio_cultura': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Floração, Frutificação'}),
             'brix': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': '°Bx'}),
-            'peso_medio_fruto_g': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'g'}),
+            'peso_medio_fruto_g': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': 'kg'}),
             'percentual_defeitos': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '%'}),
             'coloracao': forms.Select(attrs={'class': 'form-select'}),
             'resultado': forms.Select(attrs={'class': 'form-select'}),

@@ -1282,7 +1282,7 @@ class InspecaoQualidadeCampo(models.Model):
     tipo_inspecao = models.CharField(max_length=30, choices=TIPO_CHOICES)
     estagio_cultura = models.CharField(max_length=50, blank=True)
     brix = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, verbose_name='Brix (°Bx)')
-    peso_medio_fruto_g = models.DecimalField(max_digits=7, decimal_places=1, null=True, blank=True, verbose_name='Peso médio do fruto (g)')
+    peso_medio_fruto_g = models.DecimalField(max_digits=7, decimal_places=1, null=True, blank=True, verbose_name='Peso médio do fruto (kg)')
     percentual_defeitos = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))], verbose_name='% Defeitos')
     coloracao = models.CharField(max_length=30, choices=COLORACAO_CHOICES, blank=True)
     resultado = models.CharField(max_length=30, choices=RESULTADO_CHOICES)

@@ -404,6 +404,23 @@ def pedido_emitir_documento(request, pk):
         elif pedido.gerar_nota_fiscal and pedido.tipo_venda == 'EXPORTACAO' and not pedido.invoice_id:
             from faturamento.models import InvoiceExportacao, ItemInvoice
             from faturamento.views import _gerar_numero_invoice
+            conta_bancaria = empresa.contas_bancarias_empresa.filter(
+                ativa=True, conta_principal=True,
+            ).first()
+            dados_bancarios = {}
+            if conta_bancaria and (conta_bancaria.iban or conta_bancaria.swift_bic):
+                dados_bancarios = {
+                    'banco_nome': conta_bancaria.banco,
+                    'banco_endereco': conta_bancaria.endereco_banco,
+                    'banco_swift': conta_bancaria.swift_bic,
+                    'banco_iban': conta_bancaria.iban,
+                    'banco_numero_conta': conta_bancaria.numero_formatado,
+                    'banco_beneficiario_nome': conta_bancaria.beneficiario_nome,
+                }
+                correspondente = conta_bancaria.correspondente_para_moeda(pedido.moeda)
+                if correspondente:
+                    dados_bancarios['banco_correspondente_nome'] = correspondente.nome
+                    dados_bancarios['banco_correspondente_swift'] = correspondente.swift_bic
             inv = InvoiceExportacao.objects.create(
                 empresa=empresa,
                 numero=_gerar_numero_invoice(empresa),
@@ -419,12 +436,7 @@ def pedido_emitir_documento(request, pk):
                 valor_frete=pedido.valor_frete,
                 valor_seguro=Decimal('0.00'),
                 valor_total=pedido.valor_total,
-                banco_nome=empresa.banco_nome,
-                banco_endereco=empresa.banco_endereco,
-                banco_swift=empresa.banco_swift,
-                banco_iban=empresa.banco_iban,
-                banco_numero_conta=empresa.banco_numero_conta,
-                banco_beneficiario_nome=empresa.banco_beneficiario_nome,
+                **dados_bancarios,
                 criado_por=request.user,
                 atualizado_por=request.user,
             )

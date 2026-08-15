@@ -1,6 +1,6 @@
 from django import forms
 from core.widgets import DateBRInput
-from .models import ContaBancaria, ImportacaoExtrato
+from .models import BancoCorrespondente, ContaBancaria, ImportacaoExtrato
 
 _CTRL = {'class': 'form-control'}
 _SEL = {'class': 'form-select'}
@@ -17,6 +17,7 @@ class ContaBancariaForm(forms.ModelForm):
             'conta', 'conta_digito',
             'tipo_conta',
             'pix_habilitado', 'tipo_chave_pix', 'chave_pix',
+            'iban', 'swift_bic', 'endereco_banco', 'beneficiario_nome',
             'saldo_inicial', 'data_saldo_inicial',
             'conta_principal', 'ativa',
             'observacoes',
@@ -32,11 +33,34 @@ class ContaBancariaForm(forms.ModelForm):
             'pix_habilitado': forms.CheckboxInput(attrs=_CHK),
             'tipo_chave_pix': forms.Select(attrs=_SEL),
             'chave_pix': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Informe a chave PIX'}),
+            'iban': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Ex: BR3801181521022070000636754C1'}),
+            'swift_bic': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Ex: BCSIBRRS'}),
+            'endereco_banco': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Cidade — UF/País'}),
+            'beneficiario_nome': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Se vazio, usa a razão social da empresa'}),
             'saldo_inicial': forms.NumberInput(attrs={**_CTRL, 'step': '0.01'}),
             'data_saldo_inicial': DateBRInput(attrs={**_CTRL}),
             'conta_principal': forms.CheckboxInput(attrs=_CHK),
             'ativa': forms.CheckboxInput(attrs=_CHK),
             'observacoes': forms.Textarea(attrs=_TEXTAREA),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        # empresa aceito por compatibilidade com quem instancia o form — os
+        # bancos correspondentes agora são vinculados via conta_bancaria_correspondente_add,
+        # não mais por um campo deste form.
+        super().__init__(*args, **kwargs)
+
+
+class BancoCorrespondenteForm(forms.ModelForm):
+    class Meta:
+        model = BancoCorrespondente
+        fields = ['nome', 'swift_bic', 'moeda', 'endereco', 'ativo']
+        widgets = {
+            'nome': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Ex: Citibank N.A.'}),
+            'swift_bic': forms.TextInput(attrs={**_CTRL, 'placeholder': 'Ex: CITIUS33'}),
+            'moeda': forms.Select(attrs=_SEL),
+            'endereco': forms.TextInput(attrs={**_CTRL, 'placeholder': '111 Wall Street, New York - USA'}),
+            'ativo': forms.CheckboxInput(attrs=_CHK),
         }
 
 

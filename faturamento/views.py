@@ -2573,22 +2573,35 @@ def invoice_pdf(request, pk):
     invoice = get_object_or_404(InvoiceExportacao, pk=pk, empresa=empresa)
 
     from django.template.loader import get_template
-    from xhtml2pdf import pisa
     from django.http import HttpResponse
-    import io
+    from playwright.sync_api import sync_playwright
 
     from adiantamentos.models import DescontoAdiantamento
     desconto_adiantamento = DescontoAdiantamento.objects.filter(invoice=invoice, status='APLICADO').select_related('adiantamento').first()
 
+    logo_url = request.build_absolute_uri(empresa.logo.url) if empresa.logo else None
+    empresa_nome = empresa.razao_social or empresa.nome or ''
+    empresa_inicial = empresa_nome[:1].upper() or 'E'
+
     template = get_template('faturamento/invoice/pdf.html')
-    html = template.render({'invoice': invoice, 'empresa': empresa, 'desconto_adiantamento': desconto_adiantamento})
-    result = io.BytesIO()
-    pdf = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), result)
-    if not pdf.err:
-        response = HttpResponse(result.getvalue(), content_type='application/pdf')
-        response['Content-Disposition'] = f'inline; filename="{invoice.numero}.pdf"'
-        return response
-    return HttpResponse('Erro ao gerar PDF', status=500)
+    html = template.render({
+        'invoice': invoice,
+        'empresa': empresa,
+        'desconto_adiantamento': desconto_adiantamento,
+        'logo_url': logo_url,
+        'empresa_inicial': empresa_inicial,
+    })
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page()
+        page.set_content(html, wait_until='networkidle')
+        pdf_bytes = page.pdf(format='A4', print_background=True, prefer_css_page_size=True)
+        browser.close()
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="{invoice.numero}.pdf"'
+    return response
 
 
 # ─────────────────────────── Packing List ───────────────────────────

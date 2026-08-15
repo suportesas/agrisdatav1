@@ -597,15 +597,6 @@ class Empresa(models.Model):
         help_text='Como exibir o estoque de produtos base que possuem variantes: somar o estoque de todas as variantes ou mostrar "—".',
     )
 
-    # Dados bancários para recebimento internacional (exportação) — servem de
-    # default para InvoiceExportacao, que os copia (snapshot) na criação.
-    banco_nome = models.CharField('Nome do Banco', max_length=150, blank=True)
-    banco_endereco = models.CharField('Endereço do Banco', max_length=250, blank=True)
-    banco_swift = models.CharField('SWIFT/BIC', max_length=11, blank=True)
-    banco_iban = models.CharField('IBAN', max_length=34, blank=True)
-    banco_numero_conta = models.CharField('Número da Conta', max_length=40, blank=True)
-    banco_beneficiario_nome = models.CharField('Nome do Beneficiário', max_length=200, blank=True)
-
     class Meta:
         ordering = ['nome']
         verbose_name = "Empresa"

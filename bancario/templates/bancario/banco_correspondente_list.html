@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Bancos Correspondentes — {{ request.user.empresa.nome }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  <!-- Cabeçalho -->
+  <div class="page-header mb-3">
+      <div class="d-flex align-items-center gap-3">
+          <span class="page-header-icon blue"><i class="bi bi-globe-americas"></i></span>
+          <div>
+              <h2>Bancos Correspondentes</h2>
+              <p class="text-muted mb-0">Bancos intermediários usados no roteamento de transferências internacionais</p>
+          </div>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+          <a href="{% url 'bancario:conta_bancaria_list' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Contas Bancárias
+          </a>
+          <a href="{% url 'bancario:banco_correspondente_create' %}" class="btn btn-success">
+              <i class="bi bi-plus-circle"></i> Novo Banco Correspondente
+          </a>
+      </div>
+  </div>
+
+  <!-- Barra de resultado -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted small">
+      {% if bancos.paginator %}
+        Exibindo <strong>{{ bancos.start_index }}–{{ bancos.end_index }}</strong>
+        de <strong>{{ bancos.paginator.count }}</strong> banco{{ bancos.paginator.count|pluralize }} correspondente{{ bancos.paginator.count|pluralize }}
+      {% endif %}
+    </span>
+    <form method="get" class="row g-2 align-items-end" id="filterForm">
+      {% include 'partials/per_page_select.html' with col_class='' %}
+    </form>
+  </div>
+
+  <!-- Lista -->
+  <div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th class="ps-4">Banco Correspondente</th>
+              <th>SWIFT/BIC</th>
+              <th>Moeda</th>
+              <th>Endereço</th>
+              <th class="text-center">Situação</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for banco in bancos %}
+            <tr class="{% if not banco.ativo %}opacity-50{% endif %}">
+              <td class="ps-4"><strong>{{ banco.nome }}</strong></td>
+              <td class="text-mono">{{ banco.swift_bic }}</td>
+              <td><span class="badge bg-light text-dark border">{{ banco.moeda }}</span></td>
+              <td>{{ banco.endereco|default:"—" }}</td>
+              <td class="text-center">
+                <span class="badge bg-{% if banco.ativo %}success{% else %}secondary{% endif %}">
+                  {% if banco.ativo %}Ativo{% else %}Inativo{% endif %}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="d-flex gap-3 justify-content-center">
+                    <a class="action-icon edit" href="{% url 'bancario:banco_correspondente_edit' banco.pk %}" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <form method="post" action="{% url 'bancario:banco_correspondente_toggle' banco.pk %}" class="d-inline">
+                      {% csrf_token %}
+                      <button type="submit" class="action-icon" title="{% if banco.ativo %}Desativar{% else %}Ativar{% endif %}" style="border:none;background:none;padding:0">
+                        <i class="bi bi-{% if banco.ativo %}toggle-on{% else %}toggle-off{% endif %}"></i>
+                      </button>
+                    </form>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-5">
+                <i class="bi bi-inbox display-4 d-block mb-3"></i>
+                Nenhum banco correspondente cadastrado
+                <p class="mb-3">Cadastre o banco intermediário usado nas transferências internacionais e relacione-o à sua conta bancária.</p>
+                <a href="{% url 'bancario:banco_correspondente_create' %}" class="btn btn-primary">
+                  <i class="bi bi-plus-circle"></i> Cadastrar Primeiro Banco Correspondente
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if bancos.paginator %}
+    <div class="card-footer">
+      {% include 'partials/pagination.html' with page_obj=bancos %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

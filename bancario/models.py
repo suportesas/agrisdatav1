@@ -17,6 +17,44 @@ TIPO_PIX_CHOICES = [
     ('CHAVE_ALEATORIA', 'Chave Aleatória'),
 ]
 
+MOEDA_CORRESPONDENTE_CHOICES = [
+    ('USD', 'USD - Dólar Americano'),
+    ('EUR', 'EUR - Euro'),
+    ('GBP', 'GBP - Libra Esterlina'),
+    ('BRL', 'BRL - Real Brasileiro'),
+]
+
+
+class BancoCorrespondente(models.Model):
+    """Banco intermediário/correspondente usado no roteamento de transferências
+    internacionais (SWIFT) quando o banco do comprador não tem correspondência
+    direta com a conta beneficiária. Um mesmo banco beneficiário costuma ter um
+    correspondente diferente por moeda (ex.: Commerzbank AG para EUR, Citibank
+    N.A. para USD) — por isso a moeda faz parte do cadastro do correspondente."""
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='bancos_correspondentes',
+        verbose_name='Empresa',
+    )
+    nome = models.CharField('Banco Correspondente', max_length=150)
+    swift_bic = models.CharField('SWIFT/BIC', max_length=11)
+    moeda = models.CharField('Moeda', max_length=5, choices=MOEDA_CORRESPONDENTE_CHOICES, default='USD')
+    endereco = models.CharField('Endereço', max_length=250, blank=True)
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Banco Correspondente'
+        verbose_name_plural = 'Bancos Correspondentes'
+        ordering = ['nome', 'moeda']
+        unique_together = [('empresa', 'nome', 'swift_bic', 'moeda')]
+
+    def __str__(self):
+        return f'{self.nome} ({self.swift_bic}) — {self.moeda}'
+
 
 class ContaBancaria(models.Model):
     empresa = models.ForeignKey(
@@ -38,6 +76,24 @@ class ContaBancaria(models.Model):
     tipo_chave_pix = models.CharField('Tipo de Chave PIX', max_length=20,
                                       choices=TIPO_PIX_CHOICES, blank=True)
     chave_pix = models.CharField('Chave PIX', max_length=100, blank=True)
+
+    # Dados para transferência internacional (opcional) — usados como default
+    # para o "Beneficiary Bank" da InvoiceExportacao quando esta é a conta principal.
+    iban = models.CharField('IBAN', max_length=34, blank=True)
+    swift_bic = models.CharField('SWIFT/BIC', max_length=11, blank=True)
+    endereco_banco = models.CharField('Endereço do Banco (Internacional)', max_length=250, blank=True)
+    beneficiario_nome = models.CharField(
+        'Nome do Beneficiário (Internacional)', max_length=200, blank=True,
+        help_text='Se vazio, usa a razão social da empresa.',
+    )
+    correspondentes = models.ManyToManyField(
+        BancoCorrespondente,
+        blank=True,
+        related_name='contas_bancarias',
+        verbose_name='Bancos Correspondentes (Intermediários)',
+        help_text='Um banco correspondente diferente pode ser usado por moeda.',
+    )
+
     saldo_inicial = models.DecimalField(
         'Saldo Inicial', max_digits=15, decimal_places=2, default=Decimal('0.00'),
         validators=[MinValueValidator(Decimal('-999999999.99'))],
@@ -78,6 +134,10 @@ class ContaBancaria(models.Model):
         ag = f'{self.agencia}-{self.agencia_digito}' if self.agencia_digito else self.agencia
         cc = f'{self.conta}-{self.conta_digito}' if self.conta_digito else self.conta
         return f'Ag {ag} / Cc {cc}'
+
+    def correspondente_para_moeda(self, moeda):
+        """Retorna o banco correspondente cadastrado para a moeda informada, se houver."""
+        return self.correspondentes.filter(ativo=True, moeda=moeda).first()
 
 
 class ImportacaoExtrato(models.Model):

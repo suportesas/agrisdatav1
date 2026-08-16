@@ -935,6 +935,10 @@
           <li><a href="{% url 'embalagem:romaneio_create' %}"><i class="bi bi-plus-circle"></i> Novo Romaneio</a></li>
           {% endif %}
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:carga_frete_list' %}
+          <li class="submenu-divider"></li>
+          <li><a href="{% url 'embalagem:carga_frete_list' %}"><i class="bi bi-truck"></i> Cargas de Frete</a></li>
+          {% endif %}
           {% if user.is_admin_empresa or request|tem_acesso:'embalagem:tipo_embalagem_list' %}
           <li class="submenu-divider"></li>
           <li><a href="{% url 'embalagem:tipo_embalagem_list' %}"><i class="bi bi-gear"></i> Tipos de Embalagem</a></li>

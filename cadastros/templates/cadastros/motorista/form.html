@@ -315,7 +315,7 @@
         this.disabled = true;
 
         try {
-            const response = await fetch(`/cadastros/api/buscar-cep-motorista/?cep=${cep}`);
+            const response = await fetch(`{% url 'frota:buscar_cep_motorista' %}?cep=${cep}`);
             const data = await response.json();
 
             if (response.ok) {

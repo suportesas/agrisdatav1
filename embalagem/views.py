@@ -912,6 +912,25 @@ def romaneio_gerar_invoice(request, pk):
         data_embarque = booking.data_embarque_previsto
 
     with transaction.atomic():
+        conta_bancaria = empresa.contas_bancarias_empresa.filter(
+            ativa=True, conta_principal=True,
+        ).first()
+        dados_bancarios = {}
+        if conta_bancaria and (conta_bancaria.iban or conta_bancaria.swift_bic):
+            dados_bancarios = {
+                'banco_nome': conta_bancaria.banco,
+                'banco_endereco': conta_bancaria.endereco_banco,
+                'banco_swift': conta_bancaria.swift_bic,
+                'banco_iban': conta_bancaria.iban,
+                'banco_numero_conta': conta_bancaria.numero_formatado,
+                'banco_beneficiario_nome': conta_bancaria.beneficiario_nome,
+            }
+            # moeda não é definida explicitamente abaixo, então a Invoice nasce
+            # com o default do model (USD) — usamos a mesma moeda aqui.
+            correspondente = conta_bancaria.correspondente_para_moeda('USD')
+            if correspondente:
+                dados_bancarios['banco_correspondente_nome'] = correspondente.nome
+                dados_bancarios['banco_correspondente_swift'] = correspondente.swift_bic
         invoice = InvoiceExportacao.objects.create(
             empresa=empresa,
             booking=booking,
@@ -920,12 +939,7 @@ def romaneio_gerar_invoice(request, pk):
             data_embarque_previsto=data_embarque,
             porto_embarque=porto_embarque,
             porto_destino=porto_destino,
-            banco_nome=empresa.banco_nome,
-            banco_endereco=empresa.banco_endereco,
-            banco_swift=empresa.banco_swift,
-            banco_iban=empresa.banco_iban,
-            banco_numero_conta=empresa.banco_numero_conta,
-            banco_beneficiario_nome=empresa.banco_beneficiario_nome,
+            **dados_bancarios,
             criado_por=request.user,
         )
 

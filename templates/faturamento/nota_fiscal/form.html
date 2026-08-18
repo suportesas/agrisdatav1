@@ -3180,15 +3180,21 @@ $(function () {
     transp_rntc:      'rntc',
   };
 
-  sel.addEventListener('change', function () {
+  function limparFlags() {
+    Object.keys(FIELDS).forEach(f => {
+      const el = document.getElementById('id_' + f);
+      if (el) delete el.dataset.userEdited;
+    });
+  }
+
+  // Select2 (jQuery) só dispara mudança via seus próprios eventos
+  // select2:select/select2:clear — não chega a um addEventListener('change')
+  // nativo neste <select>, mesmo caso do comentário acima sobre #id_cliente
+  // e os selects de produto.
+  $(document).on('select2:select', '#id_transportadora', function () {
     const pk = this.value;
-    if (!pk) {
-      Object.keys(FIELDS).forEach(f => {
-        const el = document.getElementById('id_' + f);
-        if (el) el.value = '';
-      });
-      return;
-    }
+    limparFlags();
+    if (!pk) return;
     fetch(`/cadastros/api/transportadoras/${pk}/`)
       .then(r => r.json())
       .then(data => {
@@ -3200,6 +3206,14 @@ $(function () {
       .catch(() => {});
   });
 
+  $(document).on('select2:clear', '#id_transportadora', function () {
+    limparFlags();
+    Object.keys(FIELDS).forEach(f => {
+      const el = document.getElementById('id_' + f);
+      if (el) el.value = '';
+    });
+  });
+
   // Marcar campo como editado manualmente para não sobrescrever
   Object.keys(FIELDS).forEach(f => {
     const el = document.getElementById('id_' + f);
@@ -3209,14 +3223,6 @@ $(function () {
       });
     }
   });
-
-  // Limpar flag ao trocar transportadora
-  sel.addEventListener('change', function () {
-    Object.keys(FIELDS).forEach(f => {
-      const el = document.getElementById('id_' + f);
-      if (el) delete el.dataset.userEdited;
-    });
-  }, true); // capture = true, roda antes do listener de fetch
 })();
 
 // ── Toggle Cliente / Fornecedor conforme finalidade_nfe e Tipo de Operação ──

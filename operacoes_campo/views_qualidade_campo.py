@@ -203,7 +203,7 @@ def qualidade_campo_pdf(request, pk):
     if obj.brix is not None:
         params.append(['Brix (°Bx)', f'{obj.brix}'])
     if obj.peso_medio_fruto_g is not None:
-        params.append(['Peso Médio Fruto (g)', f'{obj.peso_medio_fruto_g}'])
+        params.append(['Peso Médio Fruto (kg)', f'{obj.peso_medio_fruto_g}'])
     if obj.percentual_defeitos is not None:
         params.append(['% Defeitos', f'{obj.percentual_defeitos}%'])
     if obj.previsao_colheita_dias is not None:

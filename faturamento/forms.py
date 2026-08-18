@@ -1112,15 +1112,24 @@ class InvoiceExportacaoForm(FaturamentoBaseForm):
             self.fields['taxa_cambio'].required = False
             self.fields['data_embarque_previsto'].required = False
             if not self.instance.pk:
-                # Snapshot dos dados bancários da empresa como sugestão inicial —
-                # a Invoice pode sobrescrever, mas não muda retroativamente se os
-                # dados da empresa mudarem depois de emitida.
-                self.fields['banco_nome'].initial = empresa.banco_nome
-                self.fields['banco_endereco'].initial = empresa.banco_endereco
-                self.fields['banco_swift'].initial = empresa.banco_swift
-                self.fields['banco_iban'].initial = empresa.banco_iban
-                self.fields['banco_numero_conta'].initial = empresa.banco_numero_conta
-                self.fields['banco_beneficiario_nome'].initial = empresa.banco_beneficiario_nome
+                # Snapshot dos dados bancários da conta bancária principal da
+                # empresa como sugestão inicial — a Invoice pode sobrescrever,
+                # mas não muda retroativamente se a conta mudar depois de emitida.
+                conta_bancaria = empresa.contas_bancarias_empresa.filter(
+                    ativa=True, conta_principal=True,
+                ).first()
+                if conta_bancaria and (conta_bancaria.iban or conta_bancaria.swift_bic):
+                    self.fields['banco_nome'].initial = conta_bancaria.banco
+                    self.fields['banco_endereco'].initial = conta_bancaria.endereco_banco
+                    self.fields['banco_swift'].initial = conta_bancaria.swift_bic
+                    self.fields['banco_iban'].initial = conta_bancaria.iban
+                    self.fields['banco_numero_conta'].initial = conta_bancaria.numero_formatado
+                    self.fields['banco_beneficiario_nome'].initial = conta_bancaria.beneficiario_nome
+                    moeda_sugerida = self.initial.get('moeda') or 'USD'
+                    correspondente = conta_bancaria.correspondente_para_moeda(moeda_sugerida)
+                    if correspondente:
+                        self.fields['banco_correspondente_nome'].initial = correspondente.nome
+                        self.fields['banco_correspondente_swift'].initial = correspondente.swift_bic
 
     def clean(self):
         cleaned = super().clean()

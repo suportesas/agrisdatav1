@@ -321,7 +321,7 @@ def abastecimento_gerar_conta_pagar(request, pk):
     if not obj.fornecedor:
         messages.error(request, 'Selecione um fornecedor antes de gerar a Conta a Pagar.')
         return redirect('frota:abastecimento_update', pk=pk)
-    from .services_frota import criar_conta_pagar_abastecimento
+    from cadastros.services_frota import criar_conta_pagar_abastecimento
     try:
         criar_conta_pagar_abastecimento(obj)
         messages.success(request, 'Conta a Pagar gerada com sucesso.')
@@ -721,7 +721,7 @@ def manutencao_gerar_conta_pagar(request, pk):
     if not obj.fornecedor_externo:
         messages.error(request, 'Informe o fornecedor externo para gerar a Conta a Pagar.')
         return redirect('frota:manutencao_update', pk=pk)
-    from .services_frota import criar_conta_pagar_manutencao
+    from cadastros.services_frota import criar_conta_pagar_manutencao
     try:
         criar_conta_pagar_manutencao(obj)
         messages.success(request, 'Conta a Pagar gerada com sucesso.')
@@ -951,7 +951,7 @@ def viagem_detail(request, pk):
     obj = get_object_or_404(Viagem, pk=pk, transportadora__empresa=empresa)
     pedagios = PedagioVeiculo.objects.filter(viagem=obj)
 
-    from .services_frota import calcular_margem_viagem
+    from cadastros.services_frota import calcular_margem_viagem
     margem = calcular_margem_viagem(obj)
 
     return render(request, 'cadastros/frota/viagem_detail.html', {

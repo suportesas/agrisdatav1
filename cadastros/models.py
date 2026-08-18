@@ -3120,6 +3120,11 @@ class SafraCultura(models.Model):
     periodo_fim = models.DateField('Fim', null=True, blank=True)
     status = models.CharField('Status', max_length=20, choices=STATUS, default='PLANEJADA')
     talhoes = models.ManyToManyField(Talhao, related_name='culturas_safra', blank=True)
+    paises_destino = models.TextField(
+        'Países de Destino', blank=True,
+        help_text='Mercados para onde esta cultura está sendo produzida (separados por vírgula). '
+                   'Usado para alertar sobre defensivos proibidos nesses países.',
+    )
 
     class Meta:
         verbose_name = 'Cultura da Safra'
@@ -3129,6 +3134,12 @@ class SafraCultura(models.Model):
 
     def __str__(self):
         return f"{self.safra} - {self.cultura.nome}"
+
+    def get_paises_destino_list(self):
+        """Retorna a lista de países de destino (mesmo padrão de `Produto.get_paises_proibidos_list`)."""
+        if self.paises_destino:
+            return [p.strip() for p in self.paises_destino.split(',') if p.strip()]
+        return []
 
 
 class SafraPlan(models.Model):

@@ -220,32 +220,14 @@
 
             <hr class="my-4">
             <h6 class="fw-semibold mb-3"><i class="bi bi-bank me-2"></i>Dados Bancários para Exportação</h6>
-            <small class="text-muted d-block mb-3">Usados como padrão ao criar uma nova Invoice de Exportação.</small>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Nome do Beneficiário</label>
-                {{ empresa_form.banco_beneficiario_nome }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Banco</label>
-                {{ empresa_form.banco_nome }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Endereço do Banco</label>
-                {{ empresa_form.banco_endereco }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">SWIFT/BIC</label>
-                {{ empresa_form.banco_swift }}
-              </div>
-              <div class="col-md-3">
-                <label class="form-label">Nº da Conta</label>
-                {{ empresa_form.banco_numero_conta }}
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">IBAN</label>
-                {{ empresa_form.banco_iban }}
-              </div>
+            <div class="alert alert-light border d-flex align-items-center justify-content-between mb-0">
+              <span class="small text-muted">
+                IBAN, SWIFT e banco correspondente agora ficam na conta bancária marcada como <strong>principal</strong>
+                em Contas Bancárias — ela é usada como padrão ao criar uma nova Invoice de Exportação.
+              </span>
+              <a href="{% url 'bancario:conta_bancaria_list' %}" class="btn btn-sm btn-outline-primary ms-3 text-nowrap">
+                <i class="bi bi-bank me-1"></i>Gerenciar Contas Bancárias
+              </a>
             </div>
 
             <div class="mt-4 d-flex gap-2">

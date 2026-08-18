@@ -1,13 +1,18 @@
 import time
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import logout
 from django.shortcuts import redirect
+from django.urls import reverse
 
 # Prefixos que não devem contar como atividade nem disparar o logout
 # (evita logout no meio de um upload/polling e evita interferir com login/estáticos)
 _EXEMPT_PATH_PREFIXES = ('/static/', '/media/', '/login/', '/logout/')
+
+# Não faz sentido usar como next a própria chamada do heartbeat.
+_NON_REDIRECTABLE_PATHS = ('/session-heartbeat/',)
 
 
 class InactivityLogoutMiddleware:
@@ -31,9 +36,13 @@ class InactivityLogoutMiddleware:
             last_activity = request.session.get('last_activity')
 
             if last_activity is not None and (now - last_activity) > settings.SESSION_INACTIVITY_TIMEOUT:
+                next_url = request.get_full_path()
                 logout(request)
                 messages.info(request, "Sua sessão expirou por inatividade. Faça login novamente.")
-                return redirect('login')
+                login_url = reverse('login')
+                if next_url and not next_url.startswith(_NON_REDIRECTABLE_PATHS):
+                    login_url = '%s?%s' % (login_url, urlencode({'next': next_url}))
+                return redirect(login_url)
 
             request.session['last_activity'] = now
 

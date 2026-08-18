@@ -10,9 +10,10 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .forms import ContaBancariaForm, ConciliacaoManualForm, ImportarExtratoForm
+from .forms import BancoCorrespondenteForm, ContaBancariaForm, ConciliacaoManualForm, ImportarExtratoForm
 from .matching import sugerir_matches
 from .models import (
+    BancoCorrespondente,
     ConciliacaoLancamento,
     ContaBancaria,
     ExtratoLancamento,
@@ -47,7 +48,7 @@ def conta_bancaria_list(request):
 def conta_bancaria_create(request):
     empresa = request.user.empresa
     if request.method == 'POST':
-        form = ContaBancariaForm(request.POST)
+        form = ContaBancariaForm(request.POST, empresa=empresa)
         if form.is_valid():
             conta = form.save(commit=False)
             conta.empresa = empresa
@@ -55,7 +56,7 @@ def conta_bancaria_create(request):
             messages.success(request, f'Conta {conta.banco} criada com sucesso.')
             return redirect('bancario:conta_bancaria_detail', pk=conta.pk)
     else:
-        form = ContaBancariaForm()
+        form = ContaBancariaForm(empresa=empresa)
 
     return render(request, 'bancario/conta_form.html', {
         'form': form,
@@ -89,19 +90,129 @@ def conta_bancaria_edit(request, pk):
     conta = get_object_or_404(ContaBancaria, pk=pk, empresa=empresa)
 
     if request.method == 'POST':
-        form = ContaBancariaForm(request.POST, instance=conta)
+        form = ContaBancariaForm(request.POST, instance=conta, empresa=empresa)
         if form.is_valid():
             form.save()
             messages.success(request, 'Conta atualizada com sucesso.')
             return redirect('bancario:conta_bancaria_detail', pk=conta.pk)
     else:
-        form = ContaBancariaForm(instance=conta)
+        form = ContaBancariaForm(instance=conta, empresa=empresa)
 
     return render(request, 'bancario/conta_form.html', {
         'form': form,
         'conta': conta,
+        'correspondente_form': BancoCorrespondenteForm(),
         'titulo': f'Editar Conta: {conta.banco}',
     })
+
+
+@login_required
+def conta_bancaria_correspondente_add(request, pk):
+    empresa = request.user.empresa
+    conta = get_object_or_404(ContaBancaria, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = BancoCorrespondenteForm(request.POST)
+        if form.is_valid():
+            banco, created = BancoCorrespondente.objects.get_or_create(
+                empresa=empresa,
+                nome=form.cleaned_data['nome'],
+                swift_bic=form.cleaned_data['swift_bic'],
+                moeda=form.cleaned_data['moeda'],
+                defaults={'endereco': form.cleaned_data['endereco']},
+            )
+            conta.correspondentes.add(banco)
+            messages.success(request, f'Banco correspondente {banco.nome} ({banco.moeda}) vinculado à conta.')
+        else:
+            messages.error(request, 'Não foi possível adicionar o banco correspondente. Confira os campos obrigatórios.')
+
+    return redirect('bancario:conta_bancaria_edit', pk=conta.pk)
+
+
+@login_required
+def conta_bancaria_correspondente_remove(request, pk, banco_pk):
+    empresa = request.user.empresa
+    conta = get_object_or_404(ContaBancaria, pk=pk, empresa=empresa)
+    banco = get_object_or_404(BancoCorrespondente, pk=banco_pk, empresa=empresa)
+
+    if request.method == 'POST':
+        conta.correspondentes.remove(banco)
+        messages.success(request, f'{banco.nome} desvinculado desta conta.')
+
+    return redirect('bancario:conta_bancaria_edit', pk=conta.pk)
+
+
+# ---------------------------------------------------------------------------
+# BancoCorrespondente — CRUD
+# ---------------------------------------------------------------------------
+
+@login_required
+def banco_correspondente_list(request):
+    empresa = request.user.empresa
+    bancos_qs = BancoCorrespondente.objects.filter(empresa=empresa).order_by('nome')
+    bancos, per_page, per_page_options = paginate(request, bancos_qs)
+
+    return render(request, 'bancario/banco_correspondente_list.html', {
+        'bancos': bancos,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
+
+
+@login_required
+def banco_correspondente_create(request):
+    empresa = request.user.empresa
+    if request.method == 'POST':
+        form = BancoCorrespondenteForm(request.POST)
+        if form.is_valid():
+            banco = form.save(commit=False)
+            banco.empresa = empresa
+            banco.save()
+            messages.success(request, f'Banco correspondente {banco.nome} criado com sucesso.')
+            return redirect('bancario:banco_correspondente_list')
+    else:
+        form = BancoCorrespondenteForm()
+
+    return render(request, 'bancario/banco_correspondente_form.html', {
+        'form': form,
+        'titulo': 'Novo Banco Correspondente',
+    })
+
+
+@login_required
+def banco_correspondente_edit(request, pk):
+    empresa = request.user.empresa
+    banco = get_object_or_404(BancoCorrespondente, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        form = BancoCorrespondenteForm(request.POST, instance=banco)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Banco correspondente atualizado com sucesso.')
+            return redirect('bancario:banco_correspondente_list')
+    else:
+        form = BancoCorrespondenteForm(instance=banco)
+
+    return render(request, 'bancario/banco_correspondente_form.html', {
+        'form': form,
+        'banco': banco,
+        'titulo': f'Editar Banco Correspondente: {banco.nome}',
+    })
+
+
+@login_required
+def banco_correspondente_toggle(request, pk):
+    empresa = request.user.empresa
+    banco = get_object_or_404(BancoCorrespondente, pk=pk, empresa=empresa)
+
+    if request.method == 'POST':
+        banco.ativo = not banco.ativo
+        banco.save(update_fields=['ativo', 'atualizado_em'])
+        acao = 'ativado' if banco.ativo else 'desativado'
+        messages.success(request, f'Banco correspondente {acao} com sucesso.')
+        return redirect('bancario:banco_correspondente_list')
+
+    return redirect('bancario:banco_correspondente_list')
 
 
 @login_required

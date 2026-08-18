@@ -67,6 +67,22 @@
             <dd class="col-7">{{ conta.get_tipo_chave_pix_display }}: <code>{{ conta.chave_pix }}</code></dd>
             {% endif %}
           </dl>
+          {% if conta.iban or conta.swift_bic %}
+          <hr>
+          <p class="small text-muted mb-1">Transferência Internacional</p>
+          <dl class="row mb-0">
+            {% if conta.iban %}<dt class="col-5">IBAN</dt><dd class="col-7">{{ conta.iban }}</dd>{% endif %}
+            {% if conta.swift_bic %}<dt class="col-5">SWIFT/BIC</dt><dd class="col-7">{{ conta.swift_bic }}</dd>{% endif %}
+            {% if conta.correspondentes.all %}
+            <dt class="col-5">Bancos Correspondentes</dt>
+            <dd class="col-7">
+              {% for c in conta.correspondentes.all %}
+              <div>{{ c.nome }} ({{ c.swift_bic }}) — <span class="badge bg-light text-dark border">{{ c.moeda }}</span></div>
+              {% endfor %}
+            </dd>
+            {% endif %}
+          </dl>
+          {% endif %}
           {% if conta.observacoes %}
           <hr>
           <p class="small text-muted mb-1">Observações</p>

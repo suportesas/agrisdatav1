@@ -108,6 +108,11 @@
         <i class="bi bi-printer me-1"></i>Etiquetas PDF
       </a>
       {% endif %}
+      {% if romaneio.rastreabilidade_transporte %}
+      <a href="{% url 'embalagem:romaneio_rastreabilidade_pdf' romaneio.pk %}" class="btn btn-outline-dark" target="_blank">
+        <i class="bi bi-shield-check me-1"></i>Relatório de Rastreabilidade
+      </a>
+      {% endif %}
       {% if romaneio.status in 'CONFIRMADO,CARREGANDO' %}
       <a href="{% url 'embalagem:romaneio_conferencia' romaneio.pk %}" class="btn btn-warning text-dark">
         <i class="bi bi-upc-scan me-1"></i>Conferência
@@ -238,6 +243,96 @@
     </div>
     {% endif %}
   </div>
+
+  <!-- Rastreabilidade PPWR (TP/SP) -->
+  {% if romaneio.rastreabilidade_transporte %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-semibold"><i class="bi bi-shield-check me-1 text-success"></i>Rastreabilidade PPWR</div>
+    <div class="card-body d-flex flex-wrap gap-4 align-items-center">
+      <div>
+        <div class="text-muted small mb-1">Transport Package (TP)</div>
+        <span class="badge bg-primary fs-6 text-mono">{{ romaneio.rastreabilidade_transporte }}</span>
+      </div>
+      <div>
+        <div class="text-muted small mb-1">Sales Package (SP)</div>
+        <span class="badge bg-info text-dark fs-6 text-mono">{{ romaneio.rastreabilidade_venda }}</span>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Materiais de Embalagem Utilizados -->
+  {% if romaneio.status not in 'CONCLUIDO,CANCELADO' %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-1 text-primary"></i>Adicionar Material de Embalagem</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'embalagem:romaneio_adicionar_material' romaneio.pk %}" class="row g-2 align-items-end">
+        {% csrf_token %}
+        <div class="col-md-8">
+          <label class="form-label form-label-sm mb-0">Material</label>
+          <select name="material" class="form-select" required>
+            <option value="">Selecione...</option>
+            {% for m in materiais_disponiveis %}
+            <option value="{{ m.pk }}">{{ m.get_tipo_display }} — {{ m.nome }} ({{ m.fornecedor.nome }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg me-1"></i>Adicionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if materiais_tp or materiais_sp %}
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Transport Package (TP)</div>
+        <ul class="list-group list-group-flush">
+          {% for item in materiais_tp %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ item.material.nome }} <span class="text-muted small">— {{ item.material.fornecedor.nome }}</span></span>
+            {% if romaneio.status not in 'CONCLUIDO,CANCELADO' %}
+            <form method="post" action="{% url 'embalagem:romaneio_remover_material' romaneio.pk item.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este material?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">Nenhum material de transporte vinculado.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header fw-semibold">Sales Package (SP)</div>
+        <ul class="list-group list-group-flush">
+          {% for item in materiais_sp %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>{{ item.material.nome }} <span class="text-muted small">— {{ item.material.fornecedor.nome }}</span></span>
+            {% if romaneio.status not in 'CONCLUIDO,CANCELADO' %}
+            <form method="post" action="{% url 'embalagem:romaneio_remover_material' romaneio.pk item.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover este material?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted">Nenhum material de venda vinculado.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Seleção de Pallets (apenas rascunho) -->
   {% if romaneio.status == 'RASCUNHO' %}

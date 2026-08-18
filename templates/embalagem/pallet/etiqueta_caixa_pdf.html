@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: 100mm 150mm; margin: 3mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 6.7pt; color: #000; }
+
+  .etiqueta { width: 100%; border: 1.3pt solid #000; }
+
+  table.grid { width: 100%; border-collapse: collapse; border-bottom: 0.8pt solid #000; }
+  table.grid td { padding: 1mm 1.8mm; border-left: 0.8pt solid #000; vertical-align: top; }
+  table.grid td:first-child { border-left: none; }
+
+  .lbl { font-size: 5.6pt; text-transform: uppercase; color: #333; letter-spacing: 0.2px; }
+  .val { font-size: 8pt; font-weight: bold; margin-top: 0.3mm; }
+
+  table.trace-header { width: 100%; border-collapse: collapse; border-bottom: 0.8pt solid #000; }
+  table.trace-header td { padding: 1mm 1.8mm; border-left: 0.8pt solid #000; }
+  table.trace-header td:first-child { border-left: none; }
+  table.trace-header .lbl { font-size: 6pt; }
+  table.trace-header .val { font-size: 8.5pt; }
+
+  .variedade-row { padding: 1mm 1.8mm; border-bottom: 0.8pt solid #000; font-size: 8pt; font-weight: bold; }
+
+  table.multilingue-row { width: 100%; border-collapse: collapse; border-bottom: 0.8pt solid #000; }
+  table.multilingue-row td.nome { padding: 1.2mm 1.8mm; font-size: 6pt; line-height: 1.3; }
+  table.multilingue-row td.codigo { width: 12mm; padding: 1.2mm; border-left: 0.8pt solid #000;
+                                     text-align: center; font-size: 9pt; font-weight: bold; }
+
+  .origem-row { padding: 1.2mm 1.8mm; border-bottom: 0.8pt solid #000; font-size: 5.6pt; line-height: 1.3; color: #333; }
+  .origem-row strong { font-size: 6.5pt; color: #000; }
+
+  .key-row { padding: 1mm 1.8mm; border-bottom: 0.8pt solid #000; font-size: 7pt; }
+
+  .ppwr-box { padding: 1.5mm 1.8mm; border-bottom: 0.8pt solid #000; font-size: 5.2pt; line-height: 1.35; color: #333; }
+  .ppwr-box .titulo { font-size: 5.6pt; font-weight: bold; color: #000; margin-bottom: 0.5mm; }
+  .ppwr-box .responsavel { margin-top: 1mm; font-size: 6pt; color: #000; white-space: pre-line; }
+
+  .resumo-row { padding: 1.5mm 1.8mm; font-size: 6.5pt; text-align: center; font-weight: bold; }
+</style>
+</head>
+<body>
+{% for ctx in pallets_ctx %}
+{% with pallet=ctx.pallet romaneio=ctx.romaneio te=ctx.pallet.tipo_embalagem %}
+<div class="etiqueta">
+
+  <table class="trace-header">
+    <tr>
+      <td>
+        <div class="lbl">Production Traceability</div>
+        <div class="val">{{ pallet.codigo_producao|default:"—" }}</div>
+      </td>
+      <td>
+        <div class="lbl">Transport Traceability</div>
+        <div class="val">{{ romaneio.rastreabilidade_transporte|default:"—" }}</div>
+      </td>
+      <td>
+        <div class="lbl">Sales Traceability</div>
+        <div class="val">{{ romaneio.rastreabilidade_venda|default:"—" }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="variedade-row">Variety: {{ te.variedade|default:"—" }}</div>
+
+  <table class="multilingue-row">
+    <tr>
+      <td class="nome">{% if te.nome_multilingue %}{{ te.nome_multilingue }}{% elif te %}{{ te.descricao_completa }}{% endif %}</td>
+      <td class="codigo">{{ te.codigo_multilingue|default:"" }}</td>
+    </tr>
+  </table>
+
+  <!-- Texto fixo restrito a idiomas de escrita latina: a fonte padrão do gerador de PDF
+       (xhtml2pdf/reportlab, fonte base Helvetica) não tem glifos gregos/cirílicos. -->
+  <div class="origem-row">
+    <strong>Country of origin: Brazil</strong><br>
+    Brasilien - Brasil - Brésil - Brasil - Brasile - Brasil - Brazilië - Brasilia - Brasilien -
+    Brasilien - Brazília - Brazílie - Brazylia - Brazil - Brazília - Brazilija - Brasilia -
+    Brazilija - Brazil - Brazilija - Brasiilia
+  </div>
+
+  <table class="grid">
+    <tr>
+      <td>
+        <div class="lbl">Grower</div>
+        <div class="val">GGN {{ pallet.ordem_embalagem.lote_producao.talhao.fazenda.ggn_numero|default:"—" }}</div>
+      </td>
+      <td>
+        <div class="lbl">Class / Cat.</div>
+        <div class="val">{{ te.classe_categoria|default:"—" }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="grid">
+    <tr>
+      <td>
+        <div class="lbl">Packhouse</div>
+        <div class="val">{{ pallet.empresa.nome }}</div>
+        <div style="font-size:5.6pt;color:#333;margin-top:0.5mm">
+          GGN {{ pallet.ordem_embalagem.lote_producao.talhao.fazenda.ggn_numero|default:"—" }}
+        </div>
+      </td>
+      <td>
+        <div class="lbl">Supplier</div>
+        <div class="val">{{ pallet.empresa.nome }}</div>
+        <div style="font-size:5.6pt;color:#333;margin-top:0.5mm">
+          GGN {{ pallet.ordem_embalagem.lote_producao.talhao.fazenda.ggn_numero|default:"—" }}
+        </div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="grid">
+    <tr>
+      <td><div class="lbl">Packaging</div><div class="val">{{ te.peso_liquido_cx|floatformat:"1g" }} kg</div></td>
+      <td><div class="lbl">Size</div><div class="val">{{ te.tipo_calibre|default:"—" }}</div></td>
+    </tr>
+  </table>
+
+  {% if te.codigo_chave_extra or pallet.ordem_embalagem.lote_producao.talhao.codigo %}
+  <div class="key-row">
+    <span class="lbl">Key:</span>
+    {{ pallet.ordem_embalagem.lote_producao.talhao.codigo|default:"" }}
+    {% if te.codigo_chave_extra %} | {{ te.codigo_chave_extra }}{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="ppwr-box">
+    <div class="titulo">Manufacturer according to PPWR (EU Packaging and Packaging Waste Regulation)</div>
+    {% if romaneio.cliente.ppwr_responsavel %}
+    <div class="responsavel">{{ romaneio.cliente.ppwr_responsavel }}</div>
+    {% else %}
+    <div class="responsavel">—</div>
+    {% endif %}
+  </div>
+
+  <div class="resumo-row">
+    Production: {{ pallet.codigo_producao|default:"—" }} —
+    Transport package: {{ romaneio.rastreabilidade_transporte|default:"—" }} —
+    Sales package: {{ romaneio.rastreabilidade_venda|default:"—" }}
+  </div>
+
+</div>
+{% endwith %}
+{% if not forloop.last %}<div style="page-break-after: always;"></div>{% endif %}
+{% endfor %}
+</body>
+</html>

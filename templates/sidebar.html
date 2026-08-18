@@ -943,6 +943,9 @@
           <li class="submenu-divider"></li>
           <li><a href="{% url 'embalagem:tipo_embalagem_list' %}"><i class="bi bi-gear"></i> Tipos de Embalagem</a></li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:material_embalagem_list' %}
+          <li><a href="{% url 'embalagem:material_embalagem_list' %}"><i class="bi bi-box-seam"></i> Materiais de Embalagem</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}

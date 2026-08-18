@@ -3,162 +3,161 @@
 <head>
 <meta charset="UTF-8">
 <style>
-  @page { size: 100mm 160mm; margin: 4mm; }
+  @page { size: 100mm 165mm; margin: 3mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #000; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 8pt; color: #000; }
 
-  .etiqueta { width: 100%; border: 1.5pt solid #000; padding: 3mm; }
+  .etiqueta { width: 100%; border: 1.3pt solid #000; border-collapse: collapse; }
 
-  .header { text-align: center; border-bottom: 1pt solid #000; padding-bottom: 2mm; margin-bottom: 2mm; }
-  .empresa-nome  { font-size: 11pt; font-weight: bold; text-transform: uppercase; }
-  .empresa-sub   { font-size: 7pt; color: #555; }
+  .titulo { text-align: center; font-size: 13pt; font-weight: bold; text-transform: uppercase;
+            padding: 2mm 0; border-bottom: 1pt solid #000; }
 
-  .barcode-area  { text-align: center; margin: 2mm 0; }
-  .barcode-area img { max-width: 90%; height: 16mm; }
-  .codigo-texto  { font-size: 9pt; font-family: monospace; letter-spacing: 3px; font-weight: bold; }
+  table.grid { width: 100%; border-collapse: collapse; border-bottom: 1pt solid #000; }
+  table.grid td { padding: 1.8mm 2.5mm; border-left: 1pt solid #000; vertical-align: top; }
+  table.grid td:first-child { border-left: none; }
 
-  .secao         { border: 0.8pt solid #ccc; border-radius: 2pt; padding: 1.5mm 2mm; margin-bottom: 1.5mm; }
-  .secao-titulo  { font-size: 6.5pt; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1mm; }
+  .lbl { font-size: 6.5pt; text-transform: uppercase; color: #333; letter-spacing: 0.3px; }
+  .val { font-size: 9.5pt; font-weight: bold; margin-top: 0.5mm; }
 
-  table.dados    { width: 100%; border-collapse: collapse; }
-  table.dados td { padding: 0.3mm 0.5mm; font-size: 8pt; vertical-align: top; }
-  table.dados td.lbl { font-weight: bold; width: 36%; color: #444; white-space: nowrap; }
-  table.dados td.val { font-weight: bold; }
+  .empresa-nome { font-size: 13pt; font-weight: bold; text-transform: uppercase; line-height: 1.1; }
 
-  .pesos-row     { width: 100%; border-collapse: collapse; margin-bottom: 1.5mm; }
-  .pesos-row td  { width: 50%; text-align: center; border: 1pt solid #444; padding: 1.5mm; }
-  .peso-valor    { font-size: 13pt; font-weight: bold; display: block; }
-  .peso-leg      { font-size: 6.5pt; color: #555; }
+  .produto-tag { padding: 2mm 2.5mm; font-size: 13pt; font-weight: bold; text-transform: uppercase;
+                 border-bottom: 1pt solid #000; }
 
-  .destino-box   { background: #f0f0f0; padding: 2mm; text-align: center; margin-bottom: 1.5mm; }
-  .destino-box .cliente { font-size: 10pt; font-weight: bold; }
-  .destino-box .local   { font-size: 7.5pt; }
+  .trace-box .val { font-size: 10pt; letter-spacing: 0.5px; }
 
-  .misto-linha   { font-size: 7.5pt; }
-  .misto-linha td { padding: 0.2mm 0.5mm; }
+  .footer-strip { text-align: center; font-size: 6.5pt; font-weight: bold; text-transform: uppercase;
+                  padding: 1.5mm 0; letter-spacing: 0.5px; }
 
-  .footer        { text-align: center; font-size: 6pt; color: #888; border-top: 0.5pt solid #ccc; padding-top: 1mm; margin-top: 1.5mm; }
+  table.qr-barcode { width: 100%; border-collapse: collapse; }
+  table.qr-barcode td { padding: 2mm; text-align: center; border-left: 1pt solid #000; vertical-align: top; }
+  table.qr-barcode td:first-child { border-left: none; }
+  table.qr-barcode img.qr { width: 22mm; height: 22mm; }
+  table.qr-barcode img.bc { max-width: 95%; height: 12mm; }
+  .qr-legenda { font-size: 6pt; color: #444; margin-top: 1mm; }
+  .bc-codigo { font-size: 7.5pt; font-family: monospace; font-weight: bold; margin-top: 1mm; }
 </style>
 </head>
 <body>
 {% for ctx in pallets_ctx %}
-{% with pallet=ctx.pallet romaneio=ctx.romaneio barcode_b64=ctx.barcode_b64 te=ctx.pallet.tipo_embalagem %}
+{% with pallet=ctx.pallet romaneio=ctx.romaneio barcode_b64=ctx.barcode_b64 qrcode_b64=ctx.qrcode_b64 te=ctx.pallet.tipo_embalagem %}
+{% with lp=pallet.ordem_embalagem.lote_producao %}
 <div class="etiqueta">
 
-  <!-- Cabeçalho: Exportador (Empresa/Fazenda) -->
-  <div class="header">
-    <div class="empresa-nome">{{ pallet.empresa.nome }}</div>
-    {% if pallet.empresa.cnpj %}<div class="empresa-sub">CNPJ: {{ pallet.empresa.cnpj }}</div>{% endif %}
-    {% if pallet.ordem_embalagem.safra %}
-    <div class="empresa-sub">Safra: {{ pallet.ordem_embalagem.safra }}</div>
-    {% endif %}
-  </div>
+  <div class="titulo">Etiqueta para Pallet</div>
 
-  <!-- Importador / Destino -->
-  {% if romaneio %}
-  <div class="destino-box">
-    <div class="cliente">{{ romaneio.cliente.razao_social }}</div>
-    <div class="local">
-      {% if romaneio.tipo == 'EXPORTACAO' %}
+  <table class="grid">
+    <tr>
+      <td><div class="empresa-nome">{{ pallet.empresa.nome }}</div></td>
+      {% if romaneio %}
+      <td>
+        <div class="val">{{ romaneio.cliente.razao_social }}</div>
         {% if romaneio.booking and romaneio.booking.porto_destino %}
-          Porto: {{ romaneio.booking.porto_destino.nome }}
-        {% elif romaneio.cliente.porto_destino %}
-          Porto: {{ romaneio.cliente.porto_destino.nome }}
+        <div class="lbl" style="margin-top:1mm">Port of Destination:</div>
+        <div class="val">{{ romaneio.booking.porto_destino.nome }} — {{ romaneio.booking.porto_destino.pais }}</div>
         {% endif %}
-      {% else %}
-        {% if romaneio.cliente.pais %}{{ romaneio.cliente.pais }}{% endif %}
+      </td>
       {% endif %}
-    </div>
-  </div>
-  {% endif %}
+    </tr>
+  </table>
 
-  <!-- Código de barras -->
-  <div class="barcode-area">
-    {% if barcode_b64 %}
-    <img src="data:image/png;base64,{{ barcode_b64 }}" alt="{{ pallet.codigo_pallet }}">
-    {% endif %}
-    <div class="codigo-texto">{{ pallet.codigo_pallet }}</div>
+  <div class="produto-tag">
+    {% if te %}{{ te.descricao_completa }}{% else %}Pallet Misto{% endif %}
   </div>
 
-  <!-- Produto -->
-  <div class="secao">
-    <div class="secao-titulo">Product / Produto</div>
-    {% if pallet.is_misto %}
-    <table class="misto-linha" style="width:100%;border-collapse:collapse">
-      {% for item in pallet.composicao.all %}
-      <tr>
-        <td style="width:55%">{{ item.tipo_embalagem.descricao_completa }}</td>
-        <td style="width:20%;text-align:right;font-weight:bold">{{ item.quantidade_caixas }} cx</td>
-        <td style="width:25%;text-align:right">{{ item.peso_liquido_kg|floatformat:"1g" }} kg</td>
-      </tr>
-      {% endfor %}
-    </table>
-    {% else %}
-    <table class="dados">
-      <tr><td class="lbl">Product:</td><td class="val">{{ te.descricao_completa }}</td></tr>
-      {% if te.marca %}<tr><td class="lbl">Brand:</td><td>{{ te.marca }}</td></tr>{% endif %}
-      {% if te.tipo_calibre %}<tr><td class="lbl">Size / Calibre:</td><td>{{ te.tipo_calibre }}</td></tr>{% endif %}
-      <tr><td class="lbl">Cx Weight:</td><td>{{ te.peso_liquido_cx|floatformat:"3g" }} kg</td></tr>
-      {% if te.trace_code %}<tr><td class="lbl">Trace Code:</td><td><strong>{{ te.trace_code }}</strong></td></tr>{% endif %}
-      {% if te.cultura and te.cultura.exportacao_temperatura %}
-      <tr><td class="lbl">Temperature:</td><td>{{ te.cultura.exportacao_temperatura }}°C</td></tr>
-      {% endif %}
-    </table>
-    {% endif %}
-  </div>
+  <table class="grid">
+    <tr>
+      <td><div class="lbl">Country of Origin:</div><div class="val">Brasil</div></td>
+      <td><div class="lbl">Class / Cat.:</div><div class="val">{{ te.classe_categoria|default:"—" }}</div></td>
+    </tr>
+  </table>
 
-  <!-- Pesos totais -->
-  <table class="pesos-row">
+  <table class="grid">
+    <tr>
+      <td><div class="lbl">GGN:</div><div class="val">{{ lp.talhao.fazenda.ggn_numero|default:"—" }}</div></td>
+      <td><div class="lbl">Packhouse:</div><div class="val">{{ pallet.empresa.nome }}</div></td>
+    </tr>
+  </table>
+
+  <table class="grid">
     <tr>
       <td>
-        <span class="peso-valor">{{ pallet.peso_liquido_kg|floatformat:"3g" }}</span>
-        <span class="peso-leg">kg NET WEIGHT</span>
-      </td>
-      <td>
-        <span class="peso-valor">{{ pallet.peso_bruto_kg|floatformat:"3g" }}</span>
-        <span class="peso-leg">kg GROSS WEIGHT</span>
+        <div class="lbl">Product:</div>
+        {% if pallet.is_misto %}
+          {% for item in pallet.composicao.all %}
+          <div class="val" style="font-size:8pt">{{ item.quantidade_caixas }}cx — {{ item.tipo_embalagem.descricao_completa }}</div>
+          {% endfor %}
+        {% else %}
+        <div class="val">{{ te.descricao_completa|default:"—" }}</div>
+        {% endif %}
       </td>
     </tr>
   </table>
 
-  <!-- Boxes / Caixas -->
-  <div class="secao">
-    <div class="secao-titulo">Boxes</div>
-    <table class="dados">
-      <tr><td class="lbl">Qtd. Caixas:</td><td class="val" style="font-size:11pt">{{ pallet.quantidade_caixas }} cx</td></tr>
-      <tr><td class="lbl">Embalado em:</td><td>{{ pallet.data_embalagem|date:"d/m/Y" }}</td></tr>
-      <tr><td class="lbl">Lote:</td><td>{{ pallet.ordem_embalagem.lote_origem }}</td></tr>
-    </table>
-  </div>
+  <table class="grid">
+    <tr>
+      <td><div class="lbl">Packaging:</div><div class="val">{{ te.peso_liquido_cx|floatformat:"1g" }} kg</div></td>
+      <td><div class="lbl">Size:</div><div class="val">{{ te.tipo_calibre|default:"—" }}</div></td>
+      <td><div class="lbl">Count:</div><div class="val">{{ pallet.quantidade_caixas }} boxes</div></td>
+    </tr>
+  </table>
 
-  <!-- Exportação (se aplicável) -->
-  {% if romaneio and romaneio.booking %}
-  <div class="secao">
-    <div class="secao-titulo">Shipping / Exportação</div>
-    <table class="dados">
-      {% if romaneio.booking.solicitacao.navio %}<tr><td class="lbl">Vessel:</td><td>{{ romaneio.booking.solicitacao.navio.nome }}</td></tr>{% endif %}
-      {% if romaneio.booking.viagem %}<tr><td class="lbl">Voyage:</td><td>{{ romaneio.booking.viagem }}</td></tr>{% endif %}
-      {% if romaneio.booking.solicitacao.armador %}<tr><td class="lbl">Carrier:</td><td>{{ romaneio.booking.solicitacao.armador.nome }}</td></tr>{% endif %}
-      {% if romaneio.container %}<tr><td class="lbl">Container:</td><td><strong>{{ romaneio.container.numero_container }}</strong></td></tr>{% endif %}
-      {% if romaneio.booking.porto_destino %}<tr><td class="lbl">Port of Dest.:</td><td>{{ romaneio.booking.porto_destino.nome }}</td></tr>{% endif %}
-    </table>
-  </div>
-  {% endif %}
+  <table class="grid">
+    <tr>
+      <td class="trace-box">
+        <div class="lbl">Traceability – Transport (Pallet):</div>
+        <div class="val">{{ romaneio.rastreabilidade_transporte|default:"—" }}</div>
+      </td>
+      <td class="trace-box">
+        <div class="lbl">Traceability – Sales Packaging:</div>
+        <div class="val">{{ romaneio.rastreabilidade_venda|default:"—" }}</div>
+      </td>
+    </tr>
+  </table>
 
-  <!-- Observações -->
-  {% if romaneio and romaneio.observacoes %}
-  <div class="secao">
-    <div class="secao-titulo">Observações</div>
-    <div style="font-size:7.5pt">{{ romaneio.observacoes }}</div>
-  </div>
-  {% endif %}
+  <table class="grid">
+    <tr>
+      <td>
+        <div class="lbl">Temperature:</div>
+        <div class="val">{% if te.cultura.exportacao_temperatura %}{{ te.cultura.exportacao_temperatura }}°C{% else %}—{% endif %}</div>
+      </td>
+      <td><div class="lbl">Vessel:</div><div class="val">{{ romaneio.booking.solicitacao.navio.nome|default:"—" }}</div></td>
+      <td><div class="lbl">Port of Origin:</div><div class="val">{{ romaneio.booking.porto_origem.nome|default:"—" }}</div></td>
+    </tr>
+  </table>
 
-  <div class="footer">
-    Ordem: {{ pallet.ordem_embalagem.numero }} | Pallet {{ pallet.numero_sequencial }}{% if pallet.is_misto %} | MISTO{% endif %}
-    {% if pallet.etiqueta_gerada %} | Reimpressão{% endif %}
-  </div>
+  <table class="grid">
+    <tr>
+      <td><div class="lbl">Lot:</div><div class="val">{{ lp.numero_lote|default:pallet.ordem_embalagem.lote_origem|default:"—" }}</div></td>
+      <td><div class="lbl">Date:</div><div class="val">{{ pallet.data_embalagem|date:"d/m/Y" }}</div></td>
+    </tr>
+  </table>
+
+  <table class="qr-barcode">
+    <tr>
+      <td>
+        <div class="lbl">Route (Origin / Destination)</div>
+        {% if qrcode_b64 %}
+        <img class="qr" src="data:image/png;base64,{{ qrcode_b64 }}" alt="route">
+        <div class="qr-legenda">Scan to view route on maps</div>
+        {% else %}
+        <div class="qr-legenda">Rota indisponível (sem booking/porto)</div>
+        {% endif %}
+      </td>
+      <td>
+        <div class="lbl">Barcode (SSCC)</div>
+        {% if barcode_b64 %}
+        <img class="bc" src="data:image/png;base64,{{ barcode_b64 }}" alt="{{ pallet.codigo_pallet }}">
+        {% endif %}
+        <div class="bc-codigo">{{ pallet.codigo_pallet }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div class="footer-strip">Mantenha esta etiqueta legível durante todo o transporte</div>
 
 </div>
+{% endwith %}
 {% endwith %}
 {% if not forloop.last %}<div style="page-break-after: always;"></div>{% endif %}
 {% endfor %}

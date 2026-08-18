@@ -1045,6 +1045,12 @@ class Cliente(models.Model):
     incoterm_padrao = models.CharField('Incoterm', max_length=20, blank=True, null=True)
     idioma_preferido = models.CharField('Idioma Preferido', max_length=20, blank=True, null=True)
     certificacoes_exigidas = models.TextField('Certificações Exigidas', blank=True, null=True)
+    ppwr_responsavel = models.TextField(
+        'Responsável PPWR (Nome e Endereço)',
+        blank=True, null=True,
+        help_text='Nome e endereço da entidade responsável pela embalagem no país deste importador, '
+                   'conforme o Regulamento de Embalagens da UE (PPWR). Impresso na etiqueta de caixa quando preenchido.',
+    )
 
 
     # Contato principal (simplificado)

@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{% if obj %}Editar{% else %}Novo{% endif %} Material de Embalagem{% endblock %}
+{% block page_title %}Materiais de Embalagem{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="{% static 'css/select2-custom.css' %}?v=4">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 700px">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-box-seam"></i></span>
+        <h2>{{ title }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'embalagem:material_embalagem_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Identificação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-12">
+            <label class="form-label">Produto <span class="req">*</span></label>
+            {{ form.produto }}
+            {% if form.produto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produto.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">
+              O material deve estar cadastrado em <strong>Produtos</strong>, na categoria de
+              Embalagens do seu catálogo, com o <strong>Fornecedor Padrão</strong> preenchido lá —
+              nome e fornecedor exibidos aqui vêm direto do cadastro de Produto.
+            </div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Tipo <span class="req">*</span></label>
+            {{ form.tipo }}
+            <div class="helper-note">TP = usado na embalagem de transporte (pallet, caixa, fita...). SP = usado na embalagem de venda (aplicada direto na fruta, ex.: sticker).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="switch-row">
+          <label class="switch">
+            {{ form.ativo }}
+            <span class="slider"></span>
+          </label>
+          <label class="switch-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'embalagem:material_embalagem_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'js/select2-ajax.js' %}?v=8"></script>
+<script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
+{% endblock %}

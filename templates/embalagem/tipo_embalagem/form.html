@@ -188,6 +188,42 @@
     </div>
 
     <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm green"><i class="bi bi-shield-check"></i></span>
+        <span class="title">Rastreabilidade / Etiqueta (GLOBALG.A.P., PPWR)</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Trace Code</label>
+            {{ form.trace_code }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Classe / Categoria</label>
+            {{ form.classe_categoria }}
+            <div class="helper-note">Impresso como "Class/Cat." nas etiquetas. Ex: I</div>
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Código Multi-idioma</label>
+            {{ form.codigo_multilingue }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Nome do Produto (Multi-idioma)</label>
+            {{ form.nome_multilingue }}
+            <div class="helper-note">
+              Bloco com o nome traduzido, impresso na etiqueta de caixa (GLOBALG.A.P.). Evite idiomas com
+              alfabeto grego, cirílico etc. — o PDF não renderiza esses caracteres, apenas alfabeto latino.
+            </div>
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Código "Key" (Etiqueta de Caixa)</label>
+            {{ form.codigo_chave_extra }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
       <div class="form-section-body">
         <div class="switch-row">
           <label class="switch">

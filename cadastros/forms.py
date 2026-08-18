@@ -549,7 +549,7 @@ class ClienteForm(forms.ModelForm):
             'inscricao_estadual', 'inscricao_municipal', 'inscricao_suframa', 'eori', 'regime_tributario',
             'contribuinte_icms', 'indicador_ie',
             'contato_principal_nome', 'contato_principal_telefone', 'contato_principal_email',
-            'pais', 'codigo_pais', 'moeda_padrao', 'porto_destino',
+            'pais', 'codigo_pais', 'moeda_padrao', 'porto_destino', 'ppwr_responsavel',
             'limite_credito', 'prazo_pagamento', 'prazo_pagamento_padrao', 'forma_pagamento_padrao', 'desconto_padrao',
             'vendedor_responsavel', 'observacoes_comerciais',
             'acesso_portal', 'usuario_vinculado'
@@ -581,6 +581,10 @@ class ClienteForm(forms.ModelForm):
             'vendedor_responsavel': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
             'moeda_padrao': forms.Select(attrs={'class': 'form-select'}),
+            'ppwr_responsavel': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Nome e endereço da entidade responsável pela embalagem (PPWR) no país deste importador',
+            }),
             'observacoes_comerciais': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'acesso_portal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'usuario_vinculado': forms.HiddenInput()  # MUDADO: HiddenInput ao invés de Select

@@ -14,16 +14,16 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from core.barcode_utils import barcode_b64 as _barcode_b64
+from core.barcode_utils import barcode_b64 as _barcode_b64, qrcode_b64 as _qrcode_b64
 from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
 from .forms import (
-    CargaFreteForm, GerarPalletsForm, ItemPalletForm, OrdemEmbalagemForm, RomaneioVendaForm,
-    TipoEmbalagemForm, TrocarClienteRomaneioForm,
+    CargaFreteForm, GerarPalletsForm, ItemPalletForm, MaterialEmbalagemForm, OrdemEmbalagemForm,
+    RomaneioVendaForm, TipoEmbalagemForm, TrocarClienteRomaneioForm,
 )
 from .models import (
-    CargaFrete, CargaFreteError, ItemPallet, ItemRomaneioVenda, OrdemEmbalagem, PalletEmbalado,
-    RomaneioVenda, TipoEmbalagem,
+    CargaFrete, CargaFreteError, ItemPallet, ItemRomaneioVenda, MaterialEmbalagem, OrdemEmbalagem,
+    PalletEmbalado, RomaneioMaterialEmbalagem, RomaneioVenda, TipoEmbalagem,
 )
 
 
@@ -110,6 +110,68 @@ def tipo_embalagem_update(request, pk):
         form = TipoEmbalagemForm(instance=obj, empresa=empresa)
     return render(request, 'embalagem/tipo_embalagem/form.html', {
         'form': form, 'title': 'Editar Tipo de Embalagem', 'obj': obj,
+    })
+
+
+# ─────────────────────────── MaterialEmbalagem ───────────────────────────────
+
+@login_required
+def material_embalagem_list(request):
+    empresa = _get_empresa(request)
+    qs = MaterialEmbalagem.objects.filter(empresa=empresa).select_related('produto__fornecedor_padrao').prefetch_related(
+        'produto__fornecedores_relacionados__fornecedor'
+    )
+    q = request.GET.get('q', '')
+    tipo_f = request.GET.get('tipo', '')
+    if q:
+        qs = qs.filter(produto__nome__icontains=q)
+    if tipo_f:
+        qs = qs.filter(tipo=tipo_f)
+
+    materiais, per_page, per_page_options = paginate(request, qs.order_by('tipo', 'produto__nome'))
+
+    return render(request, 'embalagem/material_embalagem/list.html', {
+        'materiais': materiais,
+        'q': q,
+        'tipo_f': tipo_f,
+        'tipo_choices': MaterialEmbalagem.TIPO,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
+
+
+@login_required
+def material_embalagem_create(request):
+    empresa = _get_empresa(request)
+    if request.method == 'POST':
+        form = MaterialEmbalagemForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.empresa = empresa
+            obj.save()
+            messages.success(request, 'Material de embalagem criado com sucesso.')
+            return redirect('embalagem:material_embalagem_list')
+    else:
+        form = MaterialEmbalagemForm(empresa=empresa)
+    return render(request, 'embalagem/material_embalagem/form.html', {
+        'form': form, 'title': 'Novo Material de Embalagem',
+    })
+
+
+@login_required
+def material_embalagem_update(request, pk):
+    empresa = _get_empresa(request)
+    obj = get_object_or_404(MaterialEmbalagem, pk=pk, empresa=empresa)
+    if request.method == 'POST':
+        form = MaterialEmbalagemForm(request.POST, instance=obj, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Material de embalagem atualizado.')
+            return redirect('embalagem:material_embalagem_list')
+    else:
+        form = MaterialEmbalagemForm(instance=obj, empresa=empresa)
+    return render(request, 'embalagem/material_embalagem/form.html', {
+        'form': form, 'title': 'Editar Material de Embalagem', 'obj': obj,
     })
 
 
@@ -352,8 +414,33 @@ def pallet_list(request):
 
 # ─────────────────────────── Etiqueta PDF ───────────────────────────────────
 
-def _render_etiqueta_pdf(pallets, romaneio=None):
-    """Gera PDF com etiquetas dos pallets usando xhtml2pdf."""
+_SELECT_RELATED_ETIQUETA = (
+    'tipo_embalagem__cultura', 'tipo_embalagem__produto', 'empresa',
+    'ordem_embalagem__safra', 'ordem_embalagem__lote_producao__talhao__fazenda',
+    'ordem_embalagem__lote_producao__cultura',
+)
+_PREFETCH_RELATED_ETIQUETA = ('composicao__tipo_embalagem__cultura',)
+_SELECT_RELATED_ROMANEIO_ETIQUETA = (
+    'romaneio__cliente', 'romaneio__booking__solicitacao__armador',
+    'romaneio__booking__solicitacao__navio', 'romaneio__booking__porto_destino',
+    'romaneio__booking__porto_origem', 'romaneio__container',
+)
+
+
+def _rota_maps_url(booking):
+    """Link de rota do Google Maps (origem→destino) por nome de cidade/país,
+    sem precisar de latitude/longitude."""
+    if not booking or not booking.porto_origem or not booking.porto_destino:
+        return None
+    origem = f'{booking.porto_origem.cidade}, {booking.porto_origem.pais}'
+    destino = f'{booking.porto_destino.cidade}, {booking.porto_destino.pais}'
+    from urllib.parse import quote
+    return f'https://www.google.com/maps/dir/?api=1&origin={quote(origem)}&destination={quote(destino)}'
+
+
+def _render_etiqueta_pdf(pallets, romaneio=None, template_name='embalagem/pallet/etiqueta_pdf.html'):
+    """Gera PDF com etiquetas dos pallets usando xhtml2pdf.
+    template_name alterna entre a etiqueta de pallet e a etiqueta de caixa (mesmo contexto)."""
     from django.template.loader import render_to_string
     from xhtml2pdf import pisa
 
@@ -363,21 +450,19 @@ def _render_etiqueta_pdf(pallets, romaneio=None):
         # Romaneio prioritário: passado explicitamente ou buscado via itens
         rom = romaneio
         if not rom:
-            item = p.itens_romaneio.select_related(
-                'romaneio__cliente', 'romaneio__booking__solicitacao__armador',
-                'romaneio__booking__solicitacao__navio', 'romaneio__booking__porto_destino',
-                'romaneio__container',
-            ).first()
+            item = p.itens_romaneio.select_related(*_SELECT_RELATED_ROMANEIO_ETIQUETA).first()
             rom = item.romaneio if item else None
 
+        rota = _rota_maps_url(rom.booking) if rom else None
         ctx_pallet = {
             'pallet': p,
             'barcode_b64': _barcode_b64(p.codigo_pallet),
+            'qrcode_b64': _qrcode_b64(rota) if rota else None,
             'romaneio': rom,
         }
         pallets_ctx.append(ctx_pallet)
 
-    html = render_to_string('embalagem/pallet/etiqueta_pdf.html', {
+    html = render_to_string(template_name, {
         'pallets_ctx': pallets_ctx,
     })
     buffer = io.BytesIO()
@@ -390,17 +475,11 @@ def _render_etiqueta_pdf(pallets, romaneio=None):
 def pallet_etiqueta_pdf(request, pk):
     empresa = _get_empresa(request)
     pallet = get_object_or_404(
-        PalletEmbalado.objects.select_related(
-            'tipo_embalagem__cultura', 'tipo_embalagem__produto', 'empresa',
-            'ordem_embalagem__safra',
-        ).prefetch_related('composicao__tipo_embalagem__cultura'),
+        PalletEmbalado.objects.select_related(*_SELECT_RELATED_ETIQUETA)
+        .prefetch_related(*_PREFETCH_RELATED_ETIQUETA),
         pk=pk, empresa=empresa,
     )
-    item_rom = pallet.itens_romaneio.select_related(
-        'romaneio__cliente', 'romaneio__booking__solicitacao__armador',
-        'romaneio__booking__solicitacao__navio', 'romaneio__booking__porto_destino',
-        'romaneio__container',
-    ).first()
+    item_rom = pallet.itens_romaneio.select_related(*_SELECT_RELATED_ROMANEIO_ETIQUETA).first()
     romaneio = item_rom.romaneio if item_rom else None
     pdf = _render_etiqueta_pdf([pallet], romaneio=romaneio)
     pallet.etiqueta_gerada = True
@@ -411,13 +490,29 @@ def pallet_etiqueta_pdf(request, pk):
 
 
 @login_required
+def pallet_etiqueta_caixa_pdf(request, pk):
+    empresa = _get_empresa(request)
+    pallet = get_object_or_404(
+        PalletEmbalado.objects.select_related(*_SELECT_RELATED_ETIQUETA)
+        .prefetch_related(*_PREFETCH_RELATED_ETIQUETA),
+        pk=pk, empresa=empresa,
+    )
+    item_rom = pallet.itens_romaneio.select_related(*_SELECT_RELATED_ROMANEIO_ETIQUETA).first()
+    romaneio = item_rom.romaneio if item_rom else None
+    pdf = _render_etiqueta_pdf([pallet], romaneio=romaneio, template_name='embalagem/pallet/etiqueta_caixa_pdf.html')
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'inline; filename="etiqueta-caixa-{pallet.codigo_pallet}.pdf"'
+    return resp
+
+
+@login_required
 def ordem_etiquetas_pdf(request, pk):
     empresa = _get_empresa(request)
     ordem = get_object_or_404(OrdemEmbalagem, pk=pk, empresa=empresa)
     pallets = list(
         ordem.pallets
-        .select_related('tipo_embalagem__cultura', 'tipo_embalagem__produto', 'empresa', 'ordem_embalagem__safra')
-        .prefetch_related('composicao__tipo_embalagem__cultura')
+        .select_related(*_SELECT_RELATED_ETIQUETA)
+        .prefetch_related(*_PREFETCH_RELATED_ETIQUETA)
         .order_by('numero_sequencial')
     )
     pdf = _render_etiqueta_pdf(pallets)
@@ -428,26 +523,101 @@ def ordem_etiquetas_pdf(request, pk):
 
 
 @login_required
+def ordem_etiquetas_caixa_pdf(request, pk):
+    empresa = _get_empresa(request)
+    ordem = get_object_or_404(OrdemEmbalagem, pk=pk, empresa=empresa)
+    pallets = list(
+        ordem.pallets
+        .select_related(*_SELECT_RELATED_ETIQUETA)
+        .prefetch_related(*_PREFETCH_RELATED_ETIQUETA)
+        .order_by('numero_sequencial')
+    )
+    pdf = _render_etiqueta_pdf(pallets, template_name='embalagem/pallet/etiqueta_caixa_pdf.html')
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'inline; filename="etiquetas-caixa-{ordem.numero}.pdf"'
+    return resp
+
+
+@login_required
 def romaneio_etiquetas_pdf(request, pk):
     empresa = _get_empresa(request)
     romaneio = get_object_or_404(
         RomaneioVenda.objects.select_related(
-            'cliente', 'booking__solicitacao__armador', 'booking__solicitacao__navio', 'booking__porto_destino', 'container',
+            'cliente', 'booking__solicitacao__armador', 'booking__solicitacao__navio',
+            'booking__porto_destino', 'booking__porto_origem', 'container',
         ),
         pk=pk, empresa=empresa,
     )
     pallets = [
         item.pallet for item in romaneio.itens
-        .select_related(
-            'pallet__tipo_embalagem__cultura', 'pallet__tipo_embalagem__produto',
-            'pallet__empresa', 'pallet__ordem_embalagem__safra',
-        )
-        .prefetch_related('pallet__composicao__tipo_embalagem__cultura')
+        .select_related(*[f'pallet__{f}' for f in _SELECT_RELATED_ETIQUETA])
+        .prefetch_related(*[f'pallet__{f}' for f in _PREFETCH_RELATED_ETIQUETA])
         .order_by('pallet__codigo_pallet')
     ]
     pdf = _render_etiqueta_pdf(pallets, romaneio=romaneio)
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'inline; filename="etiquetas-romaneio-{romaneio.numero}.pdf"'
+    return resp
+
+
+@login_required
+def romaneio_rastreabilidade_pdf(request, pk):
+    """Relatório PPWR de rastreabilidade de embalagens (TP/SP) do romaneio."""
+    from django.template.loader import render_to_string
+    from xhtml2pdf import pisa
+
+    empresa = _get_empresa(request)
+    romaneio = get_object_or_404(
+        RomaneioVenda.objects.select_related(
+            'cliente', 'empresa', 'booking__solicitacao__armador', 'booking__solicitacao__navio',
+            'booking__porto_destino', 'container',
+        ),
+        pk=pk, empresa=empresa,
+    )
+    if not romaneio.rastreabilidade_transporte:
+        messages.error(request, 'Confirme o romaneio para gerar os códigos de rastreabilidade antes de emitir o relatório.')
+        return redirect('embalagem:romaneio_detail', pk=pk)
+
+    materiais_tp = romaneio.materiais_embalagem.select_related('material__produto__fornecedor_padrao').prefetch_related(
+        'material__produto__fornecedores_relacionados__fornecedor'
+    ).filter(material__tipo='TRANSPORTE').order_by('material__produto__nome')
+    materiais_sp = romaneio.materiais_embalagem.select_related('material__produto__fornecedor_padrao').prefetch_related(
+        'material__produto__fornecedores_relacionados__fornecedor'
+    ).filter(material__tipo='VENDA').order_by('material__produto__nome')
+
+    fornecedores = {}
+    for item in list(materiais_tp) + list(materiais_sp):
+        f = item.material.fornecedor
+        if not f:
+            continue
+        fornecedores.setdefault(f.pk, {'fornecedor': f, 'materiais': []})
+        fornecedores[f.pk]['materiais'].append(item.material.nome)
+
+    tipo_ids = set()
+    for item in romaneio.itens.select_related('pallet').prefetch_related('pallet__composicao__tipo_embalagem'):
+        p = item.pallet
+        if p.tipo_embalagem_id:
+            tipo_ids.add(p.tipo_embalagem_id)
+        else:
+            tipo_ids.update(c.tipo_embalagem_id for c in p.composicao.all())
+    tipos_embalagem = TipoEmbalagem.objects.filter(pk__in=tipo_ids).select_related('cultura')
+    commodities = ', '.join(sorted({t.cultura.nome for t in tipos_embalagem if t.cultura_id}))
+    variedades = ', '.join(sorted({t.variedade for t in tipos_embalagem if t.variedade}))
+
+    html = render_to_string('embalagem/romaneio/rastreabilidade_pdf.html', {
+        'romaneio': romaneio,
+        'empresa': empresa,
+        'materiais_tp': materiais_tp,
+        'materiais_sp': materiais_sp,
+        'fornecedores': fornecedores.values(),
+        'commodities': commodities,
+        'variedades': variedades,
+    })
+    buffer = io.BytesIO()
+    pisa.CreatePDF(html, dest=buffer)
+    buffer.seek(0)
+    resp = HttpResponse(buffer.read(), content_type='application/pdf')
+    resp['Content-Disposition'] = f'inline; filename="rastreabilidade-{romaneio.numero}.pdf"'
     return resp
 
 
@@ -608,10 +778,21 @@ def romaneio_detail(request, pk):
         'pallet__composicao__tipo_embalagem',
     ).order_by('pallet__codigo_pallet')
     armazens = Armazem.objects.filter(empresa=empresa).order_by('nome')
+    materiais_vinculados = rom.materiais_embalagem.select_related('material__produto__fornecedor_padrao').prefetch_related(
+        'material__produto__fornecedores_relacionados__fornecedor'
+    ).all()
+    materiais_disponiveis = MaterialEmbalagem.objects.filter(empresa=empresa, ativo=True).select_related(
+        'produto'
+    ).exclude(
+        pk__in=materiais_vinculados.values_list('material_id', flat=True)
+    ).order_by('tipo', 'produto__nome')
     return render(request, 'embalagem/romaneio/detail.html', {
         'romaneio': rom,
         'itens': itens,
         'armazens': armazens,
+        'materiais_tp': materiais_vinculados.filter(material__tipo='TRANSPORTE'),
+        'materiais_sp': materiais_vinculados.filter(material__tipo='VENDA'),
+        'materiais_disponiveis': materiais_disponiveis,
     })
 
 
@@ -631,7 +812,11 @@ def romaneio_confirmar(request, pk):
         pallet_ids = rom.itens.values_list('pallet_id', flat=True)
         PalletEmbalado.objects.filter(pk__in=pallet_ids).update(status='RESERVADO')
         rom.status = 'CONFIRMADO'
-        rom.save(update_fields=['status'])
+        update_fields = ['status']
+        if not rom.rastreabilidade_transporte:
+            rom.rastreabilidade_transporte, rom.rastreabilidade_venda = RomaneioVenda._gerar_rastreabilidade(empresa)
+            update_fields += ['rastreabilidade_transporte', 'rastreabilidade_venda']
+        rom.save(update_fields=update_fields)
     messages.success(request, f'Romaneio {rom.numero} confirmado. Pallets reservados.')
     return redirect('embalagem:romaneio_detail', pk=pk)
 
@@ -782,6 +967,34 @@ def romaneio_remover_pallet(request, pk, item_pk):
     item.pallet.save(update_fields=['status'])
     item.delete()
     messages.success(request, 'Pallet removido do romaneio.')
+    return redirect('embalagem:romaneio_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def romaneio_adicionar_material(request, pk):
+    empresa = _get_empresa(request)
+    rom = get_object_or_404(RomaneioVenda, pk=pk, empresa=empresa)
+    if rom.status in ('CONCLUIDO', 'CANCELADO'):
+        messages.error(request, 'Romaneio concluído/cancelado não pode ter materiais alterados.')
+        return redirect('embalagem:romaneio_detail', pk=pk)
+    material = get_object_or_404(MaterialEmbalagem, pk=request.POST.get('material'), empresa=empresa, ativo=True)
+    RomaneioMaterialEmbalagem.objects.get_or_create(romaneio=rom, material=material)
+    messages.success(request, 'Material de embalagem adicionado ao romaneio.')
+    return redirect('embalagem:romaneio_detail', pk=pk)
+
+
+@login_required
+@require_POST
+def romaneio_remover_material(request, pk, item_pk):
+    empresa = _get_empresa(request)
+    rom = get_object_or_404(RomaneioVenda, pk=pk, empresa=empresa)
+    if rom.status in ('CONCLUIDO', 'CANCELADO'):
+        messages.error(request, 'Romaneio concluído/cancelado não pode ter materiais alterados.')
+        return redirect('embalagem:romaneio_detail', pk=pk)
+    item = get_object_or_404(RomaneioMaterialEmbalagem, pk=item_pk, romaneio=rom)
+    item.delete()
+    messages.success(request, 'Material de embalagem removido do romaneio.')
     return redirect('embalagem:romaneio_detail', pk=pk)
 
 

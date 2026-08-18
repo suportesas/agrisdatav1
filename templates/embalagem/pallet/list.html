@@ -252,8 +252,11 @@
                 {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
               </td>
               <td class="text-center">
-                <a class="action-icon" href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" target="_blank" title="Etiqueta PDF">
+                <a class="action-icon" href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" target="_blank" title="Etiqueta de Pallet PDF">
                   <i class="bi bi-printer"></i>
+                </a>
+                <a class="action-icon" href="{% url 'embalagem:pallet_etiqueta_caixa_pdf' p.pk %}" target="_blank" title="Etiqueta de Caixa PDF">
+                  <i class="bi bi-box-seam"></i>
                 </a>
               </td>
             </tr>

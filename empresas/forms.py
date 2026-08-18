@@ -73,6 +73,7 @@ class EmpresaFiscalForm(forms.ModelForm):
             'uf',
             'cep',
             'codigo_municipio',
+            'codigo_produtor_rastreio',
         ]
         widgets = {
             'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome Fantasia'}),
@@ -87,6 +88,7 @@ class EmpresaFiscalForm(forms.ModelForm):
             'uf': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 2}),
             'cep': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '00000-000', 'id': 'id_empresa_cep'}),
             'codigo_municipio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '7 dígitos — ex: 3550308', 'maxlength': 7}),
+            'codigo_produtor_rastreio': forms.TextInput(attrs={'class': 'form-control', 'maxlength': 1, 'placeholder': 'Ex: 1'}),
         }
 
 

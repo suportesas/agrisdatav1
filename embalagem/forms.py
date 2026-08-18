@@ -1,7 +1,7 @@
 from django import forms
 from django.urls import reverse_lazy
 from core.widgets import Select2AjaxWidget, DateBRInput, MoneyBRInput, DecimalBRInput
-from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda, CargaFrete
+from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda, CargaFrete, MaterialEmbalagem
 
 
 class TipoEmbalagemChoiceField(forms.ModelChoiceField):
@@ -20,7 +20,8 @@ class TipoEmbalagemForm(forms.ModelForm):
         fields = [
             'produto', 'cultura', 'subcategoria', 'nome', 'variedade', 'marca', 'tipo_calibre',
             'peso_liquido_cx', 'peso_bruto_cx', 'caixas_por_pallet', 'peso_pallet_vazio',
-            'trace_code', 'ativo',
+            'trace_code', 'classe_categoria', 'nome_multilingue', 'codigo_multilingue',
+            'codigo_chave_extra', 'ativo',
         ]
         widgets = {
             'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
@@ -35,6 +36,15 @@ class TipoEmbalagemForm(forms.ModelForm):
             'caixas_por_pallet': forms.NumberInput(attrs={'class': 'form-control'}),
             'peso_pallet_vazio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'trace_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: GLO-MEL-05'}),
+            'classe_categoria': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: I'}),
+            'nome_multilingue': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Ex: Honigmelonen - Honeydew Melons - Melon canari - ... - Melão Amarelo',
+            }),
+            # Nota: o PDF da etiqueta usa fonte padrão (Helvetica) sem glifos gregos/cirílicos —
+            # evite incluir idiomas com esses alfabetos (grego, búlgaro, russo etc.), eles não aparecerão no PDF.
+            'codigo_multilingue': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 80550'}),
+            'codigo_chave_extra': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -74,6 +84,41 @@ class TipoEmbalagemForm(forms.ModelForm):
             raise forms.ValidationError('Informe pelo menos Produto, Cultura ou Subcategoria para o tipo de embalagem.')
 
         return cleaned
+
+
+class MaterialEmbalagemForm(forms.ModelForm):
+    class Meta:
+        model = MaterialEmbalagem
+        fields = ['produto', 'tipo', 'ativo']
+        widgets = {
+            'produto': Select2AjaxWidget(
+                ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'),
+                placeholder='Buscar produto de embalagem...',
+            ),
+            'tipo': forms.Select(attrs={'class': 'form-select'}),
+        }
+        help_texts = {
+            'produto': 'Cadastre o material em Produtos, na categoria de Embalagens do seu catálogo, e informe o Fornecedor Padrão lá.',
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        if empresa:
+            from produtos.models import Produto
+            self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=empresa, ativo=True).order_by('nome')
+
+    def clean_produto(self):
+        # empresa não é campo do form (é setado na view), então o Django não valida
+        # sozinho o unique_together (empresa, produto) — checamos manualmente aqui.
+        produto = self.cleaned_data.get('produto')
+        if produto and self.empresa:
+            qs = MaterialEmbalagem.objects.filter(empresa=self.empresa, produto=produto)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError('Este produto já está cadastrado como material de embalagem.')
+        return produto
 
 
 class OrdemEmbalagemForm(forms.ModelForm):

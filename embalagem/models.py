@@ -66,6 +66,31 @@ class TipoEmbalagem(models.Model):
         blank=True,
         help_text='Código de rastreamento específico da empresa. Ex: GLO-MEL-05',
     )
+    nome_multilingue = models.TextField(
+        'Nome do Produto (Multi-idioma)',
+        blank=True,
+        help_text='Bloco com o nome do produto traduzido, como impresso na etiqueta de caixa (GLOBALG.A.P.). '
+                   'Ex: "Honigmelonen - Honeydew Melons - Melon canari - ... - Melão Amarelo"',
+    )
+    codigo_multilingue = models.CharField(
+        'Código do Produto (Etiqueta Multi-idioma)',
+        max_length=20,
+        blank=True,
+        help_text='Código numérico exibido ao lado do nome multi-idioma na etiqueta de caixa. Ex: 80550',
+    )
+    classe_categoria = models.CharField(
+        'Classe / Categoria (Class/Cat.)',
+        max_length=10,
+        blank=True,
+        default='I',
+        help_text='Classificação comercial impressa nas etiquetas. Ex: I, II, Extra',
+    )
+    codigo_chave_extra = models.CharField(
+        'Código "Key" (Etiqueta de Caixa)',
+        max_length=30,
+        blank=True,
+        help_text='Código adicional livre impresso na linha "Key" da etiqueta de caixa, se aplicável.',
+    )
     ativo = models.BooleanField('Ativo', default=True)
 
     class Meta:
@@ -259,6 +284,60 @@ class OrdemEmbalagem(models.Model):
         return int(self.lote_origem.quantidade_atual / lp)
 
 
+# ──────────────────────────── MaterialEmbalagem ────────────────────────────
+
+class MaterialEmbalagem(models.Model):
+    """Classifica um produtos.Produto (categoria de Embalagens do catálogo da empresa)
+    como material de transporte (TP) ou de venda (SP) para compor a rastreabilidade
+    PPWR do romaneio. Nome e fornecedor vêm do próprio Produto — não duplicados aqui."""
+
+    TIPO = [
+        ('TRANSPORTE', 'Transport Package (TP)'),
+        ('VENDA', 'Sales Package (SP)'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='materiais_embalagem',
+        verbose_name='Empresa',
+    )
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='materiais_embalagem',
+        verbose_name='Produto',
+    )
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO, default='TRANSPORTE')
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Material de Embalagem'
+        verbose_name_plural = 'Materiais de Embalagem'
+        ordering = ['tipo', 'produto__nome']
+        unique_together = [('empresa', 'produto')]
+
+    def __str__(self):
+        return self.produto.nome
+
+    @property
+    def nome(self):
+        return self.produto.nome
+
+    @property
+    def fornecedor(self):
+        """Fornecedor preferencial cadastrado em Produto > Fornecedores (ProdutoFornecedor).
+        Cai para fornecedor_padrao (raramente preenchido, não exposto no form de Produto)
+        só como último recurso."""
+        pf = self.produto.fornecedores_relacionados.filter(ativo=True).order_by(
+            '-fornecedor_preferencial', 'fornecedor__nome'
+        ).select_related('fornecedor').first()
+        if pf:
+            return pf.fornecedor
+        return self.produto.fornecedor_padrao
+
+
 # ──────────────────────────── PalletEmbalado ───────────────────────────────
 
 class PalletEmbalado(models.Model):
@@ -351,6 +430,26 @@ class PalletEmbalado(models.Model):
         """Retorna True se o total de caixas divergir da capacidade esperada da ordem."""
         cap = self.ordem_embalagem.capacidade_caixas_pallet
         return cap and self.quantidade_caixas != cap
+
+    @property
+    def codigo_producao(self):
+        """Código de rastreabilidade de produção (etiqueta de caixa PPWR), 10 dígitos:
+        1 Produto (Empresa.codigo_produtor_rastreio) + 4 Talhão (Talhao.codigo) +
+        2 Cultura (Cultura.codigo_interno) + 3 Calendário Juliano (data_embalagem).
+        Retorna None se lote_producao ou algum dos códigos não estiver disponível/no formato certo.
+        """
+        lp = self.ordem_embalagem.lote_producao
+        if not lp or not lp.talhao_id or not lp.cultura_id:
+            return None
+        prod = (self.empresa.codigo_produtor_rastreio or '').strip()
+        talhao = (lp.talhao.codigo or '').strip()
+        cultura = (lp.cultura.codigo_interno or '').strip()
+        if not (len(prod) == 1 and prod.isdigit()
+                and len(talhao) == 4 and talhao.isdigit()
+                and len(cultura) == 2 and cultura.isdigit()):
+            return None
+        juliano = f'{self.data_embalagem.timetuple().tm_yday:03d}'
+        return f'{prod}{talhao}{cultura}{juliano}'
 
     @classmethod
     def _gerar_codigo(cls, empresa, data=None, safra=None):
@@ -665,6 +764,14 @@ class RomaneioVenda(models.Model):
     )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     observacoes = models.TextField('Observações', blank=True)
+    rastreabilidade_transporte = models.CharField(
+        'Rastreabilidade TP', max_length=20, unique=True, blank=True, null=True,
+        help_text='Código de rastreabilidade da embalagem de transporte (PPWR), gerado na confirmação.',
+    )
+    rastreabilidade_venda = models.CharField(
+        'Rastreabilidade SP', max_length=20, unique=True, blank=True, null=True,
+        help_text='Código de rastreabilidade da embalagem de venda (PPWR), gerado na confirmação.',
+    )
     invoice_exportacao = models.OneToOneField(
         'faturamento.InvoiceExportacao',
         on_delete=models.SET_NULL,
@@ -721,6 +828,33 @@ class RomaneioVenda(models.Model):
         else:
             seq = 1
         return f'RV-{ano}-{seq:04d}'
+
+    @classmethod
+    def _gerar_rastreabilidade(cls, empresa, data=None):
+        """Gera o par de códigos de rastreabilidade PPWR (TP/SP) do romaneio.
+
+        Formato: {TP|SP}-{ANO}{SEMANA ISO:02d}{SEQ:04d}. O sequencial é
+        compartilhado entre TP e SP do mesmo romaneio e reseta sempre que a
+        semana ISO muda (não reseta por ano isoladamente).
+        """
+        data = data or timezone.now().date()
+        ano, semana, _ = data.isocalendar()
+        periodo = f'{ano}{semana:02d}'
+        # select_for_update evita race condition em confirmações simultâneas
+        ultimo = (cls.objects
+                  .select_for_update()
+                  .filter(empresa=empresa, rastreabilidade_transporte__startswith=f'TP-{periodo}')
+                  .order_by('rastreabilidade_transporte')
+                  .last())
+        if ultimo and ultimo.rastreabilidade_transporte:
+            try:
+                seq = int(ultimo.rastreabilidade_transporte[-4:]) + 1
+            except (ValueError, IndexError):
+                seq = 1
+        else:
+            seq = 1
+        sufixo = f'{periodo}{seq:04d}'
+        return f'TP-{sufixo}', f'SP-{sufixo}'
 
     def _totais(self):
         """Retorna todos os totais em uma única query SQL."""
@@ -827,3 +961,33 @@ class ItemRomaneioVenda(models.Model):
 
     def __str__(self):
         return f'{self.romaneio} / {self.pallet}'
+
+
+# ────────────────────────── RomaneioMaterialEmbalagem ──────────────────────
+
+class RomaneioMaterialEmbalagem(models.Model):
+    """Vincula um MaterialEmbalagem (e seu fornecedor) ao romaneio, para compor
+    o relatório de rastreabilidade PPWR. O tipo (TP/SP) é sempre o do material."""
+
+    romaneio = models.ForeignKey(
+        RomaneioVenda,
+        on_delete=models.CASCADE,
+        related_name='materiais_embalagem',
+        verbose_name='Romaneio',
+    )
+    material = models.ForeignKey(
+        MaterialEmbalagem,
+        on_delete=models.PROTECT,
+        related_name='usos_em_romaneios',
+        verbose_name='Material de Embalagem',
+    )
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Material de Embalagem do Romaneio'
+        verbose_name_plural = 'Materiais de Embalagem do Romaneio'
+        ordering = ['material__tipo', 'material__produto__nome']
+        unique_together = [('romaneio', 'material')]
+
+    def __str__(self):
+        return f'{self.romaneio} / {self.material}'

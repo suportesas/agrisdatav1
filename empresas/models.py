@@ -361,7 +361,14 @@ class Empresa(models.Model):
         null=True,
         help_text='E-mail institucional'
     )
-    
+
+    codigo_produtor_rastreio = models.CharField(
+        'Código do Produtor (Rastreio)',
+        max_length=1,
+        blank=True,
+        help_text='Dígito único usado no código de produção (rastreabilidade PPWR) impresso nas etiquetas de caixa. Ex: 1'
+    )
+
     # ✅ NOVO: Grupo Corporativo (Enterprise Plus)
     grupo_corporativo = models.ForeignKey(
         GrupoCorporativo,

@@ -143,7 +143,8 @@ class Patrimonio(models.Model):
             depreciacao = self.calcular_depreciacao_acumulada()
             self.valor_atual = self.valor_inicial - depreciacao
             self.valor_atual = max(self.valor_atual, Decimal('0.00'))
-        self.save(update_fields=['valor_atual'])
+        if self.pk:
+            self.save(update_fields=['valor_atual'])
     
     @property
     def dias_desde_aquisicao(self):

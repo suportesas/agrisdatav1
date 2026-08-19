@@ -227,16 +227,16 @@
                         <label class="form-label">Preço Unitário <small class="text-muted">(opcional)</small></label>
                         <div class="input-group">
                             <span class="input-group-text">R$</span>
-                            <input type="text" id="modalPreco" inputmode="decimal" autocomplete="off" data-decimals="2"
-                                   class="form-control money-mask-input" placeholder="0,00">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="modalPreco" class="form-control"
+                                   placeholder="0,00">
                         </div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Desconto <small class="text-muted">(opcional)</small></label>
                         <div class="input-group">
                             <span class="input-group-text">R$</span>
-                            <input type="text" id="modalDesconto" inputmode="decimal" autocomplete="off" data-decimals="2"
-                                   class="form-control money-mask-input" value="0" placeholder="0,00">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="modalDesconto" class="form-control"
+                                   placeholder="0,00">
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -290,22 +290,40 @@
 let activeIndex = null;
 const confirmados = {};
 
+// Preço/Desconto são campos de moeda em formato BR (1.234,56). Guardamos o
+// valor decimal "puro" (ponto decimal) em dataset.rawValue — é isso que vai
+// pro backend — enquanto o input mostra o texto formatado ao usuário.
+function setMoneyInput(el, decimalValue) {
+    const n = parseFloat(decimalValue);
+    if (decimalValue === '' || decimalValue === null || decimalValue === undefined || isNaN(n)) {
+        el.value = '';
+        el.dataset.rawValue = '';
+        return;
+    }
+    el.dataset.rawValue = n.toFixed(2);
+    el.value = n.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function getMoneyValue(el) {
+    const v = parseFloat(el.dataset.rawValue);
+    return isNaN(v) ? 0 : v;
+}
+
+function onMoneyInput(e) {
+    const el = e.target;
+    const digits = el.value.replace(/\D/g, '');
+    if (!digits) {
+        el.value = '';
+        el.dataset.rawValue = '';
+        return;
+    }
+    const units = parseInt(digits, 10);
+    setMoneyInput(el, (units / 100).toFixed(2));
+    el.setSelectionRange(el.value.length, el.value.length);
+}
+
 function getModal() {
     return bootstrap.Modal.getOrCreateInstance(document.getElementById('modalReceber'));
-}
-
-// modalPreco/modalDesconto usam a máscara BR (money-mask.js): o valor exibido
-// é "1.234,56", então a leitura/escrita precisa passar pelo MoneyMask para
-// obter/gravar o decimal simples ("1234.56") que o resto do código espera.
-function lerValor(id) {
-    if (window.MoneyMask) return window.MoneyMask.getValue(id);
-    const el = document.getElementById(id);
-    return parseFloat((el.value || '0').replace(',', '.')) || 0;
-}
-
-function definirValor(id, rawValue) {
-    if (window.MoneyMask) { window.MoneyMask.setValue(id, rawValue); return; }
-    document.getElementById(id).value = rawValue;
 }
 
 function abrirModal(btn) {
@@ -334,11 +352,11 @@ function abrirModal(btn) {
     document.getElementById('modalFaturadoAviso').style.display = faturadoCompleto ? 'block' : 'none';
 
     if (faturadoCompleto) {
-        definirValor('modalPreco', 0);
-        definirValor('modalDesconto', 0);
+        setMoneyInput(modalPreco, '0');
+        setMoneyInput(modalDesconto, '0');
     } else {
-        definirValor('modalPreco', prev ? prev.preco : (parseFloat(tr.dataset.preco) > 0 ? tr.dataset.preco : ''));
-        definirValor('modalDesconto', prev ? prev.desconto : (parseFloat(tr.dataset.desconto) > 0 ? tr.dataset.desconto : 0));
+        setMoneyInput(modalPreco, prev ? prev.preco : (parseFloat(tr.dataset.preco) > 0 ? tr.dataset.preco : ''));
+        setMoneyInput(modalDesconto, prev ? prev.desconto : (parseFloat(tr.dataset.desconto) > 0 ? tr.dataset.desconto : '0'));
     }
 
     recalcularSubtotalModal();
@@ -348,12 +366,19 @@ function abrirModal(btn) {
 
 function recalcularSubtotalModal() {
     const qtd   = parseFloat(document.getElementById('modalQtd').value) || 0;
-    const preco = lerValor('modalPreco');
-    const desc  = lerValor('modalDesconto');
+    const preco = getMoneyValue(document.getElementById('modalPreco'));
+    const desc  = getMoneyValue(document.getElementById('modalDesconto'));
     const sub   = Math.max(0, qtd * preco - desc);
     document.getElementById('modalSubtotal').value =
         sub.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
+
+['modalPreco', 'modalDesconto'].forEach(id => {
+    document.getElementById(id).addEventListener('input', onMoneyInput);
+});
+['modalQtd', 'modalPreco', 'modalDesconto'].forEach(id => {
+    document.getElementById(id).addEventListener('input', recalcularSubtotalModal);
+});
 
 function confirmarItem() {
     const qtd     = document.getElementById('modalQtd').value.trim();
@@ -378,8 +403,8 @@ function confirmarItem() {
         itemId  : tr.dataset.itemId,
         qtd     : qtd,
         localId : localId,
-        preco   : String(lerValor('modalPreco')),
-        desconto: String(lerValor('modalDesconto')),
+        preco   : document.getElementById('modalPreco').dataset.rawValue   || '',
+        desconto: document.getElementById('modalDesconto').dataset.rawValue || '0',
         dataFab : document.getElementById('modalDataFab').value  || '',
         dataVal : document.getElementById('modalDataVal').value  || '',
         obs     : document.getElementById('modalObs').value      || '',
@@ -467,13 +492,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const horaEl = document.querySelector('[name="hora_recebimento"]');
     if (dataEl && !dataEl.value) dataEl.value = today;
     if (horaEl && !horaEl.value) horaEl.value = time;
-
-    // Registrado após o DOMContentLoaded do money-mask.js (carregado antes,
-    // em base.html) já ter trocado modalPreco/modalDesconto pelo par
-    // hidden+display — assim o listener fica no campo que o usuário realmente digita.
-    ['modalQtd', 'modalPreco', 'modalDesconto'].forEach(id => {
-        document.getElementById(id).addEventListener('input', recalcularSubtotalModal);
-    });
 });
 </script>
 {% endblock %}

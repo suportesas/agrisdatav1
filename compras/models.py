@@ -1660,12 +1660,19 @@ class ItemRecebimento(models.Model):
                     logging.error(f"Nenhum armazém disponível para criar lote. Empresa: {self.recebimento.empresa}")
                     raise ValidationError("Nenhum armazém disponível. Configure um armazém para a empresa.")
 
-                # Preço unitário de compra deste item, usado como custo do lote
+                # Preço unitário de compra deste item, usado como custo do lote.
+                # Prioriza o preço efetivamente informado no recebimento (pode
+                # divergir do preço do pedido) e desconta o valor_desconto
+                # rateado pela quantidade — senão o desconto lançado no
+                # recebimento nunca refletia no custo do estoque.
                 preco_compra = None
-                if self.item_pedido and self.item_pedido.preco_unitario:
-                    preco_compra = self.item_pedido.preco_unitario
-                elif self.preco_unitario:
-                    preco_compra = self.preco_unitario
+                preco_base = self.preco_unitario or (self.item_pedido.preco_unitario if self.item_pedido else None)
+                if preco_base:
+                    desconto = self.valor_desconto or Decimal('0')
+                    if self.quantidade_recebida:
+                        preco_compra = preco_base - (desconto / self.quantidade_recebida)
+                    else:
+                        preco_compra = preco_base
 
                 # Cria o lote
                 self.lote = Lote.objects.create(
@@ -1724,12 +1731,17 @@ class ItemRecebimento(models.Model):
                 logging.info(f"Movimentação já registrada para ItemRecebimento #{self.id}")
                 return
             
-            # Preço unitário de compra deste item, usado como custo do lote
+            # Preço unitário de compra deste item, usado como custo do lote.
+            # Ver comentário equivalente em save() sobre priorizar o preço do
+            # recebimento e descontar valor_desconto rateado pela quantidade.
             preco_compra = None
-            if self.item_pedido and self.item_pedido.preco_unitario:
-                preco_compra = self.item_pedido.preco_unitario
-            elif self.preco_unitario:
-                preco_compra = self.preco_unitario
+            preco_base = self.preco_unitario or (self.item_pedido.preco_unitario if self.item_pedido else None)
+            if preco_base:
+                desconto = self.valor_desconto or Decimal('0')
+                if self.quantidade_recebida:
+                    preco_compra = preco_base - (desconto / self.quantidade_recebida)
+                else:
+                    preco_compra = preco_base
 
             # Se chegou aqui, é a PRIMEIRA chamada para este item
             # Apenas cria lote se não existir

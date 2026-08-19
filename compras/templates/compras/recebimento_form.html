@@ -227,16 +227,16 @@
                         <label class="form-label">Preço Unitário <small class="text-muted">(opcional)</small></label>
                         <div class="input-group">
                             <span class="input-group-text">R$</span>
-                            <input type="number" id="modalPreco" class="form-control"
-                                   step="0.01" min="0" placeholder="0,00">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="modalPreco" class="form-control"
+                                   placeholder="0,00">
                         </div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Desconto <small class="text-muted">(opcional)</small></label>
                         <div class="input-group">
                             <span class="input-group-text">R$</span>
-                            <input type="number" id="modalDesconto" class="form-control"
-                                   step="0.01" min="0" value="0" placeholder="0,00">
+                            <input type="text" inputmode="decimal" autocomplete="off" id="modalDesconto" class="form-control"
+                                   placeholder="0,00">
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -290,6 +290,38 @@
 let activeIndex = null;
 const confirmados = {};
 
+// Preço/Desconto são campos de moeda em formato BR (1.234,56). Guardamos o
+// valor decimal "puro" (ponto decimal) em dataset.rawValue — é isso que vai
+// pro backend — enquanto o input mostra o texto formatado ao usuário.
+function setMoneyInput(el, decimalValue) {
+    const n = parseFloat(decimalValue);
+    if (decimalValue === '' || decimalValue === null || decimalValue === undefined || isNaN(n)) {
+        el.value = '';
+        el.dataset.rawValue = '';
+        return;
+    }
+    el.dataset.rawValue = n.toFixed(2);
+    el.value = n.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function getMoneyValue(el) {
+    const v = parseFloat(el.dataset.rawValue);
+    return isNaN(v) ? 0 : v;
+}
+
+function onMoneyInput(e) {
+    const el = e.target;
+    const digits = el.value.replace(/\D/g, '');
+    if (!digits) {
+        el.value = '';
+        el.dataset.rawValue = '';
+        return;
+    }
+    const units = parseInt(digits, 10);
+    setMoneyInput(el, (units / 100).toFixed(2));
+    el.setSelectionRange(el.value.length, el.value.length);
+}
+
 function getModal() {
     return bootstrap.Modal.getOrCreateInstance(document.getElementById('modalReceber'));
 }
@@ -320,11 +352,11 @@ function abrirModal(btn) {
     document.getElementById('modalFaturadoAviso').style.display = faturadoCompleto ? 'block' : 'none';
 
     if (faturadoCompleto) {
-        modalPreco.value = '0';
-        modalDesconto.value = '0';
+        setMoneyInput(modalPreco, '0');
+        setMoneyInput(modalDesconto, '0');
     } else {
-        modalPreco.value  = prev ? prev.preco  : (parseFloat(tr.dataset.preco) > 0 ? parseFloat(tr.dataset.preco).toFixed(2) : '');
-        modalDesconto.value = prev ? prev.desconto : (parseFloat(tr.dataset.desconto) > 0 ? parseFloat(tr.dataset.desconto).toFixed(2) : '0');
+        setMoneyInput(modalPreco, prev ? prev.preco : (parseFloat(tr.dataset.preco) > 0 ? tr.dataset.preco : ''));
+        setMoneyInput(modalDesconto, prev ? prev.desconto : (parseFloat(tr.dataset.desconto) > 0 ? tr.dataset.desconto : '0'));
     }
 
     recalcularSubtotalModal();
@@ -333,14 +365,17 @@ function abrirModal(btn) {
 }
 
 function recalcularSubtotalModal() {
-    const qtd   = parseFloat(document.getElementById('modalQtd').value)     || 0;
-    const preco = parseFloat(document.getElementById('modalPreco').value)    || 0;
-    const desc  = parseFloat(document.getElementById('modalDesconto').value) || 0;
+    const qtd   = parseFloat(document.getElementById('modalQtd').value) || 0;
+    const preco = getMoneyValue(document.getElementById('modalPreco'));
+    const desc  = getMoneyValue(document.getElementById('modalDesconto'));
     const sub   = Math.max(0, qtd * preco - desc);
     document.getElementById('modalSubtotal').value =
         sub.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
+['modalPreco', 'modalDesconto'].forEach(id => {
+    document.getElementById(id).addEventListener('input', onMoneyInput);
+});
 ['modalQtd', 'modalPreco', 'modalDesconto'].forEach(id => {
     document.getElementById(id).addEventListener('input', recalcularSubtotalModal);
 });
@@ -368,8 +403,8 @@ function confirmarItem() {
         itemId  : tr.dataset.itemId,
         qtd     : qtd,
         localId : localId,
-        preco   : document.getElementById('modalPreco').value   || '',
-        desconto: document.getElementById('modalDesconto').value || '0',
+        preco   : document.getElementById('modalPreco').dataset.rawValue   || '',
+        desconto: document.getElementById('modalDesconto').dataset.rawValue || '0',
         dataFab : document.getElementById('modalDataFab').value  || '',
         dataVal : document.getElementById('modalDataVal').value  || '',
         obs     : document.getElementById('modalObs').value      || '',

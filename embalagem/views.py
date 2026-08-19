@@ -489,6 +489,13 @@ def pallet_etiqueta_pdf(request, pk):
     return resp
 
 
+def _romaneio_do_pallet(pallet, romaneio=None):
+    if romaneio:
+        return romaneio
+    item = pallet.itens_romaneio.select_related(*_SELECT_RELATED_ROMANEIO_ETIQUETA).first()
+    return item.romaneio if item else None
+
+
 @login_required
 def pallet_etiqueta_caixa_pdf(request, pk):
     empresa = _get_empresa(request)
@@ -497,9 +504,8 @@ def pallet_etiqueta_caixa_pdf(request, pk):
         .prefetch_related(*_PREFETCH_RELATED_ETIQUETA),
         pk=pk, empresa=empresa,
     )
-    item_rom = pallet.itens_romaneio.select_related(*_SELECT_RELATED_ROMANEIO_ETIQUETA).first()
-    romaneio = item_rom.romaneio if item_rom else None
-    pdf = _render_etiqueta_pdf([pallet], romaneio=romaneio, template_name='embalagem/pallet/etiqueta_caixa_pdf.html')
+    from .pdf_caixa import render_etiquetas_caixa_pdf
+    pdf = render_etiquetas_caixa_pdf([{'pallet': pallet, 'romaneio': _romaneio_do_pallet(pallet)}])
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'inline; filename="etiqueta-caixa-{pallet.codigo_pallet}.pdf"'
     return resp
@@ -532,7 +538,9 @@ def ordem_etiquetas_caixa_pdf(request, pk):
         .prefetch_related(*_PREFETCH_RELATED_ETIQUETA)
         .order_by('numero_sequencial')
     )
-    pdf = _render_etiqueta_pdf(pallets, template_name='embalagem/pallet/etiqueta_caixa_pdf.html')
+    from .pdf_caixa import render_etiquetas_caixa_pdf
+    pallets_ctx = [{'pallet': p, 'romaneio': _romaneio_do_pallet(p)} for p in pallets]
+    pdf = render_etiquetas_caixa_pdf(pallets_ctx)
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'inline; filename="etiquetas-caixa-{ordem.numero}.pdf"'
     return resp

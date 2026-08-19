@@ -44,7 +44,7 @@ class TipoEmbalagemForm(forms.ModelForm):
             # Nota: o PDF da etiqueta usa fonte padrão (Helvetica) sem glifos gregos/cirílicos —
             # evite incluir idiomas com esses alfabetos (grego, búlgaro, russo etc.), eles não aparecerão no PDF.
             'codigo_multilingue': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 80550'}),
-            'codigo_chave_extra': forms.TextInput(attrs={'class': 'form-control'}),
+            'codigo_chave_extra': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 120'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):

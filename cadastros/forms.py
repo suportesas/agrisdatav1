@@ -88,7 +88,7 @@ class FazendaForm(forms.ModelForm):
             'empresa',  # ✅ ADICIONADO
             'nome', 'nome_fantasia', 'tipo_pessoa',
             'cnpj_cpf', 'inscricao_estadual', 'inscricao_municipal',
-            'eori', 'regime_tributario',
+            'eori', 'ggn_numero', 'regime_tributario',
             'area_total', 'area_agricultavel',
             'telefone', 'email', 'website',
             'latitude', 'longitude',
@@ -119,6 +119,10 @@ class FazendaForm(forms.ModelForm):
             'eori': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Código EORI para exportação'
+            }),
+            'ggn_numero': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número GGN (GLOBALG.A.P.)'
             }),
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
             'area_total': forms.NumberInput(attrs={

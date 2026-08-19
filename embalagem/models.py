@@ -451,6 +451,14 @@ class PalletEmbalado(models.Model):
         juliano = f'{self.data_embalagem.timetuple().tm_yday:03d}'
         return f'{prod}{talhao}{cultura}{juliano}'
 
+    @property
+    def codigo_chave_semana(self):
+        """Segundo valor da linha "Key" da etiqueta de caixa: L{semana ISO} - {dia da semana ISO,
+        1=segunda...7=domingo}, calculado a partir de data_embalagem — mesmo critério usado na
+        planilha de referência do cliente (=CONCAT("L ";NÚMSEMANA(HOJE());" - ";DIA.DA.SEMANA(HOJE();2)))."""
+        ano, semana, dia_iso = self.data_embalagem.isocalendar()
+        return f'L {semana} - {dia_iso}'
+
     @classmethod
     def _gerar_codigo(cls, empresa, data=None, safra=None):
         """Gera o código único do pallet.

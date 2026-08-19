@@ -112,6 +112,11 @@
             {{ form.eori }}
             <div class="helper-note">Para exportação</div>
           </div>
+          <div class="field col-4">
+            <label class="form-label">GGN (GLOBALG.A.P.)</label>
+            {{ form.ggn_numero }}
+            <div class="helper-note">Usado na rastreabilidade do Packing List e nas etiquetas de pallet/caixa</div>
+          </div>
           <div class="field col-12">
             <label class="form-label">Regime Tributário<span class="req">*</span></label>
             {{ form.regime_tributario }}

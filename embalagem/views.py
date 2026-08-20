@@ -18,11 +18,11 @@ from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
 from .forms import (
     CargaFreteForm, GerarPalletsForm, ItemPalletForm, MaterialEmbalagemForm, OrdemEmbalagemForm,
-    RomaneioVendaForm, TipoEmbalagemForm, TrocarClienteRomaneioForm,
+    RomaneioVendaForm, TipoEmbalagemClienteForm, TipoEmbalagemForm, TrocarClienteRomaneioForm,
 )
 from .models import (
     CargaFrete, CargaFreteError, ItemPallet, ItemRomaneioVenda, MaterialEmbalagem, OrdemEmbalagem,
-    PalletEmbalado, RomaneioMaterialEmbalagem, RomaneioVenda, TipoEmbalagem,
+    PalletEmbalado, RomaneioMaterialEmbalagem, RomaneioVenda, TipoEmbalagem, TipoEmbalagemCliente,
 )
 
 
@@ -171,6 +171,59 @@ def material_embalagem_update(request, pk):
         form = MaterialEmbalagemForm(instance=obj, empresa=empresa)
     return render(request, 'embalagem/material_embalagem/form.html', {
         'form': form, 'title': 'Editar Material de Embalagem', 'obj': obj,
+    })
+
+
+# ─────────────────────────── TipoEmbalagemCliente (IAN) ─────────────────────
+
+@login_required
+def tipo_embalagem_cliente_list(request):
+    empresa = _get_empresa(request)
+    qs = TipoEmbalagemCliente.objects.filter(empresa=empresa).select_related('tipo_embalagem', 'cliente')
+    q = request.GET.get('q', '')
+    if q:
+        qs = qs.filter(Q(tipo_embalagem__nome__icontains=q) | Q(cliente__razao_social__icontains=q) | Q(codigo_ian__icontains=q))
+
+    codigos, per_page, per_page_options = paginate(request, qs.order_by('tipo_embalagem__nome', 'cliente__razao_social'))
+
+    return render(request, 'embalagem/tipo_embalagem_cliente/list.html', {
+        'codigos': codigos,
+        'q': q,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
+
+
+@login_required
+def tipo_embalagem_cliente_create(request):
+    empresa = _get_empresa(request)
+    if request.method == 'POST':
+        form = TipoEmbalagemClienteForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Código IAN cadastrado com sucesso.')
+            return redirect('embalagem:tipo_embalagem_cliente_list')
+    else:
+        form = TipoEmbalagemClienteForm(empresa=empresa)
+    return render(request, 'embalagem/tipo_embalagem_cliente/form.html', {
+        'form': form, 'title': 'Novo Código IAN por Cliente',
+    })
+
+
+@login_required
+def tipo_embalagem_cliente_update(request, pk):
+    empresa = _get_empresa(request)
+    obj = get_object_or_404(TipoEmbalagemCliente, pk=pk, empresa=empresa)
+    if request.method == 'POST':
+        form = TipoEmbalagemClienteForm(request.POST, instance=obj, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Código IAN atualizado.')
+            return redirect('embalagem:tipo_embalagem_cliente_list')
+    else:
+        form = TipoEmbalagemClienteForm(instance=obj, empresa=empresa)
+    return render(request, 'embalagem/tipo_embalagem_cliente/form.html', {
+        'form': form, 'title': 'Editar Código IAN por Cliente', 'obj': obj,
     })
 
 

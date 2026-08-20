@@ -66,18 +66,6 @@ class TipoEmbalagem(models.Model):
         blank=True,
         help_text='Código de rastreamento específico da empresa. Ex: GLO-MEL-05',
     )
-    nome_multilingue = models.TextField(
-        'Nome do Produto (Multi-idioma)',
-        blank=True,
-        help_text='Bloco com o nome do produto traduzido, como impresso na etiqueta de caixa (GLOBALG.A.P.). '
-                   'Ex: "Honigmelonen - Honeydew Melons - Melon canari - ... - Melão Amarelo"',
-    )
-    codigo_multilingue = models.CharField(
-        'Código do Produto (Etiqueta Multi-idioma)',
-        max_length=20,
-        blank=True,
-        help_text='Código numérico exibido ao lado do nome multi-idioma na etiqueta de caixa. Ex: 80550',
-    )
     classe_categoria = models.CharField(
         'Classe / Categoria (Class/Cat.)',
         max_length=10,
@@ -149,6 +137,39 @@ class TipoEmbalagem(models.Model):
     @property
     def peso_bruto_pallet(self):
         return (self.peso_bruto_cx * self.caixas_por_pallet) + self.peso_pallet_vazio
+
+
+class TipoEmbalagemCliente(models.Model):
+    """Código IAN (Article Number) atribuído por um cliente a um Tipo de Embalagem —
+    cada retailer tem seu próprio catálogo de artigos, por isso não é um campo
+    direto em TipoEmbalagem."""
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='ians_tipo_embalagem', verbose_name='Empresa',
+    )
+    tipo_embalagem = models.ForeignKey(
+        TipoEmbalagem, on_delete=models.CASCADE,
+        related_name='codigos_ian_cliente', verbose_name='Tipo de Embalagem',
+    )
+    cliente = models.ForeignKey(
+        'cadastros.Cliente', on_delete=models.PROTECT,
+        related_name='ians_tipo_embalagem', verbose_name='Cliente',
+    )
+    codigo_ian = models.CharField(
+        'Código IAN', max_length=20,
+        help_text='Código do artigo (IAN) atribuído por este cliente, impresso na etiqueta de caixa. Ex: 80575',
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Código IAN por Cliente'
+        verbose_name_plural = 'Códigos IAN por Cliente'
+        unique_together = [('tipo_embalagem', 'cliente')]
+        ordering = ['tipo_embalagem__nome', 'cliente__razao_social']
+
+    def __str__(self):
+        return f'{self.tipo_embalagem} — {self.cliente}: {self.codigo_ian}'
 
 
 # ──────────────────────────── OrdemEmbalagem ───────────────────────────────

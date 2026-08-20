@@ -17,6 +17,11 @@ urlpatterns = [
     path('materiais/novo/', views.material_embalagem_create, name='material_embalagem_create'),
     path('materiais/<int:pk>/editar/', views.material_embalagem_update, name='material_embalagem_update'),
 
+    # Códigos IAN por Cliente (etiqueta de caixa)
+    path('ians-cliente/', views.tipo_embalagem_cliente_list, name='tipo_embalagem_cliente_list'),
+    path('ians-cliente/novo/', views.tipo_embalagem_cliente_create, name='tipo_embalagem_cliente_create'),
+    path('ians-cliente/<int:pk>/editar/', views.tipo_embalagem_cliente_update, name='tipo_embalagem_cliente_update'),
+
     # Ordens de Embalagem
     path('ordens/', views.ordem_list, name='ordem_list'),
     path('ordens/nova/', views.ordem_create, name='ordem_create'),

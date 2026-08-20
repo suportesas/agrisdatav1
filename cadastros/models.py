@@ -1792,14 +1792,22 @@ class Cultura(models.Model):
         blank=True,
         help_text='Ex: Amarelo, Pele de Sapo, Gália'
     )
-    
+
     codigo_interno = models.CharField(
         'Código Interno',
         max_length=20,
         blank=True,
         help_text='Código de identificação interno'
     )
-    
+
+    nome_multilingue = models.TextField(
+        'Nome da Cultura (Multi-idioma)',
+        blank=True,
+        help_text='Nome da cultura traduzido, como impresso na etiqueta de caixa (GLOBALG.A.P.). '
+                   'Ex: "Wassermelonen - Watermelon - Pastèque - Sandías - ... - Melancia". '
+                   'Cadastrado uma vez aqui, vale para todos os Tipos de Embalagem dessa cultura.',
+    )
+
     # Características de plantio
     ciclo_cultivo = models.CharField(
         'Ciclo de Cultivo',

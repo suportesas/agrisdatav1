@@ -1,7 +1,10 @@
 from django import forms
 from django.urls import reverse_lazy
 from core.widgets import Select2AjaxWidget, DateBRInput, MoneyBRInput, DecimalBRInput
-from .models import ItemPallet, TipoEmbalagem, OrdemEmbalagem, RomaneioVenda, CargaFrete, MaterialEmbalagem
+from .models import (
+    ItemPallet, TipoEmbalagem, TipoEmbalagemCliente, OrdemEmbalagem, RomaneioVenda,
+    CargaFrete, MaterialEmbalagem,
+)
 
 
 class TipoEmbalagemChoiceField(forms.ModelChoiceField):
@@ -20,7 +23,7 @@ class TipoEmbalagemForm(forms.ModelForm):
         fields = [
             'produto', 'cultura', 'subcategoria', 'nome', 'variedade', 'marca', 'tipo_calibre',
             'peso_liquido_cx', 'peso_bruto_cx', 'caixas_por_pallet', 'peso_pallet_vazio',
-            'trace_code', 'classe_categoria', 'nome_multilingue', 'codigo_multilingue',
+            'trace_code', 'classe_categoria',
             'codigo_chave_extra', 'ativo',
         ]
         widgets = {
@@ -37,13 +40,6 @@ class TipoEmbalagemForm(forms.ModelForm):
             'peso_pallet_vazio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'trace_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: GLO-MEL-05'}),
             'classe_categoria': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: I'}),
-            'nome_multilingue': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
-                'placeholder': 'Ex: Honigmelonen - Honeydew Melons - Melon canari - ... - Melão Amarelo',
-            }),
-            # Nota: o PDF da etiqueta usa fonte padrão (Helvetica) sem glifos gregos/cirílicos —
-            # evite incluir idiomas com esses alfabetos (grego, búlgaro, russo etc.), eles não aparecerão no PDF.
-            'codigo_multilingue': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 80550'}),
             'codigo_chave_extra': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 120'}),
         }
 
@@ -84,6 +80,51 @@ class TipoEmbalagemForm(forms.ModelForm):
             raise forms.ValidationError('Informe pelo menos Produto, Cultura ou Subcategoria para o tipo de embalagem.')
 
         return cleaned
+
+
+class TipoEmbalagemClienteForm(forms.ModelForm):
+    class Meta:
+        model = TipoEmbalagemCliente
+        fields = ['tipo_embalagem', 'cliente', 'codigo_ian', 'ativo']
+        widgets = {
+            'tipo_embalagem': forms.Select(attrs={'class': 'form-select'}),
+            'cliente': Select2AjaxWidget(
+                ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...',
+            ),
+            'codigo_ian': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 80575'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        if empresa:
+            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
+                empresa=empresa, ativo=True
+            ).order_by('nome')
+            from cadastros.models import Cliente
+            self.fields['cliente'].queryset = Cliente.objects.filter(
+                empresa=empresa, status='ATIVO'
+            ).order_by('razao_social')
+
+    def clean(self):
+        cleaned = super().clean()
+        te = cleaned.get('tipo_embalagem')
+        cliente = cleaned.get('cliente')
+        if te and cliente:
+            qs = TipoEmbalagemCliente.objects.filter(tipo_embalagem=te, cliente=cliente)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('cliente', 'Já existe um código IAN cadastrado para esse Tipo de Embalagem + Cliente.')
+        return cleaned
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.empresa:
+            obj.empresa = self.empresa
+        if commit:
+            obj.save()
+        return obj
 
 
 class MaterialEmbalagemForm(forms.ModelForm):

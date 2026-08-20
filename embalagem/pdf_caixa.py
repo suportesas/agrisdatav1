@@ -72,77 +72,33 @@ def _fmt_kg(valor):
 def _styles():
     _registrar_fonte_dejavu()
     return {
-        'cell': ParagraphStyle('cell', fontName='Helvetica', fontSize=8, leading=10),
-        'variedade': ParagraphStyle('variedade', fontName='Helvetica-Bold', fontSize=8, leading=10),
+        'cell': ParagraphStyle('cell', fontName='Helvetica', fontSize=6.6, leading=8),
+        'variedade': ParagraphStyle('variedade', fontName='Helvetica-Bold', fontSize=6.6, leading=8),
         'multilingue_nome': ParagraphStyle(
-            'multilingue_nome', fontName=_DEJAVU_FONT_NAME, fontSize=6, leading=7.5, textColor=colors.black,
+            'multilingue_nome', fontName=_DEJAVU_FONT_NAME, fontSize=5, leading=6, textColor=colors.black,
         ),
         'ian': ParagraphStyle(
-            'ian', fontName='Helvetica-Bold', fontSize=21, leading=23, alignment=TA_CENTER,
+            'ian', fontName='Helvetica-Bold', fontSize=17, leading=18, alignment=TA_CENTER,
         ),
         'origem': ParagraphStyle(
-            'origem', fontName=_DEJAVU_FONT_NAME, fontSize=5.6, leading=7, textColor=colors.HexColor('#333333'),
-        ),
-        'ppwr_titulo': ParagraphStyle(
-            'ppwr_titulo', fontName=_DEJAVU_FONT_NAME, fontSize=5.2, leading=6.6,
-            textColor=colors.HexColor('#333333'),
+            'origem', fontName=_DEJAVU_FONT_NAME, fontSize=4.4, leading=5.2, textColor=colors.HexColor('#333333'),
         ),
         'ppwr_responsavel': ParagraphStyle(
-            'ppwr_responsavel', fontName=_DEJAVU_FONT_NAME, fontSize=6, leading=7.5, textColor=colors.black,
+            'ppwr_responsavel', fontName=_DEJAVU_FONT_NAME, fontSize=5.4, leading=6.4, textColor=colors.black,
         ),
-        'key': ParagraphStyle('key', fontName='Helvetica', fontSize=7, leading=9),
-        'packing_valor': ParagraphStyle('packing_valor', fontName='Helvetica-Bold', fontSize=16, leading=18),
-        'reciclagem': ParagraphStyle('reciclagem', fontName='Helvetica-Bold', fontSize=5, leading=6, alignment=TA_CENTER),
+        'packing_valor': ParagraphStyle('packing_valor', fontName='Helvetica-Bold', fontSize=13, leading=14),
+        'reciclagem': ParagraphStyle('reciclagem', fontName='Helvetica-Bold', fontSize=4.2, leading=5, alignment=TA_CENTER),
     }
 
 
 def _cell(styles, label, valor, sub=None):
     txt = (
-        f'<font size="6" color="#333333">{escape(str(label))}</font><br/>'
-        f'<font size="8"><b>{escape(str(valor))}</b></font>'
+        f'<font size="5" color="#333333">{escape(str(label))}</font><br/>'
+        f'<font size="6.6"><b>{escape(str(valor))}</b></font>'
     )
     if sub:
         txt += f'<br/><font size="5.6" color="#333333">{escape(str(sub))}</font>'
     return Paragraph(txt, styles['cell'])
-
-
-def _cell_grande(styles, label, valor):
-    """Variante de _cell com o valor em fonte bem maior (ex: packing unit, mínimo
-    de 6mm de x-height no template Lidl) — label e valor em Paragraphs/estilos
-    separados (não misturados num único Paragraph) para não estourar o leading
-    fixo do estilo 'cell' e sobrepor as linhas."""
-    label_p = Paragraph(f'<font size="6" color="#333333">{escape(str(label))}</font>', styles['cell'])
-    valor_p = Paragraph(escape(str(valor)), styles['packing_valor'])
-    t = Table([[label_p], [valor_p]], colWidths=[None])
-    t.setStyle(TableStyle([
-        ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0), ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-    ]))
-    return t
-
-
-def _grid_row(styles, cells, col_widths, largura):
-    t = Table([cells], colWidths=col_widths)
-    t.setStyle(TableStyle([
-        ('LEFTPADDING', (0, 0), (-1, -1), 3.5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 3.5),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('LINEAFTER', (0, 0), (-2, 0), 0.8, colors.black),
-    ]))
-    return t
-
-
-def _linha_unica(styles, flowable, largura):
-    t = Table([[flowable]], colWidths=[largura])
-    t.setStyle(TableStyle([
-        ('LEFTPADDING', (0, 0), (-1, -1), 3.5),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 3.5),
-        ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-    ]))
-    return t
 
 
 def _icone_reciclagem(tam=6 * mm):
@@ -167,7 +123,7 @@ def _icone_reciclagem(tam=6 * mm):
     return d
 
 
-def _icone_reciclagem_cell(styles, codigo, tam=6 * mm):
+def _icone_reciclagem_cell(styles, codigo, tam=4.5 * mm):
     """Ícone de reciclagem empilhado com o código do material (ex: '20 PAP')."""
     icone = _icone_reciclagem(tam)
     partes = codigo.split(None, 1)
@@ -191,6 +147,16 @@ def _supplier_fazenda(empresa):
     ).first()
 
 
+def _endereco_fazenda(fazenda):
+    """Endereço completo formatado da fazenda (preferindo o endereço marcado como
+    padrão, ou o primeiro cadastrado); usado no bloco Packhouse da etiqueta —
+    `Armazem.localizacao` é só um rótulo curto, não um endereço postal de verdade."""
+    if not fazenda:
+        return None
+    endereco = fazenda.enderecos.filter(padrao=True).first() or fazenda.enderecos.first()
+    return endereco.get_endereco_completo() if endereco else None
+
+
 def _material_transporte(romaneio):
     """Material de embalagem tipo TRANSPORTE (TP) vinculado ao romaneio — fonte do
     código de reciclagem impresso junto ao aviso PPWR."""
@@ -200,7 +166,7 @@ def _material_transporte(romaneio):
     return item.material if item else None
 
 
-def _bloco_pallet(pallet, romaneio, largura, supplier_fazenda, material_transporte, lote_producao):
+def _bloco_pallet(pallet, romaneio, largura, supplier_fazenda, material_transporte, lote_producao, endereco_packhouse, codigo_ian):
     styles = _styles()
     te = pallet.tipo_embalagem
     lp = lote_producao
@@ -210,8 +176,8 @@ def _bloco_pallet(pallet, romaneio, largura, supplier_fazenda, material_transpor
     tp = romaneio.rastreabilidade_transporte if romaneio else None
     sp = romaneio.rastreabilidade_venda if romaneio else None
 
-    nome_multilingue = (te.nome_multilingue if te and te.nome_multilingue else (te.descricao_completa if te else '—'))
-    codigo_multilingue = te.codigo_multilingue if te and te.codigo_multilingue else ''
+    nome_multilingue = te.cultura.nome_multilingue if te and te.cultura_id and te.cultura.nome_multilingue else '—'
+    codigo_multilingue = codigo_ian or ''
     variedade = te.variedade if te and te.variedade else '—'
     classe = te.classe_categoria if te and te.classe_categoria else '—'
     peso = _fmt_kg(te.peso_liquido_cx) if te else '—'
@@ -222,91 +188,63 @@ def _bloco_pallet(pallet, romaneio, largura, supplier_fazenda, material_transpor
 
     armazem = pallet.armazem
     packhouse_nome = armazem.nome
-    packhouse_endereco = armazem.localizacao or '—'
+    packhouse_endereco = endereco_packhouse or armazem.localizacao or '—'
     packhouse_ggn = armazem.ggn_numero or '—'
 
     supplier_nome = supplier_fazenda.nome if supplier_fazenda else '—'
     supplier_ggn = (supplier_fazenda.ggn_numero or '—') if supplier_fazenda else '—'
 
-    linhas = []
+    # Etiqueta em formato horizontal, mesmo tamanho físico da etiqueta de pallet
+    # (95x130mm) só que deitada (130x95mm). Grade única de 2 colunas x N linhas,
+    # seguindo a referência real do cliente: nome (esquerda) empilhado com IAN +
+    # Country of origin (direita); Supplier/GGN/Key em linhas próprias à esquerda,
+    # com o aviso PPWR ocupando essas 3 linhas de uma vez à direita. Fontes e
+    # espaçamento bem compactos — o conteúdo é denso (2 blocos de 23 idiomas) e
+    # o espaço físico é pequeno.
+    metade = largura / 2
 
-    # 1. Article name (multilíngue) + IAN
-    cw_ian = largura * 0.32
-    linhas.append(_grid_row(styles, [
-        Paragraph(escape(nome_multilingue), styles['multilingue_nome']),
-        Paragraph(escape(codigo_multilingue), styles['ian']),
-    ], [largura - cw_ian, cw_ian], largura))
-
-    # 2. Country of origin (multilíngue)
     origem_html = f'<b>Country of origin: Brazil</b><br/>{escape(_ORIGEM_TEXTO)}'
-    linhas.append(_linha_unica(styles, Paragraph(origem_html, styles['origem']), largura))
-
-    # 3. Grower (GGN) + Class/Cat.
-    linhas.append(_grid_row(styles, [
-        _cell(styles, 'Grower', f'GGN {ggn_growing}'),
-        _cell(styles, 'Class / Cat.', classe),
-    ], [largura / 2, largura / 2], largura))
-
-    # 4. Packhouse (nome + endereço + GGN)
     packhouse_html = (
-        f'<font size="6" color="#333333">Packhouse</font><br/>'
-        f'<font size="8"><b>{escape(packhouse_nome)}</b></font><br/>'
-        f'<font size="6.5">{escape(packhouse_endereco)}</font><br/>'
-        f'<font size="6.5">GGN {escape(packhouse_ggn)}</font>'
+        f'<font size="5" color="#333333">Packhouse</font><br/>'
+        f'<font size="6.6"><b>{escape(packhouse_nome)}</b></font><br/>'
+        f'<font size="5.4">{escape(packhouse_endereco)}</font><br/>'
+        f'<font size="5.4">GGN {escape(packhouse_ggn)}</font>'
     )
-    linhas.append(_linha_unica(styles, Paragraph(packhouse_html, styles['cell']), largura))
-
-    # 5. TP / SP
-    linhas.append(_grid_row(styles, [
-        _cell(styles, 'Transport Traceability (TP)', tp or '—'),
-        _cell(styles, 'Sales Traceability (SP)', sp or '—'),
-    ], [largura / 2, largura / 2], largura))
-
-    # 6. Supplier (nome + GGN)
-    linhas.append(_linha_unica(
-        styles, _cell(styles, 'Supplier', f'{supplier_nome} — GGN {supplier_ggn}'), largura,
-    ))
-
-    # 7. Packaging + Size
-    linhas.append(_grid_row(styles, [
-        _cell_grande(styles, 'Packaging', peso),
-        _cell(styles, 'Size', calibre),
-    ], [largura / 2, largura / 2], largura))
-
-    # 8. Variety
-    linhas.append(_linha_unica(styles, Paragraph(f'Variety: {escape(variedade)}', styles['variedade']), largura))
-
-    # 9. Key (farm code + batch number)
-    key_txt = 'Key: '
+    key_valor = f'<b>{escape(codigo_producao)}</b> <font size="4.6" color="#666666">farm code</font> <b>{escape(chave_semana)}</b>'
     if chave_extra:
-        key_txt += f'{escape(chave_extra)} | '
-    key_txt += f'{escape(codigo_producao)} &nbsp;&nbsp; {escape(chave_semana)}'
-    linhas.append(_linha_unica(styles, Paragraph(key_txt, styles['key']), largura))
-
-    # 10. Other (aviso PPWR + código de reciclagem)
+        key_valor = f'<b>{escape(chave_extra)}</b> | ' + key_valor
+    key_html = f'<font size="5" color="#333333">Key</font><br/><font size="6.6">{key_valor}</font>'
     ppwr_html = (
-        f'<font size="5.2">{escape(_PPWR_TEXTO)}</font><br/><br/>'
-        f'<font size="6" color="#000000">{escape(responsavel)}</font>'
+        f'<font size="4.4">{escape(_PPWR_TEXTO)}</font><br/>'
+        f'<font size="5.2" color="#000000">{escape(responsavel)}</font>'
     )
-    ppwr_paragrafo = Paragraph(ppwr_html, styles['ppwr_responsavel'])
     reciclagem_codigo = material_transporte.codigo_reciclagem if (material_transporte and material_transporte.codigo_reciclagem) else None
-    if reciclagem_codigo:
-        icone_col = 8 * mm
-        linhas.append(_grid_row(styles, [
-            _icone_reciclagem_cell(styles, reciclagem_codigo),
-            ppwr_paragrafo,
-        ], [icone_col, largura - icone_col], largura))
-    else:
-        linhas.append(_linha_unica(styles, ppwr_paragrafo, largura))
+    icone_reciclagem = _icone_reciclagem_cell(styles, reciclagem_codigo) if reciclagem_codigo else ''
 
-    outer = Table([[l] for l in linhas], colWidths=[largura])
+    grade = [
+        [Paragraph(escape(nome_multilingue), styles['multilingue_nome']), Paragraph(escape(codigo_multilingue), styles['ian'])],
+        ['', Paragraph(origem_html, styles['origem'])],
+        [_cell(styles, 'Grower', f'GGN {ggn_growing}'), _cell(styles, 'Klasse/Class/Cat.', classe)],
+        [Paragraph(packhouse_html, styles['cell']), Paragraph(escape(peso), styles['packing_valor'])],
+        [_cell(styles, 'Trac. Transp.', tp or '—'), _cell(styles, 'Variety', variedade)],
+        [_cell(styles, 'Trac. Sales', sp or '—'), _cell(styles, 'Size', calibre)],
+        [_cell(styles, 'Supplier', supplier_nome), Paragraph(ppwr_html, styles['ppwr_responsavel'])],
+        [_cell(styles, 'GGN', supplier_ggn), ''],
+        [Paragraph(key_html, styles['cell']), ''],
+        [icone_reciclagem, ''],
+    ]
+
+    outer = Table(grade, colWidths=[metade, metade])
     outer.setStyle(TableStyle([
+        ('SPAN', (0, 0), (0, 1)),
+        ('SPAN', (1, 6), (1, 8)),
         ('BOX', (0, 0), (-1, -1), 1.3, colors.black),
-        ('LINEBELOW', (0, 0), (-1, -2), 0.8, colors.black),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-        ('TOPPADDING', (0, 0), (-1, -1), 0),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ('INNERGRID', (0, 0), (-1, -1), 0.8, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 2.2),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 2.2),
+        ('TOPPADDING', (0, 0), (-1, -1), 1.2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 1.2),
     ]))
     return outer
 
@@ -347,9 +285,40 @@ def render_etiquetas_caixa_pdf(pallets_ctx):
     }
     lote_producao_por_ordem = {oid: o.lote_producao_efetivo() for oid, o in ordens.items()}
 
-    largura_pagina = 100 * mm
-    altura_pagina = 150 * mm
-    margem = 3 * mm
+    # Endereço do Packhouse: vem do EnderecoFazenda da fazenda vinculada ao armazém
+    # (Armazem.localizacao é só um rótulo curto, não endereço postal).
+    from cadastros.models import EnderecoFazenda
+    fazenda_ids_packhouse = {
+        ctx['pallet'].armazem.fazenda_id for ctx in pallets_ctx if ctx['pallet'].armazem.fazenda_id
+    }
+    endereco_por_fazenda = {}
+    if fazenda_ids_packhouse:
+        for e in (
+            EnderecoFazenda.objects
+            .filter(fazenda_id__in=fazenda_ids_packhouse)
+            .order_by('fazenda_id', '-padrao', 'id')
+        ):
+            endereco_por_fazenda.setdefault(e.fazenda_id, e.get_endereco_completo())
+
+    # Código IAN: atribuído por cliente (cada retailer tem seu próprio catálogo de
+    # artigos), não é campo direto do TipoEmbalagem — ver TipoEmbalagemCliente.
+    from .models import TipoEmbalagemCliente
+    pares_ian = {
+        (ctx['pallet'].tipo_embalagem_id, ctx['romaneio'].cliente_id)
+        for ctx in pallets_ctx if ctx['pallet'].tipo_embalagem_id and ctx.get('romaneio')
+    }
+    ian_por_par = {}
+    if pares_ian:
+        tipo_ids = {p[0] for p in pares_ian}
+        cliente_ids = {p[1] for p in pares_ian}
+        for tec in TipoEmbalagemCliente.objects.filter(
+            tipo_embalagem_id__in=tipo_ids, cliente_id__in=cliente_ids, ativo=True,
+        ):
+            ian_por_par[(tec.tipo_embalagem_id, tec.cliente_id)] = tec.codigo_ian
+
+    largura_pagina = 130 * mm
+    altura_pagina = 95 * mm
+    margem = 2 * mm
     largura_util = largura_pagina - 2 * margem
 
     buffer = io.BytesIO()
@@ -364,7 +333,15 @@ def render_etiquetas_caixa_pdf(pallets_ctx):
         supplier_fazenda = supplier_por_empresa.get(pallet.empresa_id)
         material_transporte = material_por_romaneio.get(romaneio.pk) if romaneio else None
         lote_producao = lote_producao_por_ordem.get(pallet.ordem_embalagem_id)
-        story.append(_bloco_pallet(pallet, romaneio, largura_util, supplier_fazenda, material_transporte, lote_producao))
+        endereco_packhouse = endereco_por_fazenda.get(pallet.armazem.fazenda_id) if pallet.armazem.fazenda_id else None
+        codigo_ian = (
+            ian_por_par.get((pallet.tipo_embalagem_id, romaneio.cliente_id))
+            if (pallet.tipo_embalagem_id and romaneio) else None
+        )
+        story.append(_bloco_pallet(
+            pallet, romaneio, largura_util, supplier_fazenda, material_transporte,
+            lote_producao, endereco_packhouse, codigo_ian,
+        ))
         if i < len(pallets_ctx) - 1:
             story.append(PageBreak())
     doc.build(story)

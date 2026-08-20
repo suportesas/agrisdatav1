@@ -946,6 +946,9 @@
           {% if user.is_admin_empresa or request|tem_acesso:'embalagem:material_embalagem_list' %}
           <li><a href="{% url 'embalagem:material_embalagem_list' %}"><i class="bi bi-box-seam"></i> Materiais de Embalagem</a></li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:tipo_embalagem_cliente_list' %}
+          <li><a href="{% url 'embalagem:tipo_embalagem_cliente_list' %}"><i class="bi bi-upc-scan"></i> IAN por Cliente</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}

@@ -1568,8 +1568,8 @@ class CulturaForm(forms.ModelForm):
     class Meta:
         model = Cultura
         fields = [
-            'nome', 'nome_cientifico', 'tipo', 'variedade', 'codigo_interno',
-            'ciclo_cultivo', 'dias_colheita', 
+            'nome', 'nome_cientifico', 'tipo', 'variedade', 'codigo_interno', 'nome_multilingue',
+            'ciclo_cultivo', 'dias_colheita',
             'espacamento_linhas', 'espacamento_plantas', 'densidade_plantio',
             'temperatura_ideal_min', 'temperatura_ideal_max', 'necessidade_agua',
             'unidade_medida', 'produtividade_esperada', 'preco_medio', 'mercado_destino',
@@ -1596,6 +1596,10 @@ class CulturaForm(forms.ModelForm):
             'codigo_interno': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Código interno'
+            }),
+            'nome_multilingue': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Ex: Wassermelonen - Watermelon - Pastèque - Sandías - ... - Melancia',
             }),
             'ciclo_cultivo': forms.Select(attrs={'class': 'form-select'}),
             'dias_colheita': forms.NumberInput(attrs={

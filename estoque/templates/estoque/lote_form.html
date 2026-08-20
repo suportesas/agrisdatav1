@@ -214,6 +214,14 @@
               </div>
               <div class="helper-note">{{ form.valor_unitario.help_text }}</div>
             </div>
+            <div class="field col-12">
+              <label class="form-label">
+                {{ form.lote_producao.label }}
+                <i class="bi bi-question-circle text-muted" title="{{ form.lote_producao.help_text }}"></i>
+              </label>
+              {{ form.lote_producao }}
+              <div class="helper-note">{{ form.lote_producao.help_text }}</div>
+            </div>
           </div>
         </div>
       </div>

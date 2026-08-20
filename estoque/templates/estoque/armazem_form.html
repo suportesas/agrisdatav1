@@ -81,6 +81,11 @@
               {{ form.localizacao }}
             </div>
             <div class="field col-6">
+              <label class="form-label">{{ form.ggn_numero.label }}</label>
+              {{ form.ggn_numero }}
+              {% if form.ggn_numero.help_text %}<div class="helper-note">{{ form.ggn_numero.help_text }}</div>{% endif %}
+            </div>
+            <div class="field col-6">
               <label class="form-label">{{ form.fazenda.label }}</label>
               {{ form.fazenda }}
             </div>

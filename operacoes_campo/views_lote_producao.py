@@ -148,6 +148,7 @@ def lote_recepcao_packing(request, pk):
                         quantidade_atual=quantidade_kg,
                         unidade_medida=produto.unidade_medida,
                         status='DISPONIVEL',
+                        lote_producao=lote,
                         observacoes=f'Recepção do lote de colheita {lote.numero_lote} ({lote.codigo_rastreamento}).',
                         cadastrado_por=request.user,
                     )

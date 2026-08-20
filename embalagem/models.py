@@ -283,6 +283,16 @@ class OrdemEmbalagem(models.Model):
             return 0
         return int(self.lote_origem.quantidade_atual / lp)
 
+    def lote_producao_efetivo(self):
+        """Lote de produção (colheita) desta ordem — direto na campo `lote_producao`
+        da própria ordem (legado, setado só pela recepção automática do packing) ou,
+        preferencialmente, através do vínculo cadastrado no Lote de origem
+        (`estoque.Lote.lote_producao`), que é a fonte de verdade quando o lote de
+        estoque é reaproveitado em mais de uma ordem de embalagem."""
+        if self.lote_origem_id and self.lote_origem.lote_producao_id:
+            return self.lote_origem.lote_producao
+        return self.lote_producao
+
 
 # ──────────────────────────── MaterialEmbalagem ────────────────────────────
 
@@ -309,6 +319,12 @@ class MaterialEmbalagem(models.Model):
         verbose_name='Produto',
     )
     tipo = models.CharField('Tipo', max_length=20, choices=TIPO, default='TRANSPORTE')
+    codigo_reciclagem = models.CharField(
+        'Código de Reciclagem',
+        max_length=10,
+        blank=True,
+        help_text='Ex: 20 PAP (papelão ondulado) — impresso na etiqueta de caixa junto ao aviso PPWR.'
+    )
     ativo = models.BooleanField('Ativo', default=True)
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
 
@@ -436,9 +452,10 @@ class PalletEmbalado(models.Model):
         """Código de rastreabilidade de produção (etiqueta de caixa PPWR), 10 dígitos:
         1 Produto (Empresa.codigo_produtor_rastreio) + 4 Talhão (Talhao.codigo) +
         2 Cultura (Cultura.codigo_interno) + 3 Calendário Juliano (data_embalagem).
-        Retorna None se lote_producao ou algum dos códigos não estiver disponível/no formato certo.
+        Retorna None se lote_producao (direto ou herdado — ver lote_producao_efetivo)
+        ou algum dos códigos não estiver disponível/no formato certo.
         """
-        lp = self.ordem_embalagem.lote_producao
+        lp = self.ordem_embalagem.lote_producao_efetivo()
         if not lp or not lp.talhao_id or not lp.cultura_id:
             return None
         prod = (self.empresa.codigo_produtor_rastreio or '').strip()

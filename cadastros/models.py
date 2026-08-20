@@ -191,6 +191,13 @@ class Fazenda(models.Model):
         help_text='Número de certificação GLOBALG.A.P. da propriedade, usado na rastreabilidade do Packing List.'
     )
 
+    usar_como_supplier_etiqueta = models.BooleanField(
+        'Usar como Supplier na etiqueta de caixa',
+        default=False,
+        help_text='Marque para usar esta fazenda como o Supplier (nome + GGN) impresso na '
+                   'etiqueta de caixa. No máximo uma marcada por empresa.'
+    )
+
     regime_tributario = models.CharField(
         'Regime Tributário',
         max_length=20,
@@ -342,7 +349,17 @@ class Fazenda(models.Model):
                     )
             except Empresa.DoesNotExist:
                 pass  # Se empresa não existe, deixa passar
-    
+
+        # Garante no máximo 1 fazenda marcada como Supplier da etiqueta por empresa
+        if self.usar_como_supplier_etiqueta and self.empresa_id:
+            qs = Fazenda.objects.filter(empresa_id=self.empresa_id, usar_como_supplier_etiqueta=True)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError({
+                    'usar_como_supplier_etiqueta': 'Já existe uma fazenda marcada como Supplier para esta empresa.'
+                })
+
     def get_cnpj_cpf_formatado(self):
         """Retorna CNPJ/CPF formatado"""
         import re

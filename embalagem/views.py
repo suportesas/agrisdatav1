@@ -14,7 +14,6 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from core.barcode_utils import barcode_b64 as _barcode_b64, qrcode_b64 as _qrcode_b64
 from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
 from .forms import (
@@ -417,7 +416,7 @@ def pallet_list(request):
 _SELECT_RELATED_ETIQUETA = (
     'tipo_embalagem__cultura', 'tipo_embalagem__produto', 'empresa',
     'ordem_embalagem__safra', 'ordem_embalagem__lote_producao__talhao__fazenda',
-    'ordem_embalagem__lote_producao__cultura',
+    'ordem_embalagem__lote_producao__cultura', 'armazem',
 )
 _PREFETCH_RELATED_ETIQUETA = ('composicao__tipo_embalagem__cultura',)
 _SELECT_RELATED_ROMANEIO_ETIQUETA = (
@@ -425,50 +424,6 @@ _SELECT_RELATED_ROMANEIO_ETIQUETA = (
     'romaneio__booking__solicitacao__navio', 'romaneio__booking__porto_destino',
     'romaneio__booking__porto_origem', 'romaneio__container',
 )
-
-
-def _rota_maps_url(booking):
-    """Link de rota do Google Maps (origem→destino) por nome de cidade/país,
-    sem precisar de latitude/longitude."""
-    if not booking or not booking.porto_origem or not booking.porto_destino:
-        return None
-    origem = f'{booking.porto_origem.cidade}, {booking.porto_origem.pais}'
-    destino = f'{booking.porto_destino.cidade}, {booking.porto_destino.pais}'
-    from urllib.parse import quote
-    return f'https://www.google.com/maps/dir/?api=1&origin={quote(origem)}&destination={quote(destino)}'
-
-
-def _render_etiqueta_pdf(pallets, romaneio=None, template_name='embalagem/pallet/etiqueta_pdf.html'):
-    """Gera PDF com etiquetas dos pallets usando xhtml2pdf.
-    template_name alterna entre a etiqueta de pallet e a etiqueta de caixa (mesmo contexto)."""
-    from django.template.loader import render_to_string
-    from xhtml2pdf import pisa
-
-    # Enriquecer pallets com dados do romaneio via related manager
-    pallets_ctx = []
-    for p in pallets:
-        # Romaneio prioritário: passado explicitamente ou buscado via itens
-        rom = romaneio
-        if not rom:
-            item = p.itens_romaneio.select_related(*_SELECT_RELATED_ROMANEIO_ETIQUETA).first()
-            rom = item.romaneio if item else None
-
-        rota = _rota_maps_url(rom.booking) if rom else None
-        ctx_pallet = {
-            'pallet': p,
-            'barcode_b64': _barcode_b64(p.codigo_pallet),
-            'qrcode_b64': _qrcode_b64(rota) if rota else None,
-            'romaneio': rom,
-        }
-        pallets_ctx.append(ctx_pallet)
-
-    html = render_to_string(template_name, {
-        'pallets_ctx': pallets_ctx,
-    })
-    buffer = io.BytesIO()
-    pisa.CreatePDF(html, dest=buffer)
-    buffer.seek(0)
-    return buffer.read()
 
 
 @login_required
@@ -479,9 +434,9 @@ def pallet_etiqueta_pdf(request, pk):
         .prefetch_related(*_PREFETCH_RELATED_ETIQUETA),
         pk=pk, empresa=empresa,
     )
-    item_rom = pallet.itens_romaneio.select_related(*_SELECT_RELATED_ROMANEIO_ETIQUETA).first()
-    romaneio = item_rom.romaneio if item_rom else None
-    pdf = _render_etiqueta_pdf([pallet], romaneio=romaneio)
+    romaneio = _romaneio_do_pallet(pallet)
+    from .pdf_pallet import render_etiquetas_pallet_pdf
+    pdf = render_etiquetas_pallet_pdf([{'pallet': pallet, 'romaneio': romaneio}])
     pallet.etiqueta_gerada = True
     pallet.save(update_fields=['etiqueta_gerada'])
     resp = HttpResponse(pdf, content_type='application/pdf')
@@ -521,7 +476,9 @@ def ordem_etiquetas_pdf(request, pk):
         .prefetch_related(*_PREFETCH_RELATED_ETIQUETA)
         .order_by('numero_sequencial')
     )
-    pdf = _render_etiqueta_pdf(pallets)
+    from .pdf_pallet import render_etiquetas_pallet_pdf
+    pallets_ctx = [{'pallet': p, 'romaneio': _romaneio_do_pallet(p)} for p in pallets]
+    pdf = render_etiquetas_pallet_pdf(pallets_ctx)
     PalletEmbalado.objects.filter(ordem_embalagem=ordem).update(etiqueta_gerada=True)
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'inline; filename="etiquetas-{ordem.numero}.pdf"'
@@ -562,7 +519,9 @@ def romaneio_etiquetas_pdf(request, pk):
         .prefetch_related(*[f'pallet__{f}' for f in _PREFETCH_RELATED_ETIQUETA])
         .order_by('pallet__codigo_pallet')
     ]
-    pdf = _render_etiqueta_pdf(pallets, romaneio=romaneio)
+    from .pdf_pallet import render_etiquetas_pallet_pdf
+    pallets_ctx = [{'pallet': p, 'romaneio': romaneio} for p in pallets]
+    pdf = render_etiquetas_pallet_pdf(pallets_ctx)
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'inline; filename="etiquetas-romaneio-{romaneio.numero}.pdf"'
     return resp

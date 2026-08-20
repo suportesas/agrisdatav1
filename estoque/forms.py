@@ -13,7 +13,7 @@ class ArmazemForm(forms.ModelForm):
     class Meta:
         model = Armazem
         fields = [
-            'codigo', 'nome', 'tipo', 'localizacao', 'fazenda', 'responsavel',
+            'codigo', 'nome', 'tipo', 'localizacao', 'ggn_numero', 'fazenda', 'responsavel',
             'comprimento', 'largura', 'altura', 'densidade_media',
             'capacidade_m3', 'capacidade_kg', 'controla_temperatura',
             'temperatura_min', 'temperatura_max', 'observacoes', 'ativo'
@@ -39,6 +39,7 @@ class ArmazemForm(forms.ModelForm):
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'localizacao': forms.TextInput(attrs={'class': 'form-control'}),
+            'ggn_numero': forms.TextInput(attrs={'class': 'form-control'}),
             'fazenda': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fazendas'), placeholder='Buscar fazenda...'),
             'responsavel': Select2AjaxWidget(ajax_url=reverse_lazy('rh:ajax_buscar_funcionarios'), placeholder='Buscar funcionário...'),
             'comprimento': forms.NumberInput(attrs={
@@ -149,7 +150,7 @@ class LoteForm(forms.ModelForm):
             'produto', 'armazem', 'local_estocagem', 'numero_lote',
             'data_fabricacao', 'data_validade', 'data_entrada',
             'quantidade_inicial', 'quantidade_atual', 'unidade_medida',
-            'fornecedor', 'nota_fiscal', 'valor_unitario', 'observacoes'
+            'fornecedor', 'nota_fiscal', 'valor_unitario', 'lote_producao', 'observacoes'
         ]
         labels = {
             'numero_lote': 'Número do Lote',
@@ -170,6 +171,8 @@ class LoteForm(forms.ModelForm):
             'fornecedor': 'Fornecedor que entregou este lote',
             'nota_fiscal': 'Número da nota fiscal de entrada',
             'valor_unitario': 'Custo unitário do produto neste lote',
+            'lote_producao': 'Lote de produção (colheita) que originou este lote, se aplicável. '
+                              'Usado para rastreabilidade de Grower/GGN nas etiquetas de caixa.',
         }
         widgets = {
             'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
@@ -208,17 +211,19 @@ class LoteForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Observações adicionais sobre o lote...'
             }),
+            'lote_producao': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
         self.empresa = kwargs.pop('empresa', None)
         self.usuario = kwargs.pop('usuario', None)
         super().__init__(*args, **kwargs)
-        
+
         if self.empresa:
             from produtos.models import Produto, UnidadeMedida
             from cadastros.models import Fornecedor
-            
+            from operacoes_campo.models import LoteProducao
+
             # Filtrar por empresa (Produto usa categoria__empresa)
             self.fields['produto'].queryset = Produto.objects.filter(categoria__empresa=self.empresa, ativo=True)
             self.fields['armazem'].queryset = Armazem.objects.filter(empresa=self.empresa, ativo=True)
@@ -227,6 +232,10 @@ class LoteForm(forms.ModelForm):
             )
             self.fields['unidade_medida'].queryset = UnidadeMedida.objects.filter(empresa=self.empresa)
             self.fields['fornecedor'].queryset = Fornecedor.objects.filter(empresa=self.empresa, ativa=True)
+            self.fields['lote_producao'].queryset = LoteProducao.objects.filter(
+                empresa=self.empresa
+            ).select_related('talhao', 'cultura').order_by('-id')
+            self.fields['lote_producao'].required = False
 
     def save(self, commit=True):
         lote = super().save(commit=False)

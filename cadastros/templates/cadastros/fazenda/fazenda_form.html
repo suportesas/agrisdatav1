@@ -117,6 +117,17 @@
             {{ form.ggn_numero }}
             <div class="helper-note">Usado na rastreabilidade do Packing List e nas etiquetas de pallet/caixa</div>
           </div>
+          <div class="field col-4">
+            <label class="form-label">&nbsp;</label>
+            <div class="switch-row">
+              <label class="switch">
+                {{ form.usar_como_supplier_etiqueta }}
+                <span class="slider"></span>
+              </label>
+              <label class="switch-label" for="{{ form.usar_como_supplier_etiqueta.id_for_label }}">Usar como Supplier na etiqueta</label>
+            </div>
+            <div class="helper-note">Marque em apenas uma fazenda por empresa — nome + GGN impressos como "Supplier" na etiqueta de caixa.</div>
+          </div>
           <div class="field col-12">
             <label class="form-label">Regime Tributário<span class="req">*</span></label>
             {{ form.regime_tributario }}

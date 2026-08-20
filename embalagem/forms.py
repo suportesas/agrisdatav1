@@ -89,16 +89,18 @@ class TipoEmbalagemForm(forms.ModelForm):
 class MaterialEmbalagemForm(forms.ModelForm):
     class Meta:
         model = MaterialEmbalagem
-        fields = ['produto', 'tipo', 'ativo']
+        fields = ['produto', 'tipo', 'codigo_reciclagem', 'ativo']
         widgets = {
             'produto': Select2AjaxWidget(
                 ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'),
                 placeholder='Buscar produto de embalagem...',
             ),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'codigo_reciclagem': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 20 PAP'}),
         }
         help_texts = {
             'produto': 'Cadastre o material em Produtos, na categoria de Embalagens do seu catálogo, e informe o Fornecedor Padrão lá.',
+            'codigo_reciclagem': 'Ex: 20 PAP (papelão ondulado) — impresso na etiqueta de caixa junto ao aviso PPWR.',
         }
 
     def __init__(self, *args, empresa=None, **kwargs):

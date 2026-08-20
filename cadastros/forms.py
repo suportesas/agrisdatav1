@@ -88,7 +88,7 @@ class FazendaForm(forms.ModelForm):
             'empresa',  # ✅ ADICIONADO
             'nome', 'nome_fantasia', 'tipo_pessoa',
             'cnpj_cpf', 'inscricao_estadual', 'inscricao_municipal',
-            'eori', 'ggn_numero', 'regime_tributario',
+            'eori', 'ggn_numero', 'usar_como_supplier_etiqueta', 'regime_tributario',
             'area_total', 'area_agricultavel',
             'telefone', 'email', 'website',
             'latitude', 'longitude',
@@ -124,6 +124,7 @@ class FazendaForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Número GGN (GLOBALG.A.P.)'
             }),
+            'usar_como_supplier_etiqueta': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
             'area_total': forms.NumberInput(attrs={
                 'class': 'form-control',

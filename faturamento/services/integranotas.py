@@ -506,9 +506,23 @@ class IntegranNotasClient:
             )
         return data
 
+    # Mapa dos tipos internos (DfeRecebido.MANIFESTACAO_TIPO_CHOICES) para os códigos
+    # de evento SEFAZ exigidos pelo campo "tipo_evento" da IntegraNotas — enviar o
+    # slug interno ou usar o nome de campo "tipo" faz a API rejeitar com erro 5001
+    # ("JSON com erros nos campos").
+    MANIFESTACAO_TIPO_EVENTO = {
+        'confirmacao_operacao': '210200',
+        'ciencia_operacao': '210210',
+        'desconhecimento_operacao': '210220',
+        'operacao_nao_realizada': '210240',
+    }
+
     def manifestar_nfe(self, chave: str, tipo: str, justificativa: str = '') -> dict:
         """Registra Manifestação do Destinatário (MD-e) na SEFAZ."""
-        payload: dict = {'chave': chave, 'tipo': tipo}
+        tipo_evento = self.MANIFESTACAO_TIPO_EVENTO.get(tipo)
+        if not tipo_evento:
+            raise ValueError(f'Tipo de manifestação desconhecido: {tipo!r}')
+        payload: dict = {'chave': chave, 'tipo_evento': tipo_evento}
         if justificativa:
             payload['justificativa'] = justificativa
         resp = requests.post(

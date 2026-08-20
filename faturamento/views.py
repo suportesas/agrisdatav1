@@ -3360,7 +3360,11 @@ def dfe_manifestar(request, pk):
         client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
         resultado = client.manifestar_nfe(documento.chave_acesso, tipo, justificativa)
     except IntegranNotasError as exc:
-        messages.error(request, f'Erro ao registrar manifestação [{exc.codigo}]: {exc}')
+        detalhe = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
+        msg = f'Erro ao registrar manifestação [{exc.codigo}]: {exc}'
+        if detalhe:
+            msg += f' — {detalhe}'
+        messages.error(request, msg)
         return redirect('faturamento:dfe_list')
     except Exception as exc:
         messages.error(request, f'Falha na comunicação com IntegraNota: {exc}')

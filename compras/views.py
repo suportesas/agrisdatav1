@@ -2822,7 +2822,11 @@ def recebimento_manifestar(request, pk):
             client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
             resultado = client.manifestar_nfe(recebimento.chave_nfe, tipo, justificativa)
         except IntegranNotasError as exc:
-            messages.error(request, f'Erro ao registrar manifestação [{exc.codigo}]: {exc}')
+            detalhe = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
+            msg = f'Erro ao registrar manifestação [{exc.codigo}]: {exc}'
+            if detalhe:
+                msg += f' — {detalhe}'
+            messages.error(request, msg)
             return render(request, 'compras/recebimento_manifestar.html',
                           {'recebimento': recebimento, 'tipos': TIPOS})
         except Exception as exc:

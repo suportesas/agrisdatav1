@@ -223,8 +223,12 @@ def _bloco_pallet(
     styles = _styles()
     te = pallet.tipo_embalagem
     lp = lote_producao
-    fazenda_growing = lp.talhao.fazenda if (lp and lp.talhao_id) else None
-    ggn_growing = fazenda_growing.ggn_numero if fazenda_growing and fazenda_growing.ggn_numero else '—'
+    parceiro = pallet.ordem_embalagem.produtor_parceiro
+    if parceiro:
+        ggn_growing = parceiro.grower_ggn or '—'
+    else:
+        fazenda_growing = lp.talhao.fazenda if (lp and lp.talhao_id) else None
+        ggn_growing = fazenda_growing.ggn_numero if fazenda_growing and fazenda_growing.ggn_numero else '—'
     codigo_producao = pallet.codigo_producao or '—'
     tp = romaneio.rastreabilidade_transporte if romaneio else None
     sp = romaneio.rastreabilidade_venda if romaneio else None
@@ -242,9 +246,14 @@ def _bloco_pallet(
     responsavel = romaneio.cliente.ppwr_responsavel if (romaneio and romaneio.cliente.ppwr_responsavel) else '—'
 
     armazem = pallet.armazem
-    packhouse_nome = armazem.nome
-    packhouse_endereco = endereco_packhouse or armazem.localizacao or '—'
-    packhouse_ggn = armazem.ggn_numero or '—'
+    if parceiro:
+        packhouse_nome = parceiro.packhouse_nome or armazem.nome
+        packhouse_endereco = parceiro.packhouse_endereco or endereco_packhouse or armazem.localizacao or '—'
+        packhouse_ggn = parceiro.packhouse_ggn or '—'
+    else:
+        packhouse_nome = armazem.nome
+        packhouse_endereco = endereco_packhouse or armazem.localizacao or '—'
+        packhouse_ggn = armazem.ggn_numero or '—'
 
     supplier_nome = supplier_fazenda.nome if supplier_fazenda else '—'
     supplier_ggn = (supplier_fazenda.ggn_numero or '—') if supplier_fazenda else '—'

@@ -301,6 +301,17 @@ class OrdemEmbalagem(models.Model):
         blank=True,
         help_text='Lote de produção de campo que deu origem a esta ordem (RF-110)',
     )
+    produtor_parceiro = models.ForeignKey(
+        'cadastros.Produtor',
+        on_delete=models.PROTECT,
+        related_name='ordens_embalagem_parceiro',
+        verbose_name='Produtor Parceiro',
+        null=True,
+        blank=True,
+        help_text='Preenchido quando os pallets desta ordem já chegam prontos de um produtor '
+                   'parceiro (rastreabilidade e GGN gerados por ele) — nesse caso não há '
+                   'embalagem interna, só o registro dos pallets recebidos.',
+    )
     capacidade_caixas_pallet = models.PositiveIntegerField(
         'Capacidade do Pallet (caixas)',
         null=True,
@@ -497,6 +508,13 @@ class PalletEmbalado(models.Model):
     )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='DISPONIVEL')
     etiqueta_gerada = models.BooleanField('Etiqueta Gerada', default=False)
+    codigo_producao_externo = models.CharField(
+        'Código de Rastreabilidade (Parceiro)',
+        max_length=20,
+        blank=True,
+        help_text='Código de rastreabilidade de produção já gerado pelo produtor parceiro '
+                   '(preenchido só quando a ordem de embalagem é de um produtor parceiro).',
+    )
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
 
     class Meta:
@@ -539,7 +557,13 @@ class PalletEmbalado(models.Model):
         2 Cultura (Cultura.codigo_interno) + 3 Calendário Juliano (data_embalagem).
         Retorna None se lote_producao (direto ou herdado — ver lote_producao_efetivo)
         ou algum dos códigos não estiver disponível/no formato certo.
+
+        Quando a ordem é de um produtor parceiro (`OrdemEmbalagem.produtor_parceiro`), o
+        código já vem pronto do parceiro — retorna `codigo_producao_externo` direto, sem
+        calcular nada.
         """
+        if self.ordem_embalagem.produtor_parceiro_id:
+            return self.codigo_producao_externo or None
         lp = self.ordem_embalagem.lote_producao_efetivo()
         if not lp or not lp.talhao_id or not lp.cultura_id:
             return None

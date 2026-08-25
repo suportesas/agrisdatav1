@@ -189,8 +189,12 @@ def _montar_linhas(pallet, romaneio, barcode_data, qr_url, fator):
     styles = _styles(fator)
     te = pallet.tipo_embalagem
     lp = pallet.ordem_embalagem.lote_producao
-    fazenda = lp.talhao.fazenda if (lp and lp.talhao_id) else None
-    ggn = fazenda.ggn_numero if fazenda and fazenda.ggn_numero else '—'
+    parceiro = pallet.ordem_embalagem.produtor_parceiro
+    if parceiro:
+        ggn = parceiro.grower_ggn or '—'
+    else:
+        fazenda = lp.talhao.fazenda if (lp and lp.talhao_id) else None
+        ggn = fazenda.ggn_numero if fazenda and fazenda.ggn_numero else '—'
     tp = romaneio.rastreabilidade_transporte if romaneio else None
     sp = romaneio.rastreabilidade_venda if romaneio else None
     produto_nome = te.descricao_completa if te else 'Pallet Misto'

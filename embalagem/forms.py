@@ -2,7 +2,7 @@ from django import forms
 from django.urls import reverse_lazy
 from core.widgets import Select2AjaxWidget, DateBRInput, MoneyBRInput, DecimalBRInput
 from .models import (
-    ItemPallet, TipoEmbalagem, TipoEmbalagemCliente, OrdemEmbalagem, RomaneioVenda,
+    ItemPallet, PalletEmbalado, TipoEmbalagem, TipoEmbalagemCliente, OrdemEmbalagem, RomaneioVenda,
     CargaFrete, MaterialEmbalagem, FaixaPesoCalibre,
 )
 
@@ -463,6 +463,80 @@ class ItemPalletForm(forms.ModelForm):
         if ordem is not None:
             self.fields['tipo_embalagem'].queryset = ordem.tipos_embalagem.all().select_related(
                 'cultura', 'produto').order_by('nome')
+        elif empresa:
+            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
+                empresa=empresa, ativo=True
+            ).select_related('cultura', 'produto').order_by('nome')
+
+
+# ────────────────────── Ordem de Embalagem — Produtor Parceiro ──────────────────────
+
+class OrdemParceiroForm(forms.ModelForm):
+    """Cria a Ordem de Embalagem 'guarda-chuva' de um lote de pallets recebidos já
+    prontos (rastreabilidade e GGN gerados pelo próprio produtor parceiro)."""
+
+    produto = forms.ModelChoiceField(
+        queryset=None,
+        label='Produto Recebido',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text='Usado só para o Lote de Origem (placeholder) desta ordem — os pallets '
+                   'já chegam prontos, não há embalagem interna a partir deste produto.',
+    )
+
+    class Meta:
+        model = OrdemEmbalagem
+        fields = ['produtor_parceiro', 'data', 'armazem_destino', 'local_destino', 'observacoes']
+        widgets = {
+            'produtor_parceiro': forms.Select(attrs={'class': 'form-select'}),
+            'data': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
+            'armazem_destino': forms.Select(attrs={'class': 'form-select'}),
+            'local_destino': forms.Select(attrs={'class': 'form-select'}),
+            'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        if empresa:
+            from cadastros.models import Produtor
+            from estoque.models import Armazem, LocalEstocagem
+            from produtos.models import Produto
+            self.fields['produtor_parceiro'].queryset = Produtor.objects.filter(
+                empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['produto'].queryset = Produto.objects.filter(
+                categoria__empresa=empresa, ativo=True).order_by('nome')
+            self.fields['armazem_destino'].queryset = Armazem.objects.filter(
+                empresa=empresa, ativo=True).order_by('nome')
+            self.fields['local_destino'].queryset = LocalEstocagem.objects.filter(
+                armazem__empresa=empresa).order_by('nome')
+
+
+class PalletParceiroForm(forms.ModelForm):
+    """Adiciona um pallet recebido pronto de um produtor parceiro — a rastreabilidade
+    já vem gerada por ele, só é registrada aqui."""
+
+    tipo_embalagem = TipoEmbalagemChoiceField(
+        queryset=TipoEmbalagem.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='Tipo de Embalagem',
+    )
+
+    class Meta:
+        model = PalletEmbalado
+        fields = ['tipo_embalagem', 'codigo_producao_externo', 'quantidade_caixas', 'peso_bruto_kg', 'peso_liquido_kg']
+        widgets = {
+            'codigo_producao_externo': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantidade_caixas': forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+            'peso_bruto_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+            'peso_liquido_kg': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
+        }
+
+    def __init__(self, *args, empresa=None, ordem=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['codigo_producao_externo'].required = True
+        if ordem is not None:
+            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
+                empresa=ordem.empresa_id, ativo=True).select_related('cultura', 'produto').order_by('nome')
         elif empresa:
             self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
                 empresa=empresa, ativo=True

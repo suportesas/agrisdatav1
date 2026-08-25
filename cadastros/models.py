@@ -1491,6 +1491,16 @@ class Produtor(models.Model):
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
 
+    # Rastreabilidade PPWR — usados quando este produtor entrega pallets já
+    # prontos (rastreabilidade e GGN gerados por ele, na fazenda/packhouse
+    # dele) para a empresa apenas revender. Fixos por produtor: não variam
+    # pallet a pallet, diferente do código de rastreabilidade de cada pallet.
+    grower_nome = models.CharField('Nome do Grower', max_length=200, blank=True)
+    grower_ggn = models.CharField('GGN do Grower', max_length=30, blank=True)
+    packhouse_nome = models.CharField('Nome do Packhouse', max_length=200, blank=True)
+    packhouse_ggn = models.CharField('GGN do Packhouse', max_length=30, blank=True)
+    packhouse_endereco = models.CharField('Endereço do Packhouse', max_length=250, blank=True)
+
     class Meta:
         verbose_name = 'Produtor'
         verbose_name_plural = 'Produtores'

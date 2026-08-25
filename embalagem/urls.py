@@ -35,6 +35,12 @@ urlpatterns = [
     path('ordens/<int:pk>/etiquetas/', views.ordem_etiquetas_pdf, name='ordem_etiquetas_pdf'),
     path('ordens/<int:pk>/etiquetas-caixa/', views.ordem_etiquetas_caixa_pdf, name='ordem_etiquetas_caixa_pdf'),
 
+    # Ordens de Produtor Parceiro (pallets recebidos já prontos, com rastreabilidade e GGN do parceiro)
+    path('ordens/parceiro/nova/', views.ordem_parceiro_create, name='ordem_parceiro_create'),
+    path('ordens/parceiro/<int:pk>/', views.ordem_parceiro_detail, name='ordem_parceiro_detail'),
+    path('ordens/parceiro/<int:pk>/adicionar-pallet/', views.ordem_parceiro_adicionar_pallet, name='ordem_parceiro_adicionar_pallet'),
+    path('ordens/parceiro/<int:pk>/importar/', views.ordem_parceiro_importar_xlsx, name='ordem_parceiro_importar_xlsx'),
+
     # Pallets
     path('pallets/', views.pallet_list, name='pallet_list'),
     path('pallets/<int:pk>/etiqueta/', views.pallet_etiqueta_pdf, name='pallet_etiqueta_pdf'),

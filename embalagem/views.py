@@ -18,7 +18,8 @@ from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
 from .forms import (
     CargaFreteForm, FaixaPesoCalibreForm, GerarPalletsForm, ItemPalletForm, MaterialEmbalagemForm,
-    OrdemEmbalagemForm, RomaneioVendaForm, TipoEmbalagemClienteForm, TipoEmbalagemForm, TrocarClienteRomaneioForm,
+    OrdemEmbalagemForm, OrdemParceiroForm, PalletParceiroForm, RomaneioVendaForm, TipoEmbalagemClienteForm,
+    TipoEmbalagemForm, TrocarClienteRomaneioForm,
 )
 from .models import (
     CargaFrete, CargaFreteError, FaixaPesoCalibre, ItemPallet, ItemRomaneioVenda, MaterialEmbalagem,
@@ -468,6 +469,172 @@ def ordem_gerar_pallets(request, pk):
 
     messages.success(request, f'{n_pallets} pallets de {te.nome} gerados com sucesso.')
     return redirect('embalagem:ordem_detail', pk=pk)
+
+
+# ──────────────── OrdemEmbalagem — Produtor Parceiro ────────────────────────
+
+@login_required
+def ordem_parceiro_create(request):
+    empresa = _get_empresa(request)
+    if request.method == 'POST':
+        form = OrdemParceiroForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            with transaction.atomic():
+                produto = form.cleaned_data['produto']
+                produtor = form.cleaned_data['produtor_parceiro']
+                data = form.cleaned_data['data']
+                armazem_destino = form.cleaned_data['armazem_destino']
+                lote = Lote.objects.create(
+                    empresa=empresa,
+                    produto=produto,
+                    armazem=armazem_destino,
+                    numero_lote=f"PARCEIRO-{produtor.pk}-{data.strftime('%Y%m%d')}",
+                    data_entrada=timezone.now(),
+                    quantidade_inicial=Decimal('0'),
+                    quantidade_atual=Decimal('0'),
+                    unidade_medida=produto.unidade_venda,
+                    observacoes=f'Placeholder — pallets recebidos prontos do produtor parceiro {produtor.razao_social}.',
+                    cadastrado_por=request.user,
+                )
+                ordem = form.save(commit=False)
+                ordem.empresa = empresa
+                ordem.numero = OrdemEmbalagem._gerar_numero(empresa)
+                ordem.criado_por = request.user
+                ordem.lote_origem = lote
+                ordem.quantidade_entrada_kg = Decimal('0')
+                ordem.save()
+            messages.success(request, f'Ordem de parceiro {ordem.numero} criada.')
+            return redirect('embalagem:ordem_parceiro_detail', pk=ordem.pk)
+    else:
+        form = OrdemParceiroForm(empresa=empresa)
+    return render(request, 'embalagem/ordem_parceiro/create.html', {
+        'form': form, 'title': 'Nova Ordem de Produtor Parceiro',
+    })
+
+
+@login_required
+def ordem_parceiro_detail(request, pk):
+    empresa = _get_empresa(request)
+    ordem = get_object_or_404(OrdemEmbalagem, pk=pk, empresa=empresa, produtor_parceiro__isnull=False)
+    pallets = ordem.pallets.select_related('tipo_embalagem', 'armazem').order_by('numero_sequencial')
+    return render(request, 'embalagem/ordem_parceiro/detail.html', {
+        'ordem': ordem,
+        'pallets': pallets,
+        'pallet_form': PalletParceiroForm(ordem=ordem),
+    })
+
+
+@login_required
+@require_POST
+def ordem_parceiro_adicionar_pallet(request, pk):
+    empresa = _get_empresa(request)
+    ordem = get_object_or_404(OrdemEmbalagem, pk=pk, empresa=empresa, produtor_parceiro__isnull=False)
+    form = PalletParceiroForm(request.POST, ordem=ordem)
+    if not form.is_valid():
+        return JsonResponse({'erro': str(form.errors)}, status=400)
+
+    with transaction.atomic():
+        pallet = form.save(commit=False)
+        pallet.empresa = empresa
+        pallet.ordem_embalagem = ordem
+        pallet.numero_sequencial = ordem.pallets.count() + 1
+        pallet.codigo_pallet = PalletEmbalado._gerar_codigo(empresa, ordem.data, safra=ordem.safra)
+        pallet.data_embalagem = ordem.data
+        pallet.armazem = ordem.armazem_destino
+        pallet.local_estocagem = ordem.local_destino
+        pallet.status = 'DISPONIVEL'
+        pallet.estoque_baixado = True
+        pallet.save()
+
+    return JsonResponse({
+        'ok': True,
+        'pallet_pk': pallet.pk,
+        'codigo_pallet': pallet.codigo_pallet,
+        'tipo_embalagem': pallet.tipo_embalagem.label_completo if pallet.tipo_embalagem_id else '',
+        'codigo_producao_externo': pallet.codigo_producao_externo,
+        'quantidade_caixas': pallet.quantidade_caixas,
+        'peso_bruto_kg': float(pallet.peso_bruto_kg),
+        'peso_liquido_kg': float(pallet.peso_liquido_kg),
+    })
+
+
+@login_required
+@require_POST
+def ordem_parceiro_importar_xlsx(request, pk):
+    empresa = _get_empresa(request)
+    ordem = get_object_or_404(OrdemEmbalagem, pk=pk, empresa=empresa, produtor_parceiro__isnull=False)
+
+    arquivo = request.FILES.get('arquivo')
+    if not arquivo:
+        messages.error(request, 'Selecione um arquivo .xlsx para importar.')
+        return redirect('embalagem:ordem_parceiro_detail', pk=pk)
+
+    import openpyxl
+    try:
+        wb = openpyxl.load_workbook(arquivo, data_only=True)
+        ws = wb.active
+        linhas = list(ws.iter_rows(min_row=2, values_only=True))
+    except Exception:
+        messages.error(request, 'Não foi possível ler o arquivo. Confirme que é um .xlsx válido, com uma linha por '
+                                 'pallet: tipo_embalagem, codigo_rastreabilidade, qtd_caixas, peso_bruto_kg, peso_liquido_kg.')
+        return redirect('embalagem:ordem_parceiro_detail', pk=pk)
+
+    tipos_por_nome = {
+        t.nome.strip().lower(): t
+        for t in TipoEmbalagem.objects.filter(empresa=empresa, ativo=True)
+    }
+
+    criados, erros = 0, []
+    with transaction.atomic():
+        seq = ordem.pallets.count()
+        for i, row in enumerate(linhas, start=2):
+            if not row or not any(row):
+                continue
+            valores = list(row) + [None] * 5
+            tipo_nome, codigo_rastreio, qtd_caixas, peso_bruto, peso_liquido = valores[:5]
+
+            tipo = tipos_por_nome.get(str(tipo_nome or '').strip().lower())
+            if not tipo:
+                erros.append(f'Linha {i}: tipo de embalagem "{tipo_nome}" não encontrado ou inativo.')
+                continue
+            if not codigo_rastreio:
+                erros.append(f'Linha {i}: código de rastreabilidade em branco.')
+                continue
+            try:
+                qtd_caixas = int(qtd_caixas)
+                peso_bruto = Decimal(str(peso_bruto))
+                peso_liquido = Decimal(str(peso_liquido))
+            except (TypeError, ValueError, ArithmeticError):
+                erros.append(f'Linha {i}: quantidade de caixas ou peso inválido.')
+                continue
+
+            seq += 1
+            PalletEmbalado.objects.create(
+                empresa=empresa,
+                codigo_pallet=PalletEmbalado._gerar_codigo(empresa, ordem.data, safra=ordem.safra),
+                ordem_embalagem=ordem,
+                tipo_embalagem=tipo,
+                numero_sequencial=seq,
+                quantidade_caixas=qtd_caixas,
+                peso_bruto_kg=peso_bruto,
+                peso_liquido_kg=peso_liquido,
+                codigo_producao_externo=str(codigo_rastreio).strip(),
+                data_embalagem=ordem.data,
+                armazem=ordem.armazem_destino,
+                local_estocagem=ordem.local_destino,
+                status='DISPONIVEL',
+                estoque_baixado=True,
+            )
+            criados += 1
+
+    if criados:
+        messages.success(request, f'{criados} pallet(s) importado(s) com sucesso.')
+    for erro in erros[:20]:
+        messages.error(request, erro)
+    if len(erros) > 20:
+        messages.error(request, f'... e mais {len(erros) - 20} linha(s) com erro.')
+
+    return redirect('embalagem:ordem_parceiro_detail', pk=pk)
 
 
 # ─────────────────────────── PalletEmbalado ─────────────────────────────────

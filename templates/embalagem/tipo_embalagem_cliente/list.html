@@ -69,6 +69,8 @@
               <th class="ps-4">Tipo de Embalagem</th>
               <th>Cliente</th>
               <th>Código IAN</th>
+              <th>Key</th>
+              <th>Referência</th>
               <th class="text-center">Ativo</th>
               <th class="text-center">Ações</th>
             </tr>
@@ -76,9 +78,11 @@
           <tbody>
             {% for c in codigos %}
             <tr>
-              <td class="ps-4"><strong>{{ c.tipo_embalagem.nome }}</strong></td>
+              <td class="ps-4"><strong>{{ c.descricao_produto }}</strong></td>
               <td>{{ c.cliente.razao_social }}</td>
               <td>{{ c.codigo_ian }}</td>
+              <td>{{ c.codigo_key|default:'—' }}</td>
+              <td>{{ c.codigo_referencia|default:'—' }}</td>
               <td class="text-center">
                 {% if c.ativo %}<span class="badge bg-success">Ativo</span>
                 {% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}
@@ -91,7 +95,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="5" class="text-center text-muted py-5">
+              <td colspan="7" class="text-center text-muted py-5">
                 <i class="bi bi-inbox display-4 d-block mb-3"></i>
                 Nenhum código IAN cadastrado
               </td>

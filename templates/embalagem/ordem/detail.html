@@ -44,14 +44,6 @@
         <i class="bi bi-layers me-1"></i>Novo Pallet Misto
       </button>
       {% endif %}
-      {% if ordem.pallets.count > 0 %}
-      <a href="{% url 'embalagem:ordem_etiquetas_pdf' ordem.pk %}" class="btn btn-outline-primary" target="_blank">
-        <i class="bi bi-printer me-1"></i>Etiquetas de Pallet PDF
-      </a>
-      <a href="{% url 'embalagem:ordem_etiquetas_caixa_pdf' ordem.pk %}" class="btn btn-outline-secondary" target="_blank">
-        <i class="bi bi-box-seam me-1"></i>Etiquetas de Caixa PDF
-      </a>
-      {% endif %}
     </div>
   </div>
 
@@ -260,9 +252,15 @@
                   <i class="bi bi-layers"></i>
                 </a>
                 {% endif %}
+                {% if p.status == 'RESERVADO' or p.status == 'CARREGADO' %}
                 <a href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Etiqueta PDF">
                   <i class="bi bi-printer"></i>
                 </a>
+                {% else %}
+                <span class="btn btn-sm btn-outline-secondary disabled" title="Disponível após reservar este pallet em um Romaneio" style="opacity:.35; cursor:not-allowed;">
+                  <i class="bi bi-printer"></i>
+                </span>
+                {% endif %}
               </td>
             </tr>
             {% empty %}

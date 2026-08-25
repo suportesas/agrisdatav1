@@ -46,9 +46,9 @@
       <div class="form-section-body">
         <div class="form-grid">
           <div class="field col-6">
-            <label class="form-label">Tipo de Embalagem <span class="req">*</span></label>
-            {{ form.tipo_embalagem }}
-            {% if form.tipo_embalagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipo_embalagem.errors|striptags }}</div>{% endif %}
+            <label class="form-label">Cultura <span class="req">*</span></label>
+            {{ form.cultura }}
+            {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors|striptags }}</div>{% endif %}
           </div>
           <div class="field col-6">
             <label class="form-label">Cliente <span class="req">*</span></label>
@@ -56,10 +56,40 @@
             {% if form.cliente.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cliente.errors|striptags }}</div>{% endif %}
           </div>
           <div class="field col-6">
+            <label class="form-label">Variedade</label>
+            {{ form.variedade }}
+            <datalist id="variedades-sugeridas">
+              {% for v in form.variedades_sugeridas %}<option value="{{ v }}">{% endfor %}
+            </datalist>
+            <div class="helper-note">Precisa ser escrita exatamente igual à do Tipo de Embalagem (mesmo texto), senão o código IAN não aparece na etiqueta.</div>
+            {% if form.variedade.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.variedade.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Marca</label>
+            {{ form.marca }}
+            <datalist id="marcas-sugeridas">
+              {% for m in form.marcas_sugeridas %}<option value="{{ m }}">{% endfor %}
+            </datalist>
+            <div class="helper-note">Precisa ser escrita exatamente igual à do Tipo de Embalagem (mesmo texto), senão o código IAN não aparece na etiqueta.</div>
+            {% if form.marca.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.marca.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
             <label class="form-label">Código IAN <span class="req">*</span></label>
             {{ form.codigo_ian }}
-            <div class="helper-note">Código do artigo (IAN) que este cliente atribuiu, impresso na etiqueta de caixa. Ex: 80575</div>
+            <div class="helper-note">Código do artigo (IAN) que este cliente atribuiu, impresso na etiqueta de caixa. Ex: 80575. Vale para todos os calibres/pesos de caixa desta variedade/marca.</div>
             {% if form.codigo_ian.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_ian.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Código "Key"</label>
+            {{ form.codigo_key }}
+            <div class="helper-note">Prefixo fixo impresso antes do código de produção na linha "Key" da etiqueta. Ex: 120.</div>
+            {% if form.codigo_key.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_key.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Código de Referência ("Size-span & count")</label>
+            {{ form.codigo_referencia }}
+            <div class="helper-note">Código fixo impresso junto com a faixa de peso/calibre sob "Size-span & count" na etiqueta. Ex: GR007198BBR999824.</div>
+            {% if form.codigo_referencia.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.codigo_referencia.errors|striptags }}</div>{% endif %}
           </div>
         </div>
       </div>

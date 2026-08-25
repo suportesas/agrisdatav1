@@ -17,12 +17,12 @@ from django.views.decorators.http import require_POST
 from estoque.models import Armazem, Lote, MovimentacaoEstoque
 
 from .forms import (
-    CargaFreteForm, GerarPalletsForm, ItemPalletForm, MaterialEmbalagemForm, OrdemEmbalagemForm,
-    RomaneioVendaForm, TipoEmbalagemClienteForm, TipoEmbalagemForm, TrocarClienteRomaneioForm,
+    CargaFreteForm, FaixaPesoCalibreForm, GerarPalletsForm, ItemPalletForm, MaterialEmbalagemForm,
+    OrdemEmbalagemForm, RomaneioVendaForm, TipoEmbalagemClienteForm, TipoEmbalagemForm, TrocarClienteRomaneioForm,
 )
 from .models import (
-    CargaFrete, CargaFreteError, ItemPallet, ItemRomaneioVenda, MaterialEmbalagem, OrdemEmbalagem,
-    PalletEmbalado, RomaneioMaterialEmbalagem, RomaneioVenda, TipoEmbalagem, TipoEmbalagemCliente,
+    CargaFrete, CargaFreteError, FaixaPesoCalibre, ItemPallet, ItemRomaneioVenda, MaterialEmbalagem,
+    OrdemEmbalagem, PalletEmbalado, RomaneioMaterialEmbalagem, RomaneioVenda, TipoEmbalagem, TipoEmbalagemCliente,
 )
 
 
@@ -179,12 +179,15 @@ def material_embalagem_update(request, pk):
 @login_required
 def tipo_embalagem_cliente_list(request):
     empresa = _get_empresa(request)
-    qs = TipoEmbalagemCliente.objects.filter(empresa=empresa).select_related('tipo_embalagem', 'cliente')
+    qs = TipoEmbalagemCliente.objects.filter(empresa=empresa).select_related('cultura', 'cliente')
     q = request.GET.get('q', '')
     if q:
-        qs = qs.filter(Q(tipo_embalagem__nome__icontains=q) | Q(cliente__razao_social__icontains=q) | Q(codigo_ian__icontains=q))
+        qs = qs.filter(
+            Q(cultura__nome__icontains=q) | Q(variedade__icontains=q) | Q(marca__icontains=q)
+            | Q(cliente__razao_social__icontains=q) | Q(codigo_ian__icontains=q)
+        )
 
-    codigos, per_page, per_page_options = paginate(request, qs.order_by('tipo_embalagem__nome', 'cliente__razao_social'))
+    codigos, per_page, per_page_options = paginate(request, qs.order_by('cliente__razao_social'))
 
     return render(request, 'embalagem/tipo_embalagem_cliente/list.html', {
         'codigos': codigos,
@@ -224,6 +227,59 @@ def tipo_embalagem_cliente_update(request, pk):
         form = TipoEmbalagemClienteForm(instance=obj, empresa=empresa)
     return render(request, 'embalagem/tipo_embalagem_cliente/form.html', {
         'form': form, 'title': 'Editar Código IAN por Cliente', 'obj': obj,
+    })
+
+
+# ──────────────────────── FaixaPesoCalibre (Size-span & count) ──────────────
+
+@login_required
+def faixa_peso_calibre_list(request):
+    empresa = _get_empresa(request)
+    qs = FaixaPesoCalibre.objects.filter(empresa=empresa).select_related('cultura')
+    q = request.GET.get('q', '')
+    if q:
+        qs = qs.filter(Q(cultura__nome__icontains=q) | Q(calibre__icontains=q))
+
+    faixas, per_page, per_page_options = paginate(request, qs.order_by('cultura__nome', 'peso_carton', 'calibre'))
+
+    return render(request, 'embalagem/faixa_peso_calibre/list.html', {
+        'faixas': faixas,
+        'q': q,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+    })
+
+
+@login_required
+def faixa_peso_calibre_create(request):
+    empresa = _get_empresa(request)
+    if request.method == 'POST':
+        form = FaixaPesoCalibreForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Faixa de peso por calibre cadastrada com sucesso.')
+            return redirect('embalagem:faixa_peso_calibre_list')
+    else:
+        form = FaixaPesoCalibreForm(empresa=empresa)
+    return render(request, 'embalagem/faixa_peso_calibre/form.html', {
+        'form': form, 'title': 'Nova Faixa de Peso por Calibre',
+    })
+
+
+@login_required
+def faixa_peso_calibre_update(request, pk):
+    empresa = _get_empresa(request)
+    obj = get_object_or_404(FaixaPesoCalibre, pk=pk, empresa=empresa)
+    if request.method == 'POST':
+        form = FaixaPesoCalibreForm(request.POST, instance=obj, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Faixa de peso por calibre atualizada.')
+            return redirect('embalagem:faixa_peso_calibre_list')
+    else:
+        form = FaixaPesoCalibreForm(instance=obj, empresa=empresa)
+    return render(request, 'embalagem/faixa_peso_calibre/form.html', {
+        'form': form, 'title': 'Editar Faixa de Peso por Calibre', 'obj': obj,
     })
 
 
@@ -577,6 +633,30 @@ def romaneio_etiquetas_pdf(request, pk):
     pdf = render_etiquetas_pallet_pdf(pallets_ctx)
     resp = HttpResponse(pdf, content_type='application/pdf')
     resp['Content-Disposition'] = f'inline; filename="etiquetas-romaneio-{romaneio.numero}.pdf"'
+    return resp
+
+
+@login_required
+def romaneio_etiquetas_caixa_pdf(request, pk):
+    empresa = _get_empresa(request)
+    romaneio = get_object_or_404(
+        RomaneioVenda.objects.select_related(
+            'cliente', 'booking__solicitacao__armador', 'booking__solicitacao__navio',
+            'booking__porto_destino', 'booking__porto_origem', 'container',
+        ),
+        pk=pk, empresa=empresa,
+    )
+    pallets = [
+        item.pallet for item in romaneio.itens
+        .select_related(*[f'pallet__{f}' for f in _SELECT_RELATED_ETIQUETA])
+        .prefetch_related(*[f'pallet__{f}' for f in _PREFETCH_RELATED_ETIQUETA])
+        .order_by('pallet__codigo_pallet')
+    ]
+    from .pdf_caixa import render_etiquetas_caixa_pdf
+    pallets_ctx = [{'pallet': p, 'romaneio': romaneio} for p in pallets]
+    pdf = render_etiquetas_caixa_pdf(pallets_ctx)
+    resp = HttpResponse(pdf, content_type='application/pdf')
+    resp['Content-Disposition'] = f'inline; filename="etiquetas-caixa-romaneio-{romaneio.numero}.pdf"'
     return resp
 
 

@@ -949,6 +949,9 @@
           {% if user.is_admin_empresa or request|tem_acesso:'embalagem:tipo_embalagem_cliente_list' %}
           <li><a href="{% url 'embalagem:tipo_embalagem_cliente_list' %}"><i class="bi bi-upc-scan"></i> IAN por Cliente</a></li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'embalagem:faixa_peso_calibre_list' %}
+          <li><a href="{% url 'embalagem:faixa_peso_calibre_list' %}"><i class="bi bi-rulers"></i> Faixas de Peso por Calibre</a></li>
+          {% endif %}
         </ul>
       </li>
       {% endif %}

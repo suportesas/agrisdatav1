@@ -107,6 +107,9 @@
       <a href="{% url 'embalagem:romaneio_etiquetas_pdf' romaneio.pk %}" class="btn btn-outline-primary" target="_blank">
         <i class="bi bi-printer me-1"></i>Etiquetas PDF
       </a>
+      <a href="{% url 'embalagem:romaneio_etiquetas_caixa_pdf' romaneio.pk %}" class="btn btn-outline-secondary" target="_blank">
+        <i class="bi bi-box-seam me-1"></i>Etiquetas de Caixa PDF
+      </a>
       {% endif %}
       {% if romaneio.rastreabilidade_transporte %}
       <a href="{% url 'embalagem:romaneio_rastreabilidade_pdf' romaneio.pk %}" class="btn btn-outline-dark" target="_blank">

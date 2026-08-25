@@ -22,6 +22,11 @@ urlpatterns = [
     path('ians-cliente/novo/', views.tipo_embalagem_cliente_create, name='tipo_embalagem_cliente_create'),
     path('ians-cliente/<int:pk>/editar/', views.tipo_embalagem_cliente_update, name='tipo_embalagem_cliente_update'),
 
+    # Faixas de Peso por Calibre (Size-span & count na etiqueta de caixa)
+    path('faixas-peso-calibre/', views.faixa_peso_calibre_list, name='faixa_peso_calibre_list'),
+    path('faixas-peso-calibre/nova/', views.faixa_peso_calibre_create, name='faixa_peso_calibre_create'),
+    path('faixas-peso-calibre/<int:pk>/editar/', views.faixa_peso_calibre_update, name='faixa_peso_calibre_update'),
+
     # Ordens de Embalagem
     path('ordens/', views.ordem_list, name='ordem_list'),
     path('ordens/nova/', views.ordem_create, name='ordem_create'),
@@ -50,6 +55,7 @@ urlpatterns = [
     path('romaneios/<int:pk>/confirmar/', views.romaneio_confirmar, name='romaneio_confirmar'),
     path('romaneios/<int:pk>/gerar-pedido/', views.romaneio_gerar_pedido, name='romaneio_gerar_pedido'),
     path('romaneios/<int:pk>/etiquetas/', views.romaneio_etiquetas_pdf, name='romaneio_etiquetas_pdf'),
+    path('romaneios/<int:pk>/etiquetas-caixa/', views.romaneio_etiquetas_caixa_pdf, name='romaneio_etiquetas_caixa_pdf'),
     path('romaneios/<int:pk>/rastreabilidade/', views.romaneio_rastreabilidade_pdf, name='romaneio_rastreabilidade_pdf'),
     path('romaneios/<int:pk>/conferencia/', views.romaneio_conferencia, name='romaneio_conferencia'),
     path('romaneios/<int:pk>/conferencia-pdf/', views.romaneio_conferencia_pdf, name='romaneio_conferencia_pdf'),

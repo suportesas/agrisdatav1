@@ -3,7 +3,7 @@ from django.urls import reverse_lazy
 from core.widgets import Select2AjaxWidget, DateBRInput, MoneyBRInput, DecimalBRInput
 from .models import (
     ItemPallet, TipoEmbalagem, TipoEmbalagemCliente, OrdemEmbalagem, RomaneioVenda,
-    CargaFrete, MaterialEmbalagem,
+    CargaFrete, MaterialEmbalagem, FaixaPesoCalibre,
 )
 
 
@@ -23,8 +23,7 @@ class TipoEmbalagemForm(forms.ModelForm):
         fields = [
             'produto', 'cultura', 'subcategoria', 'nome', 'variedade', 'marca', 'tipo_calibre',
             'peso_liquido_cx', 'peso_bruto_cx', 'caixas_por_pallet', 'peso_pallet_vazio',
-            'trace_code', 'classe_categoria',
-            'codigo_chave_extra', 'ativo',
+            'trace_code', 'classe_categoria', 'ativo',
         ]
         widgets = {
             'produto': Select2AjaxWidget(ajax_url=reverse_lazy('produtos:ajax_buscar_produtos'), placeholder='Buscar produto...'),
@@ -40,7 +39,6 @@ class TipoEmbalagemForm(forms.ModelForm):
             'peso_pallet_vazio': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001'}),
             'trace_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: GLO-MEL-05'}),
             'classe_categoria': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: I'}),
-            'codigo_chave_extra': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 120'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
@@ -85,37 +83,104 @@ class TipoEmbalagemForm(forms.ModelForm):
 class TipoEmbalagemClienteForm(forms.ModelForm):
     class Meta:
         model = TipoEmbalagemCliente
-        fields = ['tipo_embalagem', 'cliente', 'codigo_ian', 'ativo']
+        fields = ['cultura', 'variedade', 'marca', 'cliente', 'codigo_ian', 'codigo_key', 'codigo_referencia', 'ativo']
         widgets = {
-            'tipo_embalagem': forms.Select(attrs={'class': 'form-select'}),
+            'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'variedade': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Goldex', 'list': 'variedades-sugeridas'}),
+            'marca': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: Terra Brasilis', 'list': 'marcas-sugeridas'}),
             'cliente': Select2AjaxWidget(
                 ajax_url=reverse_lazy('cadastros:ajax_buscar_clientes'), placeholder='Buscar cliente...',
             ),
             'codigo_ian': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 80575'}),
+            'codigo_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 120'}),
+            'codigo_referencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ex: GR007198BBR999824'}),
+        }
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+        self.variedades_sugeridas = []
+        self.marcas_sugeridas = []
+        if empresa:
+            from cadastros.models import Cliente, Cultura
+            self.fields['cultura'].queryset = Cultura.objects.filter(
+                empresa=empresa, ativa=True
+            ).order_by('nome')
+            self.fields['cliente'].queryset = Cliente.objects.filter(
+                empresa=empresa, status='ATIVO'
+            ).order_by('razao_social')
+            # sugestões pra evitar cadastrar variedade/marca com grafia diferente da
+            # usada no Tipo de Embalagem (o match do código IAN é por texto exato).
+            self.variedades_sugeridas = sorted(set(
+                TipoEmbalagem.objects.filter(empresa=empresa, ativo=True).exclude(variedade='')
+                .values_list('variedade', flat=True)
+            ))
+            self.marcas_sugeridas = sorted(set(
+                TipoEmbalagem.objects.filter(empresa=empresa, ativo=True).exclude(marca='')
+                .values_list('marca', flat=True)
+            ))
+
+    def clean(self):
+        cleaned = super().clean()
+        cultura = cleaned.get('cultura')
+        variedade = cleaned.get('variedade', '')
+        marca = cleaned.get('marca', '')
+        cliente = cleaned.get('cliente')
+        if cultura and cliente:
+            qs = TipoEmbalagemCliente.objects.filter(
+                cultura=cultura, variedade=variedade, marca=marca, cliente=cliente,
+            )
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('cliente', 'Já existe um código IAN cadastrado para este produto + Cliente.')
+        return cleaned
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.empresa:
+            obj.empresa = self.empresa
+        if commit:
+            obj.save()
+        return obj
+
+
+class FaixaPesoCalibreForm(forms.ModelForm):
+    class Meta:
+        model = FaixaPesoCalibre
+        fields = ['cultura', 'peso_carton', 'calibre', 'peso_minimo', 'peso_maximo', 'ativo']
+        widgets = {
+            'cultura': forms.Select(attrs={'class': 'form-select'}),
+            'peso_carton': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.001', 'placeholder': 'Ex: 10 ou 13'}),
+            'calibre': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ex: 8'}),
+            'peso_minimo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Ex: 1,70'}),
+            'peso_maximo': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Ex: 1,75'}),
         }
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.empresa = empresa
         if empresa:
-            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
-                empresa=empresa, ativo=True
-            ).order_by('nome')
-            from cadastros.models import Cliente
-            self.fields['cliente'].queryset = Cliente.objects.filter(
-                empresa=empresa, status='ATIVO'
-            ).order_by('razao_social')
+            from cadastros.models import Cultura
+            self.fields['cultura'].queryset = Cultura.objects.filter(empresa=empresa, ativa=True).order_by('nome')
 
     def clean(self):
         cleaned = super().clean()
-        te = cleaned.get('tipo_embalagem')
-        cliente = cleaned.get('cliente')
-        if te and cliente:
-            qs = TipoEmbalagemCliente.objects.filter(tipo_embalagem=te, cliente=cliente)
+        cultura = cleaned.get('cultura')
+        peso_carton = cleaned.get('peso_carton')
+        calibre = cleaned.get('calibre')
+        peso_min = cleaned.get('peso_minimo')
+        peso_max = cleaned.get('peso_maximo')
+        if peso_min is not None and peso_max is not None and peso_max < peso_min:
+            self.add_error('peso_maximo', 'Peso máximo não pode ser menor que o peso mínimo.')
+        if cultura and peso_carton and calibre and self.empresa:
+            qs = FaixaPesoCalibre.objects.filter(
+                empresa=self.empresa, cultura=cultura, peso_carton=peso_carton, calibre=calibre,
+            )
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                self.add_error('cliente', 'Já existe um código IAN cadastrado para esse Tipo de Embalagem + Cliente.')
+                self.add_error('calibre', 'Já existe uma faixa cadastrada para esta Cultura + Peso do Carton + Calibre.')
         return cleaned
 
     def save(self, commit=True):

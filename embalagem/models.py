@@ -73,12 +73,6 @@ class TipoEmbalagem(models.Model):
         default='I',
         help_text='Classificação comercial impressa nas etiquetas. Ex: I, II, Extra',
     )
-    codigo_chave_extra = models.CharField(
-        'Código "Key" (Etiqueta de Caixa)',
-        max_length=30,
-        blank=True,
-        help_text='Código adicional livre impresso na linha "Key" da etiqueta de caixa, se aplicável.',
-    )
     ativo = models.BooleanField('Ativo', default=True)
 
     class Meta:
@@ -138,19 +132,32 @@ class TipoEmbalagem(models.Model):
     def peso_bruto_pallet(self):
         return (self.peso_bruto_cx * self.caixas_por_pallet) + self.peso_pallet_vazio
 
+    @property
+    def identidade_ian(self):
+        """Tupla que identifica a família do produto para fins de código IAN —
+        confirmado com a fazenda que o IAN não muda por calibre (tipo_calibre)
+        nem por peso da caixa (peso_liquido_cx), só por cultura/variedade/marca.
+        Não usa `produto` porque no catálogo cada peso de caixa é um Produto
+        diferente (ex: "Melão Amarelo 10 Kg" x "Melão Amarelo 13 Kg").
+        """
+        return (self.cultura_id, self.variedade, self.marca)
+
 
 class TipoEmbalagemCliente(models.Model):
-    """Código IAN (Article Number) atribuído por um cliente a um Tipo de Embalagem —
-    cada retailer tem seu próprio catálogo de artigos, por isso não é um campo
-    direto em TipoEmbalagem."""
+    """Código IAN (Article Number) atribuído por um cliente à família de um produto
+    (cultura + variedade + marca) — cada retailer tem seu próprio catálogo de artigos.
+    Não é vinculado a um TipoEmbalagem específico porque o IAN não muda entre variantes
+    de calibre/peso de caixa do mesmo produto (confirmado com a fazenda)."""
     empresa = models.ForeignKey(
         'empresas.Empresa', on_delete=models.CASCADE,
         related_name='ians_tipo_embalagem', verbose_name='Empresa',
     )
-    tipo_embalagem = models.ForeignKey(
-        TipoEmbalagem, on_delete=models.CASCADE,
-        related_name='codigos_ian_cliente', verbose_name='Tipo de Embalagem',
+    cultura = models.ForeignKey(
+        'cadastros.Cultura', on_delete=models.PROTECT,
+        related_name='ians_cliente', verbose_name='Cultura',
     )
+    variedade = models.CharField('Variedade', max_length=100, blank=True)
+    marca = models.CharField('Marca', max_length=100, blank=True)
     cliente = models.ForeignKey(
         'cadastros.Cliente', on_delete=models.PROTECT,
         related_name='ians_tipo_embalagem', verbose_name='Cliente',
@@ -159,17 +166,74 @@ class TipoEmbalagemCliente(models.Model):
         'Código IAN', max_length=20,
         help_text='Código do artigo (IAN) atribuído por este cliente, impresso na etiqueta de caixa. Ex: 80575',
     )
+    codigo_key = models.CharField(
+        'Código "Key"', max_length=30, blank=True,
+        help_text='Prefixo fixo atribuído por este cliente, impresso antes do código de produção na linha '
+                   '"Key" da etiqueta de caixa. Ex: 120',
+    )
+    codigo_referencia = models.CharField(
+        'Código de Referência ("Size-span & count")', max_length=30, blank=True,
+        help_text='Código fixo atribuído por este cliente, impresso junto com a faixa de peso/calibre sob '
+                   '"Size-span & count" na etiqueta de caixa. Ex: GR007198BBR999824',
+    )
     ativo = models.BooleanField('Ativo', default=True)
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
 
     class Meta:
         verbose_name = 'Código IAN por Cliente'
         verbose_name_plural = 'Códigos IAN por Cliente'
-        unique_together = [('tipo_embalagem', 'cliente')]
-        ordering = ['tipo_embalagem__nome', 'cliente__razao_social']
+        unique_together = [('cultura', 'variedade', 'marca', 'cliente')]
+        ordering = ['cliente__razao_social']
 
     def __str__(self):
-        return f'{self.tipo_embalagem} — {self.cliente}: {self.codigo_ian}'
+        return f'{self.descricao_produto} — {self.cliente}: {self.codigo_ian}'
+
+    @property
+    def identidade_ian(self):
+        return (self.cultura_id, self.variedade, self.marca)
+
+    @property
+    def descricao_produto(self):
+        partes = [self.cultura.nome]
+        if self.variedade:
+            partes.append(self.variedade)
+        if self.marca:
+            partes.append(self.marca)
+        return ' '.join(partes)
+
+
+class FaixaPesoCalibre(models.Model):
+    """Faixa de peso do fruto individual por calibre ("Count"), usada para calcular
+    o texto impresso na etiqueta de caixa sob "Size-span & count" (ex: "Count 8 /
+    1,70 - 1,75"). Varia por cultura e pelo peso do carton (10kg, 13kg etc)."""
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='faixas_peso_calibre', verbose_name='Empresa',
+    )
+    cultura = models.ForeignKey(
+        'cadastros.Cultura', on_delete=models.PROTECT,
+        related_name='faixas_peso_calibre', verbose_name='Cultura',
+    )
+    peso_carton = models.DecimalField(
+        'Peso do Carton (kg)', max_digits=10, decimal_places=3,
+        help_text='Peso líquido da caixa. Ex: 10 ou 13',
+    )
+    calibre = models.PositiveIntegerField(
+        'Calibre (Count)', help_text='Número do calibre/contagem de frutos por caixa. Ex: 8',
+    )
+    peso_minimo = models.DecimalField('Peso Mínimo do Fruto (kg)', max_digits=5, decimal_places=2)
+    peso_maximo = models.DecimalField('Peso Máximo do Fruto (kg)', max_digits=5, decimal_places=2)
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Faixa de Peso por Calibre'
+        verbose_name_plural = 'Faixas de Peso por Calibre'
+        unique_together = [('empresa', 'cultura', 'peso_carton', 'calibre')]
+        ordering = ['cultura__nome', 'peso_carton', 'calibre']
+
+    def __str__(self):
+        return f'{self.cultura} — Carton {self.peso_carton}kg / Count {self.calibre}: {self.peso_minimo}-{self.peso_maximo}kg'
 
 
 # ──────────────────────────── OrdemEmbalagem ───────────────────────────────

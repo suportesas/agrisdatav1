@@ -3374,7 +3374,19 @@ def dfe_manifestar(request, pk):
     documento.manifestacao_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
     documento.manifestacao_data = timezone.now()
     documento.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
-    messages.success(request, f'Manifestação "{dict(TIPOS)[tipo]}" registrada com sucesso na SEFAZ.')
+
+    from .services.distribuicao_dfe import baixar_xml_completo_dfe
+
+    try:
+        xml_pronto = baixar_xml_completo_dfe(documento, config=config)
+    except Exception as exc:
+        logger.warning('Falha ao buscar XML completo após manifestação da chave %s: %s', documento.chave_acesso, exc)
+        xml_pronto = False
+
+    msg = f'Manifestação "{dict(TIPOS)[tipo]}" registrada com sucesso na SEFAZ.'
+    msg += ' XML completo já disponível para download.' if xml_pronto else \
+        ' O XML completo ainda não está disponível — aguarde a próxima sincronização.'
+    messages.success(request, msg)
     return redirect('faturamento:dfe_list')
 
 
@@ -3403,6 +3415,7 @@ def dfe_manifestar_lote(request):
         return redirect('faturamento:dfe_list')
 
     from .services.integranotas import IntegranNotasClient
+    from .services.distribuicao_dfe import baixar_xml_completo_dfe
 
     cnpj_empresa = _SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or '')
     documentos = DfeRecebido.objects.filter(
@@ -3412,6 +3425,7 @@ def dfe_manifestar_lote(request):
     client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
     sucesso = 0
     falhas = 0
+    xml_baixados = 0
     for doc in documentos:
         try:
             resultado = client.manifestar_nfe(doc.chave_acesso, 'ciencia_operacao')
@@ -3424,14 +3438,46 @@ def dfe_manifestar_lote(request):
         doc.manifestacao_data = timezone.now()
         doc.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
         sucesso += 1
+        try:
+            if baixar_xml_completo_dfe(doc, config=config):
+                xml_baixados += 1
+        except Exception as exc:
+            logger.warning('Falha ao buscar XML completo em lote da chave %s: %s', doc.chave_acesso, exc)
 
     if sucesso:
-        messages.success(request, f'{sucesso} manifestação(ões) de Ciência registrada(s) com sucesso.')
+        messages.success(request, f'{sucesso} manifestação(ões) de Ciência registrada(s) com sucesso '
+                                   f'({xml_baixados} com XML completo já disponível para download).')
     if falhas:
         messages.warning(request, f'{falhas} documento(s) falharam ao manifestar (veja o log do servidor).')
     if not sucesso and not falhas:
         messages.info(request, 'Nenhum dos documentos selecionados era elegível para manifestação (evento, nota própria ou já manifestada).')
     return redirect('faturamento:dfe_list')
+
+
+@login_required
+def dfe_baixar_xml(request, pk):
+    """Baixa o XML completo de um resNFe — se ainda não tiver sido buscado, tenta na
+    hora na SEFAZ (mesma lógica best-effort usada logo após a manifestação e pela
+    cron), em vez de depender só da próxima sincronização.
+
+    Chamado pelo ícone de download individual em dfe_list.html.
+    """
+    documento = get_object_or_404(DfeRecebido, pk=pk, empresa=_get_empresa(request))
+
+    if not documento.xml_url:
+        from .services.distribuicao_dfe import baixar_xml_completo_dfe
+
+        config = ConfiguracaoFiscal.objects.filter(empresa=documento.empresa).first()
+        try:
+            baixar_xml_completo_dfe(documento, config=config)
+        except Exception as exc:
+            logger.warning('Falha ao buscar XML completo sob demanda da chave %s: %s', documento.chave_acesso, exc)
+
+    if not documento.xml_url:
+        messages.warning(request, 'XML completo ainda não disponível na SEFAZ. Tente novamente em alguns minutos.')
+        return redirect('faturamento:dfe_list')
+
+    return redirect(documento.xml_url)
 
 
 @login_required

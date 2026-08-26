@@ -3477,7 +3477,20 @@ def dfe_baixar_xml(request, pk):
         messages.warning(request, 'XML completo ainda não disponível na SEFAZ. Tente novamente em alguns minutos.')
         return redirect('faturamento:dfe_list')
 
-    return redirect(documento.xml_url)
+    import requests
+
+    try:
+        resp = requests.get(documento.xml_url, timeout=30)
+        resp.raise_for_status()
+    except Exception as exc:
+        logger.warning('Falha ao baixar XML do storage para a chave %s: %s', documento.chave_acesso, exc)
+        messages.error(request, 'Falha ao baixar o arquivo. Tente novamente.')
+        return redirect('faturamento:dfe_list')
+
+    response = HttpResponse(resp.content, content_type='application/xml')
+    filename = f'{documento.chave_acesso or documento.pk}.xml'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required

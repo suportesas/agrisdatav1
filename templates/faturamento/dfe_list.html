@@ -201,6 +201,10 @@
                 <a href="{{ doc.xml_url }}" target="_blank" class="action-icon" title="Baixar XML completo">
                   <i class="bi bi-file-earmark-arrow-down"></i>
                 </a>
+                {% elif doc.chave_acesso %}
+                <a href="{% url 'faturamento:dfe_baixar_xml' doc.pk %}" class="action-icon" title="Buscar e baixar XML completo agora">
+                  <i class="bi bi-cloud-arrow-down"></i>
+                </a>
                 {% else %}
                 <span class="text-muted small">pendente</span>
                 {% endif %}

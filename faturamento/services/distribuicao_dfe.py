@@ -43,6 +43,7 @@ from decimal import Decimal, InvalidOperation
 
 import requests
 import truststore
+from django.db.models import Q
 from django.utils import timezone
 from lxml import etree
 from requests.adapters import HTTPAdapter
@@ -363,6 +364,57 @@ def _normalizar_schema(schema_raw: str) -> str:
     return schema_raw[:20]
 
 
+def baixar_xml_completo_dfe(doc, config=None) -> bool:
+    """Busca o XML completo (`consChNFe`) de um `DfeRecebido` (schema resNFe) e salva em `xml_url`.
+
+    Best-effort: usada tanto pelo passo 3 de `sincronizar_dfe_empresa` (cron) quanto
+    logo após uma manifestação bem-sucedida (views `dfe_manifestar`/`dfe_manifestar_lote`),
+    para não depender só do próximo ciclo da cron. Nunca levanta — qualquer falha de
+    comunicação com a SEFAZ ou configuração ausente só retorna False, já que quem chama
+    não deve deixar de completar seu fluxo principal (manifestação já registrada) por
+    causa disso; a cron tenta de novo depois.
+    """
+    from faturamento.fiscal_storage import upload_xml_texto
+    from faturamento.models import ConfiguracaoFiscal
+
+    if doc.xml_url:
+        return True
+
+    if config is None:
+        config = ConfiguracaoFiscal.objects.filter(empresa=doc.empresa).first()
+    if not config or not config.certificado_pfx:
+        return False
+
+    cnpj_cpf = _ONLY_DIGITS.sub('', doc.empresa.cnpj or '')
+    uf = (doc.empresa.uf or '').upper()
+    if not cnpj_cpf or not uf or not doc.chave_acesso:
+        return False
+
+    try:
+        resp_chave = consultar_distribuicao_dfe(
+            cnpj_cpf=cnpj_cpf, cert_pfx=bytes(config.certificado_pfx),
+            senha_cert=config.senha_certificado, uf=uf, ambiente='1',
+            chave=doc.chave_acesso,
+        )
+    except DistribuicaoDFeError as exc:
+        logger.warning('Falha ao baixar XML completo da chave %s: %s', doc.chave_acesso, exc)
+        return False
+
+    if not resp_chave.documentos:
+        if resp_chave.c_stat not in ('137', '138'):
+            logger.warning('SEFAZ recusou XML completo da chave %s: cStat %s — %s',
+                            doc.chave_acesso, resp_chave.c_stat, resp_chave.x_motivo)
+        return False
+
+    url = upload_xml_texto(resp_chave.documentos[0].xml, doc.empresa_id, doc.chave_acesso)
+    if not url:
+        return False
+
+    doc.xml_url = url
+    doc.save(update_fields=['xml_url'])
+    return True
+
+
 def sincronizar_dfe_empresa(empresa, *, max_xml: int = 10, max_manifestacoes: int = 10) -> dict:
     """Sincroniza a Distribuição de DF-e de uma empresa a partir do último NSU salvo.
 
@@ -383,7 +435,6 @@ def sincronizar_dfe_empresa(empresa, *, max_xml: int = 10, max_manifestacoes: in
 
     Retorna um resumo: {'empresa_id', 'novos', 'ciencia_automatica', 'xml_baixados', 'erro'}.
     """
-    from faturamento.fiscal_storage import upload_xml_texto
     from faturamento.models import ConfiguracaoFiscal, DfeRecebido
     from faturamento.services.integranotas import IntegranNotasClient
 
@@ -483,26 +534,22 @@ def sincronizar_dfe_empresa(empresa, *, max_xml: int = 10, max_manifestacoes: in
             doc.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
             resultado['ciencia_automatica'] += 1
 
+    # A SEFAZ só libera o XML completo (consChNFe) depois de pelo menos a
+    # manifestação de Ciência — exceto para notas emitidas pela própria empresa
+    # (não manifestáveis, mas liberadas de qualquer forma). Sem esse filtro, o
+    # lote de max_xml pega sempre os NSU mais antigos independente de terem sido
+    # manifestados, então um backlog de notas de terceiros nunca manifestadas
+    # trava a fila pra sempre: a cron gasta as max_xml tentativas nelas (que
+    # sempre falham) e nunca chega nas notas manifestadas mais recentes.
     pendentes = DfeRecebido.objects.filter(
         empresa=empresa, schema='resNFe', xml_url='',
-    ).exclude(chave_acesso='').order_by('nsu')[:max_xml]
+    ).exclude(chave_acesso='').exclude(
+        Q(manifestacao_tipo='') & ~Q(cnpj_emitente=cnpj_cpf),
+    ).order_by('nsu')[:max_xml]
 
     for pendente in pendentes:
-        try:
-            resp_chave = consultar_distribuicao_dfe(
-                cnpj_cpf=cnpj_cpf, cert_pfx=cert_pfx, senha_cert=senha_cert,
-                uf=uf, ambiente='1', chave=pendente.chave_acesso,
-            )
-        except DistribuicaoDFeError as exc:
-            logger.warning('Falha ao baixar XML completo da chave %s: %s', pendente.chave_acesso, exc)
-            continue
-
-        if resp_chave.documentos:
-            url = upload_xml_texto(resp_chave.documentos[0].xml, empresa.id, pendente.chave_acesso)
-            if url:
-                pendente.xml_url = url
-                pendente.save(update_fields=['xml_url'])
-                resultado['xml_baixados'] += 1
+        if baixar_xml_completo_dfe(pendente, config=config):
+            resultado['xml_baixados'] += 1
 
     return resultado
 

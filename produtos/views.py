@@ -1896,9 +1896,9 @@ def produto_variacao_gerar(request):
                     unidade_venda=uv,
                     tipo_item=data.get('tipo_item', '00'),
                     origem_mercadoria=data.get('origem_mercadoria', '0'),
-                    peso_liquido_unitario=data.get('peso_liquido', 0) or 0,
-                    peso_bruto_unitario=data.get('peso_bruto', 0) or 0,
-                    fator_conversao=data.get('fator_conversao', 1) or 1,
+                    peso_liquido_unitario=Decimal(str(data.get('peso_liquido', 0) or 0)),
+                    peso_bruto_unitario=Decimal(str(data.get('peso_bruto', 0) or 0)),
+                    fator_conversao=Decimal(str(data.get('fator_conversao', 1) or 1)),
                     produto_base=produto_base_obj,
                 )
                 produto.save()

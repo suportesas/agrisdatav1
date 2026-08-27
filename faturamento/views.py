@@ -3535,6 +3535,58 @@ def dfe_baixar_xml(request, pk):
 
 
 @login_required
+def dfe_baixar_danfe(request, pk):
+    """Baixa o DANFE (PDF) gerado localmente a partir do XML completo de um resNFe.
+
+    O PDF já é gerado automaticamente logo após o download do XML completo (ver
+    `baixar_xml_completo_dfe`); se por algum motivo ainda não existir mas o XML já
+    estiver disponível, tenta gerar na hora em vez de só reportar indisponível.
+    """
+    documento = get_object_or_404(DfeRecebido, pk=pk, empresa=_get_empresa(request))
+
+    if not documento.pdf_danfe_url and documento.xml_url:
+        import base64
+        import requests as _requests
+
+        from .fiscal_storage import upload_pdf
+        from .services.dfe_danfe import gerar_danfe_pdf
+
+        try:
+            resp_xml = _requests.get(documento.xml_url, timeout=30)
+            resp_xml.raise_for_status()
+            pdf_bytes = gerar_danfe_pdf(resp_xml.text, documento)
+            if pdf_bytes:
+                pdf_url = upload_pdf(
+                    base64.b64encode(pdf_bytes).decode('ascii'), documento.empresa_id, 'dfe',
+                    f'{documento.chave_acesso}.pdf',
+                )
+                if pdf_url:
+                    documento.pdf_danfe_url = pdf_url
+                    documento.save(update_fields=['pdf_danfe_url'])
+        except Exception as exc:
+            logger.warning('Falha ao gerar DANFE sob demanda da chave %s: %s', documento.chave_acesso, exc)
+
+    if not documento.pdf_danfe_url:
+        messages.warning(request, 'DANFE ainda não disponível — baixe o XML completo primeiro.')
+        return redirect('faturamento:dfe_list')
+
+    import requests
+
+    try:
+        resp = requests.get(documento.pdf_danfe_url, timeout=30)
+        resp.raise_for_status()
+    except Exception as exc:
+        logger.warning('Falha ao baixar DANFE do storage para a chave %s: %s', documento.chave_acesso, exc)
+        messages.error(request, 'Falha ao baixar o arquivo. Tente novamente.')
+        return redirect('faturamento:dfe_list')
+
+    response = HttpResponse(resp.content, content_type='application/pdf')
+    filename = f'DANFE_{documento.chave_acesso or documento.pk}.pdf'
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
+
+
+@login_required
 @require_POST
 def dfe_baixar_xml_lote(request):
     """Baixa em um único .zip os XMLs completos já disponíveis dos documentos selecionados.

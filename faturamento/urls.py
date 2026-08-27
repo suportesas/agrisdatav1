@@ -77,6 +77,7 @@ urlpatterns = [
     path('distribuicao-dfe/manifestar-lote/', views.dfe_manifestar_lote, name='dfe_manifestar_lote'),
     path('distribuicao-dfe/baixar-xml-lote/', views.dfe_baixar_xml_lote, name='dfe_baixar_xml_lote'),
     path('distribuicao-dfe/<int:pk>/baixar-xml/', views.dfe_baixar_xml, name='dfe_baixar_xml'),
+    path('distribuicao-dfe/<int:pk>/baixar-danfe/', views.dfe_baixar_danfe, name='dfe_baixar_danfe'),
 
     # Webhooks
     path('webhook/integranotas/', views.integranotas_webhook, name='integranotas_webhook'),

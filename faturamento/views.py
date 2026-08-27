@@ -3264,14 +3264,22 @@ def dfe_list(request):
 
     cnpj_emitente = request.GET.get('cnpj_emitente', '').strip()
     chave_acesso = request.GET.get('chave_acesso', '').strip()
-    tipo = request.GET.get('tipo', '').strip()
+    if 'tipo' in request.GET:
+        tipo = request.GET.get('tipo', '').strip()
+    else:
+        # Sem filtro explícito na URL: entra mostrando só NF-e (resNFe), não os resEvento.
+        tipo = 'resNFe'
     situacao = request.GET.get('situacao', '').strip()
     data_ini = request.GET.get('data_ini', '').strip()
     data_fim = request.GET.get('data_fim', '').strip()
 
     qs = DfeRecebido.objects.filter(empresa=empresa)
     if cnpj_emitente:
-        qs = qs.filter(cnpj_emitente__icontains=_SOMENTE_DIGITOS_RE.sub('', cnpj_emitente))
+        digitos = _SOMENTE_DIGITOS_RE.sub('', cnpj_emitente)
+        if digitos:
+            qs = qs.filter(Q(cnpj_emitente__icontains=digitos) | Q(nome_emitente__icontains=cnpj_emitente))
+        else:
+            qs = qs.filter(nome_emitente__icontains=cnpj_emitente)
     if chave_acesso:
         qs = qs.filter(chave_acesso__icontains=_SOMENTE_DIGITOS_RE.sub('', chave_acesso))
     if tipo:
@@ -3360,6 +3368,15 @@ def dfe_manifestar(request, pk):
         client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
         resultado = client.manifestar_nfe(documento.chave_acesso, tipo, justificativa)
     except IntegranNotasError as exc:
+        if str(exc.codigo) == '573':
+            # SEFAZ já tinha esse evento registrado pra essa chave (nosso registro local
+            # estava desatualizado, ex.: manifestado por fora do sistema). Sincroniza em
+            # vez de tratar como falha — não há novo protocolo pra guardar nesse caso.
+            documento.manifestacao_tipo = tipo
+            documento.manifestacao_data = timezone.now()
+            documento.save(update_fields=['manifestacao_tipo', 'manifestacao_data'])
+            messages.info(request, 'Esta manifestação já estava registrada na SEFAZ — status sincronizado.')
+            return redirect('faturamento:dfe_list')
         detalhe = '; '.join(str(e) for e in exc.erros) if exc.erros else ''
         msg = f'Erro ao registrar manifestação [{exc.codigo}]: {exc}'
         if detalhe:
@@ -3393,12 +3410,12 @@ def dfe_manifestar(request, pk):
 @login_required
 @require_POST
 def dfe_manifestar_lote(request):
-    """Registra Ciência da Operação em lote para os documentos selecionados na listagem.
+    """Registra Manifestação do Destinatário em lote para os documentos selecionados na listagem.
 
-    Só "Ciência" é oferecida em lote — Confirmação/Desconhecimento/Operação Não Realizada
-    exigem julgamento sobre o recebimento físico de cada nota, então continuam manuais
-    (via dfe_manifestar). Documentos não elegíveis (evento, nota própria, já manifestada)
-    são simplesmente ignorados.
+    O tipo de manifestação e a justificativa (quando aplicável) são escolhidos
+    individualmente por nota no modal de lote — chegam como campos `tipo_<pk>` e
+    `justificativa_<pk>` no POST. Documentos não elegíveis (evento, nota própria, já
+    manifestada) ou sem tipo válido informado são simplesmente ignorados.
     """
     empresa = _get_empresa(request)
     if not empresa:
@@ -3414,9 +3431,10 @@ def dfe_manifestar_lote(request):
         messages.error(request, 'Configure o token IntegraNota em Configuração Fiscal para registrar manifestação.')
         return redirect('faturamento:dfe_list')
 
-    from .services.integranotas import IntegranNotasClient
+    from .services.integranotas import IntegranNotasClient, IntegranNotasError
     from .services.distribuicao_dfe import baixar_xml_completo_dfe
 
+    tipos_validos = [t[0] for t in DfeRecebido.MANIFESTACAO_TIPO_CHOICES]
     cnpj_empresa = _SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or '')
     documentos = DfeRecebido.objects.filter(
         empresa=empresa, pk__in=ids, schema='resNFe', manifestacao_tipo='',
@@ -3425,15 +3443,34 @@ def dfe_manifestar_lote(request):
     client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
     sucesso = 0
     falhas = 0
+    invalidos = 0
     xml_baixados = 0
     for doc in documentos:
+        tipo = request.POST.get(f'tipo_{doc.pk}', '').strip()
+        justificativa = request.POST.get(f'justificativa_{doc.pk}', '').strip()
+
+        if tipo not in tipos_validos or (tipo == 'operacao_nao_realizada' and not justificativa):
+            invalidos += 1
+            continue
+
         try:
-            resultado = client.manifestar_nfe(doc.chave_acesso, 'ciencia_operacao')
+            resultado = client.manifestar_nfe(doc.chave_acesso, tipo, justificativa)
+        except IntegranNotasError as exc:
+            if str(exc.codigo) == '573':
+                # SEFAZ já tinha esse evento registrado — sincroniza em vez de contar como falha.
+                doc.manifestacao_tipo = tipo
+                doc.manifestacao_data = timezone.now()
+                doc.save(update_fields=['manifestacao_tipo', 'manifestacao_data'])
+                sucesso += 1
+                continue
+            logger.warning('Falha ao manifestar em lote a chave %s: %s', doc.chave_acesso, exc)
+            falhas += 1
+            continue
         except Exception as exc:
             logger.warning('Falha ao manifestar em lote a chave %s: %s', doc.chave_acesso, exc)
             falhas += 1
             continue
-        doc.manifestacao_tipo = 'ciencia_operacao'
+        doc.manifestacao_tipo = tipo
         doc.manifestacao_protocolo = resultado.get('protocolo', '') or resultado.get('numero_protocolo', '')
         doc.manifestacao_data = timezone.now()
         doc.save(update_fields=['manifestacao_tipo', 'manifestacao_protocolo', 'manifestacao_data'])
@@ -3445,11 +3482,13 @@ def dfe_manifestar_lote(request):
             logger.warning('Falha ao buscar XML completo em lote da chave %s: %s', doc.chave_acesso, exc)
 
     if sucesso:
-        messages.success(request, f'{sucesso} manifestação(ões) de Ciência registrada(s) com sucesso '
+        messages.success(request, f'{sucesso} manifestação(ões) registrada(s) com sucesso '
                                    f'({xml_baixados} com XML completo já disponível para download).')
     if falhas:
         messages.warning(request, f'{falhas} documento(s) falharam ao manifestar (veja o log do servidor).')
-    if not sucesso and not falhas:
+    if invalidos:
+        messages.warning(request, f'{invalidos} documento(s) ignorados por tipo/justificativa não informados.')
+    if not sucesso and not falhas and not invalidos:
         messages.info(request, 'Nenhum dos documentos selecionados era elegível para manifestação (evento, nota própria ou já manifestada).')
     return redirect('faturamento:dfe_list')
 

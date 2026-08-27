@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>DANFE {{ dados.ident.numero }}/{{ dados.ident.serie }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 9pt; margin: 0; padding: 10px; color: #000; }
+    h1 { font-size: 12pt; margin: 0 0 4px; }
+    .header { display: flex; justify-content: space-between; border: 1px solid #000; padding: 6px; margin-bottom: 6px; }
+    .header-left { flex: 1; }
+    .header-right { text-align: right; min-width: 200px; }
+    .section { border: 1px solid #000; margin-bottom: 4px; }
+    .section-title { background: #eee; font-weight: bold; padding: 2px 6px; font-size: 8pt; border-bottom: 1px solid #000; }
+    .section-body { padding: 4px 6px; }
+    .row { display: flex; gap: 20px; }
+    .col { flex: 1; }
+    .label { font-size: 7pt; color: #555; }
+    .value { font-size: 9pt; }
+    table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+    th { background: #eee; border: 1px solid #aaa; padding: 3px 4px; text-align: left; }
+    td { border: 1px solid #ccc; padding: 3px 4px; }
+    .text-right { text-align: right; }
+    .totals-table td { font-weight: bold; }
+    .stamp { border: 2px solid #c00; color: #c00; font-size: 16pt; font-weight: bold; text-align: center; padding: 6px; margin: 8px 0; }
+    .danfe-title { text-align: center; font-size: 11pt; font-weight: bold; border: 1px solid #000; padding: 4px; margin-bottom: 6px; }
+    .badge-terceiro { text-align: center; font-size: 7pt; color: #555; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="danfe-title">DANFE — DOCUMENTO AUXILIAR DA NOTA FISCAL ELETRÔNICA</div>
+<div class="badge-terceiro">Gerado a partir do XML recebido via Distribuição de DF-e — não substitui o DANFE original do emitente</div>
+{% if doc.chave_acesso %}
+<div style="border:1px solid #000;padding:3px 6px;margin-bottom:4px;font-size:7pt;word-break:break-all;">
+  <strong>CHAVE DE ACESSO:</strong> {{ doc.chave_acesso }}
+</div>
+{% endif %}
+
+{% if doc.situacao == '2' %}
+<div class="stamp">CANCELADA</div>
+{% endif %}
+
+<!-- Cabeçalho -->
+<div class="header">
+  <div class="header-left">
+    <h1>{{ dados.emitente.razao_social|default:"EMITENTE" }}</h1>
+    <div>CNPJ: {{ dados.emitente.cnpj|default:"—" }} &nbsp;|&nbsp; IE: {{ dados.emitente.ie|default:"—" }}</div>
+    <div>{{ dados.emitente.endereco }} — {{ dados.emitente.municipio }}/{{ dados.emitente.uf }}</div>
+    <div>Fone: {{ dados.emitente.fone|default:"—" }}</div>
+  </div>
+  <div class="header-right">
+    <div class="label">NF-e Nº</div>
+    <div class="value" style="font-size:14pt;font-weight:bold">{{ dados.ident.numero|default:"0" }}</div>
+    <div class="label">Série: {{ dados.ident.serie }} &nbsp;|&nbsp; Emissão: {{ dados.ident.data_emissao|date:"d/m/Y" }}</div>
+    <div class="label">Natureza da Operação</div>
+    <div class="value">{{ dados.ident.natureza_operacao }}</div>
+    {% if dados.ident.protocolo_autorizacao %}
+    <div class="label" style="margin-top:4px">Protocolo: {{ dados.ident.protocolo_autorizacao }}</div>
+    {% endif %}
+    {% if dados.ident.data_protocolo %}
+    <div class="label">Autorizado em: {{ dados.ident.data_protocolo|date:"d/m/Y H:i" }}</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Destinatário (a própria empresa) -->
+<div class="section">
+  <div class="section-title">DESTINATÁRIO / REMETENTE</div>
+  <div class="section-body">
+    <div class="row">
+      <div class="col">
+        <div class="label">NOME / RAZÃO SOCIAL</div>
+        <div class="value">{{ empresa.razao_social|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">CNPJ / CPF</div>
+        <div class="value">{{ empresa.get_cnpj_formatado|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">DATA DE EMISSÃO</div>
+        <div class="value">{{ dados.ident.data_emissao|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Itens -->
+<div class="section">
+  <div class="section-title">DADOS DOS PRODUTOS / SERVIÇOS</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descrição</th>
+        <th>NCM</th>
+        <th>CFOP</th>
+        <th>UN</th>
+        <th class="text-right">Qtd</th>
+        <th class="text-right">Vl. Unit.</th>
+        <th class="text-right">Desc.</th>
+        <th class="text-right">Vl. Total</th>
+        <th class="text-right">%ICMS</th>
+        <th class="text-right">Vl. ICMS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in dados.itens %}
+      <tr>
+        <td>{{ item.codigo }}</td>
+        <td>{{ item.descricao }}</td>
+        <td>{{ item.ncm|default:"" }}</td>
+        <td>{{ item.cfop|default:"" }}</td>
+        <td>{{ item.unidade }}</td>
+        <td class="text-right">{{ item.quantidade|floatformat:"4g" }}</td>
+        <td class="text-right">{{ item.valor_unitario|floatformat:"4g" }}</td>
+        <td class="text-right">{{ item.valor_desconto|floatformat:"2g" }}</td>
+        <td class="text-right">{{ item.valor_total|floatformat:"2g" }}</td>
+        <td class="text-right">{{ item.aliquota_icms|floatformat:"2g" }}%</td>
+        <td class="text-right">{{ item.valor_icms|floatformat:"2g" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Frete / Transportador -->
+<div class="section">
+  <div class="section-title">TRANSPORTADOR / VOLUMES TRANSPORTADOS</div>
+  <div class="section-body">
+    <div class="row">
+      <div class="col" style="flex:2">
+        <div class="label">RAZÃO SOCIAL</div>
+        <div class="value">{{ dados.transportador.nome|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">FRETE POR CONTA</div>
+        <div class="value">{{ dados.transportador.frete_label }}</div>
+      </div>
+      <div class="col">
+        <div class="label">CÓDIGO ANTT</div>
+        <div class="value">{{ dados.transportador.rntc|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">PLACA DO VEÍCULO</div>
+        <div class="value">{{ dados.transportador.placa|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">UF</div>
+        <div class="value">{{ dados.transportador.veic_uf|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">CNPJ / CPF</div>
+        <div class="value">{{ dados.transportador.cnpj|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:4px">
+      <div class="col" style="flex:3">
+        <div class="label">ENDEREÇO</div>
+        <div class="value">{{ dados.transportador.endereco|default:"—" }}</div>
+      </div>
+      <div class="col" style="flex:2">
+        <div class="label">MUNICÍPIO</div>
+        <div class="value">{{ dados.transportador.municipio|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">UF</div>
+        <div class="value">{{ dados.transportador.uf|default:"—" }}</div>
+      </div>
+      <div class="col" style="flex:2">
+        <div class="label">INSCRIÇÃO ESTADUAL</div>
+        <div class="value">{{ dados.transportador.ie|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if dados.transportador.quantidade_volumes or dados.transportador.especie_volumes or dados.transportador.marca_volumes or dados.transportador.numeracao_volumes or dados.transportador.peso_bruto_kg or dados.transportador.peso_liquido_kg %}
+<div class="section">
+  <div class="section-title">VOLUMES TRANSPORTADOS</div>
+  <div class="section-body">
+    <div class="row">
+      <div class="col">
+        <div class="label">Quantidade</div>
+        <div class="value">{{ dados.transportador.quantidade_volumes|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Espécie</div>
+        <div class="value">{{ dados.transportador.especie_volumes|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Marca</div>
+        <div class="value">{{ dados.transportador.marca_volumes|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Numeração</div>
+        <div class="value">{{ dados.transportador.numeracao_volumes|default:"—" }}</div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <div class="col">
+        <div class="label">Peso Bruto (kg)</div>
+        <div class="value">{{ dados.transportador.peso_bruto_kg|floatformat:"3g"|default:"—" }}</div>
+      </div>
+      <div class="col">
+        <div class="label">Peso Líquido (kg)</div>
+        <div class="value">{{ dados.transportador.peso_liquido_kg|floatformat:"3g"|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if dados.duplicatas %}
+<div class="section">
+  <div class="section-title">FATURA / DUPLICATA</div>
+  <table style="width:50%">
+    <thead>
+      <tr><th>Núm.</th><th>Vencimento</th><th class="text-right">Valor</th></tr>
+    </thead>
+    <tbody>
+      {% for dup in dados.duplicatas %}
+      <tr>
+        <td>{{ dup.numero }}</td>
+        <td>{{ dup.vencimento|date:"d/m/Y" }}</td>
+        <td class="text-right">R$ {{ dup.valor|floatformat:"2g" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- Totais -->
+<div class="section">
+  <div class="section-title">TOTAIS DA NF-e</div>
+  <div class="section-body">
+    <table class="totals-table" style="width:50%;margin-left:auto">
+      <tr><td>Valor dos Produtos</td><td class="text-right">R$ {{ dados.totais.valor_produtos|floatformat:"2g" }}</td></tr>
+      <tr><td>Base de Cálc. ICMS</td><td class="text-right">R$ {{ dados.totais.base_calculo_icms|floatformat:"2g" }}</td></tr>
+      <tr><td>Valor do ICMS</td><td class="text-right">R$ {{ dados.totais.valor_icms|floatformat:"2g" }}</td></tr>
+      {% if dados.totais.valor_icms_st %}<tr><td>Valor do ICMS Subst.</td><td class="text-right">R$ {{ dados.totais.valor_icms_st|floatformat:"2g" }}</td></tr>{% endif %}
+      {% if dados.totais.valor_frete %}<tr><td>Frete</td><td class="text-right">R$ {{ dados.totais.valor_frete|floatformat:"2g" }}</td></tr>{% endif %}
+      {% if dados.totais.valor_seguro %}<tr><td>Seguro</td><td class="text-right">R$ {{ dados.totais.valor_seguro|floatformat:"2g" }}</td></tr>{% endif %}
+      {% if dados.totais.valor_desconto %}<tr><td>Desconto</td><td class="text-right">- R$ {{ dados.totais.valor_desconto|floatformat:"2g" }}</td></tr>{% endif %}
+      {% if dados.totais.valor_ipi %}<tr><td>IPI</td><td class="text-right">R$ {{ dados.totais.valor_ipi|floatformat:"2g" }}</td></tr>{% endif %}
+      <tr style="background:#eee"><td><strong>VALOR TOTAL</strong></td><td class="text-right"><strong>R$ {{ dados.totais.valor_total|floatformat:"2g" }}</strong></td></tr>
+    </table>
+  </div>
+</div>
+
+{% if dados.informacoes_complementares %}
+<div class="section">
+  <div class="section-title">INFORMAÇÕES COMPLEMENTARES</div>
+  <div class="section-body">{{ dados.informacoes_complementares }}</div>
+</div>
+{% endif %}
+
+</body>
+</html>

@@ -406,12 +406,36 @@ def baixar_xml_completo_dfe(doc, config=None) -> bool:
                             doc.chave_acesso, resp_chave.c_stat, resp_chave.x_motivo)
         return False
 
-    url = upload_xml_texto(resp_chave.documentos[0].xml, doc.empresa_id, doc.chave_acesso)
+    xml_completo = resp_chave.documentos[0].xml
+    url = upload_xml_texto(xml_completo, doc.empresa_id, doc.chave_acesso)
     if not url:
         return False
 
     doc.xml_url = url
-    doc.save(update_fields=['xml_url'])
+    update_fields = ['xml_url']
+
+    # Gera o DANFE (PDF) localmente a partir do XML completo — essas notas são de
+    # terceiros, então não existe um PDF pronto vindo de nenhuma API pra elas.
+    # Best-effort: uma falha aqui não pode derrubar o download do XML, que é o
+    # que efetivamente libera a manifestação/consulta da nota.
+    try:
+        import base64 as _base64
+
+        from faturamento.fiscal_storage import upload_pdf
+        from faturamento.services.dfe_danfe import gerar_danfe_pdf
+
+        pdf_bytes = gerar_danfe_pdf(xml_completo, doc)
+        if pdf_bytes:
+            pdf_url = upload_pdf(
+                _base64.b64encode(pdf_bytes).decode('ascii'), doc.empresa_id, 'dfe', f'{doc.chave_acesso}.pdf',
+            )
+            if pdf_url:
+                doc.pdf_danfe_url = pdf_url
+                update_fields.append('pdf_danfe_url')
+    except Exception as exc:
+        logger.warning('Falha ao gerar DANFE (PDF) da chave %s: %s', doc.chave_acesso, exc)
+
+    doc.save(update_fields=update_fields)
     return True
 
 

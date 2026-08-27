@@ -234,6 +234,15 @@
                 {% else %}
                 <span class="text-muted small">pendente</span>
                 {% endif %}
+                {% if doc.pdf_danfe_url %}
+                <a href="{% url 'faturamento:dfe_baixar_danfe' doc.pk %}" class="action-icon" target="_blank" title="Ver DANFE (PDF)">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+                {% elif doc.xml_url %}
+                <a href="{% url 'faturamento:dfe_baixar_danfe' doc.pk %}" class="action-icon" target="_blank" title="Gerar e ver DANFE (PDF) agora">
+                  <i class="bi bi-file-earmark-pdf text-muted"></i>
+                </a>
+                {% endif %}
               </td>
               <td class="text-center">
                 {% if doc.manifestacao_tipo %}

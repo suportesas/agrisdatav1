@@ -106,6 +106,29 @@ def criar_conta_pagar_abastecimento(abastecimento, data_vencimento=None):
     return cp
 
 
+def criar_baixa_estoque_abastecimento(abastecimento, usuario):
+    """Gera e executa a MovimentacaoEstoque (SAIDA) do combustível abastecido. Retorna a movimentação criada."""
+    from estoque.services import criar_movimentacao
+
+    if not abastecimento.lote_combustivel:
+        raise ValueError('Selecione um lote de combustível para gerar a baixa de estoque.')
+
+    mov = criar_movimentacao(
+        empresa=abastecimento.empresa,
+        tipo='SAIDA',
+        origem='ABASTECIMENTO',
+        quantidade=abastecimento.litros,
+        usuario=usuario,
+        lote=abastecimento.lote_combustivel,
+        documento=f'ABAST-{abastecimento.pk}',
+        observacao=(f'Abastecimento — {abastecimento.vehicle} — {abastecimento.litros}L '
+                    f'{abastecimento.get_tipo_combustivel_display()} em {abastecimento.local_abastecimento}'),
+    )
+    abastecimento.movimentacao_estoque = mov
+    abastecimento.save(update_fields=['movimentacao_estoque'])
+    return mov
+
+
 def criar_conta_pagar_manutencao(manutencao, data_vencimento=None):
     """Cria ContaPagar a partir de uma manutenção externa. Retorna a instância criada."""
     from financeiro.models import ContaPagar

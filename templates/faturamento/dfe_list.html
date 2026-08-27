@@ -248,7 +248,7 @@
                 {% endif %}
               </td>
               <td class="text-center">
-                {% if doc.schema == 'resNFe' and doc.cnpj_emitente != cnpj_empresa and not doc.manifestacao_tipo %}
+                {% if doc.schema == 'resNFe' and doc.cnpj_emitente != cnpj_empresa and doc.manifestacao_tipo != 'confirmacao_operacao' and doc.manifestacao_tipo != 'desconhecimento_operacao' and doc.manifestacao_tipo != 'operacao_nao_realizada' %}
                 <button type="button" class="action-icon" data-bs-toggle="modal" data-bs-target="#manifestarModal{{ doc.pk }}" title="Registrar Manifestação MD-e">
                     <i class="bi bi-check2-square"></i>
                 </button>

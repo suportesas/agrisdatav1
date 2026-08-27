@@ -3340,7 +3340,7 @@ def dfe_manifestar(request, pk):
         messages.error(request, 'Não é possível manifestar sobre uma nota emitida pela própria empresa.')
         return redirect('faturamento:dfe_list')
 
-    if documento.manifestacao_tipo:
+    if documento.manifestacao_tipo in DfeRecebido.MANIFESTACAO_TIPOS_TERMINAIS:
         messages.info(request, f'Manifestação já registrada: {documento.get_manifestacao_tipo_display()}.')
         return redirect('faturamento:dfe_list')
 
@@ -3437,8 +3437,10 @@ def dfe_manifestar_lote(request):
     tipos_validos = [t[0] for t in DfeRecebido.MANIFESTACAO_TIPO_CHOICES]
     cnpj_empresa = _SOMENTE_DIGITOS_RE.sub('', empresa.cnpj or '')
     documentos = DfeRecebido.objects.filter(
-        empresa=empresa, pk__in=ids, schema='resNFe', manifestacao_tipo='',
-    ).exclude(chave_acesso='').exclude(cnpj_emitente=cnpj_empresa)
+        empresa=empresa, pk__in=ids, schema='resNFe',
+    ).exclude(chave_acesso='').exclude(cnpj_emitente=cnpj_empresa).exclude(
+        manifestacao_tipo__in=DfeRecebido.MANIFESTACAO_TIPOS_TERMINAIS,
+    )
 
     client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
     sucesso = 0

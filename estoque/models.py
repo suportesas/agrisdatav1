@@ -781,6 +781,7 @@ class MovimentacaoEstoque(models.Model):
         ('RECONTRATACAO', 'Recontratação'),
         ('REMESSA_FATURAMENTO', 'Remessa para Faturamento Posterior'),
         ('CANCELAMENTO_REMESSA', 'Cancelamento de Remessa'),
+        ('ABASTECIMENTO', 'Abastecimento de Veículo'),
     ]
     origem = models.CharField(
         'Origem',

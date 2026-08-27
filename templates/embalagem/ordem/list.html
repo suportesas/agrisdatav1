@@ -101,7 +101,13 @@
           <tbody>
             {% for o in page_obj %}
             <tr>
-              <td class="ps-4"><a href="{% url 'embalagem:ordem_detail' o.pk %}"><strong>{{ o.numero }}</strong></a></td>
+              <td class="ps-4">
+                {% if o.produtor_parceiro_id %}
+                <a href="{% url 'embalagem:ordem_parceiro_detail' o.pk %}"><strong>{{ o.numero }}</strong></a>
+                {% else %}
+                <a href="{% url 'embalagem:ordem_detail' o.pk %}"><strong>{{ o.numero }}</strong></a>
+                {% endif %}
+              </td>
               <td class="text-mono">{{ o.data|date:"d/m/Y" }}</td>
               <td>
                 {% with total=o.tipos_embalagem.count %}
@@ -127,9 +133,15 @@
                 {% else %}<span class="badge bg-danger">Cancelada</span>{% endif %}
               </td>
               <td class="text-center">
+                {% if o.produtor_parceiro_id %}
+                <a class="action-icon" href="{% url 'embalagem:ordem_parceiro_detail' o.pk %}" title="Ver detalhes">
+                    <i class="bi bi-eye"></i>
+                </a>
+                {% else %}
                 <a class="action-icon" href="{% url 'embalagem:ordem_detail' o.pk %}" title="Ver detalhes">
                     <i class="bi bi-eye"></i>
                 </a>
+                {% endif %}
               </td>
             </tr>
             {% if o.tipos_embalagem.all %}

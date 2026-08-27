@@ -63,6 +63,19 @@
             {% if form.produto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produto.errors|striptags }}</div>{% endif %}
             {% if form.produto.help_text %}<div class="helper-note">{{ form.produto.help_text }}</div>{% endif %}
           </div>
+          <div class="field col-12">
+            <label class="form-label">Tipos de Embalagem Permitidos <span class="req">*</span></label>
+            <div class="d-flex flex-wrap gap-3">
+              {% for checkbox in form.tipos_embalagem %}
+              <div class="form-check">
+                {{ checkbox.tag }}
+                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+            {% if form.tipos_embalagem.help_text %}<div class="helper-note">{{ form.tipos_embalagem.help_text }}</div>{% endif %}
+            {% if form.tipos_embalagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipos_embalagem.errors|striptags }}</div>{% endif %}
+          </div>
         </div>
       </div>
     </div>

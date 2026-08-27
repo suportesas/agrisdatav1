@@ -797,11 +797,13 @@ class MovimentacaoEstoque(models.Model):
         blank=True,
         null=True
     )
-    local_origem = models.CharField(
-        'Local de Origem',
-        max_length=100,
+    local_origem = models.ForeignKey(
+        'LocalEstocagem',
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        null=True
+        related_name='movimentacoes_origem',
+        verbose_name='Local de Origem'
     )
     numero = models.CharField(
         'Número',

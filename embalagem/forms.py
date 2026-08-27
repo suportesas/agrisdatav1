@@ -475,6 +475,12 @@ class OrdemParceiroForm(forms.ModelForm):
     """Cria a Ordem de Embalagem 'guarda-chuva' de um lote de pallets recebidos já
     prontos (rastreabilidade e GGN gerados pelo próprio produtor parceiro)."""
 
+    tipos_embalagem = TipoEmbalagemMultipleChoiceField(
+        queryset=TipoEmbalagem.objects.none(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        label='Tipos de Embalagem Permitidos',
+        help_text='Só esses tipos poderão ser escolhidos ao adicionar/importar pallets desta ordem.',
+    )
     produto = forms.ModelChoiceField(
         queryset=None,
         label='Produto Recebido',
@@ -485,7 +491,7 @@ class OrdemParceiroForm(forms.ModelForm):
 
     class Meta:
         model = OrdemEmbalagem
-        fields = ['produtor_parceiro', 'data', 'armazem_destino', 'local_destino', 'observacoes']
+        fields = ['produtor_parceiro', 'data', 'tipos_embalagem', 'armazem_destino', 'local_destino', 'observacoes']
         widgets = {
             'produtor_parceiro': forms.Select(attrs={'class': 'form-select'}),
             'data': DateBRInput(attrs={'class': 'form-control'}, format='%Y-%m-%d'),
@@ -503,12 +509,14 @@ class OrdemParceiroForm(forms.ModelForm):
             from produtos.models import Produto
             self.fields['produtor_parceiro'].queryset = Produtor.objects.filter(
                 empresa=empresa, status='ATIVO').order_by('razao_social')
+            self.fields['tipos_embalagem'].queryset = TipoEmbalagem.objects.filter(
+                empresa=empresa, ativo=True).order_by('nome')
             self.fields['produto'].queryset = Produto.objects.filter(
                 categoria__empresa=empresa, ativo=True).order_by('nome')
             self.fields['armazem_destino'].queryset = Armazem.objects.filter(
                 empresa=empresa, ativo=True).order_by('nome')
             self.fields['local_destino'].queryset = LocalEstocagem.objects.filter(
-                armazem__empresa=empresa).order_by('nome')
+                armazem__empresa=empresa).order_by('descricao')
 
 
 class PalletParceiroForm(forms.ModelForm):
@@ -519,6 +527,15 @@ class PalletParceiroForm(forms.ModelForm):
         queryset=TipoEmbalagem.objects.none(),
         widget=forms.Select(attrs={'class': 'form-select'}),
         label='Tipo de Embalagem',
+    )
+    n_pallets = forms.IntegerField(
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '1'}),
+        label='Quantidade de Pallets',
+        help_text='Todos os pallets gerados aqui recebem o mesmo código de rastreabilidade, '
+                   'caixas e pesos informados abaixo (comum quando o parceiro manda um único '
+                   'código por lote/dia de produção, não por pallet).',
     )
 
     class Meta:
@@ -535,8 +552,8 @@ class PalletParceiroForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['codigo_producao_externo'].required = True
         if ordem is not None:
-            self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
-                empresa=ordem.empresa_id, ativo=True).select_related('cultura', 'produto').order_by('nome')
+            self.fields['tipo_embalagem'].queryset = ordem.tipos_embalagem.all().select_related(
+                'cultura', 'produto').order_by('nome')
         elif empresa:
             self.fields['tipo_embalagem'].queryset = TipoEmbalagem.objects.filter(
                 empresa=empresa, ativo=True

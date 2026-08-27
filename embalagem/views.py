@@ -503,6 +503,7 @@ def ordem_parceiro_create(request):
                 ordem.lote_origem = lote
                 ordem.quantidade_entrada_kg = Decimal('0')
                 ordem.save()
+                form.save_m2m()
             messages.success(request, f'Ordem de parceiro {ordem.numero} criada.')
             return redirect('embalagem:ordem_parceiro_detail', pk=ordem.pk)
     else:
@@ -517,10 +518,19 @@ def ordem_parceiro_detail(request, pk):
     empresa = _get_empresa(request)
     ordem = get_object_or_404(OrdemEmbalagem, pk=pk, empresa=empresa, produtor_parceiro__isnull=False)
     pallets = ordem.pallets.select_related('tipo_embalagem', 'armazem').order_by('numero_sequencial')
+    tipos_dados = {
+        te.pk: {
+            'caixas_por_pallet': te.caixas_por_pallet,
+            'peso_bruto_pallet': float(te.peso_bruto_pallet),
+            'peso_liquido_pallet': float(te.peso_liquido_pallet),
+        }
+        for te in ordem.tipos_embalagem.all()
+    }
     return render(request, 'embalagem/ordem_parceiro/detail.html', {
         'ordem': ordem,
         'pallets': pallets,
         'pallet_form': PalletParceiroForm(ordem=ordem),
+        'tipos_dados_json': json.dumps(tipos_dados),
     })
 
 
@@ -533,28 +543,39 @@ def ordem_parceiro_adicionar_pallet(request, pk):
     if not form.is_valid():
         return JsonResponse({'erro': str(form.errors)}, status=400)
 
+    criados = []
     with transaction.atomic():
-        pallet = form.save(commit=False)
-        pallet.empresa = empresa
-        pallet.ordem_embalagem = ordem
-        pallet.numero_sequencial = ordem.pallets.count() + 1
-        pallet.codigo_pallet = PalletEmbalado._gerar_codigo(empresa, ordem.data, safra=ordem.safra)
-        pallet.data_embalagem = ordem.data
-        pallet.armazem = ordem.armazem_destino
-        pallet.local_estocagem = ordem.local_destino
-        pallet.status = 'DISPONIVEL'
-        pallet.estoque_baixado = True
-        pallet.save()
+        seq = ordem.pallets.count()
+        for _ in range(form.cleaned_data['n_pallets']):
+            seq += 1
+            criados.append(PalletEmbalado.objects.create(
+                empresa=empresa,
+                codigo_pallet=PalletEmbalado._gerar_codigo(empresa, ordem.data, safra=ordem.safra),
+                ordem_embalagem=ordem,
+                tipo_embalagem=form.cleaned_data['tipo_embalagem'],
+                numero_sequencial=seq,
+                quantidade_caixas=form.cleaned_data['quantidade_caixas'],
+                peso_bruto_kg=form.cleaned_data['peso_bruto_kg'],
+                peso_liquido_kg=form.cleaned_data['peso_liquido_kg'],
+                codigo_producao_externo=form.cleaned_data['codigo_producao_externo'],
+                data_embalagem=ordem.data,
+                armazem=ordem.armazem_destino,
+                local_estocagem=ordem.local_destino,
+                status='DISPONIVEL',
+                estoque_baixado=True,
+            ))
 
     return JsonResponse({
         'ok': True,
-        'pallet_pk': pallet.pk,
-        'codigo_pallet': pallet.codigo_pallet,
-        'tipo_embalagem': pallet.tipo_embalagem.label_completo if pallet.tipo_embalagem_id else '',
-        'codigo_producao_externo': pallet.codigo_producao_externo,
-        'quantidade_caixas': pallet.quantidade_caixas,
-        'peso_bruto_kg': float(pallet.peso_bruto_kg),
-        'peso_liquido_kg': float(pallet.peso_liquido_kg),
+        'pallets': [{
+            'pallet_pk': p.pk,
+            'codigo_pallet': p.codigo_pallet,
+            'tipo_embalagem': p.tipo_embalagem.label_completo if p.tipo_embalagem_id else '',
+            'codigo_producao_externo': p.codigo_producao_externo,
+            'quantidade_caixas': p.quantidade_caixas,
+            'peso_bruto_kg': float(p.peso_bruto_kg),
+            'peso_liquido_kg': float(p.peso_liquido_kg),
+        } for p in criados],
     })
 
 
@@ -581,7 +602,7 @@ def ordem_parceiro_importar_xlsx(request, pk):
 
     tipos_por_nome = {
         t.nome.strip().lower(): t
-        for t in TipoEmbalagem.objects.filter(empresa=empresa, ativo=True)
+        for t in ordem.tipos_embalagem.all()
     }
 
     criados, erros = 0, []
@@ -1332,10 +1353,12 @@ def _rastreabilidade_por_tipo(rom):
         'pallet__tipo_embalagem',
         'pallet__ordem_embalagem__lote_producao__talhao__fazenda',
         'pallet__ordem_embalagem__lote_producao__cultura',
+        'pallet__ordem_embalagem__lote_origem__lote_producao__talhao__fazenda',
+        'pallet__ordem_embalagem__lote_origem__lote_producao__cultura',
     ).prefetch_related('pallet__composicao__tipo_embalagem')
     for item in itens_qs:
         pallet = item.pallet
-        lote_producao = pallet.ordem_embalagem.lote_producao
+        lote_producao = pallet.ordem_embalagem.lote_producao_efetivo()
         if not lote_producao:
             continue
         if pallet.is_misto:

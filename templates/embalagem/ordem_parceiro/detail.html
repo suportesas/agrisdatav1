@@ -43,23 +43,28 @@
               {{ pallet_form.tipo_embalagem }}
             </div>
             <div class="mb-2">
+              <label class="form-label small fw-semibold">Quantidade de Pallets</label>
+              {{ pallet_form.n_pallets }}
+              <div class="form-text">{{ pallet_form.n_pallets.help_text }}</div>
+            </div>
+            <div class="mb-2">
               <label class="form-label small fw-semibold">Código de Rastreabilidade (do parceiro)</label>
               {{ pallet_form.codigo_producao_externo }}
             </div>
             <div class="mb-2">
-              <label class="form-label small fw-semibold">Qtd. Caixas</label>
+              <label class="form-label small fw-semibold">Qtd. Caixas (por pallet)</label>
               {{ pallet_form.quantidade_caixas }}
             </div>
             <div class="mb-2">
-              <label class="form-label small fw-semibold">Peso Bruto (kg)</label>
+              <label class="form-label small fw-semibold">Peso Bruto (kg, por pallet)</label>
               {{ pallet_form.peso_bruto_kg }}
             </div>
             <div class="mb-3">
-              <label class="form-label small fw-semibold">Peso Líquido (kg)</label>
+              <label class="form-label small fw-semibold">Peso Líquido (kg, por pallet)</label>
               {{ pallet_form.peso_liquido_kg }}
             </div>
             <button type="submit" class="btn btn-success w-100">
-              <i class="bi bi-plus me-1"></i>Adicionar Pallet
+              <i class="bi bi-plus me-1"></i>Adicionar Pallet(s)
             </button>
           </form>
           <div id="form-erro" class="text-danger small mt-2 d-none"></div>
@@ -131,6 +136,22 @@
 <script>
 const CSRF = '{{ csrf_token }}';
 const URL_ADD = '{% url "embalagem:ordem_parceiro_adicionar_pallet" ordem.pk %}';
+const TIPOS_DADOS = {{ tipos_dados_json|safe }};
+
+const selectTipo = document.getElementById('id_tipo_embalagem');
+const campoCaixas = document.getElementById('id_quantidade_caixas');
+const campoPesoBruto = document.getElementById('id_peso_bruto_kg');
+const campoPesoLiquido = document.getElementById('id_peso_liquido_kg');
+
+if (selectTipo) {
+  selectTipo.addEventListener('change', () => {
+    const dados = TIPOS_DADOS[selectTipo.value];
+    if (!dados) return;
+    campoCaixas.value = dados.caixas_por_pallet;
+    campoPesoBruto.value = dados.peso_bruto_pallet;
+    campoPesoLiquido.value = dados.peso_liquido_pallet;
+  });
+}
 
 document.getElementById('form-add-pallet').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -153,18 +174,20 @@ document.getElementById('form-add-pallet').addEventListener('submit', async (e) 
   if (linhaVazia) linhaVazia.remove();
 
   const tbody = document.getElementById('tbody-pallets');
-  const tr = document.createElement('tr');
-  tr.id = `pallet-${data.pallet_pk}`;
-  tr.innerHTML = `
-    <td>${data.codigo_pallet}</td>
-    <td>${data.tipo_embalagem || '—'}</td>
-    <td>${data.codigo_producao_externo || '—'}</td>
-    <td class="text-end">${data.quantidade_caixas}</td>
-    <td class="text-end">${parseFloat(data.peso_liquido_kg).toFixed(3)}</td>`;
-  tbody.appendChild(tr);
+  for (const pallet of data.pallets) {
+    const tr = document.createElement('tr');
+    tr.id = `pallet-${pallet.pallet_pk}`;
+    tr.innerHTML = `
+      <td>${pallet.codigo_pallet}</td>
+      <td>${pallet.tipo_embalagem || '—'}</td>
+      <td>${pallet.codigo_producao_externo || '—'}</td>
+      <td class="text-end">${pallet.quantidade_caixas}</td>
+      <td class="text-end">${parseFloat(pallet.peso_liquido_kg).toFixed(3)}</td>`;
+    tbody.appendChild(tr);
+  }
 
   const totalEl = document.getElementById('total-pallets');
-  totalEl.textContent = parseInt(totalEl.textContent, 10) + 1;
+  totalEl.textContent = parseInt(totalEl.textContent, 10) + data.pallets.length;
 
   e.target.reset();
 });

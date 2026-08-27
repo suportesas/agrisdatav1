@@ -188,7 +188,7 @@ def _montar_linhas(pallet, romaneio, barcode_data, qr_url, fator):
     tamanhos (fonte, ícones, imagens, padding) escalados por `fator`."""
     styles = _styles(fator)
     te = pallet.tipo_embalagem
-    lp = pallet.ordem_embalagem.lote_producao
+    lp = pallet.ordem_embalagem.lote_producao_efetivo()
     parceiro = pallet.ordem_embalagem.produtor_parceiro
     if parceiro:
         ggn = parceiro.grower_ggn or '—'

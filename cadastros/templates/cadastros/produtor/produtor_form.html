@@ -117,6 +117,22 @@
           </div>
         </div>
 
+        <div class="form-section">
+          <div class="form-section-header">
+            <span class="icon-badge sm orange"><i class="bi bi-upc-scan"></i></span>
+            <span class="title">Rastreabilidade PPWR <small class="fw-normal text-muted">(opcional — preencher quando este produtor entrega pallets já prontos, com etiqueta e rastreabilidade gerados por ele)</small></span>
+          </div>
+          <div class="form-section-body">
+            <div class="form-grid">
+              <div class="field col-6"><label class="form-label">Nome do Grower</label>{{ form.grower_nome }}</div>
+              <div class="field col-6"><label class="form-label">GGN do Grower</label>{{ form.grower_ggn }}</div>
+              <div class="field col-4"><label class="form-label">Nome do Packhouse</label>{{ form.packhouse_nome }}</div>
+              <div class="field col-4"><label class="form-label">GGN do Packhouse</label>{{ form.packhouse_ggn }}</div>
+              <div class="field col-4"><label class="form-label">Endereço do Packhouse</label>{{ form.packhouse_endereco }}</div>
+            </div>
+          </div>
+        </div>
+
         <div class="app-footer-bar">
           <a href="{% url 'cadastros:produtor_list' %}" class="btn btn-outline">Cancelar</a>
           <button class="btn btn-primary" type="submit">

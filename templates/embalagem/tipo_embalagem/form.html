@@ -188,6 +188,26 @@
     </div>
 
     <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm green"><i class="bi bi-shield-check"></i></span>
+        <span class="title">Rastreabilidade / Etiqueta (GLOBALG.A.P., PPWR)</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-4">
+            <label class="form-label">Trace Code</label>
+            {{ form.trace_code }}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Classe / Categoria</label>
+            {{ form.classe_categoria }}
+            <div class="helper-note">Impresso como "Class/Cat." nas etiquetas. Ex: I</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
       <div class="form-section-body">
         <div class="switch-row">
           <label class="switch">

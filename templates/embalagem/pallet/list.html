@@ -252,9 +252,21 @@
                 {% else %}<span class="badge bg-danger">Cancelado</span>{% endif %}
               </td>
               <td class="text-center">
-                <a class="action-icon" href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" target="_blank" title="Etiqueta PDF">
+                {% if p.status == 'RESERVADO' or p.status == 'CARREGADO' %}
+                <a class="action-icon" href="{% url 'embalagem:pallet_etiqueta_pdf' p.pk %}" target="_blank" title="Etiqueta de Pallet PDF">
                   <i class="bi bi-printer"></i>
                 </a>
+                <a class="action-icon" href="{% url 'embalagem:pallet_etiqueta_caixa_pdf' p.pk %}" target="_blank" title="Etiqueta de Caixa PDF">
+                  <i class="bi bi-box-seam"></i>
+                </a>
+                {% else %}
+                <span class="action-icon disabled" title="Disponível após reservar este pallet em um Romaneio" style="opacity:.35; cursor:not-allowed;">
+                  <i class="bi bi-printer"></i>
+                </span>
+                <span class="action-icon disabled" title="Disponível após reservar este pallet em um Romaneio" style="opacity:.35; cursor:not-allowed;">
+                  <i class="bi bi-box-seam"></i>
+                </span>
+                {% endif %}
               </td>
             </tr>
             {% empty %}

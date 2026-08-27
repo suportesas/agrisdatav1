@@ -16,3 +16,16 @@ def barcode_b64(codigo):
         return base64.b64encode(buf.read()).decode()
     except Exception:
         return None
+
+
+def qrcode_b64(data):
+    """Gera um QR Code em base64 (PNG) para embutir em PDFs de etiqueta."""
+    try:
+        import qrcode
+        buf = io.BytesIO()
+        img = qrcode.make(data, box_size=6, border=1)
+        img.save(buf, format='PNG')
+        buf.seek(0)
+        return base64.b64encode(buf.read()).decode()
+    except Exception:
+        return None

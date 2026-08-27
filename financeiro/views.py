@@ -750,7 +750,7 @@ def parcela_criar(request, conta_pk):
         messages.warning(request, 'Esta conta já possui parcelas. Use a edição para modificar.')
         return redirect('financeiro:conta_pagar_detail', pk=conta.pk)
     
-    formas_pagamento = FormaPagemento.objects.filter(ativo=True).order_by('ordem_exibicao')
+    formas_pagamento = FormaPagemento.objects.filter(empresa=empresa, ativo=True).order_by('ordem_exibicao')
     
     # Condições de pagamento padrão
     condicoes_padrao = [
@@ -814,7 +814,7 @@ def parcela_criar(request, conta_pk):
                     forma_pagamento = None
                     if forma_padrao_id:
                         try:
-                            forma_pagamento = FormaPagemento.objects.get(pk=forma_padrao_id)
+                            forma_pagamento = FormaPagemento.objects.get(pk=forma_padrao_id, empresa=empresa)
                         except FormaPagemento.DoesNotExist:
                             pass
                     

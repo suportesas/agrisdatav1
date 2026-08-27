@@ -745,6 +745,9 @@
           {% if user.is_admin_empresa or request|tem_acesso:'financeiro:relatorio_fluxo_caixa' %}
           <li><a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"><i class="bi bi-graph-up"></i> Fluxo de Caixa</a></li>
           {% endif %}
+          {% if user.is_admin_empresa or request|tem_acesso:'compras:forma_pagamento_list' %}
+          <li><a href="{% url 'compras:forma_pagamento_list' %}"><i class="bi bi-credit-card"></i> Formas de Pagamento</a></li>
+          {% endif %}
 
           {% if user.is_admin_empresa or request|tem_acesso:'plano_contas:conta_list,plano_contas:conta_create,plano_contas:centro_list,plano_contas:centro_create' %}
           <li class="submenu-divider"></li>

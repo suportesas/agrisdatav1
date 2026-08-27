@@ -172,6 +172,12 @@ class DfeRecebido(models.Model):
         ('desconhecimento_operacao', 'Desconhecimento da Operação'),
         ('operacao_nao_realizada', 'Operação Não Realizada'),
     ]
+    # Ciência não fecha o ciclo de MD-e — só libera o XML completo. Depois dela ainda é
+    # preciso (e permitido) registrar uma das três manifestações abaixo; só essas são
+    # terminais perante a SEFAZ (não aceita nova manifestação depois delas).
+    MANIFESTACAO_TIPOS_TERMINAIS = [
+        'confirmacao_operacao', 'desconhecimento_operacao', 'operacao_nao_realizada',
+    ]
 
     empresa = models.ForeignKey(
         'empresas.Empresa',

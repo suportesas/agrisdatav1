@@ -436,7 +436,7 @@ def sincronizar_dfe_empresa(empresa, *, max_xml: int = 10, max_manifestacoes: in
     Retorna um resumo: {'empresa_id', 'novos', 'ciencia_automatica', 'xml_baixados', 'erro'}.
     """
     from faturamento.models import ConfiguracaoFiscal, DfeRecebido
-    from faturamento.services.integranotas import IntegranNotasClient
+    from faturamento.services.integranotas import IntegranNotasClient, IntegranNotasError
 
     resultado = {'empresa_id': empresa.id, 'novos': 0, 'ciencia_automatica': 0, 'xml_baixados': 0, 'erro': None}
 
@@ -524,6 +524,17 @@ def sincronizar_dfe_empresa(empresa, *, max_xml: int = 10, max_manifestacoes: in
         for doc in pendentes_manifestacao:
             try:
                 resp_manifesto = client.manifestar_nfe(doc.chave_acesso, 'ciencia_operacao')
+            except IntegranNotasError as exc:
+                if str(exc.codigo) == '573':
+                    # SEFAZ já tinha esse evento registrado (fora deste sistema, ou
+                    # dessincronizado) — sincroniza em vez de tratar como falha.
+                    doc.manifestacao_tipo = 'ciencia_operacao'
+                    doc.manifestacao_data = timezone.now()
+                    doc.save(update_fields=['manifestacao_tipo', 'manifestacao_data'])
+                    resultado['ciencia_automatica'] += 1
+                    continue
+                logger.warning('Falha ao manifestar Ciência automática da chave %s: %s', doc.chave_acesso, exc)
+                continue
             except Exception as exc:
                 logger.warning('Falha ao manifestar Ciência automática da chave %s: %s', doc.chave_acesso, exc)
                 continue

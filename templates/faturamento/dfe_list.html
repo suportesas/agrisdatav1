@@ -19,10 +19,10 @@
                   type="button"
                   data-bs-toggle="collapse"
                   data-bs-target="#filterCollapse"
-                  aria-expanded="{% if cnpj_emitente or chave_acesso or tipo or situacao or data_ini or data_fim %}true{% else %}false{% endif %}"
+                  aria-expanded="{% if cnpj_emitente or chave_acesso or request.GET.tipo or situacao or data_ini or data_fim %}true{% else %}false{% endif %}"
                   title="Pesquisar / Filtrar">
               <i class="bi bi-funnel"></i> Filtros
-              {% if cnpj_emitente or chave_acesso or tipo or situacao or data_ini or data_fim %}
+              {% if cnpj_emitente or chave_acesso or request.GET.tipo or situacao or data_ini or data_fim %}
                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary" style="font-size:.6rem;">
                   ●<span class="visually-hidden">filtro ativo</span>
                 </span>
@@ -43,11 +43,11 @@
   {% endif %}
 
   <!-- Filtros (colapsável) -->
-  <div class="collapse {% if cnpj_emitente or chave_acesso or tipo or situacao or data_ini or data_fim %}show{% endif %} mb-4" id="filterCollapse">
+  <div class="collapse {% if cnpj_emitente or chave_acesso or request.GET.tipo or situacao or data_ini or data_fim %}show{% endif %} mb-4" id="filterCollapse">
     <form method="get" id="filterForm" class="filter-bar">
       <div class="filter-field">
-        <label class="form-label form-label-sm mb-0 fw-semibold small">CNPJ do Emitente</label>
-        <input type="text" name="cnpj_emitente" value="{{ cnpj_emitente }}" class="form-control" placeholder="Só números ou formatado">
+        <label class="form-label form-label-sm mb-0 fw-semibold small">Emitente</label>
+        <input type="text" name="cnpj_emitente" value="{{ cnpj_emitente }}" class="form-control" placeholder="CNPJ ou nome do emitente">
       </div>
       <div class="filter-field">
         <label class="form-label form-label-sm mb-0 fw-semibold small">Chave de Acesso</label>
@@ -137,14 +137,40 @@
   </form>
   <div class="d-none align-items-center gap-2 mb-2 p-2 bg-light border rounded-3" id="loteToolbar">
     <span class="fw-semibold small text-muted"><span id="loteCount">0</span> selecionado(s)</span>
-    <button type="submit" form="loteForm" formaction="{% url 'faturamento:dfe_manifestar_lote' %}"
-            class="btn btn-sm btn-secondary" title="Registra Ciência da Operação para os resNFe de terceiros ainda sem manifestação, entre os selecionados">
-      <i class="bi bi-check2-square"></i> Manifestar Ciência
+    <button type="button" id="btnAbrirManifestarLote" class="btn btn-sm btn-secondary"
+            data-bs-toggle="modal" data-bs-target="#manifestarLoteModal"
+            title="Escolha o tipo de manifestação (e justificativa, se aplicável) para cada nota selecionada">
+      <i class="bi bi-check2-square"></i> Manifestar
     </button>
     <button type="submit" form="loteForm" formaction="{% url 'faturamento:dfe_baixar_xml_lote' %}"
             class="btn btn-sm btn-outline-secondary" title="Baixa em .zip os XMLs completos já disponíveis, entre os selecionados">
       <i class="bi bi-file-earmark-zip"></i> Baixar XMLs (.zip)
     </button>
+  </div>
+
+  {{ manifestacao_tipos|json_script:"manifestacao-tipos-json" }}
+  <div class="modal fade" id="manifestarLoteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-check2-square text-secondary me-2"></i>Manifestação em Lote</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 px-3 small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            Escolha o tipo de manifestação para cada nota selecionada. Notas não elegíveis (evento, nota própria ou já manifestada) são ignoradas automaticamente ao registrar.
+          </div>
+          <div id="loteManifestarLista"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" form="loteForm" formaction="{% url 'faturamento:dfe_manifestar_lote' %}" class="btn btn-secondary">
+            <i class="bi bi-check2-square me-1"></i>Registrar na SEFAZ
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
   <div class="card shadow-sm border-0 rounded-4">
     <div class="card-body p-0">
@@ -166,7 +192,7 @@
           <tbody>
             {% for doc in page_obj %}
             <tr>
-              <td class="ps-4"><input type="checkbox" name="ids" form="loteForm" value="{{ doc.pk }}" class="form-check-input row-check"></td>
+              <td class="ps-4"><input type="checkbox" name="ids" form="loteForm" value="{{ doc.pk }}" class="form-check-input row-check" data-nome="{{ doc.nome_emitente|default:'' }}" data-cnpj="{{ doc.cnpj_emitente|default:'' }}" data-chave="{{ doc.chave_acesso|default:'' }}"></td>
               <td>
                 {% if doc.schema == 'resNFe' %}
                   <span class="badge bg-secondary">NF-e</span>
@@ -222,7 +248,7 @@
                 {% endif %}
               </td>
               <td class="text-center">
-                {% if doc.schema == 'resNFe' and doc.cnpj_emitente != cnpj_empresa and not doc.manifestacao_tipo %}
+                {% if doc.schema == 'resNFe' and doc.cnpj_emitente != cnpj_empresa and doc.manifestacao_tipo != 'confirmacao_operacao' and doc.manifestacao_tipo != 'desconhecimento_operacao' and doc.manifestacao_tipo != 'operacao_nao_realizada' %}
                 <button type="button" class="action-icon" data-bs-toggle="modal" data-bs-target="#manifestarModal{{ doc.pk }}" title="Registrar Manifestação MD-e">
                     <i class="bi bi-check2-square"></i>
                 </button>
@@ -343,6 +369,57 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!e.target.classList.contains('manifestar-tipo-select')) return;
     const modalBody = e.target.closest('.modal-body');
     const campo = modalBody && modalBody.querySelector('.manifestar-justificativa');
+    if (campo) {
+      campo.style.display = e.target.value === 'operacao_nao_realizada' ? '' : 'none';
+    }
+  });
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  const tiposJsonEl = document.getElementById('manifestacao-tipos-json');
+  const manifestacaoTipos = tiposJsonEl ? JSON.parse(tiposJsonEl.textContent) : [];
+
+  const btnAbrirLote = document.getElementById('btnAbrirManifestarLote');
+  if (btnAbrirLote) {
+    btnAbrirLote.addEventListener('click', function () {
+      const lista = document.getElementById('loteManifestarLista');
+      const opcoes = manifestacaoTipos.map(function (t) {
+        return `<option value="${t[0]}"${t[0] === 'ciencia_operacao' ? ' selected' : ''}>${escapeHtml(t[1])}</option>`;
+      }).join('');
+      lista.innerHTML = rowChecks.filter(c => c.checked).map(function (c) {
+        const pk = c.value;
+        const nome = escapeHtml(c.dataset.nome || '—');
+        const cnpj = escapeHtml(c.dataset.cnpj || '');
+        const chave = escapeHtml(c.dataset.chave || '');
+        return `
+          <div class="lote-manifestar-row border rounded-3 p-2 mb-2">
+            <div class="small mb-2">
+              <strong>${nome}</strong>${cnpj ? ' (' + cnpj + ')' : ''}<br>
+              <code class="text-muted" style="font-size:.7rem">${chave}</code>
+            </div>
+            <div class="row g-2 align-items-start">
+              <div class="col-sm-6">
+                <select name="tipo_${pk}" form="loteForm" class="form-select form-select-sm lote-tipo-select" required>
+                  ${opcoes}
+                </select>
+              </div>
+              <div class="col-sm-6 lote-justificativa" style="display:none">
+                <textarea name="justificativa_${pk}" form="loteForm" class="form-control form-control-sm" rows="1" placeholder="Justificativa (obrigatória)"></textarea>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    });
+  }
+
+  document.addEventListener('change', function (e) {
+    if (!e.target.classList.contains('lote-tipo-select')) return;
+    const row = e.target.closest('.lote-manifestar-row');
+    const campo = row && row.querySelector('.lote-justificativa');
     if (campo) {
       campo.style.display = e.target.value === 'operacao_nao_realizada' ? '' : 'none';
     }

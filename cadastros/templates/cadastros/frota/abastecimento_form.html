@@ -129,6 +129,20 @@
                 {{ form.fornecedor }}
                 <div class="helper-note">Necessário para gerar Conta a Pagar</div>
               </div>
+              <div class="field col-6">
+                <label class="form-label">Combustível (Produto/Lote em Estoque)</label>
+                {{ form.lote_combustivel }}
+                <select class="form-select select2-ajax" id="produto-combustivel-select"
+                        data-ajax-url="{% url 'produtos:ajax_buscar_produtos' %}"
+                        data-placeholder="Buscar produto de combustível...">
+                  {% if obj.lote_combustivel %}
+                  <option value="produto-atual" selected>{{ obj.lote_combustivel.produto.nome }}</option>
+                  {% endif %}
+                </select>
+                <div class="helper-note" id="saldo-combustivel-info">
+                  {% if obj.lote_combustivel %}Saldo no lote: {{ obj.lote_combustivel.quantidade_atual }} L{% else %}Necessário para gerar baixa automática no estoque{% endif %}
+                </div>
+              </div>
               <div class="field col-12">
                 <label class="form-label">Observações</label>
                 {{ form.observacoes }}
@@ -189,6 +203,35 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="{% static 'js/select2-ajax.js' %}?v=8"></script>
 <script>$(function () { AgrisSelect2.initFromDataAttrs(); });</script>
+<script>
+$(function () {
+  $(document).on('select2:select', '#produto-combustivel-select', function (e) {
+    const produtoId = e.params.data.id;
+    const info = document.getElementById('saldo-combustivel-info');
+    if (!produtoId) return;
+    fetch(`{% url 'frota:lote_produto_data' %}?produto_id=${produtoId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('id_lote_combustivel').value = '';
+          info.textContent = data.error;
+          return;
+        }
+        document.getElementById('id_lote_combustivel').value = data.lote_id || '';
+        if (data.lote_id) {
+          info.textContent = `Saldo no lote: ${data.quantidade_disponivel} ${data.unidade_medida || 'L'}`;
+        } else {
+          info.textContent = 'Nenhum lote com saldo disponível para este produto.';
+        }
+      })
+      .catch(() => { info.textContent = 'Erro ao buscar lote do produto.'; });
+  });
+  $(document).on('select2:clear', '#produto-combustivel-select', function () {
+    document.getElementById('id_lote_combustivel').value = '';
+    document.getElementById('saldo-combustivel-info').textContent = 'Necessário para gerar baixa automática no estoque';
+  });
+});
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   const vehicleSelect = document.getElementById('id_vehicle');

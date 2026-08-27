@@ -55,7 +55,6 @@ urlpatterns = [
     path('abastecimentos/<int:pk>/editar/', views.abastecimento_update, name='abastecimento_update'),
     path('abastecimentos/<int:pk>/excluir/', views.abastecimento_delete, name='abastecimento_delete'),
     path('abastecimentos/<int:pk>/conta-pagar/', views.abastecimento_gerar_conta_pagar, name='abastecimento_gerar_conta_pagar'),
-    path('abastecimentos/<int:pk>/baixa-estoque/', views.abastecimento_gerar_baixa_estoque, name='abastecimento_gerar_baixa_estoque'),
     path('abastecimentos/importar/', views.abastecimento_importar, name='abastecimento_importar'),
     path('abastecimentos/modelo-csv/', views.abastecimento_download_modelo, name='abastecimento_download_modelo'),
     path('api/veiculo-abastecimento-info/', views.api_veiculo_info_abastecimento, name='api_veiculo_info_abastecimento'),

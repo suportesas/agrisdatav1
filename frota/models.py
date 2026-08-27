@@ -494,15 +494,6 @@ class AbastecimentoVeiculo(models.Model):
         'financeiro.ContaPagar', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='abastecimento', verbose_name='Conta a Pagar gerada'
     )
-    lote_combustivel = models.ForeignKey(
-        'estoque.Lote', on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='abastecimentos', verbose_name='Lote de Combustível',
-        help_text='Lote do tanque/estoque de combustível — preencher para gerar baixa automática no estoque'
-    )
-    movimentacao_estoque = models.OneToOneField(
-        'estoque.MovimentacaoEstoque', on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='abastecimento', verbose_name='Movimentação de Estoque gerada'
-    )
     observacoes = models.TextField('Observações', blank=True)
     criado_por = models.ForeignKey(
         'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,

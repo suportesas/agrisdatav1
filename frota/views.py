@@ -7,7 +7,6 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from core.pagination import paginate
 from django.db.models import Sum, Count, Avg, F, DecimalField, ExpressionWrapper
@@ -254,20 +253,6 @@ def abastecimento_list(request):
     })
 
 
-def _gerar_baixa_estoque_automatica(request, obj):
-    """Gera a baixa de estoque do combustível se um lote foi informado e ainda não houver movimentação."""
-    if not obj.lote_combustivel or obj.movimentacao_estoque:
-        return
-    from cadastros.services_frota import criar_baixa_estoque_abastecimento
-    try:
-        criar_baixa_estoque_abastecimento(obj, request.user)
-        messages.success(request, 'Baixa de estoque do combustível gerada com sucesso.')
-    except ValidationError as e:
-        messages.warning(request, f'Abastecimento salvo, mas a baixa de estoque falhou: {"; ".join(e.messages)}')
-    except ValueError as e:
-        messages.warning(request, f'Abastecimento salvo, mas a baixa de estoque falhou: {e}')
-
-
 @login_required
 def abastecimento_create(request):
     if request.method == 'POST':
@@ -278,7 +263,6 @@ def abastecimento_create(request):
             obj.criado_por = request.user
             obj.save()
             messages.success(request, 'Abastecimento registrado com sucesso.')
-            _gerar_baixa_estoque_automatica(request, obj)
             return redirect('frota:abastecimento_detail', pk=obj.pk)
     else:
         form = AbastecimentoVeiculoForm(user=request.user)
@@ -307,7 +291,6 @@ def abastecimento_update(request, pk):
         if form.is_valid():
             form.save()
             messages.success(request, 'Abastecimento atualizado.')
-            _gerar_baixa_estoque_automatica(request, obj)
             return redirect('frota:abastecimento_detail', pk=obj.pk)
     else:
         form = AbastecimentoVeiculoForm(instance=obj, user=request.user)
@@ -344,29 +327,6 @@ def abastecimento_gerar_conta_pagar(request, pk):
         messages.success(request, 'Conta a Pagar gerada com sucesso.')
     except Exception as e:
         messages.error(request, f'Erro ao gerar Conta a Pagar: {e}')
-    return redirect('frota:abastecimento_detail', pk=pk)
-
-
-@login_required
-def abastecimento_gerar_baixa_estoque(request, pk):
-    """Gera a baixa de estoque do combustível para um abastecimento via POST."""
-    obj = get_object_or_404(AbastecimentoVeiculo, pk=pk, empresa=request.user.empresa)
-    if request.method != 'POST':
-        return redirect('frota:abastecimento_detail', pk=pk)
-    if obj.movimentacao_estoque:
-        messages.warning(request, 'Já existe uma baixa de estoque gerada para este abastecimento.')
-        return redirect('frota:abastecimento_detail', pk=pk)
-    if not obj.lote_combustivel:
-        messages.error(request, 'Selecione um lote de combustível antes de gerar a baixa de estoque.')
-        return redirect('frota:abastecimento_update', pk=pk)
-    from cadastros.services_frota import criar_baixa_estoque_abastecimento
-    try:
-        criar_baixa_estoque_abastecimento(obj, request.user)
-        messages.success(request, 'Baixa de estoque gerada com sucesso.')
-    except ValidationError as e:
-        messages.error(request, f'Erro ao gerar baixa de estoque: {"; ".join(e.messages)}')
-    except ValueError as e:
-        messages.error(request, f'Erro ao gerar baixa de estoque: {e}')
     return redirect('frota:abastecimento_detail', pk=pk)
 
 

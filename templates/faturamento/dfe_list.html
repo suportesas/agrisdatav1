@@ -146,6 +146,10 @@
             class="btn btn-sm btn-outline-secondary" title="Baixa em .zip os XMLs completos já disponíveis, entre os selecionados">
       <i class="bi bi-file-earmark-zip"></i> Baixar XMLs (.zip)
     </button>
+    <button type="submit" form="loteForm" formaction="{% url 'faturamento:dfe_baixar_danfe_lote' %}"
+            class="btn btn-sm btn-outline-secondary" title="Baixa em .zip os DANFEs (PDF) já gerados, entre os selecionados">
+      <i class="bi bi-file-earmark-pdf"></i> Baixar DANFEs (.zip)
+    </button>
   </div>
 
   {{ manifestacao_tipos|json_script:"manifestacao-tipos-json" }}

@@ -22,6 +22,18 @@ from lxml import etree
 
 logger = logging.getLogger(__name__)
 
+
+def versionar_url(url: str) -> str:
+    """Anexa um `?v=<timestamp>` na URL — o Supabase Storage não invalida o cache de
+    CDN quando um arquivo é sobrescrito (upsert), então sem isso quem já abriu o PDF
+    antigo continua vendo a versão velha por até 1h mesmo após regenerar."""
+    if not url:
+        return url
+    import time
+    sep = '&' if '?' in url else '?'
+    return f'{url}{sep}v={int(time.time())}'
+
+
 NFE_NS = 'http://www.portalfiscal.inf.br/nfe'
 _NS = {'nfe': NFE_NS}
 
@@ -166,6 +178,7 @@ def montar_dados_danfe(xml_str: str) -> SimpleNamespace | None:
         valor_frete=_dec(_t1(total, 'vFrete')),
         valor_seguro=_dec(_t1(total, 'vSeg')),
         valor_desconto=_dec(_t1(total, 'vDesc')),
+        valor_outras_despesas=_dec(_t1(total, 'vOutro')),
         valor_ipi=_dec(_t1(total, 'vIPI')),
         valor_total=_dec(_t1(total, 'vNF')),
     )
@@ -201,8 +214,8 @@ def montar_dados_danfe(xml_str: str) -> SimpleNamespace | None:
                 vencimento=_parse_dt(_t1(dup, 'dVenc'), only_date=True),
                 valor=_dec(_t1(dup, 'vDup')),
             ))
-
     informacoes_complementares = _t1(inf_adic, 'infCpl') if inf_adic is not None else ''
+    informacoes_fisco = _t1(inf_adic, 'infAdFisco') if inf_adic is not None else ''
 
     return SimpleNamespace(
         ident=ident,
@@ -212,38 +225,58 @@ def montar_dados_danfe(xml_str: str) -> SimpleNamespace | None:
         transportador=transportador,
         duplicatas=duplicatas,
         informacoes_complementares=informacoes_complementares,
+        informacoes_fisco=informacoes_fisco,
     )
 
 
-def _gerar_barcode_svg(chave: str) -> str:
+def _gerar_barcode_data_uri(chave: str) -> str:
+    """Code128 da chave de acesso como PNG embutido (data URI) — xhtml2pdf não tem
+    suporte confiável a SVG inline, mas renderiza <img> com data URI sem problema."""
     if not chave:
         return ''
     try:
+        import base64 as _b64
+
         from barcode import Code128
-        from barcode.writer import SVGWriter
+        from barcode.writer import ImageWriter
         buf = io.BytesIO()
-        Code128(chave, writer=SVGWriter()).write(buf, options={
+        Code128(chave, writer=ImageWriter()).write(buf, options={
             'write_text': False,
-            'module_height': 16.0,
-            'quiet_zone': 2.0,
-            'font_size': 0,
-            'text_distance': 0,
-            'module_width': 0.29,
+            'module_height': 12.0,
+            'quiet_zone': 1.0,
+            'module_width': 0.28,
+            'dpi': 300,
         })
-        svg = buf.getvalue().decode('utf-8')
-        svg = re.sub(r'<[?]xml[^?]*[?]>', '', svg)
-        svg = re.sub(r'<!DOCTYPE[^>]*>', '', svg)
-        wm = re.search(r'width="([\d.]+)mm"', svg)
-        hm = re.search(r'height="([\d.]+)mm"', svg)
-        if wm and hm:
-            w, h = wm.group(1), hm.group(1)
-            svg = svg.replace(
-                f'width="{w}mm" height="{h}mm"',
-                f'viewBox="0 0 {w} {h}" preserveAspectRatio="none" style="width:100%;height:17mm;display:block"',
-            )
-        return svg.strip()
+        return 'data:image/png;base64,' + _b64.b64encode(buf.getvalue()).decode('ascii')
     except Exception:
         return ''
+
+
+def obter_pdf_base64(xml_str: str, doc, config=None) -> str | None:
+    """Retorna o DANFE em base64, priorizando a rota oficial da IntegraNotas
+    (GET /nfe/pdf/{chave} — funciona mesmo pra notas de terceiros, não só as
+    emitidas por esta conta) e caindo pro gerador local (montar_dados_danfe +
+    xhtml2pdf) só se ela não tiver/aceitar essa chave ou não houver token."""
+    if config is not None and getattr(config, 'has_token', False) and doc.chave_acesso:
+        try:
+            from faturamento.services.integranotas import IntegranNotasClient
+
+            client = IntegranNotasClient(config.get_token(), config.ambiente_nfe)
+            resultado = client.buscar_pdf_nfe(doc.chave_acesso)
+            pdf_b64 = resultado.get('pdf')
+            if pdf_b64:
+                return pdf_b64
+        except Exception as exc:
+            logger.info(
+                'IntegraNotas não retornou DANFE pronto pra chave %s (%s) — gerando localmente.',
+                doc.chave_acesso, exc,
+            )
+
+    pdf_bytes = gerar_danfe_pdf(xml_str, doc)
+    if not pdf_bytes:
+        return None
+    import base64
+    return base64.b64encode(pdf_bytes).decode('ascii')
 
 
 def gerar_danfe_pdf(xml_str: str, doc) -> bytes | None:
@@ -265,10 +298,12 @@ def gerar_danfe_pdf(xml_str: str, doc) -> bytes | None:
             'doc': doc,
             'empresa': doc.empresa,
             'dados': dados,
-            'barcode_svg': _gerar_barcode_svg(doc.chave_acesso),
+            'barcode_data_uri': _gerar_barcode_data_uri(doc.chave_acesso),
         })
         buf = io.BytesIO()
-        resultado = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), buf)
+        # encoding='UTF-8' explícito — sem isso o xhtml2pdf às vezes interpreta os bytes
+        # UTF-8 como Latin-1 e acentos/ç saem como mojibake (ex.: "SERVIÇOS" -> "SERVIÃ?OS").
+        resultado = pisa.pisaDocument(io.BytesIO(html.encode('utf-8')), buf, encoding='UTF-8')
         if resultado.err:
             logger.warning('xhtml2pdf falhou ao gerar DANFE da chave %s', doc.chave_acesso)
             return None

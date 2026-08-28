@@ -417,6 +417,30 @@ class IntegranNotasClient:
         resp.raise_for_status()
         return resp.json()
 
+    def buscar_pdf_nfe(self, chave: str) -> dict:
+        """Gera o DANFE (PDF, base64 no campo 'pdf') de uma NF-e a partir da chave.
+
+        Diferente de consultar_nfe(), essa rota (GET /nfe/pdf/{chave}) parece funcionar
+        pra qualquer NF-e autorizada na SEFAZ, não só as emitidas por esta conta —
+        usada pra gerar o DANFE de notas de terceiros recebidas via Distribuição de
+        DF-e (ver faturamento/services/dfe_danfe.py). Levanta IntegranNotasError se a
+        API não tiver/aceitar essa chave.
+        """
+        resp = requests.get(
+            f'{self.base_url}/nfe/pdf/{chave}',
+            headers=self._headers(),
+            timeout=self.TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get('sucesso'):
+            raise IntegranNotasError(
+                data.get('mensagem', 'Erro ao buscar PDF da NF-e'),
+                codigo=data.get('codigo'),
+                erros=data.get('erros', []),
+            )
+        return data
+
     def cancelar_nfe(self, chave: str, justificativa: str) -> dict:
         """Cancel an authorized NF-e. justificativa: 15–255 chars."""
         resp = requests.post(

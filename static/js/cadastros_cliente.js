@@ -257,6 +257,20 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
           // prefer the generic loading modal if present, else the cnpj-specific one
           const loadingModalElem = document.getElementById('loadingModal') || document.getElementById('cnpjLoadingModal');
           const loadingModal = loadingModalElem ? new bootstrap.Modal(loadingModalElem) : null;
+          // Bootstrap ignores hide() while the show() fade transition is still running,
+          // so wait for 'shown.bs.modal' before allowing hide (avoids modal stuck open
+          // when the fetch resolves faster than the fade-in animation).
+          let modalShownPromise = Promise.resolve();
+          if (loadingModal) {
+            modalShownPromise = new Promise(resolve => {
+              loadingModalElem.addEventListener('shown.bs.modal', resolve, {once: true});
+            });
+          }
+          const hideLoadingModal = async () => {
+            if (!loadingModal) return;
+            await modalShownPromise;
+            loadingModal.hide();
+          };
 
           try {
             buscarCNPJBtn.disabled = true;
@@ -274,7 +288,7 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
             });
 
             if (!resp.ok) {
-              if (loadingModal) loadingModal.hide();
+              await hideLoadingModal();
               const json = await resp.json().catch(() => ({}));
               showClientAlert(json.erro || 'Erro ao buscar CNPJ', 'danger');
               return;
@@ -286,19 +300,19 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
               const text = await resp.text();
               try { data = text ? JSON.parse(text) : {}; } catch (jsonErr) {
                 console.error('buscarCNPJ: response not JSON', text);
-                if (loadingModal) loadingModal.hide();
+                await hideLoadingModal();
                 showClientAlert('Resposta inválida do servidor ao buscar CNPJ', 'danger');
                 return;
               }
             } catch (readErr) {
               console.error('buscarCNPJ: failed to read response text', readErr);
-              if (loadingModal) loadingModal.hide();
+              await hideLoadingModal();
               showClientAlert('Erro ao ler resposta do servidor', 'danger');
               return;
             }
 
             if (data && data.sucesso && data.dados) {
-              if (loadingModal) loadingModal.hide();
+              await hideLoadingModal();
               const d = data.dados;
 
               // Keep previous values to allow revert on cancel
@@ -347,7 +361,7 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
 
               // If nothing changed, hide loader, quick message and return
               if (changed.length === 0) {
-                if (loadingModal) loadingModal.hide();
+                await hideLoadingModal();
                 showClientAlert('Nenhuma alteração detectada', 'info');
                 return;
               }
@@ -363,15 +377,15 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
               });
               showClientAlert('✅ Dados preenchidos com sucesso!', 'success');
             } else {
-              if (loadingModal) loadingModal.hide();
+              await hideLoadingModal();
               showClientAlert(data.erro || 'CNPJ não encontrado', 'danger');
             }
           } catch (err) {
             console.error(err);
-            if (loadingModal) loadingModal.hide();
+            await hideLoadingModal();
             showClientAlert('Erro ao buscar CNPJ', 'danger');
           } finally {
-            if (loadingModal) loadingModal.hide();
+            await hideLoadingModal();
             buscarCNPJBtn.disabled = false;
           }
         });

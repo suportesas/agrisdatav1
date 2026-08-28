@@ -406,12 +406,32 @@ def baixar_xml_completo_dfe(doc, config=None) -> bool:
                             doc.chave_acesso, resp_chave.c_stat, resp_chave.x_motivo)
         return False
 
-    url = upload_xml_texto(resp_chave.documentos[0].xml, doc.empresa_id, doc.chave_acesso)
+    xml_completo = resp_chave.documentos[0].xml
+    url = upload_xml_texto(xml_completo, doc.empresa_id, doc.chave_acesso)
     if not url:
         return False
 
     doc.xml_url = url
-    doc.save(update_fields=['xml_url'])
+    update_fields = ['xml_url']
+
+    # DANFE (PDF): tenta a rota oficial da IntegraNotas primeiro, cai pro gerador local
+    # se ela não tiver essa chave (nota de terceiro pode não estar na conta). Best-effort
+    # — uma falha aqui não pode derrubar o download do XML, que é o que efetivamente
+    # libera a manifestação/consulta da nota.
+    try:
+        from faturamento.fiscal_storage import upload_pdf
+        from faturamento.services.dfe_danfe import obter_pdf_base64, versionar_url
+
+        pdf_b64 = obter_pdf_base64(xml_completo, doc, config=config)
+        if pdf_b64:
+            pdf_url = upload_pdf(pdf_b64, doc.empresa_id, 'dfe', f'{doc.chave_acesso}.pdf')
+            if pdf_url:
+                doc.pdf_danfe_url = versionar_url(pdf_url)
+                update_fields.append('pdf_danfe_url')
+    except Exception as exc:
+        logger.warning('Falha ao gerar DANFE (PDF) da chave %s: %s', doc.chave_acesso, exc)
+
+    doc.save(update_fields=update_fields)
     return True
 
 

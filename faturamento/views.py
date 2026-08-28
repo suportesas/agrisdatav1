@@ -3535,6 +3535,63 @@ def dfe_baixar_xml(request, pk):
 
 
 @login_required
+def dfe_baixar_danfe(request, pk):
+    """Baixa o DANFE (PDF) de um resNFe — rota oficial da IntegraNotas com fallback
+    pro gerador local a partir do XML completo (ver dfe_danfe.obter_pdf_base64).
+
+    O PDF já é gerado automaticamente logo após o download do XML completo (ver
+    `baixar_xml_completo_dfe`); se por algum motivo ainda não existir mas o XML já
+    estiver disponível, tenta gerar na hora em vez de só reportar indisponível.
+    """
+    documento = get_object_or_404(DfeRecebido, pk=pk, empresa=_get_empresa(request))
+
+    if not documento.pdf_danfe_url and documento.xml_url:
+        import requests as _requests
+
+        from .fiscal_storage import upload_pdf
+        from .services.dfe_danfe import obter_pdf_base64, versionar_url
+
+        try:
+            resp_xml = _requests.get(documento.xml_url, timeout=30)
+            resp_xml.raise_for_status()
+            config = ConfiguracaoFiscal.objects.filter(empresa=documento.empresa).first()
+            # .content.decode('utf-8') explícito — .text deixa o requests "adivinhar" a
+            # codificação e, sem charset no header do Storage, ele erra pra Latin-1 às
+            # vezes, corrompendo acentos (raiz do bug "SERVIÇOS" -> "SERVIÃ■OS").
+            pdf_b64 = obter_pdf_base64(resp_xml.content.decode('utf-8'), documento, config=config)
+            if pdf_b64:
+                pdf_url = upload_pdf(pdf_b64, documento.empresa_id, 'dfe', f'{documento.chave_acesso}.pdf')
+                if pdf_url:
+                    documento.pdf_danfe_url = versionar_url(pdf_url)
+                    documento.save(update_fields=['pdf_danfe_url'])
+        except Exception as exc:
+            logger.warning('Falha ao gerar DANFE sob demanda da chave %s: %s', documento.chave_acesso, exc)
+
+    if not documento.pdf_danfe_url:
+        messages.warning(request, 'DANFE ainda não disponível — baixe o XML completo primeiro.')
+        return redirect('faturamento:dfe_list')
+
+    import requests
+
+    try:
+        resp = requests.get(documento.pdf_danfe_url, timeout=30)
+        resp.raise_for_status()
+    except Exception as exc:
+        logger.warning('Falha ao baixar DANFE do storage para a chave %s: %s', documento.chave_acesso, exc)
+        messages.error(request, 'Falha ao baixar o arquivo. Tente novamente.')
+        return redirect('faturamento:dfe_list')
+
+    response = HttpResponse(resp.content, content_type='application/pdf')
+    filename = f'DANFE_{documento.chave_acesso or documento.pk}.pdf'
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    # A URL desta view não muda entre regenerações do DANFE — sem isso o navegador
+    # (o visualizador de PDF do Chrome em especial) guarda a resposta em cache e não
+    # busca o PDF atualizado mesmo depois de regenerado no servidor.
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
+
+
+@login_required
 @require_POST
 def dfe_baixar_xml_lote(request):
     """Baixa em um único .zip os XMLs completos já disponíveis dos documentos selecionados.
@@ -3584,6 +3641,60 @@ def dfe_baixar_xml_lote(request):
     buffer.seek(0)
     response = HttpResponse(buffer.getvalue(), content_type='application/zip')
     filename = f'dfe_xmls_{timezone.now():%Y%m%d_%H%M%S}.zip'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+@require_POST
+def dfe_baixar_danfe_lote(request):
+    """Baixa em um único .zip os DANFEs (PDF) já gerados dos documentos selecionados.
+
+    Só inclui documentos com `pdf_danfe_url` preenchido — os ainda sem XML completo
+    (ou cujo DANFE não pôde ser gerado) são ignorados e reportados à parte.
+    """
+    import zipfile
+    from io import BytesIO
+
+    import requests
+
+    empresa = _get_empresa(request)
+    if not empresa:
+        return redirect('dashboard:index')
+
+    ids = request.POST.getlist('ids')
+    if not ids:
+        messages.warning(request, 'Nenhum documento selecionado.')
+        return redirect('faturamento:dfe_list')
+
+    documentos = list(DfeRecebido.objects.filter(empresa=empresa, pk__in=ids).exclude(pdf_danfe_url=''))
+    ignorados = len(ids) - len(documentos)
+
+    if not documentos:
+        messages.warning(
+            request,
+            'Nenhum dos documentos selecionados tem DANFE disponível. '
+            'Registre a manifestação e aguarde a próxima sincronização antes de baixar.',
+        )
+        return redirect('faturamento:dfe_list')
+
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for doc in documentos:
+            try:
+                resp = requests.get(doc.pdf_danfe_url, timeout=30)
+                resp.raise_for_status()
+            except Exception as exc:
+                logger.warning('Falha ao baixar DANFE %s para o zip em lote: %s', doc.chave_acesso, exc)
+                continue
+            zf.writestr(f'DANFE_{doc.chave_acesso or doc.pk}.pdf', resp.content)
+
+    if ignorados:
+        messages.info(request, f'{ignorados} documento(s) selecionado(s) ainda sem DANFE disponível foram ignorados.')
+
+    buffer.seek(0)
+    response = HttpResponse(buffer.getvalue(), content_type='application/zip')
+    filename = f'dfe_danfes_{timezone.now():%Y%m%d_%H%M%S}.zip'
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
 

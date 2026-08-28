@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>DANFE {{ dados.ident.numero }}/{{ dados.ident.serie }}</title>
+<style>
+@page { size: A4 portrait; margin: 8mm; }
+* { margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 7.5pt; color: #000; }
+table { border-collapse: collapse; width: 100%; }
+td { padding: 1px 3px; vertical-align: top; }
+
+/* Tabela única: a borda externa (.bx) é desenhada UMA vez pra toda a largura do
+   documento — evita a linha de descontinuidade que aparece entre tabelas separadas
+   mesmo com margem zero entre elas (cada uma desenharia sua própria borda). Todas
+   as seções são linhas dessa mesma tabela; colunas usam um grid de 100 unidades
+   (1 unidade = 1% de largura) via colspan, permitindo que cada linha agrupe as
+   colunas do jeito que precisar sem depender do layout das linhas vizinhas. */
+.bx { border: 1px solid #000; }
+.dr td { border-right: 1px solid #000; border-top: 1px solid #000; }
+.dr td:last-child { border-right: none; }
+
+.lbl { font-size: 5.5pt; color: #555; text-transform: uppercase; }
+.val  { font-size: 7.5pt;   font-weight: bold; }
+.val2 { font-size: 7pt; }
+.right  { text-align: right; }
+.center { text-align: center; }
+
+.sec-hd {
+  background: #ccc; font-size: 6.5pt; font-weight: bold; text-align: center;
+  text-transform: uppercase; padding: 2px 4px; border-top: 1px solid #000;
+}
+.hdrow { background: #ddd; font-weight: bold; text-align: center; font-size: 5.5pt; padding: 2px; }
+
+.badge-terceiro { text-align: center; font-size: 6.5pt; color: #555; margin-bottom: 3px; }
+.stamp { border: 2px solid #c00; color: #c00; font-size: 18pt; font-weight: bold; text-align: center; padding: 5px; margin-bottom: 5px; }
+
+.canhoto { padding: 3px 4px; margin-bottom: 2px; }
+.canhoto-top { font-size: 6.5pt; line-height: 1.4; }
+.canhoto-bot td { border-top: 1px solid #aaa; padding-top: 4px; font-size: 5.5pt; color: #555; text-transform: uppercase; }
+.dash-sep { border-top: 2px dashed #777; margin: 3px 0; }
+
+.hd-emit  { border-right: 1px solid #000; padding: 5px; }
+.hd-danfe { border-right: 1px solid #000; text-align: center; padding: 5px; }
+.hd-bc    { padding: 4px; }
+
+.emit-name { font-size: 10pt; font-weight: bold; text-transform: uppercase; line-height: 1.2; }
+.emit-addr { font-size: 6pt; margin-top: 3px; line-height: 1.5; color: #222; }
+
+.danfe-ttl { font-size: 15pt; font-weight: 900; }
+.danfe-sub { font-size: 5.5pt; margin: 1px 0 4px; line-height: 1.3; }
+.io-box { display: inline-block; border: 2px solid #000; width: 6.5mm; height: 6.5mm; line-height: 6mm; text-align: center; font-size: 9.5pt; font-weight: 900; }
+.nf-num { font-size: 8.5pt; font-weight: bold; margin-top: 4px; }
+.nf-ser { font-size: 7.5pt; }
+
+.bc-lbl   { font-size: 5.5pt; text-transform: uppercase; text-align: center; font-weight: bold; }
+.bc-chave { font-size: 5.5pt; font-family: 'Courier New', monospace; text-align: center; margin-top: 1px; }
+.bc-consult { font-size: 4.5pt; color: #444; text-align: center; margin-top: 1px; line-height: 1.3; }
+</style>
+</head>
+<body>
+
+<div class="badge-terceiro">DANFE gerado a partir do XML recebido via Distribuição de DF-e — representação não oficial, não substitui o documento do emitente</div>
+
+{% if doc.situacao == '2' %}
+<div class="stamp">CANCELADA</div>
+{% endif %}
+
+<!-- CANHOTO (separado por design — é a tira destacável) -->
+<div class="canhoto bx">
+  <div class="canhoto-top">
+    RECEBEMOS DE <strong>{{ dados.emitente.razao_social|default:"—" }}</strong> OS PRODUTOS E/OU SERVIÇOS CONSTANTES DA NOTA FISCAL ELETRÔNICA INDICADA ABAIXO.<br>
+    <span style="font-size:5pt">EMISSÃO: {{ dados.ident.data_emissao|date:"d/m/Y" }} &nbsp;&nbsp; VALOR TOTAL: R$ {{ dados.totais.valor_total|floatformat:"2g" }} &nbsp;&nbsp; DESTINATÁRIO: {{ empresa.razao_social|default:empresa.nome }}</span>
+  </div>
+  <table class="canhoto-bot"><tr>
+    <td style="width:40%">Data de Recebimento</td>
+    <td style="width:38%">Identificação e Assinatura do Recebedor</td>
+    <td style="width:22%;text-align:right;color:#000;text-transform:none">
+      <div style="font-size:7pt;font-weight:bold">NF-e</div>
+      <div style="font-size:7.5pt;font-weight:bold">Nº {{ dados.ident.numero }}</div>
+      <div style="font-size:6pt">Série {{ dados.ident.serie }}</div>
+    </td>
+  </tr></table>
+</div>
+<div class="dash-sep"></div>
+
+<!-- CORPO DO DANFE — uma única tabela contínua do cabeçalho até dados adicionais -->
+<table class="bx">
+<tr>
+  <td class="hd-emit" colspan="44">
+    <span class="lbl" style="font-style:italic">Identificação do Emitente</span><br>
+    <div class="emit-name">{{ dados.emitente.razao_social|default:"EMITENTE" }}</div>
+    <div class="emit-addr">
+      {{ dados.emitente.endereco }}<br>
+      {% if dados.emitente.bairro %}{{ dados.emitente.bairro }} — {% endif %}{{ dados.emitente.cep|default:"" }}<br>
+      {{ dados.emitente.municipio }} - {{ dados.emitente.uf }}
+      {% if dados.emitente.fone %}<br>Fone: {{ dados.emitente.fone }}{% endif %}
+    </div>
+  </td>
+  <td class="hd-danfe" colspan="18">
+    <div class="danfe-ttl">DANFE</div>
+    <div class="danfe-sub">Documento Auxiliar da<br>Nota Fiscal Eletrônica</div>
+    <div style="font-size:7.5pt;margin:3px 0;line-height:1.7">
+      0-ENTRADA<br>1-SAÍDA <span class="io-box">{{ dados.ident.tipo_operacao|default:"1" }}</span>
+    </div>
+    <div class="nf-num">Nº {{ dados.ident.numero|default:"0" }}</div>
+    <div class="nf-ser">Série {{ dados.ident.serie|default:"0" }}</div>
+  </td>
+  <td class="hd-bc" colspan="38">
+    {% if barcode_data_uri %}
+    <img src="{{ barcode_data_uri }}" style="width:70mm;height:20mm;display:block;margin-bottom:2mm">
+    {% endif %}
+    <div class="bc-lbl">Chave de Acesso</div>
+    <div class="bc-chave">{{ doc.chave_acesso|slice:":4" }} {{ doc.chave_acesso|slice:"4:8" }} {{ doc.chave_acesso|slice:"8:12" }} {{ doc.chave_acesso|slice:"12:16" }} {{ doc.chave_acesso|slice:"16:20" }} {{ doc.chave_acesso|slice:"20:24" }} {{ doc.chave_acesso|slice:"24:28" }} {{ doc.chave_acesso|slice:"28:32" }} {{ doc.chave_acesso|slice:"32:36" }} {{ doc.chave_acesso|slice:"36:40" }} {{ doc.chave_acesso|slice:"40:44" }}</div>
+    <div class="bc-consult">Consulta de autenticidade no portal nacional da NF-e — www.nfe.fazenda.gov.br</div>
+  </td>
+</tr>
+
+<tr class="dr">
+  <td colspan="55"><span class="lbl">Natureza da Operação</span><br><span class="val">{{ dados.ident.natureza_operacao }}</span></td>
+  <td colspan="45">
+    <span class="lbl">Protocolo de Autorização de Uso</span><br>
+    <span class="val">{% if dados.ident.protocolo_autorizacao %}{{ dados.ident.protocolo_autorizacao }}{% if dados.ident.data_protocolo %} - {{ dados.ident.data_protocolo|date:"d/m/Y H:i:s" }}{% endif %}{% else %}—{% endif %}</span>
+  </td>
+</tr>
+
+<tr class="dr">
+  <td colspan="28"><span class="lbl">Inscrição Estadual do Emitente</span><br><span class="val">{{ dados.emitente.ie|default:"—" }}</span></td>
+  <td colspan="36"><span class="lbl">Inscrição Estadual do Subst. Tribut.</span><br><span class="val">—</span></td>
+  <td colspan="36"><span class="lbl">CNPJ / CPF do Emitente</span><br><span class="val">{{ dados.emitente.cnpj|default:"—" }}</span></td>
+</tr>
+
+<tr><td colspan="100" class="sec-hd">Destinatário / Remetente</td></tr>
+<tr class="dr">
+  <td colspan="54"><span class="lbl">Nome / Razão Social</span><br><span class="val">{{ empresa.razao_social|default:empresa.nome|default:"—" }}</span></td>
+  <td colspan="28"><span class="lbl">CNPJ / CPF</span><br><span class="val">{{ empresa.get_cnpj_formatado|default:"—" }}</span></td>
+  <td colspan="18"><span class="lbl">Data da Emissão</span><br><span class="val">{{ dados.ident.data_emissao|date:"d/m/Y" }}</span></td>
+</tr>
+<tr class="dr">
+  <td colspan="82"><span class="lbl">Endereço</span><br><span class="val2">{{ empresa.endereco|default:"—" }}{% if empresa.numero_endereco %}, {{ empresa.numero_endereco }}{% endif %}</span></td>
+  <td colspan="18"><span class="lbl">Data da Saída/Entrada</span><br><span class="val2">{{ dados.ident.data_saida|date:"d/m/Y"|default:"—" }}</span></td>
+</tr>
+<tr class="dr">
+  <td colspan="54"><span class="lbl">Bairro / Distrito</span><br><span class="val2">{{ empresa.bairro|default:"—" }}</span></td>
+  <td colspan="28"><span class="lbl">CEP</span><br><span class="val2">{{ empresa.cep|default:"—" }}</span></td>
+  <td colspan="18"><span class="lbl">Hora da Saída/Entrada</span><br><span class="val2">{{ dados.ident.data_saida|date:"H:i:s"|default:"—" }}</span></td>
+</tr>
+<tr class="dr">
+  <td colspan="54"><span class="lbl">Município</span><br><span class="val2">{{ empresa.cidade|default:"—" }}</span></td>
+  <td colspan="28"><span class="lbl">UF</span><br><span class="val2">{{ empresa.uf|default:"—" }}</span></td>
+  <td colspan="18"><span class="lbl">Inscrição Estadual</span><br><span class="val2">{{ empresa.inscricao_estadual|default:"—" }}</span></td>
+</tr>
+
+{% if dados.duplicatas %}
+<tr><td colspan="100" class="sec-hd">Fatura / Duplicata</td></tr>
+<tr class="dr hdrow">
+  <td colspan="20">Núm.</td><td colspan="40">Vencimento</td><td colspan="40">Valor R$</td>
+</tr>
+{% for dup in dados.duplicatas %}
+<tr class="dr">
+  <td colspan="20">{% if dup.numero %}{{ dup.numero }}{% else %}{{ forloop.counter|stringformat:"03d" }}{% endif %}</td>
+  <td colspan="40">{{ dup.vencimento|date:"d/m/Y" }}</td>
+  <td colspan="40" class="right">{{ dup.valor|floatformat:"2g" }}</td>
+</tr>
+{% endfor %}
+{% endif %}
+
+<tr><td colspan="100" class="sec-hd">Cálculo do Imposto</td></tr>
+<tr class="dr">
+  <td colspan="20"><span class="lbl">Base Cálc. ICMS</span><br><span class="val right">{{ dados.totais.base_calculo_icms|floatformat:"2g" }}</span></td>
+  <td colspan="20"><span class="lbl">Valor do ICMS</span><br><span class="val right">{{ dados.totais.valor_icms|floatformat:"2g" }}</span></td>
+  <td colspan="20"><span class="lbl">Base Cálc. ICMS ST</span><br><span class="val right">0,00</span></td>
+  <td colspan="20"><span class="lbl">Valor ICMS ST</span><br><span class="val right">{{ dados.totais.valor_icms_st|floatformat:"2g" }}</span></td>
+  <td colspan="20"><span class="lbl">V. Total Produtos</span><br><span class="val right">{{ dados.totais.valor_produtos|floatformat:"2g" }}</span></td>
+</tr>
+<tr class="dr">
+  <td colspan="17"><span class="lbl">Valor do Frete</span><br><span class="val right">{{ dados.totais.valor_frete|floatformat:"2g" }}</span></td>
+  <td colspan="17"><span class="lbl">Valor do Seguro</span><br><span class="val right">{{ dados.totais.valor_seguro|floatformat:"2g" }}</span></td>
+  <td colspan="17"><span class="lbl">Desconto</span><br><span class="val right">{{ dados.totais.valor_desconto|floatformat:"2g" }}</span></td>
+  <td colspan="17"><span class="lbl">Outras Despesas</span><br><span class="val right">{{ dados.totais.valor_outras_despesas|floatformat:"2g" }}</span></td>
+  <td colspan="16"><span class="lbl">Valor Total IPI</span><br><span class="val right">{{ dados.totais.valor_ipi|floatformat:"2g" }}</span></td>
+  <td colspan="16" style="background:#eee"><span class="lbl">V. Total da Nota</span><br><span class="val right" style="font-size:11pt">{{ dados.totais.valor_total|floatformat:"2g" }}</span></td>
+</tr>
+
+<tr><td colspan="100" class="sec-hd">Transportador / Volumes Transportados</td></tr>
+<tr class="dr">
+  <td colspan="32"><span class="lbl">Nome / Razão Social</span><br><span class="val2">{{ dados.transportador.nome|default:"—" }}</span></td>
+  <td colspan="14"><span class="lbl">Frete</span><br><span class="val2">{{ dados.transportador.frete_label }}</span></td>
+  <td colspan="14"><span class="lbl">Código ANTT</span><br><span class="val2">{{ dados.transportador.rntc|default:"—" }}</span></td>
+  <td colspan="10"><span class="lbl">Placa</span><br><span class="val2">{{ dados.transportador.placa|default:"—" }}</span></td>
+  <td colspan="6"><span class="lbl">UF</span><br><span class="val2">{{ dados.transportador.veic_uf|default:"—" }}</span></td>
+  <td colspan="24"><span class="lbl">CNPJ / CPF</span><br><span class="val2">{{ dados.transportador.cnpj|default:"—" }}</span></td>
+</tr>
+<tr class="dr">
+  <td colspan="46"><span class="lbl">Endereço</span><br><span class="val2">{{ dados.transportador.endereco|default:"—" }}</span></td>
+  <td colspan="24"><span class="lbl">Município</span><br><span class="val2">{{ dados.transportador.municipio|default:"—" }}</span></td>
+  <td colspan="6"><span class="lbl">UF</span><br><span class="val2">{{ dados.transportador.uf|default:"—" }}</span></td>
+  <td colspan="24"><span class="lbl">Inscrição Estadual</span><br><span class="val2">{{ dados.transportador.ie|default:"—" }}</span></td>
+</tr>
+<tr class="dr">
+  <td colspan="12"><span class="lbl">Quantidade</span><br><span class="val2">{{ dados.transportador.quantidade_volumes|default:"—" }}</span></td>
+  <td colspan="14"><span class="lbl">Espécie</span><br><span class="val2">{{ dados.transportador.especie_volumes|default:"—" }}</span></td>
+  <td colspan="18"><span class="lbl">Marca</span><br><span class="val2">{{ dados.transportador.marca_volumes|default:"—" }}</span></td>
+  <td colspan="18"><span class="lbl">Numeração</span><br><span class="val2">{{ dados.transportador.numeracao_volumes|default:"—" }}</span></td>
+  <td colspan="19"><span class="lbl">Peso Bruto</span><br><span class="val2 right">{{ dados.transportador.peso_bruto_kg|floatformat:"3g"|default:"—" }}</span></td>
+  <td colspan="19"><span class="lbl">Peso Líquido</span><br><span class="val2 right">{{ dados.transportador.peso_liquido_kg|floatformat:"3g"|default:"—" }}</span></td>
+</tr>
+
+<tr><td colspan="100" class="sec-hd">Dados dos Produtos / Serviços</td></tr>
+<tr class="dr hdrow">
+  <td colspan="7">Código</td>
+  <td colspan="28">Descrição</td>
+  <td colspan="7">NCM</td>
+  <td colspan="5">O/CST</td>
+  <td colspan="5">CFOP</td>
+  <td colspan="5">UN</td>
+  <td colspan="8">Quant</td>
+  <td colspan="9">Vl Unit</td>
+  <td colspan="9">Vl Total</td>
+  <td colspan="6">B.Cálc ICMS</td>
+  <td colspan="6">Vl ICMS</td>
+  <td colspan="5">Alíq ICMS</td>
+</tr>
+{% for item in dados.itens %}
+<tr class="dr">
+  <td class="center" colspan="7" style="font-size:6.5pt">{{ item.codigo }}</td>
+  <td colspan="28" style="font-size:6.5pt">{{ item.descricao }}</td>
+  <td class="center" colspan="7" style="font-size:6.5pt">{{ item.ncm|default:"—" }}</td>
+  <td class="center" colspan="5" style="font-size:6.5pt">{{ item.origem_mercadoria|default:"0" }}/{{ item.cst_icms|default:"—" }}</td>
+  <td class="center" colspan="5" style="font-size:6.5pt">{{ item.cfop|default:"—" }}</td>
+  <td class="center" colspan="5" style="font-size:6.5pt">{{ item.unidade }}</td>
+  <td class="right" colspan="8" style="font-size:6.5pt">{{ item.quantidade|floatformat:"4g" }}</td>
+  <td class="right" colspan="9" style="font-size:6.5pt">{{ item.valor_unitario|floatformat:"4g" }}</td>
+  <td class="right" colspan="9" style="font-size:6.5pt">{{ item.valor_total|floatformat:"2g" }}</td>
+  <td class="right" colspan="6" style="font-size:6.5pt">{{ item.icms_base_calculo|floatformat:"2g" }}</td>
+  <td class="right" colspan="6" style="font-size:6.5pt">{{ item.valor_icms|floatformat:"2g" }}</td>
+  <td class="center" colspan="5" style="font-size:6.5pt">{{ item.aliquota_icms|floatformat:"0g" }}%</td>
+</tr>
+{% endfor %}
+
+<tr><td colspan="100" class="sec-hd">Dados Adicionais</td></tr>
+<tr class="dr">
+  <td colspan="70">
+    <span class="lbl">Informações Complementares</span>
+    <div style="font-size:8pt;min-height:30mm;padding-top:4px;line-height:1.6">{{ dados.informacoes_complementares|linebreaksbr }}</div>
+  </td>
+  <td colspan="30">
+    <span class="lbl">Reservado ao Fisco</span>
+    <div style="font-size:8pt;min-height:30mm;padding-top:4px;line-height:1.6">{{ dados.informacoes_fisco|linebreaksbr }}</div>
+  </td>
+</tr>
+</table>
+
+</body>
+</html>

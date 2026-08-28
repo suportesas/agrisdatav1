@@ -195,6 +195,7 @@ class DfeRecebido(models.Model):
     situacao = models.CharField('Situação', max_length=1, choices=SITUACAO_CHOICES, blank=True)
 
     xml_url = models.URLField('URL do XML Completo', blank=True)
+    pdf_danfe_url = models.URLField('URL do DANFE (PDF)', blank=True)
 
     manifestacao_tipo = models.CharField('Tipo de Manifestação', max_length=40, blank=True, choices=MANIFESTACAO_TIPO_CHOICES)
     manifestacao_protocolo = models.CharField('Protocolo da Manifestação', max_length=50, blank=True)

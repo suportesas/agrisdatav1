@@ -248,7 +248,12 @@ window.addEventListener('error', function(e){ try { console.error('Uncaught erro
           const form = buscarCNPJBtn.closest('form');
           if (!form) { console.error('buscarCNPJ: enclosing form not found'); showClientAlert('Erro interno: formulário não encontrado', 'danger'); return; }
           const cnpjInput = form.querySelector('input[name="cnpj_cpf"]');
-          if (!cnpjInput) { console.error('buscarCNPJ: cnpj_cpf input not found in form'); showClientAlert('Campo CNPJ/CPF não encontrado', 'danger'); return; }
+          if (!cnpjInput) {
+            // id="buscarCNPJ" é reutilizado em outras telas (transportadora, empresa, etc.)
+            // que têm sua própria busca de CNPJ com outro nome de campo — não é um erro aqui.
+            console.debug('buscarCNPJ: cnpj_cpf input not found in form, ignoring (not a cliente/fornecedor/fazenda form)');
+            return;
+          }
           const cnpj = (cnpjInput.value || '').replace(/\D/g, '');
           if (cnpj.length === 11) { showClientAlert('Busca automática disponível apenas para CNPJ. Não há API pública para consultar dados de CPF.', 'warning'); return; }
           if (cnpj.length !== 14) { showClientAlert('Digite um CNPJ válido (14 dígitos)', 'danger'); return; }

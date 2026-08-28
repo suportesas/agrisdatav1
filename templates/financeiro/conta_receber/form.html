@@ -229,7 +229,7 @@
           if (data.erro) { alert('BCB: ' + data.erro); return; }
           const c = data.cotacoes[moeda];
           if (!c) { alert('Cotação não disponível para ' + moeda); return; }
-          elTaxa.value = c.venda.toFixed(4);
+          elTaxa.value = c.compra.toFixed(4);
           recalcularBrl();
           infoCotacao.style.display = 'block';
           infoCotacao.innerHTML =

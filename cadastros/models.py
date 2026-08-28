@@ -4194,8 +4194,9 @@ class Fornecedor(models.Model):
         ('REAL', 'Lucro Real'),
         ('MEI', 'Microempreendedor Individual'),
         ('PRODUTOR_RURAL', 'Produtor Rural (Pessoa Física)'),
+        ('OUTROS', 'Outros'),
     ]
-    regime_tributario = models.CharField('Regime Tributário', max_length=20, choices=REGIME_TRIBUTARIO, default='PRODUTOR_RURAL')
+    regime_tributario = models.CharField('Regime Tributário', max_length=20, choices=REGIME_TRIBUTARIO, default='PRODUTOR_RURAL', blank=True)
 
     # Portal readiness
     portal_enabled = models.BooleanField('Portal Habilitado', default=False)

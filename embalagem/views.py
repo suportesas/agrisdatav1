@@ -1156,7 +1156,7 @@ def romaneio_gerar_pedido(request, pk):
             resultado_bcb = buscar_cotacoes(moedas=[moeda])
             cotacao = resultado_bcb['cotacoes'].get(moeda)
             if cotacao:
-                taxa_cambio = cotacao['venda']
+                taxa_cambio = cotacao['compra']
         except Exception:
             pass
         if taxa_cambio is None:

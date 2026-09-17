@@ -23,6 +23,11 @@ class ProdutorForm(forms.ModelForm):
             'status',
             'observacoes',
             'portal_enabled',
+            'grower_nome',
+            'grower_ggn',
+            'packhouse_nome',
+            'packhouse_ggn',
+            'packhouse_endereco',
         ]
         widgets = {
             'razao_social': forms.TextInput(attrs={'class': 'form-control'}),
@@ -41,6 +46,11 @@ class ProdutorForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': 'form-select'}),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'portal_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'grower_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'grower_ggn': forms.TextInput(attrs={'class': 'form-control'}),
+            'packhouse_nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'packhouse_ggn': forms.TextInput(attrs={'class': 'form-control'}),
+            'packhouse_endereco': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):

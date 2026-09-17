@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from cadastros.models import NCM, Cliente, Transportadora
+from cadastros.models import NCM, Cliente, Produtor, Transportadora
 from empresas.models import Empresa
 from estoque.models import Armazem, Lote, MovimentacaoEstoque
 from produtos.models import Categoria, Produto, UnidadeMedida
@@ -409,3 +409,137 @@ class CargaFreteTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse('faturamento:cte_create'), response.url)
         self.assertIn(f'romaneio_venda={rom_a.pk}', response.url)
+
+
+class OrdemParceiroTestCase(TestCase):
+    """Pallets recebidos já prontos de um produtor parceiro (rastreabilidade e GGN
+    gerados por ele) — não passam pela embalagem interna, só são registrados."""
+
+    def setUp(self):
+        User = get_user_model()
+        patcher = patch('empresas.signals.call_command')
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
+        self.empresa = Empresa.objects.create(nome='Empresa Parceiro Teste')
+        self.user = User.objects.create(username='operador_parceiro', empresa=self.empresa, is_superuser=True)
+
+        self.armazem = Armazem.objects.create(empresa=self.empresa, nome='Packing House', tipo='PACKING')
+        self.unidade = UnidadeMedida.objects.create(nome='Quilograma', sigla='KG', tipo='PESO', empresa=self.empresa)
+        self.categoria = Categoria.objects.create(empresa=self.empresa, codigo='CAT-01', nome='Frutas')
+        self.ncm = NCM.objects.create(codigo='08071900', nome='Melão')
+        self.produto = Produto.objects.create(
+            nome='Melão in natura',
+            categoria=self.categoria,
+            unidade_medida=self.unidade,
+            unidade_compra=self.unidade,
+            unidade_venda=self.unidade,
+            ncm=self.ncm,
+        )
+        self.tipo_embalagem = TipoEmbalagem.objects.create(
+            empresa=self.empresa,
+            produto=self.produto,
+            nome='Caixa 10kg Melão',
+            peso_liquido_cx=Decimal('10.000'),
+            peso_bruto_cx=Decimal('10.500'),
+            caixas_por_pallet=10,
+        )
+        self.produtor = Produtor.objects.create(
+            empresa=self.empresa,
+            razao_social='Parceiro Teste LTDA',
+            cnpj_cpf='12345678000199',
+            grower_nome='Fazenda Parceiro',
+            grower_ggn='4049999999999',
+            packhouse_nome='Packhouse Parceiro',
+            packhouse_ggn='4049888888888',
+            packhouse_endereco='Rod Teste km 1, Teste-CE',
+        )
+        self.client.force_login(self.user)
+
+    def _criar_ordem(self):
+        url = reverse('embalagem:ordem_parceiro_create')
+        response = self.client.post(url, {
+            'produtor_parceiro': self.produtor.pk,
+            'data': '2026-08-25',
+            'tipos_embalagem': [self.tipo_embalagem.pk],
+            'produto': self.produto.pk,
+            'armazem_destino': self.armazem.pk,
+        })
+        self.assertEqual(response.status_code, 302)
+        return OrdemEmbalagem.objects.get(empresa=self.empresa, produtor_parceiro=self.produtor)
+
+    def test_cria_ordem_parceiro_com_lote_placeholder(self):
+        ordem = self._criar_ordem()
+        self.assertIsNotNone(ordem.lote_origem_id)
+        self.assertEqual(ordem.lote_origem.quantidade_atual, Decimal('0'))
+        self.assertEqual(ordem.quantidade_entrada_kg, Decimal('0'))
+        self.assertEqual(list(ordem.tipos_embalagem.all()), [self.tipo_embalagem])
+
+    def test_adiciona_pallet_manual_usa_codigo_pronto_do_parceiro(self):
+        ordem = self._criar_ordem()
+
+        add_url = reverse('embalagem:ordem_parceiro_adicionar_pallet', args=[ordem.pk])
+        response = self.client.post(add_url, {
+            'tipo_embalagem': self.tipo_embalagem.pk,
+            'n_pallets': 1,
+            'codigo_producao_externo': '1234567890',
+            'quantidade_caixas': 10,
+            'peso_bruto_kg': '105.000',
+            'peso_liquido_kg': '100.000',
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(len(data['pallets']), 1)
+
+        pallet = PalletEmbalado.objects.get(pk=data['pallets'][0]['pallet_pk'])
+        self.assertEqual(pallet.status, 'DISPONIVEL')
+        # Não calcula pelo talhão/cultura interno — usa o código que já veio do parceiro.
+        self.assertEqual(pallet.codigo_producao, '1234567890')
+
+    def test_adiciona_varios_pallets_de_uma_vez_com_mesmo_codigo(self):
+        """PPWR é um código por lote/dia de produção (calendário juliano), não um
+        serial único por pallet — o parceiro pode mandar o mesmo código pra vários
+        pallets do mesmo tipo."""
+        ordem = self._criar_ordem()
+
+        add_url = reverse('embalagem:ordem_parceiro_adicionar_pallet', args=[ordem.pk])
+        response = self.client.post(add_url, {
+            'tipo_embalagem': self.tipo_embalagem.pk,
+            'n_pallets': 3,
+            'codigo_producao_externo': '1234567890',
+            'quantidade_caixas': 10,
+            'peso_bruto_kg': '105.000',
+            'peso_liquido_kg': '100.000',
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data['pallets']), 3)
+
+        pallets = PalletEmbalado.objects.filter(ordem_embalagem=ordem).order_by('numero_sequencial')
+        self.assertEqual(pallets.count(), 3)
+        self.assertEqual(list(pallets.values_list('numero_sequencial', flat=True)), [1, 2, 3])
+        # Códigos internos de pallet (codigo_pallet) são únicos, mas o de rastreabilidade repete.
+        self.assertEqual(len(set(pallets.values_list('codigo_pallet', flat=True))), 3)
+        self.assertTrue(all(p.codigo_producao == '1234567890' for p in pallets))
+
+    def test_etiqueta_de_pallet_parceiro_gera_pdf_sem_erro(self):
+        ordem = self._criar_ordem()
+        pallet = PalletEmbalado.objects.create(
+            empresa=self.empresa,
+            codigo_pallet=PalletEmbalado._gerar_codigo(self.empresa, ordem.data),
+            ordem_embalagem=ordem,
+            tipo_embalagem=self.tipo_embalagem,
+            numero_sequencial=1,
+            quantidade_caixas=10,
+            peso_bruto_kg=Decimal('105.000'),
+            peso_liquido_kg=Decimal('100.000'),
+            codigo_producao_externo='1234567890',
+            armazem=self.armazem,
+            status='DISPONIVEL',
+            estoque_baixado=True,
+        )
+        response = self.client.get(reverse('embalagem:pallet_etiqueta_caixa_pdf', args=[pallet.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertGreater(len(response.content), 1000)

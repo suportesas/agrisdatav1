@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Nova Ordem de Produtor Parceiro{% endblock %}
+{% block page_title %}Ordens de Embalagem{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 900px">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-truck"></i></span>
+        <h2>Nova Ordem de Produtor Parceiro</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-primary border-0 mb-4">
+    <strong><i class="bi bi-lightbulb me-1"></i>O que é isso?</strong><br>
+    Use esta ordem quando os pallets já chegam <em>prontos</em> de um produtor parceiro — ele já fez a
+    colheita, embalagem e gerou a rastreabilidade (PPWR) e o GGN na fazenda/packhouse dele. Aqui você só
+    registra os pallets recebidos; o restante do processo (romaneio de venda, booking, venda) segue igual
+    ao de uma ordem interna.
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-person-vcard"></i></span>
+        <span class="title">Produtor Parceiro</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-8">
+            <label class="form-label">Produtor Parceiro <span class="req">*</span></label>
+            {{ form.produtor_parceiro }}
+            {% if form.produtor_parceiro.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produtor_parceiro.errors|striptags }}</div>{% endif %}
+            <div class="helper-note">
+              Não encontrou o produtor? <a href="{% url 'cadastros:produtor_create' %}" target="_blank">Cadastre um novo</a>
+              (informe lá o GGN de Grower e Packhouse dele).
+            </div>
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Data <span class="req">*</span></label>
+            {{ form.data }}
+            {% if form.data.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.data.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Produto Recebido <span class="req">*</span></label>
+            {{ form.produto }}
+            {% if form.produto.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.produto.errors|striptags }}</div>{% endif %}
+            {% if form.produto.help_text %}<div class="helper-note">{{ form.produto.help_text }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Tipos de Embalagem Permitidos <span class="req">*</span></label>
+            <div class="d-flex flex-wrap gap-3">
+              {% for checkbox in form.tipos_embalagem %}
+              <div class="form-check">
+                {{ checkbox.tag }}
+                <label class="form-check-label" for="{{ checkbox.id_for_label }}">{{ checkbox.choice_label }}</label>
+              </div>
+              {% endfor %}
+            </div>
+            {% if form.tipos_embalagem.help_text %}<div class="helper-note">{{ form.tipos_embalagem.help_text }}</div>{% endif %}
+            {% if form.tipos_embalagem.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.tipos_embalagem.errors|striptags }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm blue"><i class="bi bi-geo-alt"></i></span>
+        <span class="title">Destino</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Armazém Destino <span class="req">*</span></label>
+            {{ form.armazem_destino }}
+            {% if form.armazem_destino.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.armazem_destino.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Local de Estocagem</label>
+            {{ form.local_destino }}
+          </div>
+          <div class="field col-12">
+            <label class="form-label">Observações</label>
+            {{ form.observacoes }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'embalagem:ordem_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Criar Ordem</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -88,7 +88,7 @@ class FazendaForm(forms.ModelForm):
             'empresa',  # ✅ ADICIONADO
             'nome', 'nome_fantasia', 'tipo_pessoa',
             'cnpj_cpf', 'inscricao_estadual', 'inscricao_municipal',
-            'eori', 'regime_tributario',
+            'eori', 'ggn_numero', 'usar_como_supplier_etiqueta', 'regime_tributario',
             'area_total', 'area_agricultavel',
             'telefone', 'email', 'website',
             'latitude', 'longitude',
@@ -120,6 +120,11 @@ class FazendaForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'Código EORI para exportação'
             }),
+            'ggn_numero': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número GGN (GLOBALG.A.P.)'
+            }),
+            'usar_como_supplier_etiqueta': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'regime_tributario': forms.Select(attrs={'class': 'form-select'}),
             'area_total': forms.NumberInput(attrs={
                 'class': 'form-control',
@@ -549,7 +554,7 @@ class ClienteForm(forms.ModelForm):
             'inscricao_estadual', 'inscricao_municipal', 'inscricao_suframa', 'eori', 'regime_tributario',
             'contribuinte_icms', 'indicador_ie',
             'contato_principal_nome', 'contato_principal_telefone', 'contato_principal_email',
-            'pais', 'codigo_pais', 'moeda_padrao', 'porto_destino',
+            'pais', 'codigo_pais', 'moeda_padrao', 'porto_destino', 'ppwr_responsavel',
             'limite_credito', 'prazo_pagamento', 'prazo_pagamento_padrao', 'forma_pagamento_padrao', 'desconto_padrao',
             'vendedor_responsavel', 'observacoes_comerciais',
             'acesso_portal', 'usuario_vinculado'
@@ -581,6 +586,10 @@ class ClienteForm(forms.ModelForm):
             'vendedor_responsavel': forms.Select(attrs={'class': 'form-select'}),
             'porto_destino': forms.Select(attrs={'class': 'form-select'}),
             'moeda_padrao': forms.Select(attrs={'class': 'form-select'}),
+            'ppwr_responsavel': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Nome e endereço da entidade responsável pela embalagem (PPWR) no país deste importador',
+            }),
             'observacoes_comerciais': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'acesso_portal': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'usuario_vinculado': forms.HiddenInput()  # MUDADO: HiddenInput ao invés de Select
@@ -1559,8 +1568,8 @@ class CulturaForm(forms.ModelForm):
     class Meta:
         model = Cultura
         fields = [
-            'nome', 'nome_cientifico', 'tipo', 'variedade', 'codigo_interno',
-            'ciclo_cultivo', 'dias_colheita', 
+            'nome', 'nome_cientifico', 'tipo', 'variedade', 'codigo_interno', 'nome_multilingue',
+            'ciclo_cultivo', 'dias_colheita',
             'espacamento_linhas', 'espacamento_plantas', 'densidade_plantio',
             'temperatura_ideal_min', 'temperatura_ideal_max', 'necessidade_agua',
             'unidade_medida', 'produtividade_esperada', 'preco_medio', 'mercado_destino',
@@ -1587,6 +1596,10 @@ class CulturaForm(forms.ModelForm):
             'codigo_interno': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Código interno'
+            }),
+            'nome_multilingue': forms.Textarea(attrs={
+                'class': 'form-control', 'rows': 3,
+                'placeholder': 'Ex: Wassermelonen - Watermelon - Pastèque - Sandías - ... - Melancia',
             }),
             'ciclo_cultivo': forms.Select(attrs={'class': 'form-select'}),
             'dias_colheita': forms.NumberInput(attrs={

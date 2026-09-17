@@ -15,6 +15,12 @@
         <button class="btn btn-outline-success btn-sm"><i class="bi bi-receipt"></i> Gerar ContaPagar</button>
       </form>
       {% endif %}
+      {% if not obj.movimentacao_estoque and obj.lote_combustivel %}
+      <form method="post" action="{% url 'frota:abastecimento_gerar_baixa_estoque' obj.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-outline-success btn-sm"><i class="bi bi-box-arrow-down"></i> Gerar Baixa de Estoque</button>
+      </form>
+      {% endif %}
       <form method="post" action="{% url 'frota:abastecimento_delete' obj.pk %}" class="d-inline"
             onsubmit="return confirm('Excluir este abastecimento?')">
         {% csrf_token %}
@@ -109,6 +115,20 @@
           {% elif not obj.fornecedor %}
           <div class="alert alert-secondary py-2 mb-0 small">
             <i class="bi bi-info-circle"></i> Informe um fornecedor para gerar Conta a Pagar.
+          </div>
+          {% endif %}
+          {% if obj.movimentacao_estoque %}
+          <div class="alert alert-success py-2 mb-0 mt-2 small">
+            <i class="bi bi-check-circle"></i> Baixa de estoque gerada — {{ obj.movimentacao_estoque.numero }}
+            ({{ obj.lote_combustivel.produto.nome }})
+          </div>
+          {% elif obj.lote_combustivel %}
+          <div class="alert alert-warning py-2 mb-0 mt-2 small">
+            <i class="bi bi-exclamation-triangle"></i> Lote de combustível selecionado, mas a baixa ainda não foi gerada.
+          </div>
+          {% else %}
+          <div class="alert alert-secondary py-2 mb-0 mt-2 small">
+            <i class="bi bi-info-circle"></i> Informe um lote de combustível para gerar baixa de estoque.
           </div>
           {% endif %}
           <hr class="my-3">

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 15mm 12mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; color: #000; }
+
+  .header { border-bottom: 2pt solid #000; padding-bottom: 4mm; margin-bottom: 4mm; }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .empresa-nome { font-size: 13pt; font-weight: bold; text-transform: uppercase; }
+  .doc-titulo { font-size: 11pt; font-weight: bold; text-align: right; }
+  .doc-num { font-size: 9pt; color: #555; text-align: right; }
+
+  .section-title {
+    font-size: 10pt; font-weight: bold; text-transform: uppercase;
+    background: #222; color: #fff; padding: 2mm 3mm; margin: 5mm 0 2mm 0;
+  }
+  .section-note { font-size: 7.5pt; color: #666; margin-bottom: 2mm; }
+
+  .info-grid { display: flex; flex-wrap: wrap; gap: 5mm; margin-bottom: 2mm; }
+  .info-box { border: 0.5pt solid #aaa; padding: 2mm 3mm; flex: 1; min-width: 40mm; }
+  .info-label { font-size: 7pt; color: #666; text-transform: uppercase; letter-spacing: 0.3px; }
+  .info-value { font-size: 9pt; font-weight: bold; }
+
+  .trace-box { display: flex; gap: 5mm; margin: 3mm 0; }
+  .trace-code { flex: 1; border: 1pt solid #000; padding: 3mm; text-align: center; }
+  .trace-code .label { font-size: 7.5pt; text-transform: uppercase; color: #555; }
+  .trace-code .code { font-size: 14pt; font-weight: bold; letter-spacing: 1px; }
+
+  table.mat { width: 100%; border-collapse: collapse; margin-bottom: 3mm; }
+  table.mat th { background: #eee; font-size: 7.5pt; padding: 2mm 1.5mm; text-align: left; border-bottom: 1pt solid #000; }
+  table.mat td { padding: 1.5mm; font-size: 8pt; border-bottom: 0.3pt solid #ddd; }
+  table.mat tr:nth-child(even) td { background: #f7f7f7; }
+
+  .code-key { border: 0.5pt solid #aaa; padding: 3mm; font-size: 8pt; margin-top: 3mm; }
+  .code-key table { width: 100%; border-collapse: collapse; }
+  .code-key td { padding: 1mm 2mm; vertical-align: top; }
+
+  .footer { font-size: 6.5pt; color: #888; text-align: center; border-top: 0.3pt solid #ccc; padding-top: 2mm; margin-top: 6mm; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="empresa-nome">{{ empresa.nome }}</div>
+      {% if empresa.cnpj %}<div style="font-size:8pt;color:#555">CNPJ: {{ empresa.cnpj }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="doc-titulo">PACKAGING TRACEABILITY &amp; PPWR REPORT</div>
+      <div class="doc-num">{{ romaneio.numero }} &middot; {% now "d/m/Y H:i" %}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">Shipment Identification</div>
+<div class="info-grid">
+  <div class="info-box">
+    <div class="info-label">Importer / Customer</div>
+    <div class="info-value">{{ romaneio.cliente.razao_social }}</div>
+  </div>
+  {% if romaneio.invoice_exportacao %}
+  <div class="info-box">
+    <div class="info-label">Invoice</div>
+    <div class="info-value">{{ romaneio.invoice_exportacao.numero|default:"Draft" }}</div>
+  </div>
+  {% endif %}
+  <div class="info-box">
+    <div class="info-label">Shipment Date</div>
+    <div class="info-value">{{ romaneio.data|date:"d/m/Y" }}</div>
+  </div>
+</div>
+{% if romaneio.booking %}
+<div class="info-grid">
+  <div class="info-box">
+    <div class="info-label">Booking</div>
+    <div class="info-value">{{ romaneio.booking.numero }}</div>
+  </div>
+  {% if romaneio.container %}
+  <div class="info-box">
+    <div class="info-label">Container No.</div>
+    <div class="info-value">{{ romaneio.container.numero_container }}</div>
+  </div>
+  <div class="info-box">
+    <div class="info-label">Seal No.</div>
+    <div class="info-value">{{ romaneio.container.lacre_armador|default:"—" }}</div>
+  </div>
+  {% endif %}
+  {% if romaneio.booking.solicitacao.navio %}
+  <div class="info-box">
+    <div class="info-label">Vessel</div>
+    <div class="info-value">{{ romaneio.booking.solicitacao.navio.nome }}</div>
+  </div>
+  {% endif %}
+  {% if romaneio.booking.rota_navio %}
+  <div class="info-box">
+    <div class="info-label">Voyage</div>
+    <div class="info-value">{{ romaneio.booking.rota_navio }}</div>
+  </div>
+  {% endif %}
+  {% if romaneio.booking.porto_destino %}
+  <div class="info-box">
+    <div class="info-label">Port of Destination</div>
+    <div class="info-value">{{ romaneio.booking.porto_destino.nome }}</div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+<div class="info-grid">
+  {% if commodities %}
+  <div class="info-box">
+    <div class="info-label">Commodity</div>
+    <div class="info-value">{{ commodities }}</div>
+  </div>
+  {% endif %}
+  {% if variedades %}
+  <div class="info-box">
+    <div class="info-label">Variety</div>
+    <div class="info-value">{{ variedades }}</div>
+  </div>
+  {% endif %}
+  <div class="info-box">
+    <div class="info-label">Pallets</div>
+    <div class="info-value">{{ romaneio.total_pallets }}</div>
+  </div>
+  <div class="info-box">
+    <div class="info-label">Quantity (boxes)</div>
+    <div class="info-value">{{ romaneio.total_caixas }}</div>
+  </div>
+</div>
+
+<div class="trace-box">
+  <div class="trace-code">
+    <div class="label">Traceability — Transport (Pallet)</div>
+    <div class="code">{{ romaneio.rastreabilidade_transporte }}</div>
+  </div>
+  <div class="trace-code">
+    <div class="label">Traceability — Sales Packaging</div>
+    <div class="code">{{ romaneio.rastreabilidade_venda }}</div>
+  </div>
+</div>
+
+<div class="section-title">Transport Package Traceability (Packaging group set)</div>
+<div class="section-note">The following records identify the packaging materials associated with the transport package traceability ID for this shipment.</div>
+<table class="mat">
+  <thead>
+    <tr>
+      <th style="width:22%">Traceability ID</th>
+      <th>Packaging Material Reference</th>
+      <th style="width:20%">Packaging Type</th>
+      <th style="width:26%">Supplier Name</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in materiais_tp %}
+    <tr>
+      <td>{{ romaneio.rastreabilidade_transporte }}</td>
+      <td>{{ item.material.nome }}</td>
+      <td>{{ item.material.get_tipo_display }}</td>
+      <td>{{ item.material.fornecedor.nome }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" style="text-align:center;color:#888">No transport packaging materials recorded.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="section-title">Sales Package Traceability</div>
+<div class="section-note">Sales packaging is the material applied directly to the product (e.g. sticker/label), identified by the traceability ID below.</div>
+<table class="mat">
+  <thead>
+    <tr>
+      <th style="width:22%">Traceability ID</th>
+      <th>Sales Package Material</th>
+      <th style="width:36%">Supplier / Manufacturer</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in materiais_sp %}
+    <tr>
+      <td>{{ romaneio.rastreabilidade_venda }}</td>
+      <td>{{ item.material.nome }}</td>
+      <td>{{ item.material.fornecedor.nome }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3" style="text-align:center;color:#888">No sales packaging materials recorded.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="section-title">Supplier Legend — This Shipment</div>
+<table class="mat">
+  <thead>
+    <tr>
+      <th style="width:30%">Supplier Name</th>
+      <th>Packaging Material</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for f in fornecedores %}
+    <tr>
+      <td>{{ f.fornecedor.nome }}</td>
+      <td>{{ f.materiais|join:", " }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="2" style="text-align:center;color:#888">No suppliers recorded.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="code-key">
+  <strong>Traceability Code Key (Code Breakdown)</strong>
+  <table>
+    <tr>
+      <td style="width:30%"><strong>[TP|SP]-[YYYY][WW][NNNN]</strong></td>
+      <td>TP or SP [Prefix] - [YYYY] Shipment Year - [WW] ISO Week - [NNNN] Sequential ID (resets every ISO week)</td>
+    </tr>
+    <tr>
+      <td><strong>TP</strong></td>
+      <td>Transport Package Traceability — identifies the transport packaging group for the shipment.</td>
+    </tr>
+    <tr>
+      <td><strong>SP</strong></td>
+      <td>Sales Package Traceability — identifies the sales packaging applied directly to the product.</td>
+    </tr>
+  </table>
+</div>
+
+<div class="footer">
+  Document generated on {% now "d/m/Y H:i" %} &middot; {{ romaneio.numero }} &middot; {{ empresa.nome }}
+</div>
+
+</body>
+</html>

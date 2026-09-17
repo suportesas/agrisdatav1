@@ -2,7 +2,32 @@ document.addEventListener('DOMContentLoaded', function () {
   const cfg = (window._cadastros_funcionario_config || {});
   const modalNovaFuncaoElement = document.getElementById('modalNovaFuncao');
   const modalNovaFuncao = new bootstrap.Modal(modalNovaFuncaoElement);
-  const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+  const loadingModalElement = document.getElementById('loadingModal');
+  const loadingModal = new bootstrap.Modal(loadingModalElement);
+
+  // Bootstrap ignores hide() while the show() fade transition is still running, so a
+  // fetch that resolves faster than the fade-in animation leaves the modal stuck open.
+  // showLoadingModal() returns a promise that only resolves once the modal has fully
+  // finished opening; hideLoadingModal() awaits it before calling hide().
+  function showLoadingModal(text) {
+    if (text) document.getElementById('loadingText').textContent = text;
+    const shownPromise = new Promise(resolve => {
+      loadingModalElement.addEventListener('shown.bs.modal', resolve, { once: true });
+    });
+    loadingModal.show();
+    return shownPromise;
+  }
+  async function hideLoadingModal(shownPromise) {
+    if (shownPromise) await shownPromise;
+    loadingModal.hide();
+  }
+  function hideModalAndWait(modalInstance, modalElement) {
+    return new Promise(resolve => {
+      if (!modalElement.classList.contains('show')) { resolve(); return; }
+      modalElement.addEventListener('hidden.bs.modal', resolve, { once: true });
+      modalInstance.hide();
+    });
+  }
   const selectFuncao = document.getElementById('id_funcao');
   const inputSalario = document.getElementById('id_salario');
 
@@ -32,7 +57,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function syncQuickFuncaoFields() {
     toggleWrapper(grauInsalubridadeWrapper, !!(possuiInsalubridadeInput && possuiInsalubridadeInput.checked), grauInsalubridadeInput);
-    toggleWrapper(percentualPericulosidadeWrapper, !!(possuiPericulosidadeInput && possuiPericulosidadeInput.checked), percentualPericulosidadeInput);
+    // percentual_periculosidade is a required model field (default 30, blank=False) — unlike
+    // grau_insalubridade/validade_laudo it must not be cleared when hidden, or the server
+    // rejects the submission with "campo obrigatório" on a field the user can't even see.
+    toggleWrapper(percentualPericulosidadeWrapper, !!(possuiPericulosidadeInput && possuiPericulosidadeInput.checked), null);
     toggleWrapper(laudoWrapper, !!(requerLaudoInput && requerLaudoInput.checked), validadeLaudoInput);
   }
 
@@ -164,14 +192,18 @@ document.addEventListener('DOMContentLoaded', function () {
       const btn = btnSalvarFuncao;
       btn.disabled = true;
 
+      // Capture the form data before hiding the modal: the modal's 'hidden.bs.modal'
+      // handler calls form.reset(), and now that hiding is properly awaited, that reset
+      // would otherwise run before we read the fields, wiping everything (e.g. "nome")
+      // and making every submission fail required-field validation.
+      const csrfToken = (form.querySelector('input[name="csrfmiddlewaretoken"]') || {}).value || '';
+      const formData = new FormData(form);
+
+      let loadingShownPromise;
       try {
         console.log('Submitting nova funcao via AJAX to', cfg.funcao_create_url);
-        document.getElementById('loadingText').textContent = 'Salvando função...';
-        modalNovaFuncao.hide();
-        loadingModal.show();
-
-        const csrfToken = (form.querySelector('input[name="csrfmiddlewaretoken"]') || {}).value || '';
-        const formData = new FormData(form);
+        await hideModalAndWait(modalNovaFuncao, modalNovaFuncaoElement);
+        loadingShownPromise = showLoadingModal('Salvando função...');
 
         const response = await fetch(cfg.funcao_create_url || '/cadastros/funcoes/criar-ajax/', {
           method: 'POST',
@@ -204,7 +236,8 @@ document.addEventListener('DOMContentLoaded', function () {
           form.reset();
           clearFuncaoModalErrors(form);
           modalNovaFuncao.hide();
-          alert('✅ ' + data.mensagem);
+          if (typeof showToast === 'function') showToast(data.mensagem, 'success');
+          else alert('✅ ' + data.mensagem);
         } else {
           showFieldErrors(form, (data && data.erros) || {});
           modalNovaFuncao.show();
@@ -216,17 +249,20 @@ document.addEventListener('DOMContentLoaded', function () {
           showFieldErrors(form, error.data.erros);
           modalNovaFuncao.show();
         } else if (error && error.text) {
-          alert('❌ Erro ao salvar função: resposta inesperada do servidor. Verifique se está logado.');
+          if (typeof showToast === 'function') showToast('Erro ao salvar função: resposta inesperada do servidor. Verifique se está logado.', 'danger');
+          else alert('❌ Erro ao salvar função: resposta inesperada do servidor. Verifique se está logado.');
           modalNovaFuncao.show();
         } else if (error && (error.status === 401 || error.status === 403)) {
-          alert('❌ Não autorizado. Faça login novamente.');
+          if (typeof showToast === 'function') showToast('Não autorizado. Faça login novamente.', 'danger');
+          else alert('❌ Não autorizado. Faça login novamente.');
           modalNovaFuncao.show();
         } else {
-          alert('❌ Erro ao salvar função');
+          if (typeof showToast === 'function') showToast('Erro ao salvar função', 'danger');
+          else alert('❌ Erro ao salvar função');
           modalNovaFuncao.show();
         }
       } finally {
-        loadingModal.hide();
+        await hideLoadingModal(loadingShownPromise);
         btn.disabled = false;
       }
     });
@@ -244,8 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       if (cep.length !== 8) { alert('Digite um CEP válido'); return; }
 
-      document.getElementById('loadingText').textContent = 'Buscando CEP...';
-      loadingModal.show();
+      const loadingShownPromise = showLoadingModal('Buscando CEP...');
 
       try {
         const response = await fetch(cfg.buscar_cep_url || '/cadastros/buscar-cep/', {
@@ -259,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         const data = await response.json();
-        loadingModal.hide();
+        await hideLoadingModal(loadingShownPromise);
 
         if (data.sucesso) {
           const d = data.dados || {};
@@ -276,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function () {
           alert('❌ CEP não encontrado');
         }
       } catch (e) {
-        loadingModal.hide();
+        await hideLoadingModal(loadingShownPromise);
         alert('❌ Erro ao buscar CEP');
       }
     });

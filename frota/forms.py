@@ -174,7 +174,7 @@ class AbastecimentoVeiculoForm(forms.ModelForm):
         fields = [
             'vehicle', 'motorista', 'data', 'tipo_combustivel',
             'litros', 'preco_por_litro', 'km_odometro', 'horimetro',
-            'tanque_cheio', 'local_abastecimento', 'fornecedor', 'observacoes',
+            'tanque_cheio', 'local_abastecimento', 'fornecedor', 'lote_combustivel', 'observacoes',
         ]
         widgets = {
             'vehicle': Select2AjaxWidget(ajax_url=reverse_lazy('frota:ajax_buscar_veiculos'), placeholder='Buscar veículo...'),
@@ -188,21 +188,24 @@ class AbastecimentoVeiculoForm(forms.ModelForm):
             'tanque_cheio': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'local_abastecimento': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nome do posto / local'}),
             'fornecedor': Select2AjaxWidget(ajax_url=reverse_lazy('cadastros:ajax_buscar_fornecedores'), placeholder='Buscar fornecedor...'),
+            'lote_combustivel': forms.HiddenInput(),
             'observacoes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        for f in ['motorista', 'km_odometro', 'horimetro', 'local_abastecimento', 'fornecedor', 'observacoes']:
+        for f in ['motorista', 'km_odometro', 'horimetro', 'local_abastecimento', 'fornecedor', 'lote_combustivel', 'observacoes']:
             self.fields[f].required = False
         if self.user and self.user.empresa:
             emp = self.user.empresa
             from .models import Motorista
             from cadastros.models import Fornecedor
+            from estoque.models import Lote
             self.fields['vehicle'].queryset = Vehicle.objects.filter(empresa=emp, ativo=True).order_by('descricao', 'modelo')
             self.fields['motorista'].queryset = Motorista.objects.filter(empresa=emp, ativo=True).order_by('nome')
             self.fields['fornecedor'].queryset = Fornecedor.objects.filter(empresa=emp, ativa=True).order_by('nome_fantasia', 'nome')
+            self.fields['lote_combustivel'].queryset = Lote.objects.filter(empresa=emp)
 
 
 class ManutencaoVeiculoForm(forms.ModelForm):

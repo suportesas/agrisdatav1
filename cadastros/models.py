@@ -191,6 +191,13 @@ class Fazenda(models.Model):
         help_text='Número de certificação GLOBALG.A.P. da propriedade, usado na rastreabilidade do Packing List.'
     )
 
+    usar_como_supplier_etiqueta = models.BooleanField(
+        'Usar como Supplier na etiqueta de caixa',
+        default=False,
+        help_text='Marque para usar esta fazenda como o Supplier (nome + GGN) impresso na '
+                   'etiqueta de caixa. No máximo uma marcada por empresa.'
+    )
+
     regime_tributario = models.CharField(
         'Regime Tributário',
         max_length=20,
@@ -342,7 +349,17 @@ class Fazenda(models.Model):
                     )
             except Empresa.DoesNotExist:
                 pass  # Se empresa não existe, deixa passar
-    
+
+        # Garante no máximo 1 fazenda marcada como Supplier da etiqueta por empresa
+        if self.usar_como_supplier_etiqueta and self.empresa_id:
+            qs = Fazenda.objects.filter(empresa_id=self.empresa_id, usar_como_supplier_etiqueta=True)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError({
+                    'usar_como_supplier_etiqueta': 'Já existe uma fazenda marcada como Supplier para esta empresa.'
+                })
+
     def get_cnpj_cpf_formatado(self):
         """Retorna CNPJ/CPF formatado"""
         import re
@@ -1045,6 +1062,12 @@ class Cliente(models.Model):
     incoterm_padrao = models.CharField('Incoterm', max_length=20, blank=True, null=True)
     idioma_preferido = models.CharField('Idioma Preferido', max_length=20, blank=True, null=True)
     certificacoes_exigidas = models.TextField('Certificações Exigidas', blank=True, null=True)
+    ppwr_responsavel = models.TextField(
+        'Responsável PPWR (Nome e Endereço)',
+        blank=True, null=True,
+        help_text='Nome e endereço da entidade responsável pela embalagem no país deste importador, '
+                   'conforme o Regulamento de Embalagens da UE (PPWR). Impresso na etiqueta de caixa quando preenchido.',
+    )
 
 
     # Contato principal (simplificado)
@@ -1468,6 +1491,16 @@ class Produtor(models.Model):
     data_cadastro = models.DateTimeField('Data de Cadastro', auto_now_add=True)
     data_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
 
+    # Rastreabilidade PPWR — usados quando este produtor entrega pallets já
+    # prontos (rastreabilidade e GGN gerados por ele, na fazenda/packhouse
+    # dele) para a empresa apenas revender. Fixos por produtor: não variam
+    # pallet a pallet, diferente do código de rastreabilidade de cada pallet.
+    grower_nome = models.CharField('Nome do Grower', max_length=200, blank=True)
+    grower_ggn = models.CharField('GGN do Grower', max_length=30, blank=True)
+    packhouse_nome = models.CharField('Nome do Packhouse', max_length=200, blank=True)
+    packhouse_ggn = models.CharField('GGN do Packhouse', max_length=30, blank=True)
+    packhouse_endereco = models.CharField('Endereço do Packhouse', max_length=250, blank=True)
+
     class Meta:
         verbose_name = 'Produtor'
         verbose_name_plural = 'Produtores'
@@ -1769,14 +1802,22 @@ class Cultura(models.Model):
         blank=True,
         help_text='Ex: Amarelo, Pele de Sapo, Gália'
     )
-    
+
     codigo_interno = models.CharField(
         'Código Interno',
         max_length=20,
         blank=True,
         help_text='Código de identificação interno'
     )
-    
+
+    nome_multilingue = models.TextField(
+        'Nome da Cultura (Multi-idioma)',
+        blank=True,
+        help_text='Nome da cultura traduzido, como impresso na etiqueta de caixa (GLOBALG.A.P.). '
+                   'Ex: "Wassermelonen - Watermelon - Pastèque - Sandías - ... - Melancia". '
+                   'Cadastrado uma vez aqui, vale para todos os Tipos de Embalagem dessa cultura.',
+    )
+
     # Características de plantio
     ciclo_cultivo = models.CharField(
         'Ciclo de Cultivo',
@@ -4153,8 +4194,9 @@ class Fornecedor(models.Model):
         ('REAL', 'Lucro Real'),
         ('MEI', 'Microempreendedor Individual'),
         ('PRODUTOR_RURAL', 'Produtor Rural (Pessoa Física)'),
+        ('OUTROS', 'Outros'),
     ]
-    regime_tributario = models.CharField('Regime Tributário', max_length=20, choices=REGIME_TRIBUTARIO, default='PRODUTOR_RURAL')
+    regime_tributario = models.CharField('Regime Tributário', max_length=20, choices=REGIME_TRIBUTARIO, default='PRODUTOR_RURAL', blank=True)
 
     # Portal readiness
     portal_enabled = models.BooleanField('Portal Habilitado', default=False)

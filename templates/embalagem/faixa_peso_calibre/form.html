@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}{% if obj %}Editar{% else %}Nova{% endif %} Faixa de Peso por Calibre{% endblock %}
+{% block page_title %}Faixas de Peso por Calibre{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 700px">
+  <div class="form-header">
+    <div class="form-header-top">
+      <div class="form-header-title">
+        <span class="icon-badge"><i class="bi bi-rulers"></i></span>
+        <h2>{{ title }}</h2>
+      </div>
+      <div class="form-header-actions">
+        <a href="{% url 'embalagem:faixa_peso_calibre_list' %}" class="btn btn-ghost">
+          <i class="bi bi-arrow-left"></i> Voltar
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show" role="alert">
+    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="form-section">
+      <div class="form-section-header">
+        <span class="icon-badge sm"><i class="bi bi-tag"></i></span>
+        <span class="title">Identificação</span>
+      </div>
+      <div class="form-section-body">
+        <div class="form-grid">
+          <div class="field col-6">
+            <label class="form-label">Cultura <span class="req">*</span></label>
+            {{ form.cultura }}
+            {% if form.cultura.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.cultura.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-6">
+            <label class="form-label">Peso do Carton (kg) <span class="req">*</span></label>
+            {{ form.peso_carton }}
+            <div class="helper-note">Peso líquido da caixa. Ex: 10 ou 13.</div>
+            {% if form.peso_carton.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_carton.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Calibre (Count) <span class="req">*</span></label>
+            {{ form.calibre }}
+            {% if form.calibre.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.calibre.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Peso Mínimo do Fruto (kg) <span class="req">*</span></label>
+            {{ form.peso_minimo }}
+            {% if form.peso_minimo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_minimo.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-4">
+            <label class="form-label">Peso Máximo do Fruto (kg) <span class="req">*</span></label>
+            {{ form.peso_maximo }}
+            {% if form.peso_maximo.errors %}<div class="error-msg"><i class="bi bi-exclamation-circle"></i> {{ form.peso_maximo.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="field col-12">
+            <div class="helper-note">Impresso na etiqueta de caixa como "Count [calibre] / [mínimo] - [máximo]". Ex: Count 8 / 1,70 - 1,75.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-body">
+        <div class="switch-row">
+          <label class="switch">
+            {{ form.ativo }}
+            <span class="slider"></span>
+          </label>
+          <label class="switch-label" for="{{ form.ativo.id_for_label }}">Ativo</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-footer-bar">
+      <a href="{% url 'embalagem:faixa_peso_calibre_list' %}" class="btn btn-outline">Cancelar</a>
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -105,7 +105,14 @@ class Armazem(models.Model):
         related_name='armazens',
         verbose_name='Fazenda'
     )
-    
+
+    ggn_numero = models.CharField(
+        'Número GGN (GLOBALG.A.P.)',
+        max_length=20,
+        blank=True,
+        help_text='Número de certificação GLOBALG.A.P. do armazém/packhouse, usado na rastreabilidade da etiqueta de caixa.'
+    )
+
     # Responsável
     responsavel = models.ForeignKey(
         'rh.Funcionario',
@@ -555,6 +562,17 @@ class Lote(models.Model):
         related_name='lotes_fornecidos',
         verbose_name='Fornecedor'
     )
+
+    lote_producao = models.ForeignKey(
+        'operacoes_campo.LoteProducao',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lotes_estoque',
+        verbose_name='Lote de Produção (Colheita)',
+        help_text='Lote de produção de campo que originou este lote de estoque, quando aplicável. '
+                   'Usado para rastreabilidade (Grower/GGN) nas etiquetas de caixa.'
+    )
     
     nota_fiscal = models.CharField(
         'Nota Fiscal',
@@ -763,6 +781,7 @@ class MovimentacaoEstoque(models.Model):
         ('RECONTRATACAO', 'Recontratação'),
         ('REMESSA_FATURAMENTO', 'Remessa para Faturamento Posterior'),
         ('CANCELAMENTO_REMESSA', 'Cancelamento de Remessa'),
+        ('ABASTECIMENTO', 'Abastecimento de Veículo'),
     ]
     origem = models.CharField(
         'Origem',
@@ -779,11 +798,13 @@ class MovimentacaoEstoque(models.Model):
         blank=True,
         null=True
     )
-    local_origem = models.CharField(
-        'Local de Origem',
-        max_length=100,
+    local_origem = models.ForeignKey(
+        'LocalEstocagem',
+        on_delete=models.SET_NULL,
+        null=True,
         blank=True,
-        null=True
+        related_name='movimentacoes_origem',
+        verbose_name='Local de Origem'
     )
     numero = models.CharField(
         'Número',

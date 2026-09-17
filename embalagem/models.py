@@ -66,6 +66,13 @@ class TipoEmbalagem(models.Model):
         blank=True,
         help_text='Código de rastreamento específico da empresa. Ex: GLO-MEL-05',
     )
+    classe_categoria = models.CharField(
+        'Classe / Categoria (Class/Cat.)',
+        max_length=10,
+        blank=True,
+        default='I',
+        help_text='Classificação comercial impressa nas etiquetas. Ex: I, II, Extra',
+    )
     ativo = models.BooleanField('Ativo', default=True)
 
     class Meta:
@@ -124,6 +131,109 @@ class TipoEmbalagem(models.Model):
     @property
     def peso_bruto_pallet(self):
         return (self.peso_bruto_cx * self.caixas_por_pallet) + self.peso_pallet_vazio
+
+    @property
+    def identidade_ian(self):
+        """Tupla que identifica a família do produto para fins de código IAN —
+        confirmado com a fazenda que o IAN não muda por calibre (tipo_calibre)
+        nem por peso da caixa (peso_liquido_cx), só por cultura/variedade/marca.
+        Não usa `produto` porque no catálogo cada peso de caixa é um Produto
+        diferente (ex: "Melão Amarelo 10 Kg" x "Melão Amarelo 13 Kg").
+        """
+        return (self.cultura_id, self.variedade, self.marca)
+
+
+class TipoEmbalagemCliente(models.Model):
+    """Código IAN (Article Number) atribuído por um cliente à família de um produto
+    (cultura + variedade + marca) — cada retailer tem seu próprio catálogo de artigos.
+    Não é vinculado a um TipoEmbalagem específico porque o IAN não muda entre variantes
+    de calibre/peso de caixa do mesmo produto (confirmado com a fazenda)."""
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='ians_tipo_embalagem', verbose_name='Empresa',
+    )
+    cultura = models.ForeignKey(
+        'cadastros.Cultura', on_delete=models.PROTECT,
+        related_name='ians_cliente', verbose_name='Cultura',
+    )
+    variedade = models.CharField('Variedade', max_length=100, blank=True)
+    marca = models.CharField('Marca', max_length=100, blank=True)
+    cliente = models.ForeignKey(
+        'cadastros.Cliente', on_delete=models.PROTECT,
+        related_name='ians_tipo_embalagem', verbose_name='Cliente',
+    )
+    codigo_ian = models.CharField(
+        'Código IAN', max_length=20,
+        help_text='Código do artigo (IAN) atribuído por este cliente, impresso na etiqueta de caixa. Ex: 80575',
+    )
+    codigo_key = models.CharField(
+        'Código "Key"', max_length=30, blank=True,
+        help_text='Prefixo fixo atribuído por este cliente, impresso antes do código de produção na linha '
+                   '"Key" da etiqueta de caixa. Ex: 120',
+    )
+    codigo_referencia = models.CharField(
+        'Código de Referência ("Size-span & count")', max_length=30, blank=True,
+        help_text='Código fixo atribuído por este cliente, impresso junto com a faixa de peso/calibre sob '
+                   '"Size-span & count" na etiqueta de caixa. Ex: GR007198BBR999824',
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Código IAN por Cliente'
+        verbose_name_plural = 'Códigos IAN por Cliente'
+        unique_together = [('cultura', 'variedade', 'marca', 'cliente')]
+        ordering = ['cliente__razao_social']
+
+    def __str__(self):
+        return f'{self.descricao_produto} — {self.cliente}: {self.codigo_ian}'
+
+    @property
+    def identidade_ian(self):
+        return (self.cultura_id, self.variedade, self.marca)
+
+    @property
+    def descricao_produto(self):
+        partes = [self.cultura.nome]
+        if self.variedade:
+            partes.append(self.variedade)
+        if self.marca:
+            partes.append(self.marca)
+        return ' '.join(partes)
+
+
+class FaixaPesoCalibre(models.Model):
+    """Faixa de peso do fruto individual por calibre ("Count"), usada para calcular
+    o texto impresso na etiqueta de caixa sob "Size-span & count" (ex: "Count 8 /
+    1,70 - 1,75"). Varia por cultura e pelo peso do carton (10kg, 13kg etc)."""
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='faixas_peso_calibre', verbose_name='Empresa',
+    )
+    cultura = models.ForeignKey(
+        'cadastros.Cultura', on_delete=models.PROTECT,
+        related_name='faixas_peso_calibre', verbose_name='Cultura',
+    )
+    peso_carton = models.DecimalField(
+        'Peso do Carton (kg)', max_digits=10, decimal_places=3,
+        help_text='Peso líquido da caixa. Ex: 10 ou 13',
+    )
+    calibre = models.PositiveIntegerField(
+        'Calibre (Count)', help_text='Número do calibre/contagem de frutos por caixa. Ex: 8',
+    )
+    peso_minimo = models.DecimalField('Peso Mínimo do Fruto (kg)', max_digits=5, decimal_places=2)
+    peso_maximo = models.DecimalField('Peso Máximo do Fruto (kg)', max_digits=5, decimal_places=2)
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Faixa de Peso por Calibre'
+        verbose_name_plural = 'Faixas de Peso por Calibre'
+        unique_together = [('empresa', 'cultura', 'peso_carton', 'calibre')]
+        ordering = ['cultura__nome', 'peso_carton', 'calibre']
+
+    def __str__(self):
+        return f'{self.cultura} — Carton {self.peso_carton}kg / Count {self.calibre}: {self.peso_minimo}-{self.peso_maximo}kg'
 
 
 # ──────────────────────────── OrdemEmbalagem ───────────────────────────────
@@ -190,6 +300,17 @@ class OrdemEmbalagem(models.Model):
         null=True,
         blank=True,
         help_text='Lote de produção de campo que deu origem a esta ordem (RF-110)',
+    )
+    produtor_parceiro = models.ForeignKey(
+        'cadastros.Produtor',
+        on_delete=models.PROTECT,
+        related_name='ordens_embalagem_parceiro',
+        verbose_name='Produtor Parceiro',
+        null=True,
+        blank=True,
+        help_text='Preenchido quando os pallets desta ordem já chegam prontos de um produtor '
+                   'parceiro (rastreabilidade e GGN gerados por ele) — nesse caso não há '
+                   'embalagem interna, só o registro dos pallets recebidos.',
     )
     capacidade_caixas_pallet = models.PositiveIntegerField(
         'Capacidade do Pallet (caixas)',
@@ -258,6 +379,76 @@ class OrdemEmbalagem(models.Model):
             return 0
         return int(self.lote_origem.quantidade_atual / lp)
 
+    def lote_producao_efetivo(self):
+        """Lote de produção (colheita) desta ordem — direto na campo `lote_producao`
+        da própria ordem (legado, setado só pela recepção automática do packing) ou,
+        preferencialmente, através do vínculo cadastrado no Lote de origem
+        (`estoque.Lote.lote_producao`), que é a fonte de verdade quando o lote de
+        estoque é reaproveitado em mais de uma ordem de embalagem."""
+        if self.lote_origem_id and self.lote_origem.lote_producao_id:
+            return self.lote_origem.lote_producao
+        return self.lote_producao
+
+
+# ──────────────────────────── MaterialEmbalagem ────────────────────────────
+
+class MaterialEmbalagem(models.Model):
+    """Classifica um produtos.Produto (categoria de Embalagens do catálogo da empresa)
+    como material de transporte (TP) ou de venda (SP) para compor a rastreabilidade
+    PPWR do romaneio. Nome e fornecedor vêm do próprio Produto — não duplicados aqui."""
+
+    TIPO = [
+        ('TRANSPORTE', 'Transport Package (TP)'),
+        ('VENDA', 'Sales Package (SP)'),
+    ]
+
+    empresa = models.ForeignKey(
+        'empresas.Empresa',
+        on_delete=models.CASCADE,
+        related_name='materiais_embalagem',
+        verbose_name='Empresa',
+    )
+    produto = models.ForeignKey(
+        'produtos.Produto',
+        on_delete=models.PROTECT,
+        related_name='materiais_embalagem',
+        verbose_name='Produto',
+    )
+    tipo = models.CharField('Tipo', max_length=20, choices=TIPO, default='TRANSPORTE')
+    codigo_reciclagem = models.CharField(
+        'Código de Reciclagem',
+        max_length=10,
+        blank=True,
+        help_text='Ex: 20 PAP (papelão ondulado) — impresso na etiqueta de caixa junto ao aviso PPWR.'
+    )
+    ativo = models.BooleanField('Ativo', default=True)
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Material de Embalagem'
+        verbose_name_plural = 'Materiais de Embalagem'
+        ordering = ['tipo', 'produto__nome']
+        unique_together = [('empresa', 'produto')]
+
+    def __str__(self):
+        return self.produto.nome
+
+    @property
+    def nome(self):
+        return self.produto.nome
+
+    @property
+    def fornecedor(self):
+        """Fornecedor preferencial cadastrado em Produto > Fornecedores (ProdutoFornecedor).
+        Cai para fornecedor_padrao (raramente preenchido, não exposto no form de Produto)
+        só como último recurso."""
+        pf = self.produto.fornecedores_relacionados.filter(ativo=True).order_by(
+            '-fornecedor_preferencial', 'fornecedor__nome'
+        ).select_related('fornecedor').first()
+        if pf:
+            return pf.fornecedor
+        return self.produto.fornecedor_padrao
+
 
 # ──────────────────────────── PalletEmbalado ───────────────────────────────
 
@@ -317,6 +508,13 @@ class PalletEmbalado(models.Model):
     )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='DISPONIVEL')
     etiqueta_gerada = models.BooleanField('Etiqueta Gerada', default=False)
+    codigo_producao_externo = models.CharField(
+        'Código de Rastreabilidade (Parceiro)',
+        max_length=20,
+        blank=True,
+        help_text='Código de rastreabilidade de produção já gerado pelo produtor parceiro '
+                   '(preenchido só quando a ordem de embalagem é de um produtor parceiro).',
+    )
     criado_em = models.DateTimeField('Criado em', auto_now_add=True)
 
     class Meta:
@@ -351,6 +549,41 @@ class PalletEmbalado(models.Model):
         """Retorna True se o total de caixas divergir da capacidade esperada da ordem."""
         cap = self.ordem_embalagem.capacidade_caixas_pallet
         return cap and self.quantidade_caixas != cap
+
+    @property
+    def codigo_producao(self):
+        """Código de rastreabilidade de produção (etiqueta de caixa PPWR), 10 dígitos:
+        1 Produto (Empresa.codigo_produtor_rastreio) + 4 Talhão (Talhao.codigo) +
+        2 Cultura (Cultura.codigo_interno) + 3 Calendário Juliano (data_embalagem).
+        Retorna None se lote_producao (direto ou herdado — ver lote_producao_efetivo)
+        ou algum dos códigos não estiver disponível/no formato certo.
+
+        Quando a ordem é de um produtor parceiro (`OrdemEmbalagem.produtor_parceiro`), o
+        código já vem pronto do parceiro — retorna `codigo_producao_externo` direto, sem
+        calcular nada.
+        """
+        if self.ordem_embalagem.produtor_parceiro_id:
+            return self.codigo_producao_externo or None
+        lp = self.ordem_embalagem.lote_producao_efetivo()
+        if not lp or not lp.talhao_id or not lp.cultura_id:
+            return None
+        prod = (self.empresa.codigo_produtor_rastreio or '').strip()
+        talhao = (lp.talhao.codigo or '').strip()
+        cultura = (lp.cultura.codigo_interno or '').strip()
+        if not (len(prod) == 1 and prod.isdigit()
+                and len(talhao) == 4 and talhao.isdigit()
+                and len(cultura) == 2 and cultura.isdigit()):
+            return None
+        juliano = f'{self.data_embalagem.timetuple().tm_yday:03d}'
+        return f'{prod}{talhao}{cultura}{juliano}'
+
+    @property
+    def codigo_chave_semana(self):
+        """Segundo valor da linha "Key" da etiqueta de caixa: L{semana ISO} - {dia da semana ISO,
+        1=segunda...7=domingo}, calculado a partir de data_embalagem — mesmo critério usado na
+        planilha de referência do cliente (=CONCAT("L ";NÚMSEMANA(HOJE());" - ";DIA.DA.SEMANA(HOJE();2)))."""
+        ano, semana, dia_iso = self.data_embalagem.isocalendar()
+        return f'L {semana} - {dia_iso}'
 
     @classmethod
     def _gerar_codigo(cls, empresa, data=None, safra=None):
@@ -665,6 +898,14 @@ class RomaneioVenda(models.Model):
     )
     status = models.CharField('Status', max_length=20, choices=STATUS, default='RASCUNHO')
     observacoes = models.TextField('Observações', blank=True)
+    rastreabilidade_transporte = models.CharField(
+        'Rastreabilidade TP', max_length=20, unique=True, blank=True, null=True,
+        help_text='Código de rastreabilidade da embalagem de transporte (PPWR), gerado na confirmação.',
+    )
+    rastreabilidade_venda = models.CharField(
+        'Rastreabilidade SP', max_length=20, unique=True, blank=True, null=True,
+        help_text='Código de rastreabilidade da embalagem de venda (PPWR), gerado na confirmação.',
+    )
     invoice_exportacao = models.OneToOneField(
         'faturamento.InvoiceExportacao',
         on_delete=models.SET_NULL,
@@ -721,6 +962,33 @@ class RomaneioVenda(models.Model):
         else:
             seq = 1
         return f'RV-{ano}-{seq:04d}'
+
+    @classmethod
+    def _gerar_rastreabilidade(cls, empresa, data=None):
+        """Gera o par de códigos de rastreabilidade PPWR (TP/SP) do romaneio.
+
+        Formato: {TP|SP}-{ANO}{SEMANA ISO:02d}{SEQ:04d}. O sequencial é
+        compartilhado entre TP e SP do mesmo romaneio e reseta sempre que a
+        semana ISO muda (não reseta por ano isoladamente).
+        """
+        data = data or timezone.now().date()
+        ano, semana, _ = data.isocalendar()
+        periodo = f'{ano}{semana:02d}'
+        # select_for_update evita race condition em confirmações simultâneas
+        ultimo = (cls.objects
+                  .select_for_update()
+                  .filter(empresa=empresa, rastreabilidade_transporte__startswith=f'TP-{periodo}')
+                  .order_by('rastreabilidade_transporte')
+                  .last())
+        if ultimo and ultimo.rastreabilidade_transporte:
+            try:
+                seq = int(ultimo.rastreabilidade_transporte[-4:]) + 1
+            except (ValueError, IndexError):
+                seq = 1
+        else:
+            seq = 1
+        sufixo = f'{periodo}{seq:04d}'
+        return f'TP-{sufixo}', f'SP-{sufixo}'
 
     def _totais(self):
         """Retorna todos os totais em uma única query SQL."""
@@ -827,3 +1095,33 @@ class ItemRomaneioVenda(models.Model):
 
     def __str__(self):
         return f'{self.romaneio} / {self.pallet}'
+
+
+# ────────────────────────── RomaneioMaterialEmbalagem ──────────────────────
+
+class RomaneioMaterialEmbalagem(models.Model):
+    """Vincula um MaterialEmbalagem (e seu fornecedor) ao romaneio, para compor
+    o relatório de rastreabilidade PPWR. O tipo (TP/SP) é sempre o do material."""
+
+    romaneio = models.ForeignKey(
+        RomaneioVenda,
+        on_delete=models.CASCADE,
+        related_name='materiais_embalagem',
+        verbose_name='Romaneio',
+    )
+    material = models.ForeignKey(
+        MaterialEmbalagem,
+        on_delete=models.PROTECT,
+        related_name='usos_em_romaneios',
+        verbose_name='Material de Embalagem',
+    )
+    criado_em = models.DateTimeField('Criado em', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Material de Embalagem do Romaneio'
+        verbose_name_plural = 'Materiais de Embalagem do Romaneio'
+        ordering = ['material__tipo', 'material__produto__nome']
+        unique_together = [('romaneio', 'material')]
+
+    def __str__(self):
+        return f'{self.romaneio} / {self.material}'
